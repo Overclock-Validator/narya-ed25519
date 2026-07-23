@@ -40,6 +40,37 @@ func TestStdlibCompatProfile(t *testing.T) {
 	})
 }
 
+// TestVerifyStrictIgnoresDefault confirms VerifyStrict enforces
+// DalekStrict even when the package default is flipped to StdlibCompat
+// — consensus P2P sites must not be weakened by mutable global state.
+func TestVerifyStrictIgnoresDefault(t *testing.T) {
+	// A small-order public key: strict rejects, stdlib accepts a
+	// matching signature. Use an all-honest signature so only the
+	// small-order rule decides.
+	msg := []byte("no dependence on global profile")
+	_, priv, _ := ed25519.GenerateKey(rand.Reader)
+	honestSig := ed25519.Sign(priv, msg)
+
+	var smallOrderPub [32]byte
+	raw, _ := hex.DecodeString("0100000000000000000000000000000000000000000000000000000000000000")
+	copy(smallOrderPub[:], raw)
+	if !smallOrderEncoding(smallOrderPub[:]) {
+		t.Fatal("test vector is not small-order")
+	}
+
+	withProfile(StdlibCompat, func() {
+		// VerifyStrict must reject the small-order key regardless of the
+		// StdlibCompat default.
+		if VerifyStrict(smallOrderPub[:], msg, honestSig) {
+			t.Fatal("VerifyStrict accepted a small-order key under StdlibCompat default")
+		}
+		// Wrong-length pub yields false, never a panic.
+		if VerifyStrict(smallOrderPub[:31], msg, honestSig) {
+			t.Fatal("VerifyStrict accepted a 31-byte pub")
+		}
+	})
+}
+
 // TestStrictRejectsSmallOrder is the consensus fix: mainnet
 // (verify_strict) rejects small-order A and small-order R, which the
 // standard library accepts. For every small-order encoding used as the

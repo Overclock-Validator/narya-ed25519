@@ -1,28 +1,44 @@
-// Package ed25519 verifies Ed25519 signatures with acceptance behavior
-// bit-identical to crypto/ed25519.Verify, accelerated for workloads
-// where signers recur: a Cache holds a per-key precomputed table for
-// hot public keys, which removes the doubling chain from verification.
-// Backends are selected at runtime; the portable one is pure Go over
-// the vendored crypto/ed25519 internals, so the two implementations
-// agree on every decoding edge case by construction.
+// Package ed25519 verifies Ed25519 signatures under a versioned
+// acceptance Profile, accelerated for workloads where signers recur: a
+// Cache holds a per-key precomputed table for hot public keys, which
+// removes the doubling chain from verification. Backends are selected
+// at runtime; the portable one is pure Go over the vendored
+// crypto/ed25519 internals, so they agree on every decoding edge case.
 //
-// Acceptance equality with the standard library is the load-bearing
-// contract: in consensus use an accept/reject flip is a fork. It is
-// enforced by differential tests across every backend, cached or not.
+// The acceptance predicate is the load-bearing contract: in consensus
+// use an accept/reject flip is a fork. The default profile, DalekStrict,
+// is current Solana mainnet semantics (ed25519-dalek verify_strict);
+// StdlibCompat is exactly crypto/ed25519.Verify. Equality with the
+// chosen profile is enforced by differential tests across every
+// backend, cached or not.
 package ed25519
 
 // Verify reports whether sig is a valid signature of message by pub
 // under the default profile (DalekStrict — current Solana mainnet
 // transaction semantics).
 func Verify(pub *[32]byte, message, sig []byte) bool {
-	return verifyOne(active(), pub, message, sig, nil)
+	return verifyOne(active(), DefaultProfile(), pub, message, sig, nil)
 }
 
-// verifyOne applies the active profile's strict rejections, then the
+// VerifyStrict reports whether sig is a valid signature of message by
+// pub under DalekStrict semantics, regardless of the package default
+// profile. It takes byte slices so it is a drop-in for
+// crypto/ed25519.Verify at consensus P2P sites (gossip, shreds,
+// repair) that must always reject small-order points; a wrong-length
+// pub yields false rather than panicking. Use this rather than Verify
+// where the semantics must not depend on mutable global state.
+func VerifyStrict(pub, message, sig []byte) bool {
+	if len(pub) != 32 {
+		return false
+	}
+	return verifyOne(active(), DalekStrict, (*[32]byte)(pub), message, sig, nil)
+}
+
+// verifyOne applies the given profile's strict rejections, then the
 // backend's stdlib-semantics equation. Every single-signature entry
 // point funnels through here so the profile cannot be bypassed.
-func verifyOne(b backend, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
-	if DefaultProfile() == DalekStrict && rejectedByStrict(pub, sig) {
+func verifyOne(b backend, profile Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
+	if profile == DalekStrict && rejectedByStrict(pub, sig) {
 		return false
 	}
 	return b.verify(pub, message, sig, pre)
@@ -81,5 +97,5 @@ func Precompute(pub *[32]byte) (*PrecomputedKey, error) {
 // Verify reports whether sig is a valid signature of message by the
 // precomputed key, exactly like the package-level Verify.
 func (k *PrecomputedKey) Verify(message, sig []byte) bool {
-	return verifyOne(active(), &k.raw, message, sig, k)
+	return verifyOne(active(), DefaultProfile(), &k.raw, message, sig, k)
 }
