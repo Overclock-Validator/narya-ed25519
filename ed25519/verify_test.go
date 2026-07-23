@@ -8,11 +8,31 @@ import (
 	"testing"
 )
 
+// referenceVerify is the acceptance oracle for the active profile.
+// StdlibCompat is crypto/ed25519.Verify. DalekStrict is that predicate
+// minus small-order A and small-order R — the current Solana mainnet
+// transaction rule (ed25519-dalek verify_strict). The small-order test
+// decodes exactly as dalek does, so the oracle is the literal spec.
+func referenceVerify(pub *[32]byte, msg, sig []byte) bool {
+	if !ed25519.Verify(pub[:], msg, sig) {
+		return false
+	}
+	if DefaultProfile() == DalekStrict {
+		if smallOrderEncoding(pub[:]) {
+			return false
+		}
+		if len(sig) == 64 && smallOrderEncoding(sig[:32]) {
+			return false
+		}
+	}
+	return true
+}
+
 // check asserts the package-level, cached-first-use and cached-hot
-// paths all match crypto/ed25519.Verify.
+// paths all match the reference oracle for the active profile.
 func check(t *testing.T, c *Cache, pub *[32]byte, msg, sig []byte) {
 	t.Helper()
-	want := ed25519.Verify(pub[:], msg, sig)
+	want := referenceVerify(pub, msg, sig)
 	if got := Verify(pub, msg, sig); got != want {
 		t.Fatalf("Verify=%v want %v\npub %x\nmsg %x\nsig %x", got, want, pub, msg, sig)
 	}

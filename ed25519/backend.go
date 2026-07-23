@@ -17,10 +17,39 @@ type backend interface {
 	// verify must be bit-identical to crypto/ed25519.Verify. pre is
 	// nil, or a PrecomputedKey this backend built for pub.
 	verify(pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool
+	// verifyBatch verifies each item independently, writing item.ok;
+	// results must be exactly what per-item verify would produce.
+	// lookup, when non-nil, resolves a PrecomputedKey for a pubkey
+	// (it may build one as a side effect; nil result means none).
+	verifyBatch(items []batchItem, lookup func(*[32]byte) *PrecomputedKey)
 	// buildPrecomp returns a non-nil error exactly when pub fails
 	// point decoding. Backends without table support return a
 	// PrecomputedKey with a nil table (plain verification).
 	buildPrecomp(pub *[32]byte) (*PrecomputedKey, error)
+}
+
+// A batchItem is one signature in a batch: the inputs and the
+// per-item verdict. skip marks an item already rejected by a profile
+// pre-pass, so the backend leaves ok false and does no arithmetic.
+type batchItem struct {
+	pub  *[32]byte
+	msg  []byte
+	sig  []byte
+	ok   bool
+	skip bool
+}
+
+// applyStrictProfile marks items the active profile rejects outright,
+// so the batch backends skip them. Called by every batch entry point.
+func applyStrictProfile(items []batchItem) {
+	if DefaultProfile() != DalekStrict {
+		return
+	}
+	for i := range items {
+		if rejectedByStrict(items[i].pub, items[i].sig) {
+			items[i].skip = true
+		}
+	}
 }
 
 var (

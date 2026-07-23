@@ -29,15 +29,36 @@ stable set of hot signers.
 
 ## The contract
 
-For every input — including non-canonical point encodings, small-order
-points, and malformed signatures — every backend, cached or not,
-returns exactly what `crypto/ed25519.Verify` returns. In consensus use
-an accept/reject flip is a fork, so this equality is enforced by
-differential tests, edge-case corpora, and fuzzing rather than assumed.
-Notably this contract is *weaker* than RFC 8032 strictness and *not*
-batch verification: random-coefficient batch equations (cofactored)
-can accept adversarial signatures that per-signature verification
-rejects, so Narya never uses them.
+Verification enforces one of two versioned **profiles**, because the
+consensus-correct acceptance predicate is itself versioned — an
+accept/reject flip is a fork, so it is a deliberate choice, not an
+implementation detail:
+
+- **`DalekStrict`** (default) — current Solana mainnet transaction
+  semantics: `ed25519-dalek` 2.x `verify_strict`, reached through the
+  `solana-signature` crate. This is `crypto/ed25519.Verify` **plus**
+  rejection of small-order public keys A and small-order signature
+  points R. The standard library accepts those (it never decodes R); a
+  verifying node that used it unmodified could be forked off the
+  network by a crafted block, so this is the default.
+- **`StdlibCompat`** — exactly `crypto/ed25519.Verify`, for
+  differential testing and callers who explicitly want standard-library
+  behavior.
+
+For every input — non-canonical encodings, small-order points,
+malformed signatures — every backend, cached or not, batched or single,
+returns exactly what the active profile's predicate returns. This is
+enforced by differential tests, the CCTV and Wycheproof corpora, and
+fuzzing rather than assumed; the 165 CCTV vectors where the two profiles
+differ are precisely the small-order set, cross-checked against
+Firedancer's independent verdict.
+
+Narya never uses random-coefficient (cofactored) batch verification:
+its aggregate equation can accept adversarial signatures that
+per-signature verification rejects. "Batch" here means amortized
+hashing, paired decoding, and parallelism with per-signature verdicts.
+A future `ZIP215` profile will track Solana's planned SIMD-0376
+loosening once its feature gate activates on mainnet.
 
 ## Status
 

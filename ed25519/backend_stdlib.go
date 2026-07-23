@@ -20,6 +20,15 @@ func (stdlibBackend) verify(pub *[32]byte, message, sig []byte, _ *PrecomputedKe
 	return stded25519.Verify(pub[:], message, sig)
 }
 
+func (stdlibBackend) verifyBatch(items []batchItem, _ func(*[32]byte) *PrecomputedKey) {
+	for i := range items {
+		if items[i].skip {
+			continue
+		}
+		items[i].ok = stded25519.Verify(items[i].pub[:], items[i].msg, items[i].sig)
+	}
+}
+
 func (stdlibBackend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
 	// Decode via the vendored internals purely to honor the error
 	// contract; verification stays on the plain stdlib path.

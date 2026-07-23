@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 
 	"github.com/Overclock-Validator/narya/internal/edwards25519"
+	"github.com/Overclock-Validator/narya/sha512mb"
 )
 
 func init() { register("generic", genericBackend{}) }
@@ -76,4 +77,67 @@ func (genericBackend) verify(pub *[32]byte, message, sig []byte, pre *Precompute
 		r = (&edwards25519.Point{}).VarTimeDoubleScalarBaseMult(k, minusA, s)
 	}
 	return bytes.Equal(sig[:32], r.Bytes())
+}
+
+// verifyBatch runs the batch pipeline: a scalar precheck-and-decode
+// pass that drops items whose verdict is already known false, one
+// multi-buffer hash round for the survivors' k = H(R ‖ A ‖ M), then
+// per-item point math. Verdicts are per-signature and bit-identical
+// to verify — batching only ever amortizes hashing and decoding, it
+// never mixes signatures into one equation.
+func (g genericBackend) verifyBatch(items []batchItem, lookup func(*[32]byte) *PrecomputedKey) {
+	type work struct {
+		idx    int
+		table  *edwards25519.PubkeyTable
+		minusA *edwards25519.Point
+		s      *edwards25519.Scalar
+	}
+	live := make([]work, 0, len(items))
+	hashIn := make([][][]byte, 0, len(items))
+
+	for i := range items {
+		it := &items[i]
+		if it.skip || len(it.sig) != 64 || it.sig[63]&224 != 0 {
+			continue
+		}
+		w := work{idx: i}
+		if lookup != nil {
+			if pre := lookup(it.pub); pre != nil {
+				w.table, _ = pre.table.(*edwards25519.PubkeyTable)
+			}
+		}
+		if w.table == nil {
+			A, err := (&edwards25519.Point{}).SetBytes(it.pub[:])
+			if err != nil {
+				continue
+			}
+			w.minusA = (&edwards25519.Point{}).Negate(A)
+		}
+		s, err := edwards25519.NewScalar().SetCanonicalBytes(it.sig[32:])
+		if err != nil {
+			continue
+		}
+		w.s = s
+		live = append(live, w)
+		hashIn = append(hashIn, [][]byte{it.sig[:32], it.pub[:], it.msg})
+	}
+
+	digests := make([][64]byte, len(live))
+	sha512mb.Sum512Batch(digests, hashIn)
+
+	for j := range live {
+		w := &live[j]
+		it := &items[w.idx]
+		k, err := edwards25519.NewScalar().SetUniformBytes(digests[j][:])
+		if err != nil {
+			continue
+		}
+		var r *edwards25519.Point
+		if w.table != nil {
+			r = (&edwards25519.Point{}).VarTimeDoubleCombMult(k, w.table, w.s)
+		} else {
+			r = (&edwards25519.Point{}).VarTimeDoubleScalarBaseMult(k, w.minusA, w.s)
+		}
+		it.ok = bytes.Equal(it.sig[:32], r.Bytes())
+	}
 }
