@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # linux/amd64 exercises the amd64 field assembly in the
+        # vendored internals; macos-latest is arm64 and exercises the
+        # arm64 + generic paths. The AVX-512 backends get a dedicated
+        # Intel SDE job when they land.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go vet ./...
+      - run: go test ./...
+      - run: go test -run TestDifferential -count=5 ./ed25519
+  purego:
+    # Prove the no-assembly fallbacks compile and pass everywhere.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go test -tags purego ./...
+      - run: GOARCH=amd64 GOAMD64=v1 go build ./...

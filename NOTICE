@@ -1,0 +1,19 @@
+Narya
+Copyright 2026 Overclock Validator
+
+This product includes software developed at Overclock Validator
+(https://github.com/Overclock-Validator).
+
+Portions of internal/edwards25519 are derived from the Go standard
+library's crypto/internal/edwards25519 and from filippo.io/edwards25519
+v1.0.0 (BSD-3-Clause); see the LICENSE files inside those directories.
+The fixed-base comb evaluation (internal/edwards25519/comb.go) is
+first-party work, originally developed for Mithril
+(https://github.com/Overclock-Validator/mithril).
+
+The design of the AVX-512 IFMA verification backend and the
+multi-buffer SHA-512 kernel (when present) follows Firedancer
+(https://github.com/firedancer-io/firedancer), Copyright 2022
+Firedancer Contributors, Apache License 2.0. Firedancer's Ed25519
+implementation is in turn originally based on the OpenSSL project's
+Ed25519 implementation (Apache License 2.0).

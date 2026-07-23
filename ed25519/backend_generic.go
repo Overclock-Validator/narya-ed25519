@@ -1,0 +1,79 @@
+package ed25519
+
+import (
+	"bytes"
+	"crypto/sha512"
+
+	"github.com/Overclock-Validator/narya/internal/edwards25519"
+)
+
+func init() { register("generic", genericBackend{}) }
+
+// genericBackend is pure Go over the vendored crypto/ed25519 internals
+// (filippo.io/edwards25519 v1.0.0), so it agrees with the standard
+// library on every decoding edge case by construction. Hot keys get a
+// fixed-base comb table that removes the doubling chain.
+type genericBackend struct{}
+
+func (genericBackend) name() string { return "generic" }
+
+// A PubkeyTable is 32 windows of 8 affine points, 3 field elements
+// (5 limbs) each.
+const genericTableBytes = 32 * 8 * 3 * 5 * 8
+
+func (genericBackend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
+	A, err := (&edwards25519.Point{}).SetBytes(pub[:])
+	if err != nil {
+		return nil, err
+	}
+	return &PrecomputedKey{
+		raw:   *pub,
+		table: edwards25519.NewPubkeyTable((&edwards25519.Point{}).Negate(A)),
+		size:  genericTableBytes,
+	}, nil
+}
+
+func (genericBackend) verify(pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
+	var table *edwards25519.PubkeyTable
+	if pre != nil {
+		table, _ = pre.table.(*edwards25519.PubkeyTable)
+	}
+
+	if len(sig) != 64 || sig[63]&224 != 0 {
+		return false
+	}
+
+	var minusA *edwards25519.Point
+	if table == nil {
+		A, err := (&edwards25519.Point{}).SetBytes(pub[:])
+		if err != nil {
+			return false
+		}
+		minusA = (&edwards25519.Point{}).Negate(A)
+	}
+
+	kh := sha512.New()
+	kh.Write(sig[:32])
+	kh.Write(pub[:])
+	kh.Write(message)
+	hramDigest := kh.Sum(nil)
+	k, err := edwards25519.NewScalar().SetUniformBytes(hramDigest)
+	if err != nil {
+		return false
+	}
+
+	s, err := edwards25519.NewScalar().SetCanonicalBytes(sig[32:])
+	if err != nil {
+		return false
+	}
+
+	// R = [s]B - [k]A must re-encode to the signature's R bytes. The
+	// cached table holds -A, so the comb path is all additions.
+	var r *edwards25519.Point
+	if table != nil {
+		r = (&edwards25519.Point{}).VarTimeDoubleCombMult(k, table, s)
+	} else {
+		r = (&edwards25519.Point{}).VarTimeDoubleScalarBaseMult(k, minusA, s)
+	}
+	return bytes.Equal(sig[:32], r.Bytes())
+}
