@@ -34,8 +34,9 @@ const (
 
 var defaultProfile atomic.Uint32 // Profile; zero value == DalekStrict
 
-// SetDefaultProfile sets the profile used by the package-level Verify,
-// VerifyBatch, and by any Cache that has not overridden it.
+// SetDefaultProfile sets the profile used by the package-level Verify
+// and VerifyBatch and by every Cache. It does not affect VerifyStrict,
+// which is always DalekStrict. Intended to be set once at startup.
 func SetDefaultProfile(p Profile) { defaultProfile.Store(uint32(p)) }
 
 // DefaultProfile reports the current package-level profile.
