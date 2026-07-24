@@ -304,6 +304,20 @@ func TestR51IFMAPipelineCCTVAndWycheproof(t *testing.T) {
 	})
 }
 
+func TestR51IFMAPipelineFiredancerFuzzRegressions(t *testing.T) {
+	vectors := repeatFiredancerFuzzRegressionVectors(t, 17)
+	everyR51IFMAPipelineConfig(t, func(t *testing.T, pipeline *r51IFMAPipeline) {
+		for _, profile := range []Profile{DalekStrict, StdlibCompat} {
+			assertR51IFMAPipelineVectors(t, pipeline, vectors, profile)
+		}
+	})
+	everyR51IFMACombPipelineConfig(t, func(t *testing.T, pipeline *r51IFMAPipeline) {
+		for _, profile := range []Profile{DalekStrict, StdlibCompat} {
+			assertR51IFMAPipelineVectors(t, pipeline, vectors, profile)
+		}
+	})
+}
+
 func TestR51IFMAPipelineTailsInvalidLanesAndRandomMixtures(t *testing.T) {
 	vectors := makeR51HonestVectors(t, 67)
 	for index := range vectors {

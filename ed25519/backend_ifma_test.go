@@ -113,6 +113,25 @@ func TestIFMABackendMatchesCorpora(t *testing.T) {
 	}
 }
 
+func TestIFMABackendFiredancerFuzzRegressions(t *testing.T) {
+	if !enterIsolatedIFMABackendTest(t) {
+		return
+	}
+	b := requireIFMABackend(t)
+	// Firedancer keeps these minimized signing inputs because they exposed
+	// concrete r43x6 failures. Exercise the derived fixed signatures through
+	// the actual hardware-selected backend as well as the pure-Go references.
+	for _, v := range firedancerFuzzRegressionVectors(t) {
+		for _, profile := range []Profile{StdlibCompat, DalekStrict} {
+			got := verifyOne(b, profile, &v.pub, v.msg, v.sig, nil)
+			want := referenceVerifyProfile(profile, &v.pub, v.msg, v.sig)
+			if got != want {
+				t.Fatalf("%s profile=%d: ifma=%v reference=%v", v.name, profile, got, want)
+			}
+		}
+	}
+}
+
 func TestIFMABackendRandomDifferential(t *testing.T) {
 	if !enterIsolatedIFMABackendTest(t) {
 		return

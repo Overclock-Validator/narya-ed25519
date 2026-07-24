@@ -115,6 +115,14 @@ func TestR51IFMABatchQPipelineDifferential(t *testing.T) {
 	}
 }
 
+func TestR51IFMABatchQPipelineFiredancerFuzzRegressions(t *testing.T) {
+	batchQ, paired, literal := newR51IFMABatchQPipelineSets(t)
+	vectors := repeatFiredancerFuzzRegressionVectors(t, 17)
+	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
+		assertR51IFMABatchQVectors(t, batchQ, paired, literal, vectors, profile)
+	}
+}
+
 func TestR51IFMABatchQPipelineEveryLaneAndTailMapping(t *testing.T) {
 	batchQ, paired, literal := newR51IFMABatchQPipelineSets(t)
 	honest := makeR51HonestVectors(t, 64)
