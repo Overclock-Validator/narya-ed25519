@@ -13,3 +13,40 @@ func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 //
 //go:noescape
 func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
+
+// ifmaNormalizeProductUncheckedX8 carries a proven-u61 folded product back
+// into the composable u52 domain in parallel across all eight lanes. The
+// caller owns the input-range proof; this deliberately has no data-dependent
+// error path so internal point schedules do not serialize the lanes merely to
+// re-check a bound established by the raw multiply and formula algebra.
+//
+//go:noescape
+func ifmaNormalizeProductUncheckedX8(out *LimbsX8, x *IFMAProductX8)
+
+// ifmaNormalizeProductUncheckedX4 is the AVX-512VL/YMM counterpart.
+//
+//go:noescape
+func ifmaNormalizeProductUncheckedX4(out *LimbsX4, x *IFMAProductX4)
+
+// The normalized add/subtract/negate helpers combine the limb-wise operation
+// and carry/fold pass in one vector call. Their inputs are composable u52
+// values, so their u53/u54 intermediates satisfy the normalizer's u61
+// precondition without another range scan.
+//
+//go:noescape
+func ifmaAddNormalizedUncheckedX8(out, x, y *LimbsX8)
+
+//go:noescape
+func ifmaSubtractNormalizedUncheckedX8(out, x, y *LimbsX8)
+
+//go:noescape
+func ifmaNegateNormalizedUncheckedX8(out, x *LimbsX8)
+
+//go:noescape
+func ifmaAddNormalizedUncheckedX4(out, x, y *LimbsX4)
+
+//go:noescape
+func ifmaSubtractNormalizedUncheckedX4(out, x, y *LimbsX4)
+
+//go:noescape
+func ifmaNegateNormalizedUncheckedX4(out, x *LimbsX4)

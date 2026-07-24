@@ -241,13 +241,12 @@ func TestR51ChallengeSegmentsPreserveOriginalNoncanonicalA(t *testing.T) {
 		sigs[index][0] = byte(0x40 + index)
 	}
 	var segments [r51x5.X8Lanes][3][]byte
-	var inputs [r51x5.X8Lanes][][]byte
 	var lanes [r51x5.X8Lanes]uint8
-	if got := compactR51ChallengeSegments(&segments, &inputs, &lanes, pubs, msgs, sigs, 0, len(pubs), 0x05); got != 2 {
+	if got := compactR51ChallengeSegments(&segments, &lanes, pubs, msgs, sigs, 0, len(pubs), 0x05); got != 2 {
 		t.Fatalf("compacted inputs = %d, want 2", got)
 	}
-	if lanes[0] != 0 || lanes[1] != 2 || !bytes.Equal(inputs[0][1], noncanonicalA[:]) {
-		t.Fatalf("compaction lanes=%v A=%x", lanes[:2], inputs[0][1])
+	if lanes[0] != 0 || lanes[1] != 2 || !bytes.Equal(segments[0][1], noncanonicalA[:]) {
+		t.Fatalf("compaction lanes=%v A=%x", lanes[:2], segments[0][1])
 	}
 	hashSegments := func(parts [][]byte) [64]byte {
 		h := sha512.New()
@@ -258,13 +257,13 @@ func TestR51ChallengeSegmentsPreserveOriginalNoncanonicalA(t *testing.T) {
 		h.Sum(digest[:0])
 		return digest
 	}
-	originalDigest := hashSegments(inputs[0])
+	originalDigest := hashSegments(segments[0][:])
 	canonicalDigest := hashSegments([][]byte{sigs[0][:32], canonicalA[:], msgs[0]})
 	if originalDigest == canonicalDigest {
 		t.Fatal("canonicalizing A did not change the independently hashed challenge")
 	}
 	if allocs := testing.AllocsPerRun(20, func() {
-		compactR51ChallengeSegments(&segments, &inputs, &lanes, pubs, msgs, sigs, 0, len(pubs), 0x05)
+		compactR51ChallengeSegments(&segments, &lanes, pubs, msgs, sigs, 0, len(pubs), 0x05)
 	}); allocs != 0 {
 		t.Fatalf("challenge compaction allocations=%v", allocs)
 	}
@@ -371,6 +370,63 @@ func TestR51IFMAPipelinePermissiveAAndExactSignedMixedOrder(t *testing.T) {
 	everyR51IFMAPipelineConfig(t, func(t *testing.T, pipeline *r51IFMAPipeline) {
 		assertR51IFMAPipelineVectors(t, pipeline, []r51ReferenceVector{honest, mixed}, DalekStrict)
 	})
+}
+
+func TestCanonicalScalarEncodingMatchesReference(t *testing.T) {
+	order := ed25519ScalarOrderEncoding
+	orderMinusOne := order
+	for index := range orderMinusOne {
+		if orderMinusOne[index] != 0 {
+			orderMinusOne[index]--
+			break
+		}
+		orderMinusOne[index] = 0xff
+	}
+	orderPlusOne := order
+	for index := range orderPlusOne {
+		orderPlusOne[index]++
+		if orderPlusOne[index] != 0 {
+			break
+		}
+	}
+
+	cases := [][]byte{
+		nil,
+		make([]byte, 31),
+		make([]byte, 33),
+		make([]byte, 32),
+		orderMinusOne[:],
+		order[:],
+		orderPlusOne[:],
+		append(make([]byte, 31), 0x80),
+	}
+	for index, encoded := range cases {
+		got := canonicalScalarEncoding(encoded)
+		_, err := edwards25519.NewScalar().SetCanonicalBytes(encoded)
+		if want := err == nil; got != want {
+			t.Fatalf("boundary %d canonical=%v, reference=%v: %x", index, got, want, encoded)
+		}
+	}
+
+	for counter := 0; counter < 4096; counter++ {
+		seed := []byte{byte(counter), byte(counter >> 8)}
+		digest := sha512.Sum512(seed)
+		encoded := digest[:32]
+		got := canonicalScalarEncoding(encoded)
+		_, err := edwards25519.NewScalar().SetCanonicalBytes(encoded)
+		if want := err == nil; got != want {
+			t.Fatalf("random %d canonical=%v, reference=%v: %x", counter, got, want, encoded)
+		}
+	}
+
+	invalid := ed25519ScalarOrderEncoding[:]
+	if allocs := testing.AllocsPerRun(100, func() {
+		if canonicalScalarEncoding(invalid) {
+			panic("group order accepted as canonical")
+		}
+	}); allocs != 0 {
+		t.Fatalf("invalid scalar predicate allocations=%v", allocs)
+	}
 }
 
 func TestR51IFMAPipelineX8MatchesTwoX4(t *testing.T) {
@@ -488,36 +544,17 @@ func assertR51IFMAPairedGateVectors(t *testing.T, paired, encodedReference *r51I
 	}
 }
 
-type failSecondVariablePreparationX8 struct {
-	wrapped r51IFMAFixedDSMWorkspaceX8
-	calls   int
-	failure error
-}
-
-func (workspace *failSecondVariablePreparationX8) PrepareFixedBase(base *r51x5.PointX8, radixBits uint) error {
-	return workspace.wrapped.PrepareFixedBase(base, radixBits)
-}
-
-func (workspace *failSecondVariablePreparationX8) PrepareVariableBase(base *r51x5.PointX8) error {
-	workspace.calls++
-	if workspace.calls == 2 {
-		return workspace.failure
-	}
-	return workspace.wrapped.PrepareVariableBase(base)
-}
-
-func (workspace *failSecondVariablePreparationX8) Evaluate(out *r51x5.IFMAPointX8, coefficients *r51x5.FixedDSMScalarsX8, negative *[r51x5.DSMTerms]uint8, active uint8) (uint8, error) {
-	return workspace.wrapped.Evaluate(out, coefficients, negative, active)
-}
-
 func TestR51IFMAPipelineKernelErrorClearsPriorGroupVerdicts(t *testing.T) {
 	pipeline := requireR51IFMAPipeline(t, r51IFMAX8, 5)
 	failure := errors.New("injected second-group variable-table failure")
-	injected := &failSecondVariablePreparationX8{
-		wrapped: pipeline.x8,
-		failure: failure,
+	prepareCalls := 0
+	pipeline.beforePrepareVariableX8 = func() error {
+		prepareCalls++
+		if prepareCalls == 2 {
+			return failure
+		}
+		return nil
 	}
-	pipeline.x8 = injected
 
 	fixture := makeBatchFixture(t, r51x5.X8Lanes+1, 200)
 	verdicts := make([]bool, len(fixture.pubs))
@@ -531,8 +568,8 @@ func TestR51IFMAPipelineKernelErrorClearsPriorGroupVerdicts(t *testing.T) {
 	if all || !errors.Is(err, failure) {
 		t.Fatalf("verification=(%v,%v), want (false,injected failure)", all, err)
 	}
-	if injected.calls != 2 {
-		t.Fatalf("variable-table preparations=%d, want 2", injected.calls)
+	if prepareCalls != 2 {
+		t.Fatalf("variable-table preparations=%d, want 2", prepareCalls)
 	}
 	for lane, accepted := range verdicts {
 		if accepted {

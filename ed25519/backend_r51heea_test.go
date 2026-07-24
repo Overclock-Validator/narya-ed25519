@@ -38,16 +38,100 @@ type r51HEEAPipeline struct {
 	ordinaryX4 [2]r51IFMAFixedDSMWorkspaceX4
 }
 
-type r51IFMAHEEAWorkspaceX4 interface {
-	PrepareFixedBase(*r51x5.PointX4, uint) error
-	PrepareVariableBasesAffineR(*r51x5.AffinePointX4, *r51x5.PointX4, uint8) error
-	Evaluate(*r51x5.IFMAPointX4, *r51x5.ExperimentalHEEABaseSplitCoefficientsX4, uint8) (uint8, uint8, error)
+// r51IFMAHEEAWorkspaceX4 keeps the selected generic workspace instantiation
+// behind concrete calls. Invoking these methods through an interface makes
+// each point, coefficient, and output scratch argument escape once per group.
+type r51IFMAHEEAWorkspaceX4 struct {
+	radixBits uint8
+	radix16   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X4
+	radix32   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX4
+	radix64   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X4
 }
 
-type r51IFMAHEEAWorkspaceX8 interface {
-	PrepareFixedBase(*r51x5.PointX8, uint) error
-	PrepareVariableBasesAffineR(*r51x5.AffinePointX8, *r51x5.PointX8, uint8) error
-	Evaluate(*r51x5.IFMAPointX8, *r51x5.ExperimentalHEEABaseSplitCoefficientsX8, uint8) (uint8, uint8, error)
+// r51IFMAHEEAWorkspaceX8 is the eight-lane counterpart.
+type r51IFMAHEEAWorkspaceX8 struct {
+	radixBits uint8
+	radix16   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X8
+	radix32   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX8
+	radix64   *r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X8
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX4) PrepareFixedBase(base *r51x5.PointX4, radixBits uint) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareFixedBase(base, radixBits)
+	case 5:
+		return workspace.radix32.PrepareFixedBase(base, radixBits)
+	case 6:
+		return workspace.radix64.PrepareFixedBase(base, radixBits)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x4 workspace")
+	}
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX4) PrepareVariableBasesAffineR(R *r51x5.AffinePointX4, A *r51x5.PointX4, decodedValid uint8) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareVariableBasesAffineR(R, A, decodedValid)
+	case 5:
+		return workspace.radix32.PrepareVariableBasesAffineR(R, A, decodedValid)
+	case 6:
+		return workspace.radix64.PrepareVariableBasesAffineR(R, A, decodedValid)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x4 workspace")
+	}
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX4) Evaluate(out *r51x5.IFMAPointX4, coefficients *r51x5.ExperimentalHEEABaseSplitCoefficientsX4, active uint8) (uint8, uint8, error) {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.Evaluate(out, coefficients, active)
+	case 5:
+		return workspace.radix32.Evaluate(out, coefficients, active)
+	case 6:
+		return workspace.radix64.Evaluate(out, coefficients, active)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x4 workspace")
+	}
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX8) PrepareFixedBase(base *r51x5.PointX8, radixBits uint) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareFixedBase(base, radixBits)
+	case 5:
+		return workspace.radix32.PrepareFixedBase(base, radixBits)
+	case 6:
+		return workspace.radix64.PrepareFixedBase(base, radixBits)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x8 workspace")
+	}
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX8) PrepareVariableBasesAffineR(R *r51x5.AffinePointX8, A *r51x5.PointX8, decodedValid uint8) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareVariableBasesAffineR(R, A, decodedValid)
+	case 5:
+		return workspace.radix32.PrepareVariableBasesAffineR(R, A, decodedValid)
+	case 6:
+		return workspace.radix64.PrepareVariableBasesAffineR(R, A, decodedValid)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x8 workspace")
+	}
+}
+
+func (workspace *r51IFMAHEEAWorkspaceX8) Evaluate(out *r51x5.IFMAPointX8, coefficients *r51x5.ExperimentalHEEABaseSplitCoefficientsX8, active uint8) (uint8, uint8, error) {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.Evaluate(out, coefficients, active)
+	case 5:
+		return workspace.radix32.Evaluate(out, coefficients, active)
+	case 6:
+		return workspace.radix64.Evaluate(out, coefficients, active)
+	default:
+		panic("ed25519: uninitialized forced r51 HEEA x8 workspace")
+	}
 }
 
 const r51HEEAOrdinaryFallbackRadixBits = 5
@@ -178,29 +262,33 @@ func newR51HEEAPipeline(kind r51IFMAPipelineKind, width heea8l.WidthLimit, radix
 }
 
 func newR51IFMAHEEAWorkspaceX4(radixBits uint) r51IFMAHEEAWorkspaceX4 {
+	workspace := r51IFMAHEEAWorkspaceX4{radixBits: uint8(radixBits)}
 	switch radixBits {
 	case 4:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X4)
+		workspace.radix16 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X4)
 	case 5:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX4)
+		workspace.radix32 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX4)
 	case 6:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X4)
+		workspace.radix64 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X4)
 	default:
 		panic("ed25519: unsupported forced r51 HEEA radix")
 	}
+	return workspace
 }
 
 func newR51IFMAHEEAWorkspaceX8(radixBits uint) r51IFMAHEEAWorkspaceX8 {
+	workspace := r51IFMAHEEAWorkspaceX8{radixBits: uint8(radixBits)}
 	switch radixBits {
 	case 4:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X8)
+		workspace.radix16 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix16X8)
 	case 5:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX8)
+		workspace.radix32 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceX8)
 	case 6:
-		return new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X8)
+		workspace.radix64 = new(r51x5.ExperimentalIFMAHEEABaseSplitWorkspaceRadix64X8)
 	default:
 		panic("ed25519: unsupported forced r51 HEEA radix")
 	}
+	return workspace
 }
 
 // r51HEEASelectorCandidate is the only selector-to-QSM handoff. Callers

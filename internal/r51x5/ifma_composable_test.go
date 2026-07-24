@@ -2,6 +2,7 @@ package r51x5
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"runtime"
@@ -42,15 +43,17 @@ func TestIFMAComposableAnalyticBounds(t *testing.T) {
 	if !ok {
 		t.Fatal("maximum u61 input failed normalization")
 	}
-	if normalized[0] != ifmaPostCarryLimb0Limit-1 {
-		t.Fatalf("maximum limb0=%x want %x", normalized[0], ifmaPostCarryLimb0Limit-1)
+	wantLimb0 := (uint64(1) << LimbBits) - 1 + 19*(ifmaFoldCarryMax-1)
+	if normalized[0] != wantLimb0 {
+		t.Fatalf("maximum limb0=%x want %x", normalized[0], wantLimb0)
 	}
 	if !IsIFMAMultiplicand(normalized) {
 		t.Fatalf("maximum normalization escaped u52: %x", normalized)
 	}
 	for limb := 1; limb < 5; limb++ {
-		if normalized[limb] >= 1<<LimbBits {
-			t.Fatalf("limb %d not tightly carried: %x", limb, normalized[limb])
+		want := uint64(1)<<LimbBits + ifmaFoldCarryMax - 2
+		if normalized[limb] != want {
+			t.Fatalf("maximum limb %d=%x want %x", limb, normalized[limb], want)
 		}
 	}
 
@@ -77,6 +80,146 @@ func TestIFMAComposableAnalyticBounds(t *testing.T) {
 	gotProduct.Mod(gotProduct, testModulus)
 	if gotProduct.Cmp(wantProduct) != 0 {
 		t.Fatalf("maximum product got %x want %x", gotProduct, wantProduct)
+	}
+}
+
+func TestIFMAVectorNormalizerMatchesScalarReference(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	rng := rand.New(rand.NewSource(0x51c4a77))
+	for round := 0; round < 2000; round++ {
+		var input8 IFMAProductX8
+		for limb := range input8 {
+			for lane := range input8[limb] {
+				switch round {
+				case 0:
+					input8[limb][lane] = 0
+				case 1:
+					input8[limb][lane] = ifmaProductLimbLimit - 1
+				default:
+					input8[limb][lane] = rng.Uint64() & (ifmaProductLimbLimit - 1)
+				}
+			}
+		}
+		want8, ok := normalizeIFMAProductX8(&input8)
+		if !ok {
+			t.Fatalf("round %d: scalar x8 reference rejected proven-u61 input", round)
+		}
+		var got8 LimbsX8
+		ifmaNormalizeProductUncheckedX8(&got8, &input8)
+		if got8 != want8 {
+			t.Fatalf("round %d: x8 vector normalization mismatch\ngot  %x\nwant %x", round, got8, want8)
+		}
+
+		var input4 IFMAProductX4
+		for limb := range input4 {
+			copy(input4[limb][:], input8[limb][:X4Lanes])
+		}
+		want4, ok := normalizeIFMAProductX4(&input4)
+		if !ok {
+			t.Fatalf("round %d: scalar x4 reference rejected proven-u61 input", round)
+		}
+		var got4 LimbsX4
+		ifmaNormalizeProductUncheckedX4(&got4, &input4)
+		if got4 != want4 {
+			t.Fatalf("round %d: x4 vector normalization mismatch\ngot  %x\nwant %x", round, got4, want4)
+		}
+	}
+}
+
+func TestIFMAComposableVectorOpsEdgesAndAliases(t *testing.T) {
+	zero8 := IFMAElementX8{}
+	maximum8 := filledIFMAElementX8(ifmaComposableLimbLimit - 1)
+	pattern8 := patternedIFMAElementX8(false)
+	reverse8 := patternedIFMAElementX8(true)
+	tests8 := []struct {
+		name string
+		x    IFMAElementX8
+		y    IFMAElementX8
+	}{
+		{name: "zero-max", x: zero8, y: maximum8},
+		{name: "max-zero", x: maximum8, y: zero8},
+		{name: "max-max", x: maximum8, y: maximum8},
+		{name: "mixed", x: pattern8, y: reverse8},
+	}
+	for _, test := range tests8 {
+		t.Run("x8/"+test.name, func(t *testing.T) {
+			testIFMAComposableVectorOpsX8(t, &test.x, &test.y)
+		})
+	}
+
+	for group := 0; group < 2; group++ {
+		for _, test := range tests8 {
+			x4 := ifmaElementX4Half(&test.x, group)
+			y4 := ifmaElementX4Half(&test.y, group)
+			t.Run(fmt.Sprintf("x4/group=%d/%s", group, test.name), func(t *testing.T) {
+				testIFMAComposableVectorOpsX4(t, &x4, &y4)
+			})
+		}
+	}
+}
+
+func TestIFMAMaximumComposableMultiplyHardware(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	maximum8 := filledIFMAElementX8(ifmaComposableLimbLimit - 1)
+	var raw8, wantRaw8 IFMAProductX8
+	ifmaMulRawX8(&raw8, &maximum8.limbs, &maximum8.limbs)
+	maximumLane := Limbs{
+		ifmaComposableLimbLimit - 1,
+		ifmaComposableLimbLimit - 1,
+		ifmaComposableLimbLimit - 1,
+		ifmaComposableLimbLimit - 1,
+		ifmaComposableLimbLimit - 1,
+	}
+	wantLane := ifmaLooseLaneModel(maximumLane, maximumLane)
+	for limb := range wantRaw8 {
+		for lane := range wantRaw8[limb] {
+			wantRaw8[limb][lane] = wantLane[limb]
+		}
+	}
+	if !isIFMAProductX8(raw8) {
+		t.Fatal("maximum x8 hardware raw product escaped u61")
+	}
+	if raw8 != wantRaw8 {
+		t.Fatalf("maximum x8 hardware raw product mismatch\ngot  %x\nwant %x", raw8, wantRaw8)
+	}
+	want8, ok := normalizeIFMAProductX8(&wantRaw8)
+	if !ok {
+		t.Fatal("scalar reference rejected maximum x8 raw product")
+	}
+	var got8 LimbsX8
+	ifmaNormalizeProductUncheckedX8(&got8, &raw8)
+	if got8 != want8 {
+		t.Fatalf("maximum x8 hardware normalized product mismatch\ngot  %x\nwant %x", got8, want8)
+	}
+
+	maximum4 := ifmaElementX4Half(&maximum8, 0)
+	var raw4, wantRaw4 IFMAProductX4
+	ifmaMulRawX4(&raw4, &maximum4.limbs, &maximum4.limbs)
+	for limb := range wantRaw4 {
+		for lane := range wantRaw4[limb] {
+			wantRaw4[limb][lane] = wantLane[limb]
+		}
+	}
+	if !isIFMAProductX4(raw4) {
+		t.Fatal("maximum x4 hardware raw product escaped u61")
+	}
+	if raw4 != wantRaw4 {
+		t.Fatalf("maximum x4 hardware raw product mismatch\ngot  %x\nwant %x", raw4, wantRaw4)
+	}
+	want4, ok := normalizeIFMAProductX4(&wantRaw4)
+	if !ok {
+		t.Fatal("scalar reference rejected maximum x4 raw product")
+	}
+	var got4 LimbsX4
+	ifmaNormalizeProductUncheckedX4(&got4, &raw4)
+	if got4 != want4 {
+		t.Fatalf("maximum x4 hardware normalized product mismatch\ngot  %x\nwant %x", got4, want4)
 	}
 }
 
@@ -410,6 +553,238 @@ func modelMultiplyComposableX4(out, x, y *IFMAElementX4) error {
 	return nil
 }
 
+func testIFMAComposableVectorOpsX8(t *testing.T, x, y *IFMAElementX8) {
+	t.Helper()
+	wantAdd := referenceAddIFMAElementX8(t, x, y)
+	wantSubtract := referenceSubtractIFMAElementX8(t, x, y)
+	wantNegate := referenceNegateIFMAElementX8(t, x)
+	wantSelfAdd := referenceAddIFMAElementX8(t, x, x)
+	wantSelfSubtract := referenceSubtractIFMAElementX8(t, x, x)
+
+	var got IFMAElementX8
+	got.Add(x, y)
+	if got != wantAdd {
+		t.Fatalf("non-aliased add mismatch\ngot  %x\nwant %x", got.limbs, wantAdd.limbs)
+	}
+	aliasX := *x
+	aliasX.Add(&aliasX, y)
+	if aliasX != wantAdd {
+		t.Fatal("add with out == x mismatch")
+	}
+	aliasY := *y
+	aliasY.Add(x, &aliasY)
+	if aliasY != wantAdd {
+		t.Fatal("add with out == y mismatch")
+	}
+	self := *x
+	self.Add(&self, &self)
+	if self != wantSelfAdd {
+		t.Fatal("add with x == y == out mismatch")
+	}
+
+	got.Subtract(x, y)
+	if got != wantSubtract {
+		t.Fatalf("non-aliased subtract mismatch\ngot  %x\nwant %x", got.limbs, wantSubtract.limbs)
+	}
+	aliasX = *x
+	aliasX.Subtract(&aliasX, y)
+	if aliasX != wantSubtract {
+		t.Fatal("subtract with out == x mismatch")
+	}
+	aliasY = *y
+	aliasY.Subtract(x, &aliasY)
+	if aliasY != wantSubtract {
+		t.Fatal("subtract with out == y mismatch")
+	}
+	self = *x
+	self.Subtract(&self, &self)
+	if self != wantSelfSubtract {
+		t.Fatal("subtract with x == y == out mismatch")
+	}
+
+	got.Negate(x)
+	if got != wantNegate {
+		t.Fatalf("non-aliased negate mismatch\ngot  %x\nwant %x", got.limbs, wantNegate.limbs)
+	}
+	aliasX = *x
+	aliasX.Negate(&aliasX)
+	if aliasX != wantNegate {
+		t.Fatal("negate with out == x mismatch")
+	}
+	if !isIFMAElementX8(&wantAdd) || !isIFMAElementX8(&wantSubtract) || !isIFMAElementX8(&wantNegate) {
+		t.Fatal("x8 vector operation escaped u52")
+	}
+}
+
+func testIFMAComposableVectorOpsX4(t *testing.T, x, y *IFMAElementX4) {
+	t.Helper()
+	wantAdd := referenceAddIFMAElementX4(t, x, y)
+	wantSubtract := referenceSubtractIFMAElementX4(t, x, y)
+	wantNegate := referenceNegateIFMAElementX4(t, x)
+	wantSelfAdd := referenceAddIFMAElementX4(t, x, x)
+	wantSelfSubtract := referenceSubtractIFMAElementX4(t, x, x)
+
+	var got IFMAElementX4
+	got.Add(x, y)
+	if got != wantAdd {
+		t.Fatalf("non-aliased add mismatch\ngot  %x\nwant %x", got.limbs, wantAdd.limbs)
+	}
+	aliasX := *x
+	aliasX.Add(&aliasX, y)
+	if aliasX != wantAdd {
+		t.Fatal("add with out == x mismatch")
+	}
+	aliasY := *y
+	aliasY.Add(x, &aliasY)
+	if aliasY != wantAdd {
+		t.Fatal("add with out == y mismatch")
+	}
+	self := *x
+	self.Add(&self, &self)
+	if self != wantSelfAdd {
+		t.Fatal("add with x == y == out mismatch")
+	}
+
+	got.Subtract(x, y)
+	if got != wantSubtract {
+		t.Fatalf("non-aliased subtract mismatch\ngot  %x\nwant %x", got.limbs, wantSubtract.limbs)
+	}
+	aliasX = *x
+	aliasX.Subtract(&aliasX, y)
+	if aliasX != wantSubtract {
+		t.Fatal("subtract with out == x mismatch")
+	}
+	aliasY = *y
+	aliasY.Subtract(x, &aliasY)
+	if aliasY != wantSubtract {
+		t.Fatal("subtract with out == y mismatch")
+	}
+	self = *x
+	self.Subtract(&self, &self)
+	if self != wantSelfSubtract {
+		t.Fatal("subtract with x == y == out mismatch")
+	}
+
+	got.Negate(x)
+	if got != wantNegate {
+		t.Fatalf("non-aliased negate mismatch\ngot  %x\nwant %x", got.limbs, wantNegate.limbs)
+	}
+	aliasX = *x
+	aliasX.Negate(&aliasX)
+	if aliasX != wantNegate {
+		t.Fatal("negate with out == x mismatch")
+	}
+	if !isIFMAElementX4(&wantAdd) || !isIFMAElementX4(&wantSubtract) || !isIFMAElementX4(&wantNegate) {
+		t.Fatal("x4 vector operation escaped u52")
+	}
+}
+
+func referenceAddIFMAElementX8(t testing.TB, x, y *IFMAElementX8) IFMAElementX8 {
+	t.Helper()
+	var raw IFMAProductX8
+	for limb := range raw {
+		for lane := range raw[limb] {
+			raw[limb][lane] = x.limbs[limb][lane] + y.limbs[limb][lane]
+		}
+	}
+	limbs, ok := normalizeIFMAProductX8(&raw)
+	if !ok {
+		t.Fatal("x8 add reference escaped normalizer input bound")
+	}
+	return IFMAElementX8{limbs: limbs}
+}
+
+func referenceSubtractIFMAElementX8(t testing.TB, x, y *IFMAElementX8) IFMAElementX8 {
+	t.Helper()
+	var raw IFMAProductX8
+	for limb := range raw {
+		bias := ifmaSubtractionBias(limb)
+		for lane := range raw[limb] {
+			raw[limb][lane] = x.limbs[limb][lane] + bias - y.limbs[limb][lane]
+		}
+	}
+	limbs, ok := normalizeIFMAProductX8(&raw)
+	if !ok {
+		t.Fatal("x8 subtract reference escaped normalizer input bound")
+	}
+	return IFMAElementX8{limbs: limbs}
+}
+
+func referenceNegateIFMAElementX8(t testing.TB, x *IFMAElementX8) IFMAElementX8 {
+	t.Helper()
+	return referenceSubtractIFMAElementX8(t, &IFMAElementX8{}, x)
+}
+
+func referenceAddIFMAElementX4(t testing.TB, x, y *IFMAElementX4) IFMAElementX4 {
+	t.Helper()
+	var raw IFMAProductX4
+	for limb := range raw {
+		for lane := range raw[limb] {
+			raw[limb][lane] = x.limbs[limb][lane] + y.limbs[limb][lane]
+		}
+	}
+	limbs, ok := normalizeIFMAProductX4(&raw)
+	if !ok {
+		t.Fatal("x4 add reference escaped normalizer input bound")
+	}
+	return IFMAElementX4{limbs: limbs}
+}
+
+func referenceSubtractIFMAElementX4(t testing.TB, x, y *IFMAElementX4) IFMAElementX4 {
+	t.Helper()
+	var raw IFMAProductX4
+	for limb := range raw {
+		bias := ifmaSubtractionBias(limb)
+		for lane := range raw[limb] {
+			raw[limb][lane] = x.limbs[limb][lane] + bias - y.limbs[limb][lane]
+		}
+	}
+	limbs, ok := normalizeIFMAProductX4(&raw)
+	if !ok {
+		t.Fatal("x4 subtract reference escaped normalizer input bound")
+	}
+	return IFMAElementX4{limbs: limbs}
+}
+
+func referenceNegateIFMAElementX4(t testing.TB, x *IFMAElementX4) IFMAElementX4 {
+	t.Helper()
+	return referenceSubtractIFMAElementX4(t, &IFMAElementX4{}, x)
+}
+
+func filledIFMAElementX8(value uint64) IFMAElementX8 {
+	var out IFMAElementX8
+	for limb := range out.limbs {
+		for lane := range out.limbs[limb] {
+			out.limbs[limb][lane] = value
+		}
+	}
+	return out
+}
+
+func patternedIFMAElementX8(reverse bool) IFMAElementX8 {
+	values := [...]uint64{
+		0,
+		1,
+		(uint64(1) << LimbBits) - 1,
+		uint64(1) << LimbBits,
+		(uint64(1) << LimbBits) + 1,
+		ifmaComposableLimbLimit - 2,
+		ifmaComposableLimbLimit - 1,
+		19,
+	}
+	var out IFMAElementX8
+	for limb := range out.limbs {
+		for lane := range out.limbs[limb] {
+			index := (3*limb + lane) % len(values)
+			if reverse {
+				index = len(values) - 1 - index
+			}
+			out.limbs[limb][lane] = values[index]
+		}
+	}
+	return out
+}
+
 func randomIFMAElementX8(rng *rand.Rand) IFMAElementX8 {
 	var out IFMAElementX8
 	for limb := range out.limbs {
@@ -485,7 +860,48 @@ var (
 	benchmarkComposableElementX4Sink [2]IFMAElementX4
 	benchmarkComposablePointX8Sink   IFMAPointX8
 	benchmarkComposablePointX4Sink   [2]IFMAPointX4
+	benchmarkNormalizedLimbsX8Sink   LimbsX8
+	benchmarkNormalizedLimbsX4Sink   [2]LimbsX4
 )
+
+func BenchmarkIFMAVectorNormalize(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	var input8 IFMAProductX8
+	for limb := range input8 {
+		for lane := range input8[limb] {
+			input8[limb][lane] = (uint64(limb+1)*0x51_0000 + uint64(lane)*0x1001) & (ifmaProductLimbLimit - 1)
+		}
+	}
+	var input4 [2]IFMAProductX4
+	for group := range input4 {
+		for limb := range input4[group] {
+			copy(input4[group][limb][:], input8[limb][group*X4Lanes:(group+1)*X4Lanes])
+		}
+	}
+
+	b.Run("x8-zmm-u61", func(b *testing.B) {
+		var out LimbsX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ifmaNormalizeProductUncheckedX8(&out, &input8)
+		}
+		benchmarkNormalizedLimbsX8Sink = out
+	})
+	b.Run("two-x4-ymm-u61", func(b *testing.B) {
+		var out [2]LimbsX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for group := range out {
+				ifmaNormalizeProductUncheckedX4(&out[group], &input4[group])
+			}
+		}
+		benchmarkNormalizedLimbsX4Sink = out
+	})
+}
 
 func BenchmarkExperimentalIFMAComposable(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {

@@ -221,6 +221,52 @@ func ExperimentalSum512Batch(out [][64]byte, msgs [][][]byte, width int) bool {
 	}
 }
 
+// ExperimentalSum512Batch3 is the fixed-three-segment counterpart of
+// ExperimentalSum512Batch. It computes SHA-512 over
+//
+//	msgs[i][0] ‖ msgs[i][1] ‖ msgs[i][2]
+//
+// for every row. Accepting a slice of three-element arrays lets verifier
+// callers pass their fixed R/A/message descriptors directly, without building
+// a second [][][]byte view whose row slices point back into the descriptor
+// array. The function does not retain msgs or any segment backing array after
+// it returns.
+//
+// width must be 4 or 8. The call returns false and leaves out untouched when
+// that kernel is unavailable. len(out) must equal len(msgs), even for an
+// unavailable or unsupported kernel. Production callers should continue to
+// use Sum512Batch.
+func ExperimentalSum512Batch3(out [][64]byte, msgs [][3][]byte, width int) bool {
+	if len(out) != len(msgs) {
+		panic("sha512mb: experimental fixed3 out/msgs length mismatch")
+	}
+	switch width {
+	case nativeX4Width:
+		return sum512x4Native3(out, msgs)
+	case nativeX8Width:
+		return sum512x8Native3(out, msgs)
+	default:
+		return false
+	}
+}
+
+func sum512x4Native3(out [][64]byte, msgs [][3][]byte) bool {
+	if len(out) != len(msgs) {
+		panic("sha512mb: native fixed3 out/msgs length mismatch")
+	}
+	if !nativeX4Available() {
+		return false
+	}
+	for first := 0; first < len(msgs); first += nativeX4Width {
+		lanes := len(msgs) - first
+		if lanes > nativeX4Width {
+			lanes = nativeX4Width
+		}
+		sum512NativeGroup3X4(out[first:first+lanes], msgs[first:first+lanes], lanes)
+	}
+	return true
+}
+
 func sum512x8Native(out [][64]byte, msgs [][][]byte) bool {
 	if len(out) != len(msgs) {
 		panic("sha512mb: native out/msgs length mismatch")
@@ -238,14 +284,27 @@ func sum512x8Native(out [][64]byte, msgs [][][]byte) bool {
 	return true
 }
 
+func sum512x8Native3(out [][64]byte, msgs [][3][]byte) bool {
+	if len(out) != len(msgs) {
+		panic("sha512mb: native fixed3 out/msgs length mismatch")
+	}
+	if !nativeX8Available() {
+		return false
+	}
+	for first := 0; first < len(msgs); first += nativeX8Width {
+		lanes := len(msgs) - first
+		if lanes > nativeX8Width {
+			lanes = nativeX8Width
+		}
+		sum512NativeGroup3X8(out[first:first+lanes], msgs[first:first+lanes], lanes)
+	}
+	return true
+}
+
 func sum512NativeGroupX4(out [][64]byte, msgs [][][]byte, lanes int) {
 	var lane [nativeX4Width]nativeLane
-	var state nativeStateX4
 	var maxBlocks uint64
 	for i := 0; i < nativeX4Width; i++ {
-		for word := range nativeInitialState {
-			state[word][i] = nativeInitialState[word]
-		}
 		if i < lanes {
 			lane[i] = newNativeLane(msgs[i])
 			if lane[i].blocks > maxBlocks {
@@ -253,7 +312,30 @@ func sum512NativeGroupX4(out [][64]byte, msgs [][][]byte, lanes int) {
 			}
 		}
 	}
+	sum512NativeLanesX4(out, &lane, lanes, maxBlocks)
+}
 
+func sum512NativeGroup3X4(out [][64]byte, msgs [][3][]byte, lanes int) {
+	var lane [nativeX4Width]nativeLane
+	var maxBlocks uint64
+	for i := 0; i < nativeX4Width; i++ {
+		if i < lanes {
+			lane[i] = newNativeLane(msgs[i][:])
+			if lane[i].blocks > maxBlocks {
+				maxBlocks = lane[i].blocks
+			}
+		}
+	}
+	sum512NativeLanesX4(out, &lane, lanes, maxBlocks)
+}
+
+func sum512NativeLanesX4(out [][64]byte, lane *[nativeX4Width]nativeLane, lanes int, maxBlocks uint64) {
+	var state nativeStateX4
+	for i := 0; i < nativeX4Width; i++ {
+		for word := range nativeInitialState {
+			state[word][i] = nativeInitialState[word]
+		}
+	}
 	var raw [nativeX4Width][128]byte
 	var block nativeBlockX4
 	for blockIndex := uint64(0); blockIndex < maxBlocks; blockIndex++ {
@@ -283,12 +365,8 @@ func sum512NativeGroupX4(out [][64]byte, msgs [][][]byte, lanes int) {
 
 func sum512NativeGroupX8(out [][64]byte, msgs [][][]byte, lanes int) {
 	var lane [nativeX8Width]nativeLane
-	var state nativeStateX8
 	var maxBlocks uint64
 	for i := 0; i < nativeX8Width; i++ {
-		for word := range nativeInitialState {
-			state[word][i] = nativeInitialState[word]
-		}
 		if i < lanes {
 			lane[i] = newNativeLane(msgs[i])
 			if lane[i].blocks > maxBlocks {
@@ -296,7 +374,30 @@ func sum512NativeGroupX8(out [][64]byte, msgs [][][]byte, lanes int) {
 			}
 		}
 	}
+	sum512NativeLanesX8(out, &lane, lanes, maxBlocks)
+}
 
+func sum512NativeGroup3X8(out [][64]byte, msgs [][3][]byte, lanes int) {
+	var lane [nativeX8Width]nativeLane
+	var maxBlocks uint64
+	for i := 0; i < nativeX8Width; i++ {
+		if i < lanes {
+			lane[i] = newNativeLane(msgs[i][:])
+			if lane[i].blocks > maxBlocks {
+				maxBlocks = lane[i].blocks
+			}
+		}
+	}
+	sum512NativeLanesX8(out, &lane, lanes, maxBlocks)
+}
+
+func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes int, maxBlocks uint64) {
+	var state nativeStateX8
+	for i := 0; i < nativeX8Width; i++ {
+		for word := range nativeInitialState {
+			state[word][i] = nativeInitialState[word]
+		}
+	}
 	var raw [nativeX8Width][128]byte
 	var block nativeBlockX8
 	for blockIndex := uint64(0); blockIndex < maxBlocks; blockIndex++ {

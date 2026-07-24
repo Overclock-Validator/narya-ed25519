@@ -143,6 +143,36 @@ func TestNativeX8Differential(t *testing.T) {
 	}
 }
 
+func TestExperimentalSum512Batch3Differential(t *testing.T) {
+	rng := rand.New(rand.NewSource(56))
+	edges := []int{0, 1, 47, 48, 63, 64, 111, 112, 127, 128, 129, 176, 200, 512, 1024, 1232, 4096}
+	tested := false
+	for _, width := range []int{nativeX4Width, nativeX8Width} {
+		if !ExperimentalNativeAvailable(width) {
+			continue
+		}
+		tested = true
+		for count := 0; count <= 17; count++ {
+			msgs := make([][3][]byte, count)
+			for lane := range msgs {
+				for part := range msgs[lane] {
+					length := edges[(11*count+7*lane+part)%len(edges)]
+					msgs[lane][part] = make([]byte, length)
+					_, _ = rng.Read(msgs[lane][part])
+				}
+			}
+			out := make([][64]byte, count)
+			if !ExperimentalSum512Batch3(out, msgs, width) {
+				t.Fatalf("x%d availability changed during the test", width)
+			}
+			checkNativeDigests3(t, msgs, out)
+		}
+	}
+	if !tested {
+		t.Skip("requires AVX2 or AVX-512F")
+	}
+}
+
 func TestNativeX4RandomizedDifferential(t *testing.T) {
 	if !nativeX4Available() {
 		t.Skip("requires AVX2")
@@ -207,6 +237,39 @@ func TestNativeX8NoAllocations(t *testing.T) {
 	}
 }
 
+func TestExperimentalSum512Batch3NoAllocations(t *testing.T) {
+	const maxMessageSize = 1232
+	var storage [17][64 + maxMessageSize]byte
+	var msgs [17][3][]byte
+	var out [17][64]byte
+	for lane := range msgs {
+		msgs[lane] = [3][]byte{
+			storage[lane][:32],
+			storage[lane][32:64],
+			storage[lane][64:],
+		}
+	}
+	tested := false
+	for _, width := range []int{nativeX4Width, nativeX8Width} {
+		if !ExperimentalNativeAvailable(width) {
+			continue
+		}
+		tested = true
+		for _, count := range []int{0, 1, 3, 4, 5, 7, 8, 9, 16, 17} {
+			if allocations := testing.AllocsPerRun(100, func() {
+				if !ExperimentalSum512Batch3(out[:count], msgs[:count], width) {
+					panic("native fixed3 availability changed")
+				}
+			}); allocations != 0 {
+				t.Fatalf("native fixed3 x%d count=%d allocated %.2f objects per batch", width, count, allocations)
+			}
+		}
+	}
+	if !tested {
+		t.Skip("requires AVX2 or AVX-512F")
+	}
+}
+
 func TestExperimentalUnavailableIsNonMutating(t *testing.T) {
 	var out [3][64]byte
 	for i := range out {
@@ -233,6 +296,26 @@ func TestExperimentalUnavailableIsNonMutating(t *testing.T) {
 			t.Fatalf("unavailable x%d kernel mutated output", width)
 		}
 	}
+
+	fixedOut := want
+	var fixedMsgs [3][3][]byte
+	if ExperimentalSum512Batch3(fixedOut[:], fixedMsgs[:], 3) {
+		t.Fatal("unsupported fixed3 width reported success")
+	}
+	if fixedOut != want {
+		t.Fatal("unsupported fixed3 width mutated output")
+	}
+	for _, width := range []int{nativeX4Width, nativeX8Width} {
+		if ExperimentalNativeAvailable(width) {
+			continue
+		}
+		if ExperimentalSum512Batch3(fixedOut[:], fixedMsgs[:], width) {
+			t.Fatalf("unavailable fixed3 x%d kernel reported success", width)
+		}
+		if fixedOut != want {
+			t.Fatalf("unavailable fixed3 x%d kernel mutated output", width)
+		}
+	}
 }
 
 func TestNativeLengthMismatchPanics(t *testing.T) {
@@ -242,6 +325,15 @@ func TestNativeLengthMismatchPanics(t *testing.T) {
 		}
 	}()
 	sum512x4Native(make([][64]byte, 1), nil)
+}
+
+func TestExperimentalSum512Batch3LengthMismatchPanics(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("native fixed3 length mismatch did not panic")
+		}
+	}()
+	ExperimentalSum512Batch3(make([][64]byte, 1), nil, nativeX4Width)
 }
 
 func splitNativeRAM(r, a, message []byte, salt int) [][]byte {
@@ -293,6 +385,21 @@ func checkNativeDigests(t *testing.T, msgs [][][]byte, got [][64]byte) {
 		h.Sum(want[:0])
 		if got[lane] != want {
 			t.Fatalf("lane=%d parts=%d: native digest mismatch", lane, len(msgs[lane]))
+		}
+	}
+}
+
+func checkNativeDigests3(t *testing.T, msgs [][3][]byte, got [][64]byte) {
+	t.Helper()
+	for lane := range msgs {
+		h := sha512.New()
+		for _, part := range msgs[lane] {
+			_, _ = h.Write(part)
+		}
+		var want [64]byte
+		h.Sum(want[:0])
+		if got[lane] != want {
+			t.Fatalf("lane=%d: native fixed3 digest mismatch", lane)
 		}
 	}
 }

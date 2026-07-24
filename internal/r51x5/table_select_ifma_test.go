@@ -84,6 +84,65 @@ func TestIFMAFullTableSelectHandlesLooseRepresentatives(t *testing.T) {
 	}
 }
 
+func TestConditionalNegateIFMAElementsMasksAndBoundaries(t *testing.T) {
+	fixtures8 := []struct {
+		name    string
+		element IFMAElementX8
+	}{
+		{name: "zero", element: IFMAElementX8{}},
+		{name: "maximum", element: filledIFMAElementX8(ifmaComposableLimbLimit - 1)},
+		{name: "mixed", element: patternedIFMAElementX8(false)},
+	}
+	for _, fixture := range fixtures8 {
+		normalized := referenceAddIFMAElementX8(t, &fixture.element, &IFMAElementX8{})
+		negated := referenceNegateIFMAElementX8(t, &fixture.element)
+		for mask := 0; mask < 1<<X8Lanes; mask++ {
+			got := fixture.element
+			conditionalNegateIFMAElementX8(&got, uint8(mask))
+			want := normalized
+			for limb := range want.limbs {
+				for lane := range want.limbs[limb] {
+					if mask&(1<<lane) != 0 {
+						want.limbs[limb][lane] = negated.limbs[limb][lane]
+					}
+				}
+			}
+			if got != want {
+				t.Fatalf("x8 %s mask=%02x mismatch\ngot  %x\nwant %x", fixture.name, mask, got.limbs, want.limbs)
+			}
+			if !isIFMAElementX8(&got) {
+				t.Fatalf("x8 %s mask=%02x escaped u52", fixture.name, mask)
+			}
+		}
+	}
+
+	for group := 0; group < 2; group++ {
+		for _, fixture := range fixtures8 {
+			element := ifmaElementX4Half(&fixture.element, group)
+			normalized := referenceAddIFMAElementX4(t, &element, &IFMAElementX4{})
+			negated := referenceNegateIFMAElementX4(t, &element)
+			for mask := 0; mask < 1<<X4Lanes; mask++ {
+				got := element
+				conditionalNegateIFMAElementX4(&got, uint8(mask))
+				want := normalized
+				for limb := range want.limbs {
+					for lane := range want.limbs[limb] {
+						if mask&(1<<lane) != 0 {
+							want.limbs[limb][lane] = negated.limbs[limb][lane]
+						}
+					}
+				}
+				if got != want {
+					t.Fatalf("x4 group=%d %s mask=%02x mismatch\ngot  %x\nwant %x", group, fixture.name, mask, got.limbs, want.limbs)
+				}
+				if !isIFMAElementX4(&got) {
+					t.Fatalf("x4 group=%d %s mask=%02x escaped u52", group, fixture.name, mask)
+				}
+			}
+		}
+	}
+}
+
 func TestExperimentalIFMAComposableScalarLoopsUnavailable(t *testing.T) {
 	if ExperimentalIFMAAvailable() {
 		t.Skip("unavailable-path test")

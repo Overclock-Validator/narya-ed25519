@@ -3,8 +3,8 @@ package r51x5
 // decode2IFMAOpsX4 binds the paired decompression schedule either to the
 // hardware IFMA multiplier or to the reduced lane model. uncheckedInputs is
 // enabled only after the external-to-composable boundary has been scanned;
-// raw products remain normalized and range-checked. failAt is used only by
-// the checked/model test paths to prove atomic output commits.
+// raw products remain normalized under their proven u61 bound. failAt is used
+// only by the checked/model test paths to prove atomic output commits.
 type decode2IFMAOpsX4 struct {
 	hardware        bool
 	uncheckedInputs bool

@@ -118,9 +118,10 @@ func ExperimentalIFMAPointDoubleComposableX8(out, q *IFMAPointX8) error {
 // scheduling scaffold below. Passing multiplication as a function value makes
 // the Go compiler conservatively move every point-formula temporary to the
 // heap. CPU and u52 input checks are performed once by the public wrappers or
-// a larger gated workspace; every product still performs carry/fold and the
-// output-range check. The injected variants remain independent non-IFMA test
-// oracles; the runtime experiment uses only these allocation-free call sites.
+// a larger gated workspace; every product still performs carry/fold from its
+// analytically bounded u61 form. The injected variants remain independent
+// non-IFMA test oracles; the runtime experiment uses only these allocation-free
+// call sites.
 func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 	aa, bb := *a, *b
 	var yMinusX1, yPlusX1, yMinusX2, yPlusX2 IFMAElementX4

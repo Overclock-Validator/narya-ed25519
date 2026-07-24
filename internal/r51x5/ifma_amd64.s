@@ -26,6 +26,31 @@
 	VPADDQ LO, T0, T0                     \
 	VMOVDQU64 T0, OFF(DI)
 
+// Carry a vector of five folded radix-2^51 coefficients. IN0..IN4 are each
+// below 2^61. MASK contains 2^51-1 and FOLD19 contains 19. C0..C4 receive
+// the five independent carry-outs from the original limbs. The result has
+// limb zero below 2^51+19*1024 and every other limb below 2^51+1024, hence
+// every output remains a valid u52 VPMADD52 multiplicand.
+//
+// The VPMADD52LUQ is exact here: C4 < 2^10, so 19*C4 fits entirely in the
+// low 52-bit half selected by the instruction.
+#define NORMALIZE_5(IN0, IN1, IN2, IN3, IN4, MASK, C0, C1, C2, C3, C4, FOLD19) \
+	VPSRLQ $51, IN0, C0                                                    \
+	VPSRLQ $51, IN1, C1                                                    \
+	VPSRLQ $51, IN2, C2                                                    \
+	VPSRLQ $51, IN3, C3                                                    \
+	VPSRLQ $51, IN4, C4                                                    \
+	VPANDQ MASK, IN0, IN0                                                  \
+	VPANDQ MASK, IN1, IN1                                                  \
+	VPANDQ MASK, IN2, IN2                                                  \
+	VPANDQ MASK, IN3, IN3                                                  \
+	VPANDQ MASK, IN4, IN4                                                  \
+	VPADDQ C0, IN1, IN1                                                    \
+	VPADDQ C1, IN2, IN2                                                    \
+	VPADDQ C2, IN3, IN3                                                    \
+	VPADDQ C3, IN4, IN4                                                    \
+	VPMADD52LUQ C4, FOLD19, IN0
+
 // func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 //
 // Inputs are eight independent radix-2^51 representations whose limbs are
@@ -200,3 +225,239 @@ TEXT ·ifmaMulRawX4(SB), NOSPLIT, $0-24
 
 	VZEROUPPER
 	RET
+
+// func ifmaNormalizeProductUncheckedX8(out *LimbsX8, x *IFMAProductX8)
+//
+// This is an internal proven-range primitive. Unlike the scalar reference it
+// does not scan for malformed u61 inputs; callers may enter it only after the
+// raw multiply or formula operations whose bounds establish that contract.
+TEXT ·ifmaNormalizeProductUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaNormalizeProductUncheckedX4(out *LimbsX4, x *IFMAProductX4)
+TEXT ·ifmaNormalizeProductUncheckedX4(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y11
+
+	NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11)
+
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaAddNormalizedUncheckedX8(out, x, y *LimbsX8)
+TEXT ·ifmaAddNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+	MOVQ y+16(FP), BX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+	VPADDQ   0(BX), Z0, Z0
+	VPADDQ  64(BX), Z1, Z1
+	VPADDQ 128(BX), Z2, Z2
+	VPADDQ 192(BX), Z3, Z3
+	VPADDQ 256(BX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaSubtractNormalizedUncheckedX8(out, x, y *LimbsX8)
+TEXT ·ifmaSubtractNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+	MOVQ y+16(FP), BX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z9
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z10
+	VPADDQ Z9, Z0, Z0
+	VPADDQ Z10, Z1, Z1
+	VPADDQ Z10, Z2, Z2
+	VPADDQ Z10, Z3, Z3
+	VPADDQ Z10, Z4, Z4
+	VPSUBQ   0(BX), Z0, Z0
+	VPSUBQ  64(BX), Z1, Z1
+	VPSUBQ 128(BX), Z2, Z2
+	VPSUBQ 192(BX), Z3, Z3
+	VPSUBQ 256(BX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaNegateNormalizedUncheckedX8(out, x *LimbsX8)
+TEXT ·ifmaNegateNormalizedUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z0
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z1
+	VMOVDQA64 Z1, Z2
+	VMOVDQA64 Z1, Z3
+	VMOVDQA64 Z1, Z4
+	VPSUBQ   0(CX), Z0, Z0
+	VPSUBQ  64(CX), Z1, Z1
+	VPSUBQ 128(CX), Z2, Z2
+	VPSUBQ 192(CX), Z3, Z3
+	VPSUBQ 256(CX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaAddNormalizedUncheckedX4(out, x, y *LimbsX4)
+TEXT ·ifmaAddNormalizedUncheckedX4(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+	MOVQ y+16(FP), BX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+	VPADDQ   0(BX), Y0, Y0
+	VPADDQ  32(BX), Y1, Y1
+	VPADDQ  64(BX), Y2, Y2
+	VPADDQ  96(BX), Y3, Y3
+	VPADDQ 128(BX), Y4, Y4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y11
+	NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11)
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaSubtractNormalizedUncheckedX4(out, x, y *LimbsX4)
+TEXT ·ifmaSubtractNormalizedUncheckedX4(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+	MOVQ y+16(FP), BX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+	VPBROADCASTQ ·ifmaSubBias0(SB), Y9
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Y10
+	VPADDQ Y9, Y0, Y0
+	VPADDQ Y10, Y1, Y1
+	VPADDQ Y10, Y2, Y2
+	VPADDQ Y10, Y3, Y3
+	VPADDQ Y10, Y4, Y4
+	VPSUBQ   0(BX), Y0, Y0
+	VPSUBQ  32(BX), Y1, Y1
+	VPSUBQ  64(BX), Y2, Y2
+	VPSUBQ  96(BX), Y3, Y3
+	VPSUBQ 128(BX), Y4, Y4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y11
+	NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11)
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaNegateNormalizedUncheckedX4(out, x *LimbsX4)
+TEXT ·ifmaNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+
+	VPBROADCASTQ ·ifmaSubBias0(SB), Y0
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Y1
+	VMOVDQA64 Y1, Y2
+	VMOVDQA64 Y1, Y3
+	VMOVDQA64 Y1, Y4
+	VPSUBQ   0(CX), Y0, Y0
+	VPSUBQ  32(CX), Y1, Y1
+	VPSUBQ  64(CX), Y2, Y2
+	VPSUBQ  96(CX), Y3, Y3
+	VPSUBQ 128(CX), Y4, Y4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y11
+	NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11)
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
+	VZEROUPPER
+	RET
+
+DATA ·ifmaLimbMask51+0(SB)/8, $0x0007ffffffffffff
+GLOBL ·ifmaLimbMask51(SB), RODATA|NOPTR, $8
+
+DATA ·ifmaFold19+0(SB)/8, $19
+GLOBL ·ifmaFold19(SB), RODATA|NOPTR, $8
+
+DATA ·ifmaSubBias0+0(SB)/8, $0x001fffffffffffb4
+GLOBL ·ifmaSubBias0(SB), RODATA|NOPTR, $8
+
+DATA ·ifmaSubBiasN+0(SB)/8, $0x001ffffffffffffc
+GLOBL ·ifmaSubBiasN(SB), RODATA|NOPTR, $8

@@ -60,30 +60,109 @@ type r51IFMAPipeline struct {
 	fixedBaseComb     *r51x5.ExperimentalFixedBaseCombTable
 	x8                r51IFMAFixedDSMWorkspaceX8
 	x4                [2]r51IFMAFixedDSMWorkspaceX4
-	variableX8        r51IFMAVariableBaseWorkspaceX8
-	variableX4        [2]r51IFMAVariableBaseWorkspaceX4
+	variableX8        *r51x5.ExperimentalIFMAVariableBaseWorkspaceX8
+	variableX4        [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
+
+	// beforePrepareVariableX8 is an error-injection seam used only by the
+	// fail-closed group test. It deliberately takes no point argument: passing
+	// hot-path scratch through a function value would make that scratch escape.
+	beforePrepareVariableX8 func() error
 }
 
-type r51IFMAFixedDSMWorkspaceX4 interface {
-	PrepareFixedBase(*r51x5.PointX4, uint) error
-	PrepareVariableBase(*r51x5.PointX4) error
-	Evaluate(*r51x5.IFMAPointX4, *r51x5.FixedDSMScalarsX4, *[r51x5.DSMTerms]uint8, uint8) (uint8, error)
+// r51IFMAFixedDSMWorkspaceX4 keeps the selected generic instantiation behind
+// concrete calls. Invoking these methods through an interface makes every
+// point and scalar scratch argument escape once per verification group.
+type r51IFMAFixedDSMWorkspaceX4 struct {
+	radixBits uint8
+	radix16   *r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X4
+	radix32   *r51x5.ExperimentalIFMAFixedDSMWorkspaceX4
+	radix64   *r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X4
 }
 
-type r51IFMAFixedDSMWorkspaceX8 interface {
-	PrepareFixedBase(*r51x5.PointX8, uint) error
-	PrepareVariableBase(*r51x5.PointX8) error
-	Evaluate(*r51x5.IFMAPointX8, *r51x5.FixedDSMScalarsX8, *[r51x5.DSMTerms]uint8, uint8) (uint8, error)
+// r51IFMAFixedDSMWorkspaceX8 is the eight-lane counterpart.
+type r51IFMAFixedDSMWorkspaceX8 struct {
+	radixBits uint8
+	radix16   *r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X8
+	radix32   *r51x5.ExperimentalIFMAFixedDSMWorkspaceX8
+	radix64   *r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X8
 }
 
-type r51IFMAVariableBaseWorkspaceX4 interface {
-	Prepare(*r51x5.PointX4, uint) error
-	Evaluate(*r51x5.IFMAPointX4, *[r51x5.X4Lanes][32]byte, uint8, uint8) (uint8, error)
+func (workspace *r51IFMAFixedDSMWorkspaceX4) PrepareFixedBase(base *r51x5.PointX4, radixBits uint) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareFixedBase(base, radixBits)
+	case 5:
+		return workspace.radix32.PrepareFixedBase(base, radixBits)
+	case 6:
+		return workspace.radix64.PrepareFixedBase(base, radixBits)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x4 workspace")
+	}
 }
 
-type r51IFMAVariableBaseWorkspaceX8 interface {
-	Prepare(*r51x5.PointX8, uint) error
-	Evaluate(*r51x5.IFMAPointX8, *[r51x5.X8Lanes][32]byte, uint8, uint8) (uint8, error)
+func (workspace *r51IFMAFixedDSMWorkspaceX4) PrepareVariableBase(base *r51x5.PointX4) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareVariableBase(base)
+	case 5:
+		return workspace.radix32.PrepareVariableBase(base)
+	case 6:
+		return workspace.radix64.PrepareVariableBase(base)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x4 workspace")
+	}
+}
+
+func (workspace *r51IFMAFixedDSMWorkspaceX4) Evaluate(out *r51x5.IFMAPointX4, scalars *r51x5.FixedDSMScalarsX4, negative *[r51x5.DSMTerms]uint8, active uint8) (uint8, error) {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.Evaluate(out, scalars, negative, active)
+	case 5:
+		return workspace.radix32.Evaluate(out, scalars, negative, active)
+	case 6:
+		return workspace.radix64.Evaluate(out, scalars, negative, active)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x4 workspace")
+	}
+}
+
+func (workspace *r51IFMAFixedDSMWorkspaceX8) PrepareFixedBase(base *r51x5.PointX8, radixBits uint) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareFixedBase(base, radixBits)
+	case 5:
+		return workspace.radix32.PrepareFixedBase(base, radixBits)
+	case 6:
+		return workspace.radix64.PrepareFixedBase(base, radixBits)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x8 workspace")
+	}
+}
+
+func (workspace *r51IFMAFixedDSMWorkspaceX8) PrepareVariableBase(base *r51x5.PointX8) error {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.PrepareVariableBase(base)
+	case 5:
+		return workspace.radix32.PrepareVariableBase(base)
+	case 6:
+		return workspace.radix64.PrepareVariableBase(base)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x8 workspace")
+	}
+}
+
+func (workspace *r51IFMAFixedDSMWorkspaceX8) Evaluate(out *r51x5.IFMAPointX8, scalars *r51x5.FixedDSMScalarsX8, negative *[r51x5.DSMTerms]uint8, active uint8) (uint8, error) {
+	switch workspace.radixBits {
+	case 4:
+		return workspace.radix16.Evaluate(out, scalars, negative, active)
+	case 5:
+		return workspace.radix32.Evaluate(out, scalars, negative, active)
+	case 6:
+		return workspace.radix64.Evaluate(out, scalars, negative, active)
+	default:
+		panic("ed25519: uninitialized forced r51 IFMA x8 workspace")
+	}
 }
 
 var r51SharedCombTables [3]struct {
@@ -164,29 +243,33 @@ func newR51IFMAEncodedQReferencePipeline(kind r51IFMAPipelineKind, radixBits uin
 }
 
 func newR51IFMAFixedDSMWorkspaceX4(radixBits uint) r51IFMAFixedDSMWorkspaceX4 {
+	workspace := r51IFMAFixedDSMWorkspaceX4{radixBits: uint8(radixBits)}
 	switch radixBits {
 	case 4:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X4)
+		workspace.radix16 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X4)
 	case 5:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceX4)
+		workspace.radix32 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceX4)
 	case 6:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X4)
+		workspace.radix64 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X4)
 	default:
 		panic("ed25519: unsupported forced r51 IFMA radix")
 	}
+	return workspace
 }
 
 func newR51IFMAFixedDSMWorkspaceX8(radixBits uint) r51IFMAFixedDSMWorkspaceX8 {
+	workspace := r51IFMAFixedDSMWorkspaceX8{radixBits: uint8(radixBits)}
 	switch radixBits {
 	case 4:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X8)
+		workspace.radix16 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix16X8)
 	case 5:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceX8)
+		workspace.radix32 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceX8)
 	case 6:
-		return new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X8)
+		workspace.radix64 = new(r51x5.ExperimentalIFMAFixedDSMWorkspaceRadix64X8)
 	default:
 		panic("ed25519: unsupported forced r51 IFMA radix")
 	}
+	return workspace
 }
 
 // newR51IFMACombPipeline builds the complete-path wider-B experiment. The
@@ -370,6 +453,11 @@ func (pipeline *r51IFMAPipeline) evaluateGroupX8(profile Profile, pubs []*[32]by
 	var looseQ r51x5.IFMAPointX8
 	var usable uint8
 	if pipeline.fixedBaseComb == nil {
+		if pipeline.beforePrepareVariableX8 != nil {
+			if err := pipeline.beforePrepareVariableX8(); err != nil {
+				return err
+			}
+		}
 		if err := pipeline.x8.PrepareVariableBase(A); err != nil {
 			return err
 		}
@@ -578,7 +666,7 @@ func prepareR51Signature(profile Profile, pub *[32]byte, sig []byte) ([32]byte, 
 			return [32]byte{}, false
 		}
 	}
-	if _, err := edwards25519.NewScalar().SetCanonicalBytes(sig[32:]); err != nil {
+	if !canonicalScalarEncoding(sig[32:]) {
 		return [32]byte{}, false
 	}
 	var scalar [32]byte
@@ -586,15 +674,44 @@ func prepareR51Signature(profile Profile, pub *[32]byte, sig []byte) ([32]byte, 
 	return scalar, true
 }
 
+// ed25519ScalarOrderEncoding is the little-endian encoding of the prime
+// subgroup order l. Ed25519 signatures require the original S encoding to be
+// strictly less than l; reducing a noncanonical encoding would change the
+// verification predicate.
+var ed25519ScalarOrderEncoding = [32]byte{
+	0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+	0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+}
+
+// canonicalScalarEncoding reports whether s is the canonical 32-byte
+// little-endian encoding of an integer in [0,l). Signature inputs are public,
+// so the early exits do not expose secret data. This direct predicate also
+// avoids allocating the error returned by SetCanonicalBytes on invalid input.
+func canonicalScalarEncoding(s []byte) bool {
+	if len(s) != len(ed25519ScalarOrderEncoding) {
+		return false
+	}
+	for index := len(s) - 1; index >= 0; index-- {
+		if s[index] < ed25519ScalarOrderEncoding[index] {
+			return true
+		}
+		if s[index] > ed25519ScalarOrderEncoding[index] {
+			return false
+		}
+	}
+	return false
+}
+
 func reduceR51NativeChallengesX8(out *[r51x5.X8Lanes][32]byte, pubs []*[32]byte, msgs, sigs [][]byte, offset, count int, live uint8, width int) (uint8, error) {
 	// Keep the original R and A byte strings as independent segments. Neither
 	// point decoder nor canonical-R gate may rewrite the challenge input.
 	var segments [r51x5.X8Lanes][3][]byte
-	var inputs [r51x5.X8Lanes][][]byte
 	var lanes [r51x5.X8Lanes]uint8
-	inputCount := compactR51ChallengeSegments(&segments, &inputs, &lanes, pubs, msgs, sigs, offset, count, live)
+	inputCount := compactR51ChallengeSegments(&segments, &lanes, pubs, msgs, sigs, offset, count, live)
 	var digests [r51x5.X8Lanes][64]byte
-	if !sha512mb.ExperimentalSum512Batch(digests[:inputCount], inputs[:inputCount], width) {
+	if !sha512mb.ExperimentalSum512Batch3(digests[:inputCount], segments[:inputCount], width) {
 		return 0, fmt.Errorf("ed25519: forced x%d SHA-512 kernel unavailable", width)
 	}
 	var reducedDigests [r51x5.X8Lanes][32]byte
@@ -636,7 +753,7 @@ func reduceR51NativeChallengesX8(out *[r51x5.X8Lanes][32]byte, pubs []*[32]byte,
 	return live, nil
 }
 
-func compactR51ChallengeSegments(segments *[r51x5.X8Lanes][3][]byte, inputs *[r51x5.X8Lanes][][]byte, lanes *[r51x5.X8Lanes]uint8, pubs []*[32]byte, msgs, sigs [][]byte, offset, count int, live uint8) int {
+func compactR51ChallengeSegments(segments *[r51x5.X8Lanes][3][]byte, lanes *[r51x5.X8Lanes]uint8, pubs []*[32]byte, msgs, sigs [][]byte, offset, count int, live uint8) int {
 	inputCount := 0
 	for lane := 0; lane < count; lane++ {
 		if live&(1<<lane) == 0 {
@@ -644,7 +761,6 @@ func compactR51ChallengeSegments(segments *[r51x5.X8Lanes][3][]byte, inputs *[r5
 		}
 		index := offset + lane
 		segments[inputCount] = [3][]byte{sigs[index][:32], pubs[index][:], msgs[index]}
-		inputs[inputCount] = segments[inputCount][:]
 		lanes[inputCount] = uint8(lane)
 		inputCount++
 	}

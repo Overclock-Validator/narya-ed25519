@@ -82,6 +82,10 @@ func (z *IFMAElementX8) Reduced() ElementX8 {
 // Add sets z=x+y modulo p and returns a composable representative. Inputs
 // and output may alias. The pre-normalization limbs are below 2^53.
 func (z *IFMAElementX4) Add(x, y *IFMAElementX4) *IFMAElementX4 {
+	if ExperimentalIFMAAvailable() {
+		ifmaAddNormalizedUncheckedX4(&z.limbs, &x.limbs, &y.limbs)
+		return z
+	}
 	var raw IFMAProductX4
 	for limb := range raw {
 		for lane := range raw[limb] {
@@ -94,6 +98,10 @@ func (z *IFMAElementX4) Add(x, y *IFMAElementX4) *IFMAElementX4 {
 
 // Add is the eight-lane analogue of IFMAElementX4.Add.
 func (z *IFMAElementX8) Add(x, y *IFMAElementX8) *IFMAElementX8 {
+	if ExperimentalIFMAAvailable() {
+		ifmaAddNormalizedUncheckedX8(&z.limbs, &x.limbs, &y.limbs)
+		return z
+	}
 	var raw IFMAProductX8
 	for limb := range raw {
 		for lane := range raw[limb] {
@@ -107,6 +115,10 @@ func (z *IFMAElementX8) Add(x, y *IFMAElementX8) *IFMAElementX8 {
 // Subtract sets z=x-y modulo p. Four copies of p provide a non-negative
 // limb-wise bias: every pre-normalization limb is below 6*2^51 < 2^54.
 func (z *IFMAElementX4) Subtract(x, y *IFMAElementX4) *IFMAElementX4 {
+	if ExperimentalIFMAAvailable() {
+		ifmaSubtractNormalizedUncheckedX4(&z.limbs, &x.limbs, &y.limbs)
+		return z
+	}
 	var raw IFMAProductX4
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -120,6 +132,10 @@ func (z *IFMAElementX4) Subtract(x, y *IFMAElementX4) *IFMAElementX4 {
 
 // Subtract is the eight-lane analogue of IFMAElementX4.Subtract.
 func (z *IFMAElementX8) Subtract(x, y *IFMAElementX8) *IFMAElementX8 {
+	if ExperimentalIFMAAvailable() {
+		ifmaSubtractNormalizedUncheckedX8(&z.limbs, &x.limbs, &y.limbs)
+		return z
+	}
 	var raw IFMAProductX8
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -133,6 +149,10 @@ func (z *IFMAElementX8) Subtract(x, y *IFMAElementX8) *IFMAElementX8 {
 
 // Negate sets z=-x modulo p. Inputs and output may alias.
 func (z *IFMAElementX4) Negate(x *IFMAElementX4) *IFMAElementX4 {
+	if ExperimentalIFMAAvailable() {
+		ifmaNegateNormalizedUncheckedX4(&z.limbs, &x.limbs)
+		return z
+	}
 	var raw IFMAProductX4
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -146,6 +166,10 @@ func (z *IFMAElementX4) Negate(x *IFMAElementX4) *IFMAElementX4 {
 
 // Negate is the eight-lane analogue of IFMAElementX4.Negate.
 func (z *IFMAElementX8) Negate(x *IFMAElementX8) *IFMAElementX8 {
+	if ExperimentalIFMAAvailable() {
+		ifmaNegateNormalizedUncheckedX8(&z.limbs, &x.limbs)
+		return z
+	}
 	var raw IFMAProductX8
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -174,15 +198,12 @@ func ExperimentalIFMAMultiplyComposableX4(out, x, y *IFMAElementX4) error {
 // ifmaMultiplyComposableUncheckedX4 omits CPU and u52 input scans. It is for
 // statically bound point schedules that gate once at their API boundary and
 // preserve the composable type's range invariant internally. The raw product
-// is still normalized and checked before it can re-enter another multiply.
+// is normalized from its analytically bounded u61 form before it can re-enter
+// another multiply.
 func ifmaMultiplyComposableUncheckedX4(out, x, y *IFMAElementX4) error {
 	var product IFMAProductX4
 	ifmaMulRawX4(&product, &x.limbs, &y.limbs)
-	normalized, ok := normalizeIFMAProductX4(&product)
-	if !ok {
-		return errIFMAOutputRange
-	}
-	out.limbs = normalized
+	ifmaNormalizeProductUncheckedX4(&out.limbs, &product)
 	return nil
 }
 
@@ -203,11 +224,7 @@ func ExperimentalIFMAMultiplyComposableX8(out, x, y *IFMAElementX8) error {
 func ifmaMultiplyComposableUncheckedX8(out, x, y *IFMAElementX8) error {
 	var product IFMAProductX8
 	ifmaMulRawX8(&product, &x.limbs, &y.limbs)
-	normalized, ok := normalizeIFMAProductX8(&product)
-	if !ok {
-		return errIFMAOutputRange
-	}
-	out.limbs = normalized
+	ifmaNormalizeProductUncheckedX8(&out.limbs, &product)
 	return nil
 }
 
@@ -241,6 +258,11 @@ func ifmaSubtractionBias(limb int) uint64 {
 }
 
 func mustNormalizeIFMAProductX4(x *IFMAProductX4) LimbsX4 {
+	if ExperimentalIFMAAvailable() {
+		var out LimbsX4
+		ifmaNormalizeProductUncheckedX4(&out, x)
+		return out
+	}
 	out, ok := normalizeIFMAProductX4(x)
 	if !ok {
 		panic("r51x5: internal x4 composable range invariant violated")
@@ -249,6 +271,11 @@ func mustNormalizeIFMAProductX4(x *IFMAProductX4) LimbsX4 {
 }
 
 func mustNormalizeIFMAProductX8(x *IFMAProductX8) LimbsX8 {
+	if ExperimentalIFMAAvailable() {
+		var out LimbsX8
+		ifmaNormalizeProductUncheckedX8(&out, x)
+		return out
+	}
 	out, ok := normalizeIFMAProductX8(x)
 	if !ok {
 		panic("r51x5: internal x8 composable range invariant violated")
@@ -299,27 +326,25 @@ func normalizeIFMAProductX8(x *IFMAProductX8) (LimbsX8, bool) {
 }
 
 // normalizeIFMAProductLane carries one u61 folded product back into the u52
-// multiplicand domain. Carries into limbs one through four are at most 1024.
-// The final top carry is at most 1024, so folding it contributes at most
-// 19*1024 to an already masked limb zero. Consequently limb zero is below
-// 2^51+19*1024 < 2^52 and all other limbs are below 2^51.
+// multiplicand domain. All five carry-outs are taken from the original limbs
+// so they can be computed independently by the vector implementation. Each
+// carry is below 1024. Consequently limb zero is below 2^51+19*1024 and the
+// other limbs are below 2^51+1024, all strictly below 2^52.
 func normalizeIFMAProductLane(x Limbs) (Limbs, bool) {
 	for _, limb := range x {
 		if limb >= ifmaProductLimbLimit {
 			return Limbs{}, false
 		}
 	}
-	for limb := 0; limb < 4; limb++ {
-		carry := x[limb] >> LimbBits
+	var carries Limbs
+	for limb := range x {
+		carries[limb] = x[limb] >> LimbBits
 		x[limb] &= limbMask
-		x[limb+1] += carry // < 2^61 + 2^10, so no uint64 overflow.
 	}
-	carry := x[4] >> LimbBits
-	if carry > ifmaFoldCarryMax {
-		return Limbs{}, false
+	for limb := 1; limb < 5; limb++ {
+		x[limb] += carries[limb-1]
 	}
-	x[4] &= limbMask
-	x[0] += 19 * carry
+	x[0] += 19 * carries[4]
 	if x[0] >= ifmaPostCarryLimb0Limit || !IsIFMAMultiplicand(x) {
 		return Limbs{}, false
 	}

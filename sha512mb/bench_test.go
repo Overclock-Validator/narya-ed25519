@@ -132,6 +132,17 @@ func BenchmarkNativeX4(b *testing.B) {
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX4Width), "ns/msg")
 			})
 		}
+		b.Run(fmt.Sprintf("impl=native-x4-fixed3/msg=%d", messageSize), func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(nativeX4Width * (64 + messageSize)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if !ExperimentalSum512Batch3(out[:], parts[:], nativeX4Width) {
+					panic("AVX2 availability changed")
+				}
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX4Width), "ns/msg")
+		})
 	}
 }
 
@@ -183,6 +194,25 @@ func BenchmarkNativeX8(b *testing.B) {
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
 			})
 		}
+		for _, implementation := range []struct {
+			name  string
+			width int
+		}{
+			{name: "native-two-x4-fixed3", width: nativeX4Width},
+			{name: "native-x8-fixed3", width: nativeX8Width},
+		} {
+			b.Run(fmt.Sprintf("impl=%s/msg=%d", implementation.name, messageSize), func(b *testing.B) {
+				b.ReportAllocs()
+				b.SetBytes(int64(nativeX8Width * (64 + messageSize)))
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					if !ExperimentalSum512Batch3(out[:], parts[:], implementation.width) {
+						panic("native fixed3 availability changed")
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
+			})
+		}
 	}
 }
 
@@ -216,6 +246,14 @@ func BenchmarkNativeTails(b *testing.B) {
 					panic("AVX2 availability changed")
 				}
 			}})
+			implementations = append(implementations, struct {
+				name string
+				run  func()
+			}{name: "native-x4-fixed3", run: func() {
+				if !ExperimentalSum512Batch3(out[:count], parts[:count], ExperimentalWidthX4) {
+					panic("AVX2 availability changed")
+				}
+			}})
 		}
 		if nativeX8Available() {
 			implementations = append(implementations, struct {
@@ -223,6 +261,14 @@ func BenchmarkNativeTails(b *testing.B) {
 				run  func()
 			}{name: "native-x8", run: func() {
 				if !ExperimentalSum512Batch(out[:count], msgs[:count], ExperimentalWidthX8) {
+					panic("AVX-512F availability changed")
+				}
+			}})
+			implementations = append(implementations, struct {
+				name string
+				run  func()
+			}{name: "native-x8-fixed3", run: func() {
+				if !ExperimentalSum512Batch3(out[:count], parts[:count], ExperimentalWidthX8) {
 					panic("AVX-512F availability changed")
 				}
 			}})
