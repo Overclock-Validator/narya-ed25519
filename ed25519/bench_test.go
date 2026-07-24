@@ -10,11 +10,11 @@ import (
 // Benchmark harness. Every implementation runs the same honest inputs so
 // results are directly comparable in one `go test -bench` run:
 //
-//   stdlib        crypto/ed25519.Verify — the baseline Mithril used
-//   narya-compat  narya StdlibCompat — same predicate as stdlib, our arithmetic
-//   narya-strict  narya DalekStrict (mainnet semantics) — adds the small-order
-//                 pre-pass, so (strict - compat) is the cost of that pre-pass
-//   narya-cached  narya through a warm Cache (per-key comb table)
+//	stdlib        crypto/ed25519.Verify — the baseline Mithril used
+//	narya-compat  narya StdlibCompat — same predicate as stdlib, our arithmetic
+//	narya-strict  narya DalekStrict (mainnet semantics) — adds the small-order
+//	              pre-pass, so (strict - compat) is the cost of that pre-pass
+//	narya-cached  narya through a warm Cache (per-key comb table)
 //
 // Message sizes span a tiny signature up to the Solana packet cap (~1232B),
 // so the hashing fraction (which the future sha512mb kernel targets) is
