@@ -29,6 +29,16 @@ var oasisDalekStrictOptions = &oasised25519.Options{
 	},
 }
 
+// oasisCofactoredStrictBenchmarkOptions differs from DalekStrict only in the
+// verification equation. It retains the same public-key/signature admission
+// policy, but deliberately selects curve25519-voi's cofactored ABGLSV-Pornin
+// path. It is benchmark-only: its verdict is not a Narya consensus oracle.
+var oasisCofactoredStrictBenchmarkOptions = &oasised25519.Options{
+	Verify: &oasised25519.VerifyOptions{
+		AllowNonCanonicalA: true,
+	},
+}
+
 func oasisVerifyDalekStrict(pub *[stded25519.PublicKeySize]byte, message, sig []byte) bool {
 	return oasised25519.VerifyWithOptions(pub[:], message, sig, oasisDalekStrictOptions)
 }
@@ -490,6 +500,33 @@ func BenchmarkOasisVerify(b *testing.B) {
 			}
 			if !ok {
 				b.Fatal("verification failed")
+			}
+			oasisComparisonResult = ok
+		})
+
+		// These two rows quantify Voi's ABGLSV-Pornin speedup on honest
+		// signatures. Their cofactored equation is not DalekStrict and must
+		// never be used as an acceptance-predicate comparison.
+		b.Run(fmt.Sprintf("impl=oasis-cofactored-pornin-cold/msg=%d", messageSize), func(b *testing.B) {
+			b.ReportAllocs()
+			var ok bool
+			for i := 0; i < b.N; i++ {
+				ok = oasised25519.VerifyWithOptions(fixture.pub[:], fixture.msg, fixture.sig, oasisCofactoredStrictBenchmarkOptions)
+			}
+			if !ok {
+				b.Fatal("cofactored verification failed")
+			}
+			oasisComparisonResult = ok
+		})
+
+		b.Run(fmt.Sprintf("impl=oasis-cofactored-pornin-expanded/msg=%d", messageSize), func(b *testing.B) {
+			b.ReportAllocs()
+			var ok bool
+			for i := 0; i < b.N; i++ {
+				ok = oasised25519.VerifyExpandedWithOptions(expanded, fixture.msg, fixture.sig, oasisCofactoredStrictBenchmarkOptions)
+			}
+			if !ok {
+				b.Fatal("cofactored expanded verification failed")
 			}
 			oasisComparisonResult = ok
 		})
