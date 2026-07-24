@@ -195,45 +195,4 @@ func TestCacheAdmission(t *testing.T) {
 	}
 }
 
-func BenchmarkStdlibVerify(b *testing.B) {
-	pubk, priv, _ := ed25519.GenerateKey(rand.Reader)
-	msg := make([]byte, 200)
-	sig := ed25519.Sign(priv, msg)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if !ed25519.Verify(pubk, msg, sig) {
-			b.Fatal("verify failed")
-		}
-	}
-}
-
-func BenchmarkVerifyUncached(b *testing.B) {
-	pubk, priv, _ := ed25519.GenerateKey(rand.Reader)
-	var pub [32]byte
-	copy(pub[:], pubk)
-	msg := make([]byte, 200)
-	sig := ed25519.Sign(priv, msg)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if !Verify(&pub, msg, sig) {
-			b.Fatal("verify failed")
-		}
-	}
-}
-
-func BenchmarkVerifyCached(b *testing.B) {
-	c := &Cache{}
-	pubk, priv, _ := ed25519.GenerateKey(rand.Reader)
-	var pub [32]byte
-	copy(pub[:], pubk)
-	msg := make([]byte, 200)
-	sig := ed25519.Sign(priv, msg)
-	c.Verify(&pub, msg, sig)
-	c.Verify(&pub, msg, sig) // build the table
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if !c.Verify(&pub, msg, sig) {
-			b.Fatal("verify failed")
-		}
-	}
-}
+// Benchmarks live in bench_test.go (a single parameterized harness).

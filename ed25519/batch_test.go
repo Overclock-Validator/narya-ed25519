@@ -115,44 +115,4 @@ func TestVerifyBatchConsistency(t *testing.T) {
 	}
 }
 
-// benchBatch measures per-signature cost at a given batch size, hot
-// (every key tabled) or cold (every key fresh).
-func benchBatch(b *testing.B, n int, hot bool) {
-	c := &Cache{}
-	pubs := make([]*[32]byte, n)
-	msgs := make([][]byte, n)
-	sigs := make([][]byte, n)
-	ok := make([]bool, n)
-	for i := 0; i < n; i++ {
-		pubk, priv, _ := ed25519.GenerateKey(rand.Reader)
-		var pub [32]byte
-		copy(pub[:], pubk)
-		pubs[i] = &pub
-		msgs[i] = make([]byte, 200)
-		sigs[i] = ed25519.Sign(priv, msgs[i])
-		if hot {
-			for j := 0; j < buildThreshold; j++ {
-				c.Verify(&pub, msgs[i], sigs[i])
-			}
-		}
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// The cold variant stays off the cache: repeating a batch
-		// through a Cache crosses the admission threshold after a few
-		// iterations and silently measures the hot path.
-		if hot {
-			if !c.VerifyBatch(pubs, msgs, sigs, ok) {
-				b.Fatal("batch failed")
-			}
-		} else if !VerifyBatch(pubs, msgs, sigs, ok) {
-			b.Fatal("batch failed")
-		}
-	}
-	b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*n)/1000, "µs/sig")
-}
-
-func BenchmarkVerifyBatch8Hot(b *testing.B)   { benchBatch(b, 8, true) }
-func BenchmarkVerifyBatch8Cold(b *testing.B)  { benchBatch(b, 8, false) }
-func BenchmarkVerifyBatch16Hot(b *testing.B)  { benchBatch(b, 16, true) }
-func BenchmarkVerifyBatch16Cold(b *testing.B) { benchBatch(b, 16, false) }
+// Batch benchmarks live in bench_test.go (BenchmarkVerifyBatch).
