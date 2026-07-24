@@ -245,3 +245,36 @@ func referenceDecodeIFMAX4(encoded *[X4Lanes][32]byte, active uint8) (PointX4, u
 	}
 	return *result, valid
 }
+
+var (
+	benchmarkIFMADecodeOneX4Point PointX4
+	benchmarkIFMADecodeOneX4Mask  uint8
+)
+
+// BenchmarkExperimentalIFMADecodeOneX4 supplies the single-A side of the
+// paired-decode crossover measurement. Keep its fixture and active mask equal
+// to BenchmarkExperimentalIFMADecode2NoT/x4/paired-interleaved/active=4 so
+// their difference measures the marginal overlapped R work.
+func BenchmarkExperimentalIFMADecodeOneX4(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA")
+	}
+	generator := newGeneratorEncodingForTest(b)
+	var encoded [X4Lanes][32]byte
+	for lane := range encoded {
+		encoded[lane] = generator
+		encoded[lane][31] ^= byte(lane&1) << 7
+	}
+	b.ReportAllocs()
+	var point PointX4
+	var valid uint8
+	for iteration := 0; iteration < b.N; iteration++ {
+		var err error
+		valid, err = ExperimentalIFMADecodeX4(&point, &encoded, 0x0f)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	benchmarkIFMADecodeOneX4Point = point
+	benchmarkIFMADecodeOneX4Mask = valid
+}
