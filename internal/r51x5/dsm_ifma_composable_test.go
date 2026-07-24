@@ -17,6 +17,9 @@ func TestIFMAFixedDSMModelExactSignedMixedOrderAndMasks(t *testing.T) {
 	torsion := referenceTorsionPoints(t)
 	refs, fixture := scalarWindowQSMBasesX8(t, rng, &torsion)
 	bases := [DSMTerms]PointX8{fixture[0], fixture[1]}
+	for term := range bases {
+		bases[term] = randomProjectiveScaleX8(t, rng, &bases[term])
+	}
 	scalars, signs, exact := randomIFMAFixedDSMScalars(rng)
 	// Force a particularly discriminating -1 coefficient on a mixed-order A.
 	// Replacing -1 with L-1 would differ by [L]A's torsion component.
@@ -86,6 +89,9 @@ func TestExperimentalIFMAFixedDSMHardware(t *testing.T) {
 	torsion := referenceTorsionPoints(t)
 	_, fixture := scalarWindowQSMBasesX8(t, rng, &torsion)
 	bases := [DSMTerms]PointX8{fixture[0], fixture[1]}
+	for term := range bases {
+		bases[term] = randomProjectiveScaleX8(t, rng, &bases[term])
+	}
 	scalars, signs, _ := randomIFMAFixedDSMScalars(rng)
 
 	for _, radixBits := range []uint{4, 5, 6} {

@@ -169,6 +169,22 @@ func TestDoubleScalarBaseMultMatchesReference(t *testing.T) {
 			aRef.Add(aRef, torsion)
 		}
 		a := mustPoint(t, aRef.Bytes())
+		// Firedancer's specialized DSM historically required affine Z=1
+		// without making that contract explicit. Narya's complete projective
+		// formulas intentionally accept an equivalent non-unit-Z base; exercise
+		// that promise at the scalar-multiplication boundary.
+		if round%2 != 0 {
+			lambda, _ := randomElement(t, rng)
+			var one Element
+			one.One()
+			if lambda.IsZero() == 1 || lambda.Equal(&one) == 1 {
+				lambda.Add(&one, &one)
+			}
+			a.X.Multiply(&a.X, &lambda)
+			a.Y.Multiply(&a.Y, &lambda)
+			a.Z.Multiply(&a.Z, &lambda)
+			a.T.Multiply(&a.T, &lambda)
+		}
 		aScalarRef, aScalar := randomScalarPair(t, rng)
 		bScalarRef, bScalar := randomScalarPair(t, rng)
 
