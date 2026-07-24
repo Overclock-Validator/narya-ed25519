@@ -2,13 +2,13 @@ package ed25519
 
 import "testing"
 
-// TestBackendSelection pins the dispatch rules: without the ifma
-// kernel built in (or off amd64), auto selects generic; once a backend
-// is active it cannot be switched, only re-confirmed.
+// TestBackendSelection pins the development dispatch rule: automatic
+// selection stays generic even while an experimental IFMA backend is built.
+// Once a backend is active it cannot be switched, only re-confirmed.
 func TestBackendSelection(t *testing.T) {
 	name := ActiveBackend()
-	if name != "generic" && name != "ifma" {
-		t.Fatalf("auto selected %q", name)
+	if name != "generic" {
+		t.Fatalf("development auto selection = %q, want generic", name)
 	}
 	if err := SetBackend(name); err != nil {
 		t.Fatalf("re-confirming the active backend errored: %v", err)

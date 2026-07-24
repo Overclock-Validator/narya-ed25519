@@ -1,7 +1,7 @@
 # Narya — fast Ed25519 verification for Go
 
-Narya verifies Ed25519 signatures with acceptance behavior
-**bit-identical to `crypto/ed25519.Verify`**, built for workloads that
+Narya verifies Ed25519 signatures under an explicit, versioned acceptance
+profile, built for workloads that
 verify at consensus scale: Solana block replay, where large blocks
 carry tens of thousands of signatures and most of them come from a
 stable set of hot signers.
@@ -17,8 +17,9 @@ stable set of hot signers.
 - **`ed25519`** — drop-in verification (`Verify`, `Cache`,
   `Precompute`) with runtime-selected backends:
   - `generic` — pure Go over the vendored `crypto/ed25519` internals,
-    with per-key fixed-base comb tables for recurring signers
-    (~2× stdlib on hot keys);
+    with per-key fixed-base comb tables for recurring signers (the supplied
+    Ryzen 7 PRO 8700GE result was about 1.5× stdlib on a hot key; cache policy
+    remains subject to trace-shaped measurement);
   - `ifma` — AVX-512 IFMA point arithmetic after Firedancer's r43x6
     representation (amd64 with AVX512-IFMA, i.e. Intel Ice Lake or
     AMD Zen 4 and newer; in development);
@@ -26,6 +27,9 @@ stable set of hot signers.
 - **`sha512mb`** — multi-buffer SHA-512: `Lanes()` messages hashed in
   parallel by an AVX-512 kernel (in development); degrades to
   `crypto/sha512` everywhere else.
+- **`cmd/sigverifytracebench`** — offline exact-input schema-v3 replay for a
+  measured stdlib/generic/generic-cache diagnostic. It never promotes the
+  generic table result to the pending r51 production cache gate.
 
 ## The contract
 
@@ -55,10 +59,14 @@ Firedancer's independent verdict.
 
 Narya never uses random-coefficient (cofactored) batch verification:
 its aggregate equation can accept adversarial signatures that
-per-signature verification rejects. "Batch" here means amortized
-hashing, paired decoding, and parallelism with per-signature verdicts.
-A future `ZIP215` profile will track Solana's planned SIMD-0376
-loosening once its feature gate activates on mainnet.
+per-signature verification rejects. "Batch" preserves an independent verdict
+for every signature and is the dispatch surface for future parallel hashing
+and paired decoding. The currently selectable production backends still hash
+and decode each item independently.
+A future `ZIP215` profile will track Solana's proposed
+[SIMD-0376](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0376-verify-strict.md)
+loosening only after it is accepted and its feature gate activates on mainnet.
+The existence of a ZIP-215 implementation is not itself an activation signal.
 
 ## Status
 

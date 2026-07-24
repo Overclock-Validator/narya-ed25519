@@ -9,10 +9,9 @@
 // expressible through narya's typed [32]byte-pointer API.
 //
 // The fdOK field records Firedancer's expected verdict under its own
-// verification semantics. It is informational only: narya's contract
-// is bit-identical agreement with crypto/ed25519.Verify, so the test
-// asserts against the standard library and merely logs any case where
-// the stdlib verdict differs from Firedancer's.
+// verification semantics. It is informational only: the test runs the
+// currently selected versioned Narya profile through check, while separately
+// logging cases where the standard-library and Firedancer verdicts differ.
 
 package ed25519
 
@@ -49,15 +48,15 @@ func TestVectorsCCTV(t *testing.T) {
 		var pub [32]byte
 		copy(pub[:], pubRaw)
 
-		// Documentation, not an assertion: where the stdlib verdict
-		// (the contract) differs from Firedancer's expectation.
+		// Documentation, not an assertion: where the stdlib verdict differs
+		// from Firedancer's expectation.
 		if want := ed25519.Verify(pubRaw, msg, sig); want != v.fdOK {
 			t.Logf("tc %d (%s): stdlib=%v firedancer=%v", v.tcID, v.comment, want, v.fdOK)
 		}
 
-		// check asserts package Verify, Cache.Verify beyond the
-		// admission threshold, and the Precompute path all equal
-		// crypto/ed25519.Verify.
+		// check asserts package Verify, Cache.Verify beyond the admission
+		// threshold, and the Precompute path all equal the active profile's
+		// independent reference predicate.
 		check(t, c, &pub, msg, sig)
 	}
 }

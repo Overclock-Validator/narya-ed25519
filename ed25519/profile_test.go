@@ -17,6 +17,30 @@ func withProfile(p Profile, fn func()) {
 	fn()
 }
 
+func TestUnknownProfileCannotWeakenDefault(t *testing.T) {
+	previous := DefaultProfile()
+	defer SetDefaultProfile(previous)
+
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("SetDefaultProfile accepted an unknown profile")
+			}
+		}()
+		SetDefaultProfile(Profile(0xff))
+	}()
+	if got := DefaultProfile(); got != previous {
+		t.Fatalf("unknown profile changed default from %d to %d", previous, got)
+	}
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("internal profile dispatch accepted an unknown profile")
+		}
+	}()
+	_ = rejectedByProfile(Profile(0xff), new([32]byte), make([]byte, 64))
+}
+
 // TestStdlibCompatProfile confirms that under StdlibCompat, narya is
 // exactly crypto/ed25519.Verify on the full differential mix — the
 // baseline the strict profile then tightens.

@@ -1,8 +1,9 @@
 # Narya — review notes / PR description
 
 > Consensus-exact, accelerated Ed25519 verification for a Go Solana node.
-> Alpha. This branch is up for review; the AVX-512 kernels are staged but
-> not yet landed (see TODO).
+> Alpha. This branch is up for review. Experimental r43/r51 AVX-512 kernels
+> are present but forced/test-only; Zen 4 correctness and performance gates
+> still prevent automatic dispatch.
 
 ## Why
 
@@ -24,8 +25,9 @@ Two packages:
   one API.
 - **`sha512mb`** — multi-buffer SHA-512. Digests are bit-identical to
   `crypto/sha512`; the batch API exists so a vector kernel can hash
-  `Lanes()` messages at once. Currently a scalar fallback (correct
-  everywhere); the AVX-512 kernel is staged.
+  `Lanes()` messages at once. Production remains a scalar fallback (correct
+  everywhere); forced-only AVX2 x4 and AVX-512F x8 experiments are present
+  but await Ryzen execution and complete-verifier measurement.
 
 ## Acceptance semantics (the load-bearing part)
 
@@ -45,16 +47,20 @@ consensus-correct predicate is itself versioned:
   regardless of the mutable default — for consensus P2P call sites that
   must not depend on global state.
 
-The small-order test decodes exactly as dalek does (permissive,
-non-canonical accepted) and checks `[8]P == identity`, matching
-`EdwardsPoint::is_small_order`. A future `ZIP215` profile is reserved for
-Solana's staged SIMD-0376 loosening (cofactored), which will be a
-slot-gated change on mainnet.
+The production strict pre-pass classifies the exact seven low-255-bit values
+that the permissive decoder maps into the small torsion subgroup. Tests retain
+permissive decode plus `[8]P == identity` as an independent mathematical
+oracle. A future `ZIP215` profile is reserved for Solana's proposed
+[SIMD-0376](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0376-verify-strict.md)
+loosening (cofactored). The proposal currently has no assigned feature; any
+accepted rollout must be slot-gated rather than inferred from library
+availability.
 
 Narya never uses random-coefficient (cofactored) batch verification: its
 aggregate equation can accept adversarial signatures that per-signature
-verification rejects. "Batch" here means amortized hashing, paired
-decoding, and parallelism with **per-signature** verdicts.
+verification rejects. "Batch" is a per-signature-verdict dispatch surface.
+The selectable backends currently hash and decode scalar items; paired lane
+decoding and parallel SHA-512 remain experimental.
 
 ## Architecture
 
@@ -63,13 +69,19 @@ decoding, and parallelism with **per-signature** verdicts.
   - `generic` — pure Go over the vendored `crypto/ed25519` internals
     (BSD; see `NOTICE`), with per-key fixed-base comb tables that remove
     the doubling chain for recurring signers. **Implemented.**
-  - `ifma` — AVX-512 IFMA point arithmetic after Firedancer's `r43x6`
-    representation. **Staged (TODO).** Target hardware is Zen 5+ (native
-    512-bit datapath), so there is deliberately no Zen 4-specific or AVX2
-    intermediate tier — dispatch is binary: IFMA vs the pure-Go fallback.
+  - `ifma` — a forced-only AVX-512 IFMA correctness backend after
+    Firedancer's `r43x6` representation. The first field kernel and complete
+    scalar reference verifier are implemented; Zen 4 hardware validation and
+    the optimized point schedules remain release gates. Automatic selection
+    deliberately remains `generic`.
+  - `r51x5` — an isolated five-limb, lane-per-signature x4/x8 throughput
+    experiment. It is not a registered backend yet. Its independent field
+    model and IFMA kernels must pass range, lane, full-predicate, and Zen 4
+    gates before it can compete for dispatch. See
+    `docs/R51_THROUGHPUT_BACKEND.md`.
   - `stdlib` — routes to `crypto/ed25519`; the rollback proof point.
-- No cgo anywhere. The AVX-512 kernels will be Go assembly
-  (avo-generated), gated on `x/sys/cpu` feature detection, with the
+- No cgo anywhere. The current AVX-512 primitives are Go assembly, gated on
+  `x/sys/cpu` feature detection, with the
   pure-Go path as the fallback for non-AVX-512 hosts (ARM dev machines,
   CI correctness).
 
@@ -81,9 +93,13 @@ decoding, and parallelism with **per-signature** verdicts.
 | Profiles + `VerifyStrict` + small-order rejection | done |
 | `VerifyBatch` pipeline (per-signature verdicts) | done (scalar hashing) |
 | Differential test corpus (CCTV 914, Wycheproof 133, fuzz) | done |
-| `sha512mb` 8-lane AVX-512 kernel | TODO |
-| `ifma` r43x6 field/point kernels + backend | TODO |
-| Per-key comb tables in IFMA layout | TODO |
+| forced-only `sha512mb` AVX2 x4 / AVX-512F x8 kernels | implemented; Ryzen hardware validation pending |
+| forced-only `ifma` r43x6 reference backend | implemented; Zen 4 validation pending |
+| 5x51 lane-per-signature x4/x8 substrate | scalar field/point models and true x4/x8 IFMA multiply kernels implemented; Zen 4 execution pending |
+| exact modulo-8L HEEA selector/QSM | allocation-free selector, exact signed x4/x8 IFMA QSM, scalar end-to-end oracle, and forced complete verifier implemented; Ryzen gate pending |
+| optimized IFMA point schedules | composable u52 x4/x8 point add/double, paired decode, radix-16/32/64 ordinary DSM, and complete forced verifier implemented; fused carry/reduction work and Zen 4 validation pending |
+| Per-key tables in IFMA layout | cold variable-base tables implemented in the forced verifier; production cache policy/packing pending real traces and Zen 4 data |
+| Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
 ## Testing
 
@@ -100,6 +116,29 @@ profile's predicate returns. Enforced by:
   Firedancer's independent verdict.
 - Fuzz targets (three-way: stdlib vs generic vs cached vs batch; sha512mb
   vs `crypto/sha512`).
+
+The Zen 4 evaluator deliberately has two different implementation policies,
+because its benchmark surfaces are not interchangeable:
+
+- Cold single-call dispatch is an r43 decision. The r43 measurement must beat
+  the public stdlib single-call API by at least 10% at 64, 200, and 1232-byte
+  messages without increasing B/op or allocs/op.
+- r51 is a batch/throughput decision. Its `n=1` private-pipeline measurement is
+  tail evidence only; its percentage improvement can never select or replace
+  r43 because it uses a different harness and denominator.
+
+`scripts/zen4-evaluate.py RESULT_DIR --decision-output decision-v1.json`
+writes a mode-0600, versioned decision artifact inside the result bundle. The
+artifact binds the benchmark configuration, exact source-tree manifest,
+recorded/current Git HEAD when observable, and every consumed benchmark file
+by SHA-256. It records the r43 decision, selected ordinary r51 batch
+configuration, optional HEEA path, measurement authority, and individual
+micro-gate results. The evaluator is intentionally incapable of authorizing
+production: `production_promotable` is always `false`, and the artifact keeps
+statistical significance, dense tails, Mithril replay, backend-native cache
+trace evidence, and reviewed release-source authority explicitly pending.
+Passing point-estimate microbenchmarks is therefore evidence for a later
+release decision, never that decision itself.
 
 ## Reviewer focus
 
@@ -183,10 +222,28 @@ turbine transaction-verifier seam. Not in this branch.
 
 ## 4. AVX-512 kernels
 
-`sha512mb` 8-lane and the `ifma` r43x6 backend (Go assembly, Zen 5 target).
-Each lands behind runtime dispatch with the pure-Go fallback, gated by a
-differential-fuzz harness that runs all backends against each other and the
-standard library.
+Keep two distinct arithmetic tracks: r43x6 for single-signature latency and
+5x51 transposed x4/x8 arithmetic for throughput. The latter now has independent
+scalar x4/x8 field and point models, real ZMM/YMM IFMA multiplication kernels,
+composable u52 point operations, paired decompression, regular
+radix-16/radix-32/radix-64 ordinary variable-base tables, exact signed DSM/QSM,
+native x4/x8 SHA-512, and a complete forced verifier. Fixed IFMA table and
+workspace storage is now physically specialized to 8/16/32 positive entries;
+smaller radices neither retain nor clear radix-64 capacity. Radix 64 is measured
+only for the ordinary DSM; HEEA retains radix 16/32. It is intentionally not a registered
+backend: scalar reduction and some carry/add/sub work remain
+correctness-first, and the complete x8 versus two-x4 result has not yet been
+executed on the Ryzen. The forced verifier now provides that target
+measurement boundary without changing automatic dispatch.
+
+The optional HEEA handoff preserves arbitrary-width signed coefficients for
+mixed-order A/R points and has an allocation-free modulo-8L selector. On the
+M4 development host, profile-directed fixed-width improvements reduced the
+selector from roughly 130--138 microseconds to 63--65 microseconds, but that is
+still slower than a complete verification. It remains research-only until the
+selector plus QSM clears the complete-verifier gate. Published results from
+other verifiers adjust which candidates we benchmark; they do not establish
+Narya's predicate or release performance.
 
 ## 5. Performance-roadmap note (Alpenglow)
 

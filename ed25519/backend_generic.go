@@ -18,6 +18,8 @@ type genericBackend struct{}
 
 func (genericBackend) name() string { return "generic" }
 
+func (genericBackend) supportsPrecomp() bool { return true }
+
 // A PubkeyTable is 32 windows of 8 affine points, 3 field elements
 // (5 limbs) each.
 const genericTableBytes = 32 * 8 * 3 * 5 * 8
@@ -34,7 +36,7 @@ func (genericBackend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
 	}, nil
 }
 
-func (genericBackend) verify(pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
+func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
 	var table *edwards25519.PubkeyTable
 	if pre != nil {
 		table, _ = pre.table.(*edwards25519.PubkeyTable)
@@ -57,8 +59,9 @@ func (genericBackend) verify(pub *[32]byte, message, sig []byte, pre *Precompute
 	kh.Write(sig[:32])
 	kh.Write(pub[:])
 	kh.Write(message)
-	hramDigest := kh.Sum(nil)
-	k, err := edwards25519.NewScalar().SetUniformBytes(hramDigest)
+	var hramDigest [sha512.Size]byte
+	kh.Sum(hramDigest[:0])
+	k, err := edwards25519.NewScalar().SetUniformBytes(hramDigest[:])
 	if err != nil {
 		return false
 	}
@@ -85,7 +88,7 @@ func (genericBackend) verify(pub *[32]byte, message, sig []byte, pre *Precompute
 // per-item point math. Verdicts are per-signature and bit-identical
 // to verify — batching only ever amortizes hashing and decoding, it
 // never mixes signatures into one equation.
-func (g genericBackend) verifyBatch(items []batchItem, lookup func(*[32]byte) *PrecomputedKey) {
+func (g genericBackend) verifyBatch(_ Profile, items []batchItem) {
 	type work struct {
 		idx    int
 		table  *edwards25519.PubkeyTable
@@ -101,10 +104,8 @@ func (g genericBackend) verifyBatch(items []batchItem, lookup func(*[32]byte) *P
 			continue
 		}
 		w := work{idx: i}
-		if lookup != nil {
-			if pre := lookup(it.pub); pre != nil {
-				w.table, _ = pre.table.(*edwards25519.PubkeyTable)
-			}
+		if it.pre != nil {
+			w.table, _ = it.pre.table.(*edwards25519.PubkeyTable)
 		}
 		if w.table == nil {
 			A, err := (&edwards25519.Point{}).SetBytes(it.pub[:])

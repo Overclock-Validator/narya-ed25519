@@ -14,18 +14,44 @@ import (
 // another, and a single choice keeps every Cache entry compatible.
 type backend interface {
 	name() string
-	// verify must be bit-identical to crypto/ed25519.Verify. pre is
-	// nil, or a PrecomputedKey this backend built for pub.
-	verify(pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool
+	// verify evaluates the Ed25519 equation under profile after the
+	// shared entry point has applied that profile's rejection pre-pass.
+	// pre is nil, or a PrecomputedKey this backend built for pub.
+	verify(profile Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool
 	// verifyBatch verifies each item independently, writing item.ok;
 	// results must be exactly what per-item verify would produce.
-	// lookup, when non-nil, resolves a PrecomputedKey for a pubkey
-	// (it may build one as a side effect; nil result means none).
-	verifyBatch(items []batchItem, lookup func(*[32]byte) *PrecomputedKey)
+	// Cache lookup has already populated item.pre where applicable. Keeping
+	// admission outside backends makes Cache.VerifyBatch's sighting policy
+	// identical across scalar and vector implementations.
+	verifyBatch(profile Profile, items []batchItem)
+	// supportsPrecomp reports whether buildPrecomp can return a native table.
+	// Cache uses it to avoid running point decoding at every hot-key threshold
+	// on rollback and reference backends that always verify plainly.
+	supportsPrecomp() bool
 	// buildPrecomp returns a non-nil error exactly when pub fails
 	// point decoding. Backends without table support return a
 	// PrecomputedKey with a nil table (plain verification).
 	buildPrecomp(pub *[32]byte) (*PrecomputedKey, error)
+}
+
+// rawBatchBackend is an optional allocation-free batch entry point for
+// backends whose native pipeline already consumes the public raw-slice shape.
+// It must apply profile rejection itself and write every ok element. Cache
+// batches intentionally continue through batchItem because their per-key
+// lookup results must be attached before backend execution.
+//
+// Keeping this interface private preserves the public API while allowing a
+// future SIMD backend to avoid allocating and copying one batchItem per
+// signature merely to unpack it again into lane-native storage.
+type rawBatchBackend interface {
+	verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool
+}
+
+// activatingBackend is implemented only by explicitly gated experimental
+// backends. Activation happens after a backend name has been selected, never
+// as part of registration or automatic CPU dispatch.
+type activatingBackend interface {
+	activate() error
 }
 
 // A batchItem is one signature in a batch: the inputs and the
@@ -35,20 +61,30 @@ type batchItem struct {
 	pub  *[32]byte
 	msg  []byte
 	sig  []byte
+	pre  *PrecomputedKey
 	ok   bool
 	skip bool
 }
 
-// applyStrictProfile marks items the active profile rejects outright,
-// so the batch backends skip them. Called by every batch entry point.
-func applyStrictProfile(items []batchItem) {
-	if DefaultProfile() != DalekStrict {
-		return
-	}
+// applyProfile marks items the selected profile rejects outright, so
+// batch backends skip them. Called by every batch entry point before
+// the selected profile is passed to the backend.
+func applyProfile(profile Profile, items []batchItem) {
 	for i := range items {
-		if rejectedByStrict(items[i].pub, items[i].sig) {
+		if rejectedByProfile(profile, items[i].pub, items[i].sig) {
 			items[i].skip = true
 		}
+	}
+}
+
+func rejectedByProfile(profile Profile, pub *[32]byte, sig []byte) bool {
+	switch profile {
+	case DalekStrict:
+		return rejectedByStrict(pub, sig)
+	case StdlibCompat:
+		return false
+	default:
+		panic("ed25519: unknown verification profile")
 	}
 }
 
@@ -106,16 +142,14 @@ func active() backend {
 	return b
 }
 
-// pick resolves a backend name. The empty name selects the best
-// available: ifma when the kernel is built in and the CPU supports it,
-// generic otherwise. A name that cannot be honored panics rather than
-// silently degrading — it only arrives via the OVERCLOCK_ED25519_BACKEND
-// escape hatch or SetBackend, both explicit operator intent.
+// pick resolves a backend name. During IFMA development, the empty/auto
+// choice deliberately remains generic even when an experimental IFMA kernel
+// is registered. IFMA can be exercised only through SetBackend("ifma") or
+// OVERCLOCK_ED25519_BACKEND=ifma until the Zen 4 correctness and performance
+// gates are met. A requested name that cannot be honored panics rather than
+// silently degrading because it represents explicit operator intent.
 func pick(name string) backend {
 	if name == "" {
-		if b, ok := registry["ifma"]; ok && cpufeat.IFMA() {
-			return b
-		}
 		return registry["generic"]
 	}
 	b, ok := registry[name]
@@ -124,6 +158,11 @@ func pick(name string) backend {
 	}
 	if name == "ifma" && !cpufeat.IFMA() {
 		panic("ed25519: ifma backend requested but CPU lacks AVX512-IFMA")
+	}
+	if a, ok := b.(activatingBackend); ok {
+		if err := a.activate(); err != nil {
+			panic(fmt.Sprintf("ed25519: activating backend %q: %v", name, err))
+		}
 	}
 	return b
 }

@@ -34,38 +34,72 @@ func VerifyStrict(pub, message, sig []byte) bool {
 	return verifyOne(active(), DalekStrict, (*[32]byte)(pub), message, sig, nil)
 }
 
-// verifyOne applies the given profile's strict rejections, then the
-// backend's stdlib-semantics equation. Every single-signature entry
-// point funnels through here so the profile cannot be bypassed.
+// verifyOne applies the given profile's shared rejection pre-pass,
+// then asks the backend to evaluate that profile's equation. Every
+// non-cache single-signature entry point funnels through here so the
+// pre-pass cannot be bypassed.
 func verifyOne(b backend, profile Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
-	if profile == DalekStrict && rejectedByStrict(pub, sig) {
+	if rejectedByProfile(profile, pub, sig) {
 		return false
 	}
-	return b.verify(pub, message, sig, pre)
+	return b.verify(profile, pub, message, sig, pre)
 }
 
 // VerifyBatch verifies n independent signatures, writing each verdict
 // to ok[i]; ok[i] is exactly what Verify(pubs[i], msgs[i], sigs[i])
-// would return. The slice lengths must all be equal (the caller
-// supplies ok so a hot loop can reuse it). Returns true iff every
-// verdict is true. Batching amortizes hashing and decoding; it never
-// combines signatures into one equation, so verdicts are per-signature.
+// would return. The slice lengths must all be equal (the caller supplies ok
+// so a hot loop can reuse it). Returns true iff every verdict is true. Batch
+// backends may process independent items in parallel, but never combine them
+// into one aggregate equation, so verdicts remain per-signature.
 func VerifyBatch(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
-	items := makeItems(pubs, msgs, sigs, ok)
-	applyStrictProfile(items)
-	active().verifyBatch(items, nil)
+	return verifyBatch(active(), DefaultProfile(), pubs, msgs, sigs, ok, nil)
+}
+
+// VerifyBatchStrict verifies n independent signatures under
+// DalekStrict semantics, regardless of the package default profile.
+// Its inputs, per-item verdicts, return value, and length checks match
+// VerifyBatch.
+func VerifyBatchStrict(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	return verifyBatch(active(), DalekStrict, pubs, msgs, sigs, ok, nil)
+}
+
+func verifyBatch(b backend, profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup func(*[32]byte) *PrecomputedKey) bool {
+	checkBatchLengths(pubs, msgs, sigs, ok)
+	if lookup == nil {
+		if raw, supported := b.(rawBatchBackend); supported {
+			return raw.verifyBatchRaw(profile, pubs, msgs, sigs, ok)
+		}
+	}
+	items := makeItemsUnchecked(pubs, msgs, sigs)
+	applyProfile(profile, items)
+	if lookup != nil {
+		for i := range items {
+			if !items[i].skip {
+				items[i].pre = lookup(items[i].pub)
+			}
+		}
+	}
+	b.verifyBatch(profile, items)
 	return collect(items, ok)
 }
 
 func makeItems(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) []batchItem {
-	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
-		panic("ed25519: VerifyBatch slice lengths differ")
-	}
+	checkBatchLengths(pubs, msgs, sigs, ok)
+	return makeItemsUnchecked(pubs, msgs, sigs)
+}
+
+func makeItemsUnchecked(pubs []*[32]byte, msgs, sigs [][]byte) []batchItem {
 	items := make([]batchItem, len(pubs))
 	for i := range items {
 		items[i] = batchItem{pub: pubs[i], msg: msgs[i], sig: sigs[i]}
 	}
 	return items
+}
+
+func checkBatchLengths(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) {
+	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
+		panic("ed25519: VerifyBatch slice lengths differ")
+	}
 }
 
 func collect(items []batchItem, ok []bool) bool {

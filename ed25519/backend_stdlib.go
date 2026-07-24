@@ -16,11 +16,13 @@ type stdlibBackend struct{}
 
 func (stdlibBackend) name() string { return "stdlib" }
 
-func (stdlibBackend) verify(pub *[32]byte, message, sig []byte, _ *PrecomputedKey) bool {
+func (stdlibBackend) supportsPrecomp() bool { return false }
+
+func (stdlibBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, _ *PrecomputedKey) bool {
 	return stded25519.Verify(pub[:], message, sig)
 }
 
-func (stdlibBackend) verifyBatch(items []batchItem, _ func(*[32]byte) *PrecomputedKey) {
+func (stdlibBackend) verifyBatch(_ Profile, items []batchItem) {
 	for i := range items {
 		if items[i].skip {
 			continue

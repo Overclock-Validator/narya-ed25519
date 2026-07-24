@@ -13,7 +13,7 @@ import (
 // 111..112 around the padding split, 127..129 around the block size).
 func TestSum512Batch(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
-	edge := []int{0, 1, 63, 64, 111, 112, 127, 128, 129, 200, 1232, 4096}
+	edge := []int{0, 1, 63, 64, 111, 112, 127, 128, 129, 176, 200, 512, 1024, 1232, 4096}
 
 	var msgs [][][]byte
 	var want [][64]byte

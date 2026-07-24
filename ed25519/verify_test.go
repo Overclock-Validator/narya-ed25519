@@ -6,26 +6,44 @@ import (
 	"encoding/hex"
 	mrand "math/rand"
 	"testing"
+
+	edwards "github.com/Overclock-Validator/narya/internal/edwards25519"
 )
 
 // referenceVerify is the acceptance oracle for the active profile.
 // StdlibCompat is crypto/ed25519.Verify. DalekStrict is that predicate
 // minus small-order A and small-order R — the current Solana mainnet
-// transaction rule (ed25519-dalek verify_strict). The small-order test
-// decodes exactly as dalek does, so the oracle is the literal spec.
+// transaction rule (ed25519-dalek verify_strict). The test oracle deliberately
+// does not call smallOrderEncoding or Point.IsSmallOrder: it decodes, performs
+// the three doublings from the mathematical [8]P definition, and compares with
+// the identity. That keeps it independent of the production classifier.
 func referenceVerify(pub *[32]byte, msg, sig []byte) bool {
+	return referenceVerifyProfile(DefaultProfile(), pub, msg, sig)
+}
+
+func referenceVerifyProfile(profile Profile, pub *[32]byte, msg, sig []byte) bool {
 	if !ed25519.Verify(pub[:], msg, sig) {
 		return false
 	}
-	if DefaultProfile() == DalekStrict {
-		if smallOrderEncoding(pub[:]) {
+	if profile == DalekStrict {
+		if referenceSmallOrderEncoding(pub[:]) {
 			return false
 		}
-		if len(sig) == 64 && smallOrderEncoding(sig[:32]) {
+		if len(sig) == 64 && referenceSmallOrderEncoding(sig[:32]) {
 			return false
 		}
 	}
 	return true
+}
+
+func referenceSmallOrderEncoding(encoded []byte) bool {
+	var p edwards.Point
+	if _, err := p.SetBytes(encoded); err != nil {
+		return false
+	}
+	var eightP edwards.Point
+	eightP.MultByCofactor(&p)
+	return eightP.Equal(edwards.NewIdentityPoint()) == 1
 }
 
 // check asserts the package-level, cached-first-use and cached-hot

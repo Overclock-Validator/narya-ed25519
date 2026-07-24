@@ -1,0 +1,200 @@
+# Modulo-8L HEEA sampling experiment
+
+This package is research tooling. It is not imported by signature
+verification and its `math/big` performance is not representative of a future
+fixed-width implementation.
+
+Run the deterministic, rejection-sampled experiment with:
+
+```sh
+go run ./internal/heea8l/cmd/sample -samples 1000000 -workers 12
+```
+
+Every sample is independently derived from its index under the domain
+`heea8l-sample-v1`, so counts are reproducible and independent of worker
+count. Timing is machine-dependent.
+
+## 2026-07-24 result
+
+The million-sample experiment ran on an Apple M4 Pro with Go on Darwin/arm64.
+It took 4m08.878s with 12 workers. The candidate-width mean was 127.605905
+bits.
+
+| Gate | Admitted | Fallback | Coverage | Prior claimed coverage | Difference |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 128 | 888,299 | 111,701 | 88.829900% | 88.8533% | -0.023400 pp |
+| 132 | 999,620 | 380 | 99.962000% | 99.9595% | +0.002500 pp |
+| 136 | 999,998 | 2 | 99.999800% | 99.9997% | +0.000100 pp |
+
+These differences are consistent with ordinary sampling variation. The prior
+percentages are comparison values, not test expectations or correctness
+requirements.
+
+The observed width histogram was:
+
+```text
+119:      1
+120:     23
+121:     75
+122:    326
+123:  1,317
+124:  4,664
+125: 18,794
+126: 75,972
+127:304,337
+128:482,790
+129: 85,550
+130: 19,642
+131:  4,895
+132:  1,234
+133:    283
+134:     73
+135:     19
+136:      3
+137:      2
+```
+
+The adversarial challenge `k=(N-2)/10` selected a 252-bit candidate and
+explicitly fell back at all configured gates, as required by the proven
+`max(abs(rho),abs(tau)) >= N/12` lower bound.
+
+## Allocation benchmark
+
+Run:
+
+```sh
+go test ./internal/heea8l -run '^$' -bench BenchmarkSelect -benchmem -benchtime=2s
+```
+
+On the same machine, representative results were approximately:
+
+| Path | Time | Bytes/op | Allocs/op |
+| --- | ---: | ---: | ---: |
+| admitted W=128 | 572-588 us | 698,915 | 14,422 |
+| ordinary W=128 fallback | 546-548 us | 692,030 | 14,233 |
+| pathological W=136 fallback | 13.8-14.4 us | 28,471 | 565 |
+
+The unusually cheap pathological case has a short Euclidean quotient chain;
+it does not make fallback inexpensive in a future verifier, where the
+baseline verification still has to run.
+
+## Fixed-width selector checkpoint
+
+`SelectFixed` now reproduces the same deterministic candidate and fallback as
+the `math/big` oracle while representing signed coefficients as four 64-bit
+little-endian magnitude limbs plus an explicit sign. It validates canonical
+`k < L`, searches modulo `8L`, retains an exact candidate on width fallback,
+and admits only nonzero odd `tau` coprime to `8L`. It is still variable-time
+research code and is not connected to verification or point multiplication.
+
+The differential tests cover challenge boundaries, the pathological fallback,
+2,048 deterministic random challenges at every configured width, and the
+congruence
+
+```text
+rho = epsilon * tau * k (mod 8L).
+```
+
+They also compare fixed add, subtract, multiply, and divide against
+`math/big`. The arbitrary-precision selector remains the independent oracle.
+
+The initial fixed-width implementation deliberately used restoring bitwise
+division. On the same Apple M4 Pro, a one-second allocation benchmark measured:
+
+| Fixed-width path | Time | Bytes/op | Allocs/op |
+| --- | ---: | ---: | ---: |
+| admitted W=128 | ~332 us | 0 | 0 |
+| ordinary W=128 fallback | ~327 us | 0 | 0 |
+| pathological W=136 fallback | ~11 us | 0 | 0 |
+
+That implementation was an exact representation and control-flow checkpoint,
+not a usable verifier optimization.
+
+## Aligned multi-limb division checkpoint
+
+`SelectFixed` now uses exact bit-length-aligned multi-limb division. It shifts
+the divisor's leading bit to the numerator's leading bit and consumes only the
+necessary quotient bits; a one-limb divisor uses `bits.Div64`. This avoids the
+subtle quotient-estimate correction cases of Knuth division while doing work
+proportional to quotient width instead of unconditionally restoring all 256
+input bits. The original 257-bit-remainder routine remains available only as
+`divMod256BitwiseOracle`.
+
+Differential tests cover:
+
+- every divisor width from 1 through 256;
+- powers of two, top-bit-plus-one, all-ones, and patterned divisors;
+- values immediately around each divisor and twice each divisor;
+- 4,096 deterministic random numerator/divisor pairs;
+- complete fixed-selector outputs for all existing edge and random challenges.
+
+Both quotient and remainder agree with the retained bitwise implementation and
+`math/big`; complete candidates also agree with both the bitwise selector and
+the arbitrary-precision selector.
+
+On the Apple M4 Pro, a two-second benchmark measured:
+
+| Operation | Aligned | Bitwise oracle | Speedup |
+| --- | ---: | ---: | ---: |
+| ordinary admitted W=128 selection | ~138 us | ~347 us | ~2.51x |
+| representative small-quotient division | ~25.8 ns | ~870 ns | ~33.7x |
+| one-limb wide-quotient division | ~9.8 ns | ~1,779 ns | ~181x |
+
+All paths remained at zero bytes and zero allocations per operation. Ordinary
+selection is nevertheless still several times slower than a complete generic
+verification, so HEEA remains unfit for integration. Division is no longer the
+dominant explanation for that cost. The next selector work should profile and
+reduce intermediate-row construction, fixed multiplication, and candidate
+comparison, or evaluate a rigorously equivalent Lehmer schedule that advances
+multiple EEA rows. It must then be measured together with exact signed-integer
+multi-scalar multiplication. No production HEEA path should be enabled on the
+strength of selector microbenchmarks alone.
+
+## Candidate-row profile and quotient lookahead
+
+A five-second CPU profile of the aligned selector measured about 130 us per
+selection before this pass. The dominant sampled edges were fixed
+multiplication and candidate preparation; exact division was a minority. Two
+exact row-level changes addressed the dominant work:
+
+- `mul256` now visits only significant operand limbs;
+- nearby-candidate parity is derived from the low bits of `t0-q*t1`, and the
+  complete signed coefficient is constructed only once for retained rows.
+
+The parity shortcut relies on an explicit EEA invariant: the initial
+coefficient pair is `(0,1)`, and subsequent pairs are nonzero with opposite
+signs. Consequently `t0-q*t1` is zero only for the initial `q=0` case, while
+its parity is exactly `t0[0] XOR (q[0] AND t1[0])`. Complete differential tests
+against both prior selectors guard this derivation.
+
+The profile-directed changes reduced ordinary aligned selection to roughly
+63-65 us on the Apple M4 Pro, about a 2x improvement, with zero allocations.
+
+An internal Lehmer-style lookahead experiment derives up to eight quotient
+proposals from equally shifted leading words. Every proposal is checked using
+the full operands before use:
+
+```text
+q*r1 <= r0 < (q+1)*r1.
+```
+
+Any failed proposal discards the queue and falls back immediately to aligned
+exact division. The experiment exactly matched aligned, bitwise, and
+`math/big` selection over the pathological and boundary cases, exhaustive
+reduced moduli, and an additional 8,192 deterministic full-size challenges.
+
+It did not produce a meaningful speedup. Five repeated one-second runs were:
+
+| Mode | Range | Median |
+| --- | ---: | ---: |
+| aligned | 63.57-64.99 us | 63.94 us |
+| exact-verified lookahead | 63.89-64.35 us | 64.11 us |
+
+The sub-percent difference is noise and slightly favors the simpler aligned
+path at the median. `SelectFixed` therefore continues to use aligned division;
+lookahead remains an unexported research comparison. Preserving every
+principal and parity-aware intermediate row leaves too little quotient work
+for batching to repay proposal generation and verification. A future batching
+attempt should start only if the candidate policy changes with a fresh proof,
+or if a platform profile materially differs. Exact signed-integer point
+multiplication remains the larger missing HEEA component.

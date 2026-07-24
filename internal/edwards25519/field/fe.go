@@ -398,11 +398,12 @@ var sqrtM1 = &Element{1718705420411056, 234908883556509,
 func (r *Element) SqrtRatio(u, v *Element) (R *Element, wasSquare int) {
 	t0 := new(Element)
 
-	// r = (u * v3) * (u * v7)^((p-5)/8)
-	v2 := new(Element).Square(v)
-	uv3 := new(Element).Multiply(u, t0.Multiply(v2, v))
-	uv7 := new(Element).Multiply(uv3, t0.Square(v2))
-	rr := new(Element).Multiply(uv3, t0.Pow22523(uv7))
+	// r = u * (u * v)^((p-5)/8). This is equivalent to the traditional
+	// (u*v^3)*(u*v^7)^((p-5)/8) construction and saves two squarings and
+	// three multiplications. See the derivation in BoringSSL's
+	// curve25519/edwards25519 implementation.
+	uv := new(Element).Multiply(u, v)
+	rr := new(Element).Multiply(u, t0.Pow22523(uv))
 
 	check := new(Element).Multiply(v, t0.Square(rr)) // check = v * r^2
 

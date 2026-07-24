@@ -8,16 +8,20 @@ import (
 // Cache verifies signatures, building a per-key table for public keys
 // that keep recurring. It is safe for concurrent use.
 //
-// A table costs about eight verifications to build, so admission waits
-// for buildThreshold sightings: vote authorities and busy fee payers
-// cross it immediately, one-shot keys never earn a table. The sighting
-// counters are cleared when their map grows large, which only makes a
-// hot key re-earn its table. Tables are never evicted: a stale entry
-// costs tens of KiB and hot keys are stable on the scale of epochs;
-// MaxTableBytes stops admission when the budget is spent.
+// The current conservative policy waits for buildThreshold successful
+// verifications, while invalid signatures and one-shot keys never earn a
+// table. The threshold is an implementation default, not a claim about a
+// production signer distribution; real Mithril traces must validate policy
+// before a process-wide cache is enabled. Admission state has a hard entry
+// limit and is never cleared, so a counter cannot be detached from its key
+// while another goroutine is using it and deterministic build failures are
+// not retried.
+// Once the limit is reached, previously unseen keys remain on the plain path.
+// Tables are never evicted; MaxTableBytes stops admission when its strict
+// memory budget is spent.
 type Cache struct {
-	// MaxTableBytes bounds the memory held by per-key tables. Zero
-	// means DefaultMaxTableBytes.
+	// MaxTableBytes strictly bounds the memory held by per-key tables. Zero
+	// means DefaultMaxTableBytes. Configure it before the Cache's first use.
 	MaxTableBytes int64
 
 	tables    sync.Map // [32]byte -> *PrecomputedKey
@@ -29,73 +33,228 @@ type Cache struct {
 	seenCount atomic.Int64
 }
 
-// DefaultMaxTableBytes admits ~4,300 generic tables — comfortable
-// margin over a validator set's vote authorities plus busy fee payers.
+// DefaultMaxTableBytes is a strict 128 MiB table-memory ceiling. The number of
+// entries it admits depends on the active backend's native table size.
 const DefaultMaxTableBytes = 128 << 20
 
 const buildThreshold = 8
 
-const seenResetThreshold = 1 << 17
+const (
+	admissionBuilding int32 = -1
+	admissionDisabled int32 = -2
+	admissionComplete int32 = -3
+)
+
+// admissionEntryLimit bounds bookkeeping independently of the table budget.
+// Reaching it can only reduce acceleration: signatures still verify normally.
+const admissionEntryLimit = 1 << 17
 
 // Verify reports whether sig is a valid signature of message by pub,
 // exactly like the package-level Verify.
 func (c *Cache) Verify(pub *[32]byte, message, sig []byte) bool {
+	return c.verify(DefaultProfile(), pub, message, sig)
+}
+
+// VerifyStrict reports whether sig is a valid signature of message by
+// pub under DalekStrict semantics, regardless of the package default
+// profile. Strictly rejected inputs do not affect cache admission.
+func (c *Cache) VerifyStrict(pub *[32]byte, message, sig []byte) bool {
+	return c.verify(DalekStrict, pub, message, sig)
+}
+
+func (c *Cache) verify(profile Profile, pub *[32]byte, message, sig []byte) bool {
 	b := active()
-	if DefaultProfile() == DalekStrict && rejectedByStrict(pub, sig) {
+	if rejectedByProfile(profile, pub, sig) {
 		return false
 	}
-	return b.verify(pub, message, sig, c.lookupOrAdmit(b, pub))
+	pre := c.lookup(pub)
+	ok := b.verify(profile, pub, message, sig, pre)
+	if ok && pre == nil {
+		c.admit(b, pub)
+	}
+	return ok
 }
 
 // VerifyBatch verifies n independent signatures through the cache,
-// exactly like calling Verify for each: table hits use their tables,
-// misses bump sighting counters, and threshold crossings build tables
-// inline. Verdict semantics match the package-level VerifyBatch.
+// exactly like calling Verify for each: table hits use their tables, and
+// successful misses bump sighting counters after the backend has produced
+// its verdicts. A threshold crossing builds a table for a later call; an
+// invalid item never earns admission credit. Verdict semantics match the
+// package-level VerifyBatch.
 func (c *Cache) VerifyBatch(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
-	b := active()
-	items := makeItems(pubs, msgs, sigs, ok)
-	applyStrictProfile(items)
-	b.verifyBatch(items, func(pub *[32]byte) *PrecomputedKey {
-		return c.lookupOrAdmit(b, pub)
-	})
-	return collect(items, ok)
+	return c.verifyBatch(DefaultProfile(), pubs, msgs, sigs, ok)
 }
 
-// lookupOrAdmit is Cache.Verify's admission logic without the
-// verification: returns the table to use for pub (possibly just
-// built), or nil for the plain path.
-func (c *Cache) lookupOrAdmit(b backend, pub *[32]byte) *PrecomputedKey {
+// VerifyBatchStrict verifies n independent signatures through the
+// cache under DalekStrict semantics, regardless of the package default
+// profile. Its inputs and outputs otherwise match VerifyBatch.
+func (c *Cache) VerifyBatchStrict(pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	return c.verifyBatch(DalekStrict, pubs, msgs, sigs, ok)
+}
+
+func (c *Cache) verifyBatch(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	b := active()
+	all := verifyBatch(b, profile, pubs, msgs, sigs, ok, func(pub *[32]byte) *PrecomputedKey {
+		return c.lookup(pub)
+	})
+	for i := range ok {
+		if ok[i] {
+			c.admit(b, pubs[i])
+		}
+	}
+	return all
+}
+
+// lookup returns an existing table for the current verification. A miss is
+// deliberately side-effect-free with respect to admission: only admit,
+// called after a successful verdict, may increment a sighting counter.
+func (c *Cache) lookup(pub *[32]byte) *PrecomputedKey {
 	if t, ok := c.tables.Load(*pub); ok {
 		c.hits.Add(1)
 		return t.(*PrecomputedKey)
 	}
 	c.misses.Add(1)
+	return nil
+}
 
-	v, seenBefore := c.seen.LoadOrStore(*pub, new(atomic.Int32))
-	if !seenBefore {
-		if c.seenCount.Add(1) > seenResetThreshold {
-			c.seenCount.Store(0)
-			c.seen.Clear()
-		}
+// admit records one successful uncached verification and, at the threshold,
+// grants exactly one goroutine permission to build. It never changes the
+// verdict of the verification that supplied the sighting.
+func (c *Cache) admit(b backend, pub *[32]byte) {
+	if !b.supportsPrecomp() {
+		return
 	}
-	if v.(*atomic.Int32).Add(1) < buildThreshold {
-		return nil
+	// A table may have appeared while the successful plain verification was
+	// running. It is authoritative; this call remains a miss for statistics.
+	if _, ok := c.tables.Load(*pub); ok {
+		return
 	}
 
 	max := c.MaxTableBytes
 	if max == 0 {
 		max = DefaultMaxTableBytes
 	}
-	if c.bytes.Load() < max {
-		if pre, err := b.buildPrecomp(pub); err == nil && pre.table != nil {
-			if _, loaded := c.tables.LoadOrStore(*pub, pre); !loaded {
-				c.count.Add(1)
-				c.bytes.Add(pre.size)
-			}
-			return pre
+	if max < 1 || c.bytes.Load() >= max {
+		// Tables never leave the cache, so a full budget cannot become
+		// admissible later. Avoid consuming bookkeeping slots for new keys.
+		return
+	}
+
+	counter, ok := c.admissionCounter(pub)
+	if !ok {
+		return
+	}
+	if !claimAdmissionBuild(counter) {
+		return
+	}
+
+	if max < 1 || c.bytes.Load() >= max {
+		// The cache never evicts tables and MaxTableBytes is configured before
+		// first use, so this key cannot become admissible later.
+		counter.Store(admissionDisabled)
+		return
+	}
+
+	pre, err := b.buildPrecomp(pub)
+	if err != nil || pre == nil || pre.table == nil || pre.size <= 0 {
+		// Point decoding and backend table support are deterministic for a
+		// selected backend, so retrying this key can never produce a table.
+		counter.Store(admissionDisabled)
+		return
+	}
+	if _, loaded := c.tables.Load(*pub); loaded {
+		counter.Store(admissionComplete)
+		return
+	}
+	if !c.reserveTableBytes(pre.size, max) {
+		// Tables are never evicted, so the remaining budget cannot grow.
+		counter.Store(admissionDisabled)
+		return
+	}
+	_, loaded := c.tables.LoadOrStore(*pub, pre)
+	if loaded {
+		c.bytes.Add(-pre.size)
+		counter.Store(admissionComplete)
+		return
+	}
+	c.count.Add(1)
+	counter.Store(admissionComplete)
+}
+
+// admissionCounter returns the stable counter for pub, creating it only when
+// a slot can be atomically reserved. Entries are never removed: this both
+// bounds memory and prevents a goroutine from building through a detached
+// counter after another goroutine installed a replacement for the same key.
+func (c *Cache) admissionCounter(pub *[32]byte) (*atomic.Int32, bool) {
+	if v, ok := c.seen.Load(*pub); ok {
+		return v.(*atomic.Int32), true
+	}
+	if !c.reserveAdmissionSlot() {
+		// A concurrent creator may have reserved the final slot but not yet
+		// published it when the first Load ran.
+		if v, ok := c.seen.Load(*pub); ok {
+			return v.(*atomic.Int32), true
+		}
+		return nil, false
+	}
+	candidate := new(atomic.Int32)
+	actual, loaded := c.seen.LoadOrStore(*pub, candidate)
+	if loaded {
+		c.seenCount.Add(-1)
+		return actual.(*atomic.Int32), true
+	}
+	return candidate, true
+}
+
+func (c *Cache) reserveAdmissionSlot() bool {
+	for {
+		used := c.seenCount.Load()
+		if used >= admissionEntryLimit {
+			return false
+		}
+		if c.seenCount.CompareAndSwap(used, used+1) {
+			return true
 		}
 	}
-	return nil
+}
+
+// claimAdmissionBuild increments the bounded sighting counter and grants one
+// goroutine the build at the threshold. Concurrent sightings neither duplicate
+// an expensive table build nor overflow a counter for a permanently hot key.
+func claimAdmissionBuild(counter *atomic.Int32) bool {
+	for {
+		seen := counter.Load()
+		if seen < 0 {
+			return false
+		}
+		if seen >= buildThreshold-1 {
+			if counter.CompareAndSwap(seen, admissionBuilding) {
+				return true
+			}
+			continue
+		}
+		if counter.CompareAndSwap(seen, seen+1) {
+			return false
+		}
+	}
+}
+
+// reserveTableBytes atomically reserves size without ever allowing the
+// observable total to exceed max, even when different keys cross their
+// admission thresholds concurrently.
+func (c *Cache) reserveTableBytes(size, max int64) bool {
+	if size <= 0 || size > max {
+		return false
+	}
+	for {
+		used := c.bytes.Load()
+		if used > max-size {
+			return false
+		}
+		if c.bytes.CompareAndSwap(used, used+size) {
+			return true
+		}
+	}
 }
 
 // CacheStats is a point-in-time snapshot of cache behavior, for
