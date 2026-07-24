@@ -223,6 +223,96 @@ func TestIFMAMaximumComposableMultiplyHardware(t *testing.T) {
 	}
 }
 
+func TestIFMAFusedMultiplyNormalizeDifferential(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	rng := rand.New(rand.NewSource(0xf05e_51c4))
+	for round := 0; round < 2048; round++ {
+		x8 := randomIFMAElementX8(rng)
+		y8 := randomIFMAElementX8(rng)
+		if round == 0 {
+			x8 = filledIFMAElementX8(ifmaComposableLimbLimit - 1)
+			y8 = x8
+		}
+
+		var raw8 IFMAProductX8
+		var want8, got8 LimbsX8
+		ifmaMulRawX8(&raw8, &x8.limbs, &y8.limbs)
+		ifmaNormalizeProductUncheckedX8(&want8, &raw8)
+		ifmaMulNormalizedUncheckedX8(&got8, &x8.limbs, &y8.limbs)
+		if got8 != want8 {
+			t.Fatalf("round %d: fused x8 differs from split raw+normalize\ngot  %x\nwant %x", round, got8, want8)
+		}
+		if !isIFMAElementX8(&IFMAElementX8{limbs: got8}) {
+			t.Fatalf("round %d: fused x8 output escaped u52", round)
+		}
+
+		aliasX8 := x8.limbs
+		ifmaMulNormalizedUncheckedX8(&aliasX8, &aliasX8, &y8.limbs)
+		if aliasX8 != want8 {
+			t.Fatalf("round %d: fused x8 x-alias mismatch", round)
+		}
+		aliasY8 := y8.limbs
+		ifmaMulNormalizedUncheckedX8(&aliasY8, &x8.limbs, &aliasY8)
+		if aliasY8 != want8 {
+			t.Fatalf("round %d: fused x8 y-alias mismatch", round)
+		}
+
+		for group := 0; group < 2; group++ {
+			x4 := ifmaElementX4Half(&x8, group)
+			y4 := ifmaElementX4Half(&y8, group)
+			var raw4 IFMAProductX4
+			var want4, got4 LimbsX4
+			ifmaMulRawX4(&raw4, &x4.limbs, &y4.limbs)
+			ifmaNormalizeProductUncheckedX4(&want4, &raw4)
+			ifmaMulNormalizedUncheckedX4(&got4, &x4.limbs, &y4.limbs)
+			if got4 != want4 {
+				t.Fatalf("round %d group %d: fused x4 differs from split raw+normalize\ngot  %x\nwant %x", round, group, got4, want4)
+			}
+			if !isIFMAElementX4(&IFMAElementX4{limbs: got4}) {
+				t.Fatalf("round %d group %d: fused x4 output escaped u52", round, group)
+			}
+
+			aliasX4 := x4.limbs
+			ifmaMulNormalizedUncheckedX4(&aliasX4, &aliasX4, &y4.limbs)
+			if aliasX4 != want4 {
+				t.Fatalf("round %d group %d: fused x4 x-alias mismatch", round, group)
+			}
+			aliasY4 := y4.limbs
+			ifmaMulNormalizedUncheckedX4(&aliasY4, &x4.limbs, &aliasY4)
+			if aliasY4 != want4 {
+				t.Fatalf("round %d group %d: fused x4 y-alias mismatch", round, group)
+			}
+		}
+	}
+
+	// Exercise the strongest alias: out, x, and y all refer to the same
+	// maximum-limb input. This also permanently covers the analytic u61 peak.
+	maximum8 := filledIFMAElementX8(ifmaComposableLimbLimit - 1)
+	var rawSquare8 IFMAProductX8
+	var wantSquare8 LimbsX8
+	ifmaMulRawX8(&rawSquare8, &maximum8.limbs, &maximum8.limbs)
+	ifmaNormalizeProductUncheckedX8(&wantSquare8, &rawSquare8)
+	aliasBoth8 := maximum8.limbs
+	ifmaMulNormalizedUncheckedX8(&aliasBoth8, &aliasBoth8, &aliasBoth8)
+	if aliasBoth8 != wantSquare8 {
+		t.Fatal("maximum x8 out=x=y alias mismatch")
+	}
+
+	maximum4 := ifmaElementX4Half(&maximum8, 0)
+	var rawSquare4 IFMAProductX4
+	var wantSquare4 LimbsX4
+	ifmaMulRawX4(&rawSquare4, &maximum4.limbs, &maximum4.limbs)
+	ifmaNormalizeProductUncheckedX4(&wantSquare4, &rawSquare4)
+	aliasBoth4 := maximum4.limbs
+	ifmaMulNormalizedUncheckedX4(&aliasBoth4, &aliasBoth4, &aliasBoth4)
+	if aliasBoth4 != wantSquare4 {
+		t.Fatal("maximum x4 out=x=y alias mismatch")
+	}
+}
+
 func TestNormalizeIFMAProductDifferential(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x61_52_51))
 	for round := 0; round < 4096; round++ {
@@ -900,6 +990,55 @@ func BenchmarkIFMAVectorNormalize(b *testing.B) {
 			}
 		}
 		benchmarkNormalizedLimbsX4Sink = out
+	})
+}
+
+func BenchmarkIFMAFusedMultiplyNormalize(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	reducedX8, reducedY8, reducedX4, reducedY4 := benchmarkIFMAInputs(b)
+
+	b.Run("x4/split-raw-normalize", func(b *testing.B) {
+		var raw IFMAProductX4
+		var out LimbsX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ifmaMulRawX4(&raw, &reducedX4[0].limbs, &reducedY4[0].limbs)
+			ifmaNormalizeProductUncheckedX4(&out, &raw)
+		}
+		benchmarkNormalizedLimbsX4Sink[0] = out
+	})
+	b.Run("x4/fused", func(b *testing.B) {
+		var out LimbsX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ifmaMulNormalizedUncheckedX4(&out, &reducedX4[0].limbs, &reducedY4[0].limbs)
+		}
+		benchmarkNormalizedLimbsX4Sink[0] = out
+	})
+
+	b.Run("x8/split-raw-normalize", func(b *testing.B) {
+		var raw IFMAProductX8
+		var out LimbsX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ifmaMulRawX8(&raw, &reducedX8.limbs, &reducedY8.limbs)
+			ifmaNormalizeProductUncheckedX8(&out, &raw)
+		}
+		benchmarkNormalizedLimbsX8Sink = out
+	})
+	b.Run("x8/fused", func(b *testing.B) {
+		var out LimbsX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			ifmaMulNormalizedUncheckedX8(&out, &reducedX8.limbs, &reducedY8.limbs)
+		}
+		benchmarkNormalizedLimbsX8Sink = out
 	})
 }
 

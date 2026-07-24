@@ -10,6 +10,14 @@ func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4) {
 	panic("r51x5: unreachable x4 IFMA call on non-amd64")
 }
 
+func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8) {
+	panic("r51x5: unreachable x8 fused IFMA call on non-amd64")
+}
+
+func ifmaMulNormalizedUncheckedX4(out, x, y *LimbsX4) {
+	panic("r51x5: unreachable x4 fused IFMA call on non-amd64")
+}
+
 func ifmaNormalizeProductUncheckedX8(out *LimbsX8, x *IFMAProductX8) {
 	normalized, ok := normalizeIFMAProductX8(x)
 	if !ok {

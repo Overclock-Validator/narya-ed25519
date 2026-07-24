@@ -14,6 +14,21 @@ func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 //go:noescape
 func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 
+// ifmaMulNormalizedUncheckedX8 fuses the raw folded multiply and the parallel
+// carry/fold pass, keeping the u61 intermediate entirely in vector registers.
+// Inputs must be u52 composable limbs. The output is u52, inputs and output may
+// alias, and the caller must enforce cpufeat.IFMA before entry.
+//
+//go:noescape
+func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8)
+
+// ifmaMulNormalizedUncheckedX4 is the AVX-512VL/YMM counterpart. It is kept
+// separate from the split primitives so benchmarks can measure the avoided
+// IFMAProduct store/reload and call boundary directly.
+//
+//go:noescape
+func ifmaMulNormalizedUncheckedX4(out, x, y *LimbsX4)
+
 // ifmaNormalizeProductUncheckedX8 carries a proven-u61 folded product back
 // into the composable u52 domain in parallel across all eight lanes. The
 // caller owns the input-range proof; this deliberately has no data-dependent

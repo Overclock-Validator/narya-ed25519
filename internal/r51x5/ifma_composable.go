@@ -201,9 +201,7 @@ func ExperimentalIFMAMultiplyComposableX4(out, x, y *IFMAElementX4) error {
 // is normalized from its analytically bounded u61 form before it can re-enter
 // another multiply.
 func ifmaMultiplyComposableUncheckedX4(out, x, y *IFMAElementX4) error {
-	var product IFMAProductX4
-	ifmaMulRawX4(&product, &x.limbs, &y.limbs)
-	ifmaNormalizeProductUncheckedX4(&out.limbs, &product)
+	ifmaMulNormalizedUncheckedX4(&out.limbs, &x.limbs, &y.limbs)
 	return nil
 }
 
@@ -222,9 +220,7 @@ func ExperimentalIFMAMultiplyComposableX8(out, x, y *IFMAElementX8) error {
 // ifmaMultiplyComposableUncheckedX8 is the eight-lane counterpart of
 // ifmaMultiplyComposableUncheckedX4.
 func ifmaMultiplyComposableUncheckedX8(out, x, y *IFMAElementX8) error {
-	var product IFMAProductX8
-	ifmaMulRawX8(&product, &x.limbs, &y.limbs)
-	ifmaNormalizeProductUncheckedX8(&out.limbs, &product)
+	ifmaMulNormalizedUncheckedX8(&out.limbs, &x.limbs, &y.limbs)
 	return nil
 }
 
