@@ -101,6 +101,11 @@ verdicts.
 | Per-key tables in IFMA layout | cold tables used; warm cache admission/packing pending real traces and churn tests |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
+The branch is an audit candidate, not a release tag. After review findings are
+resolved and the reviewed commit is merged, that merge commit is the intended
+`v0.1.0` tag target. Do not tag the mutable audit branch or infer release
+authorization from a passing emulator job.
+
 ## Testing
 
 The invariant under test everywhere: for every input — non-canonical

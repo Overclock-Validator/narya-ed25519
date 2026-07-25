@@ -222,11 +222,14 @@ The reproducible standalone C driver is in
   strict option set.
 - Fuzz targets comparing backends three ways.
 
-**Known gap.** CI runs on `ubuntu-latest` and `macos-latest`, neither of which
-has AVX512-IFMA. On those hosts the IFMA paths short-circuit on feature
-detection, so a green run does **not** execute the SIMD kernels. An Intel SDE
-job and an IFMA-capable runner are prerequisites before any SIMD tier can be
-selected automatically.
+CI runs portable tests on `ubuntu-latest` and `macos-latest`, plus a pinned
+[Intel SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html)
+10.8 job that emulates Ice Lake Server and executes focused r51x5 IFMA,
+native-SHA, and public forced-r51 differentials. Dedicated `sde_gate` tests
+fail rather than skip when the emulated feature set is missing. SDE is
+functional coverage only; the Ryzen 7 PRO 8700GE remains the performance and
+zero-allocation release authority. Automatic backend selection remains
+`generic`.
 
 ## Status
 

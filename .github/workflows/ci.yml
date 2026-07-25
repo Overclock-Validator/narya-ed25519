@@ -11,8 +11,8 @@ jobs:
       matrix:
         # linux/amd64 exercises the amd64 field assembly in the
         # vendored internals; macos-latest is arm64 and exercises the
-        # arm64 + generic paths. The AVX-512 backends get a dedicated
-        # Intel SDE job when they land.
+        # arm64 + generic paths. The dedicated Intel SDE job below executes
+        # the AVX-512 IFMA and native SHA kernels on every change.
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -33,3 +33,47 @@ jobs:
           go-version: stable
       - run: go test -tags purego ./...
       - run: GOARCH=amd64 GOAMD64=v1 go build ./...
+
+  sde-ifma:
+    # Functional coverage only: SDE timings are not performance evidence.
+    # Intel SDE 10.8 is downloaded from Intel's official mirror and checked
+    # against the SHA-256 published on the official download page:
+    # https://www.intel.com/content/www/us/en/download/684897/intel-software-development-emulator.html
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SDE_ARCHIVE: sde-external-10.8.0-2026-03-15-lin.tar.xz
+      SDE_SHA256: 50b320cd226acef7a491f5b321fc1be3c3c7984f9e27a456e64894b5b0979dd3
+      SDE_URL: https://downloadmirror.intel.com/915934/sde-external-10.8.0-2026-03-15-lin.tar.xz
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.4"
+      - name: Download pinned Intel SDE
+        run: |
+          curl --fail --location --retry 3 "$SDE_URL" --output "/tmp/$SDE_ARCHIVE"
+          echo "$SDE_SHA256  /tmp/$SDE_ARCHIVE" | sha256sum --check --strict
+          tar --extract --xz --file "/tmp/$SDE_ARCHIVE" --directory /tmp
+          echo "SDE64=/tmp/${SDE_ARCHIVE%.tar.xz}/sde64" >> "$GITHUB_ENV"
+      - name: Permit SDE instrumentation on Ubuntu
+        run: sudo sysctl --write kernel.yama.ptrace_scope=0
+      - name: Compile focused native test binaries
+        run: |
+          go test -c -tags sde_gate -o /tmp/r51x5.test ./internal/r51x5
+          go test -c -tags sde_gate -o /tmp/sha512mb.test ./sha512mb
+          go test -c -tags sde_gate -o /tmp/ed25519.test ./ed25519
+      - name: Require and test r51x5 IFMA kernels under SDE
+        run: |
+          "$SDE64" -icx -- /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero)$'
+      - name: Require and test native SHA-512 kernels under SDE
+        run: |
+          "$SDE64" -icx -- /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^(TestSDENativeSHARequired|TestNativeX4Differential|TestNativeX8Differential|TestExperimentalSum512Batch3Differential)$'
+      - name: Test forced public r51 verification under SDE
+        run: |
+          "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^TestSDEForcedR51PublicPath$'
+          "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping)$'
