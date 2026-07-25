@@ -7,7 +7,7 @@ every signature independently, and writes caller-order verdicts.
 
 ## Source and machines
 
-- implementation commit: `915fd6ddc7ec7683877c367cc113a9aefed268f3`
+- implementation commit: `f808b98f3d0abb0b6b7c36e49739fb8ad1a813b5`
 - Zen 4: AMD Ryzen 7 PRO 8700GE, Linux amd64
 - Zen 5: AMD Ryzen 7 9700X, Linux amd64
 - one pinned core (`taskset -c 2`), `GOMAXPROCS=1`
@@ -15,10 +15,6 @@ every signature independently, and writes caller-order verdicts.
 - valid DalekStrict signatures, message sizes 64/200/1232
 - widths 4/8/64
 - zero allocations in every timed row
-
-The source used for the measurements predates only the follow-up regression
-test that pins the already-measured native-width rule; it does not predate a
-performance-path change.
 
 ## Command
 
@@ -39,12 +35,12 @@ Microseconds per signature at message size 1232:
 
 | CPU | n | raw cold | cache, 0% warm | 25% warm | 50% warm | 75% warm | 100% warm |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Zen 5 | 4 | 12.69 | 11.79 | — | — | — | 5.265 |
-| Zen 5 | 8 | 8.538 | 7.967 | — | 7.969 | — | 5.304 |
-| Zen 5 | 64 | 8.259 | 7.688 | 7.100 | 6.533 | 5.963 | 5.329 |
-| Zen 4 | 4 | 14.87 | 16.11 | — | — | — | 6.61 |
-| Zen 4 | 8 | 14.50 | 15.68 | — | 10.84 | — | 6.62 |
-| Zen 4 | 64 | 14.19 | 15.38 | 12.38 | 10.54 | 8.669 | 6.728 |
+| Zen 5 | 4 | 12.70 | 11.75 | — | — | — | 5.328 |
+| Zen 5 | 8 | 8.536 | 7.959 | — | 7.957 | — | 5.327 |
+| Zen 5 | 64 | 8.253 | 7.651 | 7.078 | 6.522 | 5.979 | 5.376 |
+| Zen 4 | 4 | 14.90 | 16.14 | — | — | — | 6.565 |
+| Zen 4 | 8 | 14.45 | 15.68 | — | 10.82 | — | 6.568 |
+| Zen 4 | 64 | 14.19 | 15.36 | 12.41 | 10.54 | 8.657 | 6.704 |
 
 At Zen 5 n=8, 50% warm intentionally equals the decoded result: consuming one
 warm x4 would split a faster native x8 group into warm and cold x4 work. Zen 4
@@ -66,6 +62,13 @@ the width-aware dispatcher rule.
 - Invalid strict inputs and invalid equations never earn promotion. Promotion
   failure retains the decoded entry and is not retried.
 
-The complete raw stdout was retained on the measurement hosts during the run
-but is not checked into this directory. Therefore this file is a compact
-measurement record, not a substitute for the PR-1 checksummed release bundle.
+The complete raw stdout was retained on the measurement hosts during the run:
+
+```text
+12f18c286e08ecb0aac3945709531e8c556a27f4011f788da71c21ded2875990  narya-warm-f808b98-zen4.txt
+27a49c22e3252e26494f43ab7481dff9d163cc70ac12b3d5809813ce3c85ce13  narya-warm-f808b98-zen5.txt
+```
+
+The raw logs are not checked into this compact directory, so the checksums
+identify the retained host artifacts but do not substitute for the PR-1
+checksummed release bundle.

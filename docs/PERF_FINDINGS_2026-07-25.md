@@ -253,9 +253,9 @@ that arithmetic capacity is not the effective default and must not be quoted as
 one.
 
 The decoded tier now composes with the hot comb. At n=64/msg=1232, Zen 5 moves
-from 8.259 us raw to 7.688 decoded and 5.329 fully warm. Zen 4 deliberately
-retains decoded A only as promotion staging: it moves from 14.19 raw to 15.38
-at 0% warm, then 12.38/10.54/8.669/6.728 at 25/50/75/100% warm. Consequently
+from 8.253 us raw to 7.651 decoded and 5.376 fully warm. Zen 4 deliberately
+retains decoded A only as promotion staging: it moves from 14.19 raw to 15.36
+at 0% warm, then 12.41/10.54/8.657/6.704 at 25/50/75/100% warm. Consequently
 the r51 Cache is opt-in on both CPUs, but Zen 4 integration should reserve it
 for recurrence-rich workloads rather than arbitrary TPU ingress.
 
