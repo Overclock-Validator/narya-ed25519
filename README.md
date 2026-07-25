@@ -136,7 +136,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. The only backend supporting precomputation. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | Zen 4 lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer; wider batches use x4 groups, native AVX2 multi-buffer SHA-512, A-only decode, and cross-group batch encoding of Q. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses two x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -148,13 +148,13 @@ operator intent and must not silently fall back.
 `sha512mb`'s public `Lanes()` and `Sum512Batch` surface remains the portable
 scalar implementation. Its AVX2 and AVX-512 kernels are hardware-gated behind
 the `Experimental*` entry points; the forced `r51` backend calls the x4 native
-entry point internally. Automatic backend selection never reaches it.
-The experimental x8 fixed-three-segment entry additionally recognizes full
+entry on Zen 4 and the x8 native entry for complete Zen 5 groups. Automatic
+backend selection never reaches either kernel.
+The x8 fixed-three-segment entry recognizes full
 groups of the exact `R[32] || A[32] || message` shapes at message sizes
 64/200/1232, ingesting their first and final blocks without generic segmented
 staging. On the Zen 4 release machine this hash-only path measured about
-110.5 ns/message at 200 bytes and 390.3 ns/message at 1232 bytes. It is not yet
-wired into the registered r51 verifier; see
+110.5 ns/message at 200 bytes and 390.3 ns/message at 1232 bytes. See
 [`docs/SHA512_MULTIBUFFER.md`](docs/SHA512_MULTIBUFFER.md).
 
 ## Performance
@@ -173,6 +173,14 @@ private dispatcher core; code layout made some public rows slightly faster.
 | 64 | 26.14 | 15.05 | 14.68 | 14.38 |
 | 200 | 26.28 | 15.24 | 14.81 | 14.51 |
 | 1232 | 27.12 | 16.02 | 15.58 | 15.30 |
+
+That table is the pinned PR-1 baseline. The current convergence branch promotes
+the radix-32/comb256 cold core after ten-sample A/B gates showed 5.2--5.4% on
+Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. It also selects native x8 on Zen 5:
+a short public-wrapper validation measured 22.50/12.76/8.55/8.27 us per
+signature at n=1/4/8/64, versus 26.62/15.84/15.41/15.12 on Zen 4. These newer
+rows are provisional until the full three-message release matrix is rerun;
+their exact private/public deltas were below 2% and every row allocated zero.
 
 The same 200-byte Go benchmark binary also measured the comparison libraries;
 each value below is the median of six two-second samples.
@@ -202,10 +210,10 @@ therefore still faster for a cold singleton, while forced r51 is faster for
 full x4 groups. Exact rows and invalid-input caveats are recorded in
 [`docs/CROSS_LIBRARY_ZEN4_2026-07-24.md`](docs/CROSS_LIBRARY_ZEN4_2026-07-24.md).
 
-The registered r51 path is a cold arbitrary-key implementation: its full x4
+The registered r51 path is a cold arbitrary-key implementation: its full SIMD
 groups still decode A and build the small variable-base table for every
-signature. The warm per-key r51 comb, wider fixed-base tables, x8/Zen 5 tuning,
-and HEEA remain experiments. The test-only prepared A6/r9+B10 warm verifier has
+signature. The warm per-key r51 comb and HEEA remain experiments. The prepared
+A6/r9+B10 warm verifier has
 measured about 4.7--4.8 us/signature at n=64 across distinct, four-key, and
 same-key fixtures, but it excludes table construction and production cache
 lookup/admission/eviction. It is neither reachable through public `Cache` APIs
@@ -251,9 +259,9 @@ zero-allocation release authority. Automatic backend selection remains
 Alpha. The `generic` backend, the profile contract, and the per-key comb cache
 are functional and differential-tested. The `r51` throughput backend is
 registered for explicit selection on supported hardware but remains outside
-automatic dispatch. The `ifma` reference backend, additional vectorized
-`sha512mb` surfaces, and r51 warm-cache/Zen 5 variants remain under active
-development.
+automatic dispatch. It uses the promoted two-x4 cold comb on Zen 4 and native
+x8 groups plus x4 tails on AMD family 1Ah (Zen 5). The `ifma` reference backend
+and r51 warm-cache variants remain under active development.
 
 ## License
 

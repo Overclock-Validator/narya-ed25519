@@ -3,27 +3,24 @@
 This is the correctness and benchmark plan for Narya's throughput backend.
 It is deliberately separate from `internal/r43x6`:
 
-> **Current status.** The reviewed Zen 4 composition is registered as backend
-> `r51` for explicit selection. Automatic selection remains `generic`.
-> `r51` uses a packed paired-A/R singleton and two-x4 radix-64 batch-Q groups;
-> the true-x8, alternative-radix, warm-comb, wider-B, and HEEA variants described
-> below remain benchmark candidates rather than dispatch choices.
+> **Current status.** The reviewed Zen 4/Zen 5 composition is registered as
+> backend `r51` for explicit selection. Automatic selection remains `generic`.
+> `r51` uses a packed paired-A/R singleton plus a radix-32 A table, the shared
+> radix-256 B comb, and batch-Q finalization. Zen 4 uses two x4/YMM groups;
+> AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and
+> x4 for the tail. Warm per-key comb and HEEA variants remain experiments.
 
 | Backend | Vector interpretation | Intended job |
 |---|---|---|
 | r43x6 | six limbs of one field element in a vector | single-signature latency and a forced correctness baseline |
 | r51x5 x4/x8 | one signature per SIMD lane, five vectors per field element | batch throughput |
 
-Neither representation is an automatic production choice. Measurements on
-the Ryzen 7 PRO 8700GE selected x4-oriented r51 for the first forced backend;
-x8 remains tested for future microarchitectures such as Zen 5.
-
-Zen 5 is a measurement target, not a current speed claim. Its native 512-bit
-datapath may change the x8-versus-two-x4 result, but enabling a different
-shape will require target-hardware benchmarks, CPUID family/model dispatch
-rather than the shared IFMA feature bit alone, and lane-width-specific retuning
-of per-key comb parameters and table pressure. Keep x8 differentials green so
-that evaluation is a benchmark decision rather than a code-revival project.
+Neither representation is an automatic global backend choice. Measurements on
+the Ryzen 7 PRO 8700GE selected x4-oriented r51; measurements on the Ryzen 7
+9700X selected x8 for complete groups by about 32--33% at 1232-byte messages.
+The registered forced backend now chooses that internal width using CPUID
+vendor/family rather than the shared IFMA feature bit. Every x8 differential
+remains enabled on both targets, and x4 remains the tail and rollback shape.
 
 The representation is supported by independent implementation evidence:
 [ENG25519](https://www.usenix.org/conference/usenixsecurity24/presentation/zhang-jipeng)
@@ -298,13 +295,11 @@ implementations, with an important performance boundary:
   all verdicts rather than being disguised as lane fallback.
 
 The selected composition now changes explicitly forced `r51` dispatch, but
-not automatic dispatch. It connects the packed strict singleton, native x4
-SHA-512, fixed-storage challenge reduction, composable radix-64 x4 DSM, and
-cross-group Q encoding. The broader x4, true-x8, two-x4, alternate-radix, and
-comb matrix remains allocation-free benchmarking infrastructure. Its cold
-rows include arbitrary-A table construction. A separate candidate splits
-`[s]B` into a scalar-stored shared comb and keeps exactly one SoA table for
-`-[k]A`, so wider-B measurements do not retain a dummy identity table.
+not automatic dispatch. It connects the packed strict singleton, native x4/x8
+SHA-512, fixed-storage challenge reduction, composable radix-32 A DSM, the
+process-shared radix-256 B comb, and cross-group Q encoding. The broader
+alternate-radix, table, HEEA, and warm-comb matrix remains allocation-free
+benchmarking infrastructure. Cold rows include arbitrary-A table construction.
 
 The public batch dispatcher has an optional raw-slice backend contract. The
 registered forced `r51` backend and candidate benchmarks enter through that
@@ -330,25 +325,29 @@ selection to remain `generic`, hardware activation to fail closed, and forced
 The remaining Go carry/fold, field add/subtract, scalar unpacking, digest
 compaction for the two-x4 reducer, final mask work, and compiler-selected spills
 are still correctness-first schedules. Every IFMA multiplication carry/folds
-and validates its raw output before reuse. Zen 4 hardware execution selected
-the current forced composition; the same complete-path measurement rule still
-decides whether any additional candidate belongs in dispatch. A fused native
-scalar reducer or tighter carry/add/sub assembly remains optional follow-up
-only if a complete profile shows those stages are material.
+and validates its raw output before reuse. Zen 4 and Zen 5 hardware execution
+selected the current width-specific forced composition; the same complete-path
+measurement rule still decides whether any additional candidate belongs in
+dispatch. A fused native scalar reducer or tighter carry/add/sub assembly
+remains optional follow-up only if a complete profile shows those stages are
+material.
 
 ## x8 versus two x4 groups
 
-Zen 4 executes 512-bit vector work through narrower execution resources, but
-that does not determine the complete result. One x8 kernel can reduce decoded
-instruction, loop, and packing overhead; two independent x4 groups can expose
-more scheduling freedom and may have different register or frequency costs.
-Measure both implementations on the same inputs and active lane counts 1--17.
+Zen 4 measurements kept two x4 groups: x8 improved complete wide verification
+by only about 1%, below the keep threshold. Zen 5 measurements selected x8:
+at 1232-byte messages the complete x8 path measured about 8.2 us/signature at
+n=64 versus about 12.2 us for two-x4. Public-wrapper measurements stayed within
+2% of the private core and allocated zero.
 
-The x8 candidate wins dispatch only when complete verification, including
-packing, table construction, hashing, tails, and verdict mapping, is at least
-2% better. If the difference is smaller, select the simpler implementation.
-The checked-in numerical evaluator applies that rule coherently across all
-release message sizes rather than choosing a different path for every row.
+The width rule is deliberately a step: on Zen 5, every complete eight-lane
+group uses x8 and the remainder uses x4; Zen 4 uses x4 throughout. A half-full
+x8 group pays roughly 96% of full-group cost, so masked arithmetic cannot make
+it occupancy-elastic. Leading-zero shortening, vector-wide sparse-digit
+skipping, and an x4-by-two hybrid do not beat the existing x4 tail on the
+measured cost bound. Cross-call lane refill can reduce how often a tail exists,
+but belongs to a latency-aware caller/integration queue rather than this
+cryptographic backend.
 
 Single-core results are followed by
 `BenchmarkR51IFMAPipelineParallel`, which runs all twelve complete
@@ -377,19 +376,10 @@ taskset -c 0-7 env GOMAXPROCS=8 go test -run '^$' \
 
 ### Zen 5 bring-up contract
 
-Do not prune x8 because two x4 groups win on Zen 4. Zen 5 changes the relevant
-512-bit execution resources, so x8 remains an independently correct candidate
-and every x8 differential stays enabled. The expected direction is not itself
-a dispatch result: complete verification must be measured on Zen 5 silicon.
-The x8 point doubler no longer performs its former 1,280-byte defensive input
-copy, but that primitive cleanup likewise does not substitute for a complete
-Zen 5 measurement.
-
-The eventual bring-up should expose an explicit forced Zen 5 tuning mode before
-automatic selection. The current IFMA feature predicate cannot distinguish
-Zen 4 from Zen 5, so automatic x4/x8 choice requires a separately reviewed
-CPUID family/model classifier and must remain non-degrading for an explicitly
-forced operator choice.
+Zen 5 bring-up is complete inside forced `r51`: CPUID vendor/family selects x8
+only for AMD family 1Ah and newer, complete groups use the native x8 core, and
+tails reuse x4. Unknown IFMA machines conservatively retain x4. This does not
+change the global automatic backend, which remains `generic`.
 
 Comb parameters are part of the lane-width candidate configuration, not global
 constants. Eight live signatures roughly double the distinct per-key A-table
@@ -399,11 +389,11 @@ and `(w_B,r_B)` rather than inheriting Zen 4's choice.
 
 The per-key storage format remains independent of an x4 batch object. The x4
 four-source transpose is not assumed to widen mechanically to eight sources;
-an x8 selector needs its own measured packing schedule. A second Zen 5-only
-candidate may pack two signatures times four Edwards coordinates into one ZMM
-register, combining coordinate parallelism with two-way signature parallelism.
-That orientation is a prototype question for real hardware, not part of the
-registered forced Zen 4 path.
+an x8 selector needs its own measured packing schedule. The previously proposed
+two-signatures-by-four-coordinates ZMM hybrid is not a current candidate. Its
+optimistic arithmetic bound merely reaches the measured x4 tail while adding
+another carry schedule and table layout. Revisit it only if a future formula or
+microarchitecture invalidates that bound.
 
 The optional W132/radix-32 HEEA experiment repeats its x8/two-x4 n=8/64
 release matrix with `BenchmarkR51HEEACompletePipelineParallel`. HEEA promotion

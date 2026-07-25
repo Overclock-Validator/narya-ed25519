@@ -1,9 +1,9 @@
 # Narya — review notes / PR description
 
 > Consensus-exact, accelerated Ed25519 verification for a Go Solana node.
-> Alpha. This branch is up for review. The Zen 4 r51 composition is registered
-> for explicit selection; automatic dispatch remains generic. The r43
-> reference, x8/Zen 5, warm-comb, and HEEA variants remain forced experiments.
+> Alpha. This branch is up for review. The Zen 4/Zen 5 r51 composition is
+> registered for explicit selection; automatic dispatch remains generic. The
+> r43 reference, warm per-key comb, and HEEA variants remain forced experiments.
 
 ## Why
 
@@ -97,7 +97,7 @@ verdicts.
 | forced-only `ifma` r43x6 reference backend | implemented and hardware-tested; not automatic |
 | registered r51 cold backend | done for explicit Zen 4 selection; packed singleton plus x4 batch-Q dispatcher |
 | exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
-| additional r51 x8/alternate-radix/comb schedules | benchmark-only; x8 retained for Zen 5 measurement |
+| r51 x8 plus radix-32/comb256 cold schedule | promoted inside forced `r51`; CPUID selects x8 only on AMD family 1Ah+ |
 | r51 variable-base tables | small cold table rebuilt per verification; reusable per-key warm tables remain experimental and `supportsPrecomp()` is false |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
@@ -244,9 +244,10 @@ native x4/x8 SHA-512, and a complete forced verifier. Fixed IFMA table and
 workspace storage is now physically specialized to 8/16/32 positive entries;
 smaller radices neither retain nor clear radix-64 capacity. Radix 64 is measured
 only for the ordinary DSM; HEEA retains radix 16/32. The selected packed
-singleton plus radix-64 x4 batch-Q composition is registered as forced backend
-`r51`. Alternative x8, radix, comb, and HEEA configurations remain private.
-Automatic dispatch remains generic.
+singleton plus radix-32/comb256 batch-Q composition is registered as forced
+backend `r51`. Zen 4 uses two x4 groups; AMD family 1Ah (Zen 5) uses x8 for
+complete groups and x4 for the tail. Alternative arithmetic and HEEA
+configurations remain private. Automatic dispatch remains generic.
 
 The optional HEEA handoff preserves arbitrary-width signed coefficients for
 mixed-order A/R points and has an allocation-free modulo-8L selector. On the

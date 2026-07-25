@@ -379,3 +379,11 @@ DEPENDENCIES
 
 golang.org/x/sys (BSD-3-Clause) — runtime CPU feature detection via
 golang.org/x/sys/cpu. This is Narya's only non-test module requirement.
+
+The small CPUID bridge in internal/cpufeat/cpufeat_amd64.s follows the Go
+assembly ABI wrapper used by x/sys/cpu at the pinned dependency version:
+
+    https://github.com/golang/sys/blob/v0.39.0/cpu/cpu_gc_x86.s
+
+    Copyright (c) 2009 The Go Authors. All rights reserved.
+    BSD 3-Clause License

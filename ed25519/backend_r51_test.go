@@ -47,6 +47,7 @@ func TestR51BackendBatchWidthSelection(t *testing.T) {
 	if gotWide != cpufeat.PreferWideIFMA() {
 		t.Fatalf("wide=%v want=%v pipeline=%s", gotWide, cpufeat.PreferWideIFMA(), worker.pipeline)
 	}
+	t.Logf("prefer-wide=%v pipeline=%s", gotWide, worker.pipeline)
 }
 
 func TestR51BackendInternalFaultFallsBackToGeneric(t *testing.T) {
