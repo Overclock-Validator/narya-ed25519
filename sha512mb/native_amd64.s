@@ -51,9 +51,8 @@
 	VPXORQ Z9, Z8, Z8;                          \
 	VPRORQ $41, E, Z9;                          \
 	VPXORQ Z9, Z8, Z8;                          \
-	VPANDQ F, E, Z10;                           \
-	VPANDNQ G, E, Z11;                          \
-	VPXORQ Z11, Z10, Z10;                       \
+	VMOVDQA64 E, Z10;                            \
+	VPTERNLOGQ $0xca, G, F, Z10;                 \
 	VPADDQ H, Z8, Z8;                           \
 	VPADDQ Z10, Z8, Z8;                         \
 	VPBROADCASTQ K(BP), Z15;                    \
@@ -64,10 +63,8 @@
 	VPXORQ Z11, Z9, Z9;                         \
 	VPRORQ $39, A, Z11;                         \
 	VPXORQ Z11, Z9, Z9;                         \
-	VPXORQ B, A, Z10;                           \
-	VPANDQ C, Z10, Z10;                         \
-	VPANDQ B, A, Z11;                           \
-	VPXORQ Z11, Z10, Z10;                       \
+	VMOVDQA64 A, Z10;                            \
+	VPTERNLOGQ $0xe8, C, B, Z10;                 \
 	VPADDQ Z10, Z9, Z9;                         \
 	VPADDQ Z8, D, D;                            \
 	VPADDQ Z9, Z8, H
