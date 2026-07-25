@@ -173,6 +173,61 @@ func BenchmarkR51BackendDispatch(b *testing.B) {
 	}
 }
 
+// BenchmarkR51PublicWrapperGate measures the exported strict-batch wrapper and
+// the registered backend's raw entry point in the same binary, on the same
+// fixtures. Comparing this gate is stronger than comparing unrelated test
+// binaries, whose code layout and CPU-frequency clusters can obscure a
+// sub-percent wrapper cost. Run with -count so each process repeats private
+// then public under the same machine state.
+func BenchmarkR51PublicWrapperGate(b *testing.B) {
+	if err := SetBackend("r51"); err != nil {
+		b.Skipf("forced r51 backend unavailable: %v", err)
+	}
+	backend, ok := active().(*r51Backend)
+	if !ok {
+		b.Fatalf("active backend type %T, want *r51Backend", active())
+	}
+
+	for _, size := range benchMsgSizes {
+		for _, n := range []int{1, 4, 8, 64} {
+			size, n := size, n
+			bf := makeBatchFixture(b, n, size)
+			for _, path := range []struct {
+				name   string
+				verify func() bool
+			}{
+				{
+					name: "private-core",
+					verify: func() bool {
+						return backend.verifyBatchRaw(DalekStrict, bf.pubs, bf.msgs, bf.sigs, bf.ok)
+					},
+				},
+				{
+					name: "public-wrapper",
+					verify: func() bool {
+						return VerifyBatchStrict(bf.pubs, bf.msgs, bf.sigs, bf.ok)
+					},
+				},
+			} {
+				path := path
+				b.Run(fmt.Sprintf("msg=%d/n=%d/path=%s", size, n, path.name), func(b *testing.B) {
+					if !path.verify() {
+						b.Fatal("warmup rejected valid fixture")
+					}
+					b.ReportAllocs()
+					b.ResetTimer()
+					for range b.N {
+						if !path.verify() {
+							b.Fatal("verify failed")
+						}
+					}
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*n)/1000, "us/signature")
+				})
+			}
+		}
+	}
+}
+
 // BenchmarkR51SingletonDispatchOverhead keeps the packed core and backend
 // adapter in one test binary. Cross-package benchmark binaries can differ
 // enough in code layout to obscure sub-microsecond dispatch costs.
