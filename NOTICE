@@ -15,7 +15,16 @@ VENDORED CODE — internal/edwards25519, internal/edwards25519/field
 =======================================================================
 
 Derived from the Go standard library's crypto/internal/edwards25519 and
-from filippo.io/edwards25519 v1.0.0.
+from filippo.io/edwards25519. The non-field vendored baseline is
+filippo.io/edwards25519 v1.0.0; internal/edwards25519/field is synchronized
+to filippo.io/edwards25519 v1.2.0, except for the modifications and
+Narya-authored additions listed below.
+
+The v1.2.0 field sync covers fe.go, fe_generic.go, fe_amd64.go,
+fe_amd64.s, fe_amd64_noasm.go, and fe_extra.go, plus the upstream arithmetic,
+alias, and wide-input tests in fe_test.go, fe_alias_test.go, and
+fe_extra_test.go. On arm64, the v1.2.0 generic implementation replaces the
+older Go standard-library carry-propagation assembly shim.
 
     Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -24,8 +33,10 @@ internal/edwards25519/LICENSE and internal/edwards25519/field/LICENSE.
 
 MODIFICATIONS. Narya has changed files in this tree relative to upstream:
 
-  * internal/edwards25519/field/fe.go — the square-root-ratio computation
-    was replaced with a derivation following BoringSSL (see below).
+  * internal/edwards25519/field/fe.go — relative to
+    filippo.io/edwards25519 v1.2.0, the square-root-ratio computation retains
+    Narya's derivation following BoringSSL (see below). The public behavior is
+    unchanged, while this form saves two squarings and three multiplications.
   * internal/edwards25519/scalarmult.go — the leading-zero skip in
     VarTimeDoubleScalarBaseMult was rewritten. Upstream's loop iterates a
     local variable but returns the unmodified bound, so the skip is inert
@@ -35,8 +46,9 @@ MODIFICATIONS. Narya has changed files in this tree relative to upstream:
   * import paths were rewritten to the Narya module path throughout.
 
 Narya-authored files inside this tree — comb.go, smallorder.go,
-equal_affine.go, tables.go additions, and their tests — are Apache-2.0, not
-BSD-3-Clause. The vendored files remain BSD-3-Clause.
+equal_affine.go, tables.go additions, field/sqrt_ratio_test.go, and their
+tests — are Apache-2.0, not BSD-3-Clause. The vendored files, including the
+v1.2.0 field arithmetic and alias tests, remain BSD-3-Clause.
 
 
 =======================================================================
