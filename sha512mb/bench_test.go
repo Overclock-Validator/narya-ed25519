@@ -281,14 +281,20 @@ func BenchmarkNativeCompress(b *testing.B) {
 }
 
 var benchmarkNativeBlockSink nativeBlockX8
+var benchmarkNativeStateSink nativeStateX8
+var benchmarkNativeDigestSink [nativeX8Width][64]byte
+var benchmarkNativeLaneSink [nativeX8Width]nativeLane
+var benchmarkNativeBlocksSink uint64
 
 func BenchmarkNativeTransposeX8(b *testing.B) {
 	if !nativeX8Available() {
 		b.Skip("requires AVX-512F and AVX-512BW")
 	}
 	var raw [nativeX8Width][128]byte
+	var ptrs [nativeX8Width]*byte
 	for lane := range raw {
 		rand.Read(raw[lane][:])
+		ptrs[lane] = &raw[lane][0]
 	}
 	b.Run("scalar", func(b *testing.B) {
 		var block nativeBlockX8
@@ -312,6 +318,85 @@ func BenchmarkNativeTransposeX8(b *testing.B) {
 		}
 		benchmarkNativeBlockSink = block
 	})
+	b.Run("native-pointers", func(b *testing.B) {
+		var block nativeBlockX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			nativeTransposePointersX8(&block, &ptrs)
+		}
+		benchmarkNativeBlockSink = block
+	})
+}
+
+// BenchmarkNativeX8WrapperPhases isolates the scalar work surrounding x8
+// transposition and compression. Helpers remain out of line so the compiler
+// cannot collapse repeated initialization or serialization to one iteration.
+func BenchmarkNativeX8WrapperPhases(b *testing.B) {
+	var storage [nativeX8Width][64 + 1232]byte
+	var msgs [nativeX8Width][3][]byte
+	for lane := range msgs {
+		msgs[lane] = [3][]byte{
+			storage[lane][:32],
+			storage[lane][32:64],
+			storage[lane][64:],
+		}
+	}
+	b.Run("state-init", func(b *testing.B) {
+		var state nativeStateX8
+		for i := 0; i < b.N; i++ {
+			benchmarkInitializeNativeStateX8(&state)
+		}
+		benchmarkNativeStateSink = state
+	})
+	b.Run("lane-init-fixed3", func(b *testing.B) {
+		var lanes [nativeX8Width]nativeLane
+		var maxBlocks uint64
+		for i := 0; i < b.N; i++ {
+			maxBlocks = benchmarkInitializeNativeLanes3X8(&lanes, &msgs)
+		}
+		benchmarkNativeLaneSink = lanes
+		benchmarkNativeBlocksSink = maxBlocks
+	})
+	b.Run("digest-extract", func(b *testing.B) {
+		var state nativeStateX8
+		var out [nativeX8Width][64]byte
+		benchmarkInitializeNativeStateX8(&state)
+		for i := 0; i < b.N; i++ {
+			benchmarkExtractNativeDigestsX8(&out, &state)
+		}
+		benchmarkNativeDigestSink = out
+	})
+}
+
+//go:noinline
+func benchmarkInitializeNativeStateX8(state *nativeStateX8) {
+	for lane := 0; lane < nativeX8Width; lane++ {
+		for word := range nativeInitialState {
+			state[word][lane] = nativeInitialState[word]
+		}
+	}
+}
+
+//go:noinline
+func benchmarkInitializeNativeLanes3X8(lanes *[nativeX8Width]nativeLane, msgs *[nativeX8Width][3][]byte) uint64 {
+	var maxBlocks uint64
+	for lane := range lanes {
+		lanes[lane] = newNativeLane(msgs[lane][:])
+		if lanes[lane].blocks > maxBlocks {
+			maxBlocks = lanes[lane].blocks
+		}
+	}
+	return maxBlocks
+}
+
+//go:noinline
+func benchmarkExtractNativeDigestsX8(out *[nativeX8Width][64]byte, state *nativeStateX8) {
+	for lane := range out {
+		for word := range nativeInitialState {
+			binary.BigEndian.PutUint64(out[lane][word*8:], state[word][lane])
+		}
+	}
 }
 
 // BenchmarkNativeTails exposes the utilization crossover for naturally
