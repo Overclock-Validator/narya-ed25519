@@ -167,8 +167,11 @@ Two things this table says plainly:
 The generic rows above are from the same pinned-core field-v1.2 comparison;
 the r51 row is from the later no-copy complete batch-Q gate. Experimental
 microbenchmarks for denser per-key table layouts and wider fixed-base windows
-are intentionally excluded until they improve a complete verifier. Detailed
-commands, statistical samples, and caveats are recorded in
+are intentionally excluded until they improve a complete verifier. The newest
+prepared-table partial-comb experiment reduces the r51 point loop to about
+4.2 us/signature, but it is not included in the table because construction,
+cache policy, decoding, hashing, and finalization have not yet been charged.
+Detailed commands, statistical samples, and caveats are recorded in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
 
 ## Verification
