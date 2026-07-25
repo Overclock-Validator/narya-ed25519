@@ -294,9 +294,68 @@ func TestDecimalConstants(t *testing.T) {
 }
 
 func TestSetBytesRoundTripEdgeCases(t *testing.T) {
-	// TODO: values close to 0, close to 2^255-19, between 2^255-19 and 2^255-1,
-	// and between 2^255 and 2^256-1. Test both the documented SetBytes
-	// behavior, and that Bytes reduces them.
+	twoTo255 := new(big.Int).Lsh(big.NewInt(1), 255)
+	p := new(big.Int).Sub(new(big.Int).Set(twoTo255), big.NewInt(19))
+
+	littleEndian32 := func(n *big.Int) []byte {
+		var buf [32]byte
+		n.FillBytes(buf[:])
+		for i := 0; i < len(buf)/2; i++ {
+			buf[i], buf[len(buf)-1-i] = buf[len(buf)-1-i], buf[i]
+		}
+		return buf[:]
+	}
+
+	tests := []struct {
+		name  string
+		input *big.Int
+	}{
+		{name: "p-1", input: new(big.Int).Sub(new(big.Int).Set(p), big.NewInt(1))},
+		{name: "p", input: new(big.Int).Set(p)},
+		{name: "p+1", input: new(big.Int).Add(new(big.Int).Set(p), big.NewInt(1))},
+		{name: "2^255-1", input: new(big.Int).Sub(new(big.Int).Set(twoTo255), big.NewInt(1))},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wantCanonical := new(big.Int).Mod(new(big.Int).Set(tt.input), p)
+			wantBytes := littleEndian32(wantCanonical)
+
+			var withoutHighBit Element
+			out, err := withoutHighBit.SetBytes(littleEndian32(tt.input))
+			if err != nil {
+				t.Fatalf("SetBytes: %v", err)
+			}
+			if out != &withoutHighBit {
+				t.Fatal("SetBytes did not return its receiver")
+			}
+			if !isInBounds(&withoutHighBit) {
+				t.Fatal("SetBytes produced an out-of-bounds element")
+			}
+			if got := withoutHighBit.Bytes(); !bytes.Equal(got, wantBytes) {
+				t.Fatalf("Bytes() = %x, want %x", got, wantBytes)
+			}
+
+			// SetBytes ignores bit 255, so setting it must produce exactly the
+			// same field-element representation and canonical encoding. For the
+			// final case this exercises the full 2^256-1 input.
+			withHighBitInput := new(big.Int).Add(new(big.Int).Set(tt.input), twoTo255)
+			var withHighBit Element
+			out, err = withHighBit.SetBytes(littleEndian32(withHighBitInput))
+			if err != nil {
+				t.Fatalf("SetBytes(high bit): %v", err)
+			}
+			if out != &withHighBit {
+				t.Fatal("SetBytes(high bit) did not return its receiver")
+			}
+			if withHighBit != withoutHighBit {
+				t.Fatalf("high bit changed representation: got %v, want %v", withHighBit, withoutHighBit)
+			}
+			if got := withHighBit.Bytes(); !bytes.Equal(got, wantBytes) {
+				t.Fatalf("Bytes(high bit) = %x, want %x", got, wantBytes)
+			}
+		})
+	}
 }
 
 // Tests self-consistency between Multiply and Square.

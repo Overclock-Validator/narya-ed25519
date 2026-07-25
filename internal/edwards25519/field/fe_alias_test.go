@@ -14,7 +14,10 @@ func checkAliasingOneArg(f func(v, x *Element) *Element) func(v, x Element) bool
 		x1, v1 := x, x
 
 		// Calculate a reference f(x) without aliasing.
-		if out := f(&v, &x); out != &v && isInBounds(out) {
+		//
+		// Narya correction to the upstream v1.2.0 test: returning the receiver
+		// and producing an in-bounds result are independent requirements.
+		if out := f(&v, &x); out != &v || !isInBounds(out) {
 			return false
 		}
 
@@ -33,7 +36,7 @@ func checkAliasingTwoArgs(f func(v, x, y *Element) *Element) func(v, x, y Elemen
 		x1, y1, v1 := x, y, Element{}
 
 		// Calculate a reference f(x, y) without aliasing.
-		if out := f(&v, &x, &y); out != &v && isInBounds(out) {
+		if out := f(&v, &x, &y); out != &v || !isInBounds(out) {
 			return false
 		}
 
