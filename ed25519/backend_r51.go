@@ -45,6 +45,11 @@ type r51SingleWorker struct {
 type r51WarmWorker struct {
 	verifier *r51x5.WarmCombStrictVerifierX4
 	err      error
+	keys     [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9
+	pubs     [r51x5.X4Lanes][32]byte
+	msgs     [r51x5.X4Lanes][]byte
+	sigs     [r51x5.X4Lanes][]byte
+	verdicts [r51x5.X4Lanes]bool
 }
 
 type r51WarmBuildWorker struct {
@@ -370,22 +375,21 @@ func (b *r51Backend) verifyWarmGroup(
 	if worker.verifier == nil {
 		return false, fmt.Errorf("ed25519: construct r51 warm worker: nil verifier")
 	}
-	var keys [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9
-	var encoded [r51x5.X4Lanes][32]byte
-	var messages, signatures [r51x5.X4Lanes][]byte
-	var verdicts [r51x5.X4Lanes]bool
 	for lane := 0; lane < r51x5.X4Lanes; lane++ {
 		table := pre[lane].table.(*r51WarmTable)
-		keys[lane] = &table.warm
-		encoded[lane] = *pubs[lane]
-		messages[lane] = msgs[lane]
-		signatures[lane] = sigs[lane]
+		worker.keys[lane] = &table.warm
+		worker.pubs[lane] = *pubs[lane]
+		worker.msgs[lane] = msgs[lane]
+		worker.sigs[lane] = sigs[lane]
 	}
-	all, err := worker.verifier.Verify(&keys, &encoded, &messages, &signatures, &verdicts)
+	all, err := worker.verifier.Verify(&worker.keys, &worker.pubs, &worker.msgs, &worker.sigs, &worker.verdicts)
 	if err != nil {
 		return false, err
 	}
-	copy(ok, verdicts[:])
+	copy(ok, worker.verdicts[:])
+	worker.keys = [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9{}
+	worker.msgs = [r51x5.X4Lanes][]byte{}
+	worker.sigs = [r51x5.X4Lanes][]byte{}
 	b.warmPool.Put(worker)
 	return all, nil
 }
