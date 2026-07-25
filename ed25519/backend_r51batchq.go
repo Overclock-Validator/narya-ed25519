@@ -69,6 +69,17 @@ func newR51IFMABatchQPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r
 	if finalizer != r51IFMABatchQFinalizerLiteral && finalizer != r51IFMABatchQFinalizerYFirst {
 		return nil, fmt.Errorf("ed25519: unsupported r51 batch-Q finalizer %d", finalizer)
 	}
+	// Measured faster shapes exist on Zen 5 but neither is reachable by changing
+	// this call, because verifyChunk evaluates through core.x4[half] only:
+	//
+	//   x8 / radixA=32 / comb256      9.24 us/sig at n>=8, 17.68 at n=4
+	//   two-x4 / radixA=32 / comb256  12.50 us/sig at every width
+	//   two-x4 / radixA=64 / shared   13.32 us/sig  <- this one
+	//
+	// newR51IFMACombPipeline populates variableX4 plus a shared fixed-base comb
+	// and leaves x4 empty, and the x8 kind populates x8 instead. Adopting either
+	// needs a matching evaluation path here, not a different constructor.
+	// See docs/ZEN5_9700X_2026-07-25.md.
 	core, err := newR51IFMAPipeline(r51IFMATwoX4, 6)
 	if err != nil {
 		return nil, err

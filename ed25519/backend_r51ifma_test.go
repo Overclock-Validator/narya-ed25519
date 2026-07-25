@@ -975,7 +975,9 @@ func BenchmarkR51IFMAPipelineParallel(b *testing.B) {
 
 	workerCount := runtime.GOMAXPROCS(0)
 	for _, messageSize := range []int{64, 200, 1232} {
-		for _, count := range []int{8, 64} {
+		// n=4 is the warm comb's minimum group and x8's half-empty worst case;
+		// the intermediate widths locate the two-x4/x8 crossover.
+		for _, count := range []int{4, 8, 16, 32, 64} {
 			fixture := makeBatchFixture(b, count, messageSize)
 			b.Run(fmt.Sprintf(
 				"workers=%d/stage=cold-A/path=stdlib/n=%d/msg=%d",
