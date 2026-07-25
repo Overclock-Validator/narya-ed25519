@@ -1,0 +1,110 @@
+//go:build amd64
+
+#include "textflag.h"
+
+#define RAW_SQUARE_MUL_PAIR(X, Y, L, H) \
+	VPMADD52LUQ Y, X, L                  \
+	VPMADD52HUQ Y, X, H
+
+#define RAW_SQUARE_CLEAR(R) VPXORQ R, R, R
+
+#define RAW_SQUARE_COMBINE_HIGH(H, L) \
+	VPSLLQ $1, H, H                     \
+	VPADDQ H, L, L
+
+#define RAW_SQUARE_FOLD_STORE(LO, HI, T0, T1, OFF) \
+	VPSLLQ $4, HI, T0                              \
+	VPSLLQ $1, HI, T1                              \
+	VPADDQ T1, T0, T0                              \
+	VPADDQ HI, T0, T0                              \
+	VPADDQ LO, T0, T0                              \
+	VMOVDQU64 T0, OFF(DI)
+
+// func ifmaSquareRawExperimentX4(out *IFMAProductX4, x *LimbsX4)
+//
+// The ten unique off-diagonal products are accumulated once and doubled
+// before the five diagonal products are added. The resulting convolution is
+// representationally identical to ifmaMulRawX4(out, x, x): IFMA high halves
+// are shifted into the next radix-2^51 degree, then degrees 5..9 are folded by
+// 2^255 == 19. The folded maxima are 267, 213, 159, 105, and 51 times 2^52,
+// so all five outputs are strictly below 2^61.
+TEXT ·ifmaSquareRawExperimentX4(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+
+	// Load all inputs before any store so exact out/x aliasing is safe.
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	RAW_SQUARE_CLEAR(Y5)
+	RAW_SQUARE_CLEAR(Y6)
+	RAW_SQUARE_CLEAR(Y7)
+	RAW_SQUARE_CLEAR(Y8)
+	RAW_SQUARE_CLEAR(Y9)
+	RAW_SQUARE_CLEAR(Y10)
+	RAW_SQUARE_CLEAR(Y11)
+	RAW_SQUARE_CLEAR(Y12)
+	RAW_SQUARE_CLEAR(Y13)
+	RAW_SQUARE_CLEAR(Y14)
+	RAW_SQUARE_CLEAR(Y15)
+	RAW_SQUARE_CLEAR(Y16)
+	RAW_SQUARE_CLEAR(Y17)
+	RAW_SQUARE_CLEAR(Y18)
+	RAW_SQUARE_CLEAR(Y19)
+	RAW_SQUARE_CLEAR(Y20)
+	RAW_SQUARE_CLEAR(Y21)
+	RAW_SQUARE_CLEAR(Y22)
+
+	RAW_SQUARE_MUL_PAIR(Y0, Y1, Y6,  Y15)
+	RAW_SQUARE_MUL_PAIR(Y0, Y2, Y7,  Y16)
+	RAW_SQUARE_MUL_PAIR(Y0, Y3, Y8,  Y17)
+	RAW_SQUARE_MUL_PAIR(Y0, Y4, Y9,  Y18)
+	RAW_SQUARE_MUL_PAIR(Y1, Y2, Y8,  Y17)
+	RAW_SQUARE_MUL_PAIR(Y1, Y3, Y9,  Y18)
+	RAW_SQUARE_MUL_PAIR(Y1, Y4, Y10, Y19)
+	RAW_SQUARE_MUL_PAIR(Y2, Y3, Y10, Y19)
+	RAW_SQUARE_MUL_PAIR(Y2, Y4, Y11, Y20)
+	RAW_SQUARE_MUL_PAIR(Y3, Y4, Y12, Y21)
+
+	VPSLLQ $1, Y6,  Y6
+	VPSLLQ $1, Y7,  Y7
+	VPSLLQ $1, Y8,  Y8
+	VPSLLQ $1, Y9,  Y9
+	VPSLLQ $1, Y10, Y10
+	VPSLLQ $1, Y11, Y11
+	VPSLLQ $1, Y12, Y12
+	VPSLLQ $1, Y15, Y15
+	VPSLLQ $1, Y16, Y16
+	VPSLLQ $1, Y17, Y17
+	VPSLLQ $1, Y18, Y18
+	VPSLLQ $1, Y19, Y19
+	VPSLLQ $1, Y20, Y20
+	VPSLLQ $1, Y21, Y21
+
+	RAW_SQUARE_MUL_PAIR(Y0, Y0, Y5,  Y14)
+	RAW_SQUARE_MUL_PAIR(Y1, Y1, Y7,  Y16)
+	RAW_SQUARE_MUL_PAIR(Y2, Y2, Y9,  Y18)
+	RAW_SQUARE_MUL_PAIR(Y3, Y3, Y11, Y20)
+	RAW_SQUARE_MUL_PAIR(Y4, Y4, Y13, Y22)
+
+	RAW_SQUARE_COMBINE_HIGH(Y14, Y6)
+	RAW_SQUARE_COMBINE_HIGH(Y15, Y7)
+	RAW_SQUARE_COMBINE_HIGH(Y16, Y8)
+	RAW_SQUARE_COMBINE_HIGH(Y17, Y9)
+	RAW_SQUARE_COMBINE_HIGH(Y18, Y10)
+	RAW_SQUARE_COMBINE_HIGH(Y19, Y11)
+	RAW_SQUARE_COMBINE_HIGH(Y20, Y12)
+	RAW_SQUARE_COMBINE_HIGH(Y21, Y13)
+	VPSLLQ $1, Y22, Y22
+
+	RAW_SQUARE_FOLD_STORE(Y5, Y10, Y23, Y24,   0)
+	RAW_SQUARE_FOLD_STORE(Y6, Y11, Y23, Y24,  32)
+	RAW_SQUARE_FOLD_STORE(Y7, Y12, Y23, Y24,  64)
+	RAW_SQUARE_FOLD_STORE(Y8, Y13, Y23, Y24,  96)
+	RAW_SQUARE_FOLD_STORE(Y9, Y22, Y23, Y24, 128)
+
+	VZEROUPPER
+	RET

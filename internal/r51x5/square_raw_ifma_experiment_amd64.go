@@ -1,0 +1,11 @@
+//go:build amd64
+
+package r51x5
+
+// ifmaSquareRawExperimentX4 squares four u52 radix-2^51 representatives and
+// returns the exact folded u61 representation produced by
+// ifmaMulRawX4(out, x, x). All inputs are loaded before any output store, so
+// out may exactly alias x when their identical layouts are explicitly cast.
+//
+//go:noescape
+func ifmaSquareRawExperimentX4(out *IFMAProductX4, x *LimbsX4)

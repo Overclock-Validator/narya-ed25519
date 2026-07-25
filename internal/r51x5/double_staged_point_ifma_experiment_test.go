@@ -40,6 +40,39 @@ func ifmaPointDoubleRawStage2ExperimentX4(out, q *IFMAPointX4) error {
 	return nil
 }
 
+// ifmaPointDoubleRawSquareStage2ExperimentX4 adds the symmetry-aware raw
+// square to the staged candidate. It still uses four separate Stage-1 calls;
+// a future fused Stage 1 would additionally remove those boundaries.
+func ifmaPointDoubleRawSquareStage2ExperimentX4(out, q *IFMAPointX4) error {
+	var workspace ifmaDoubleStage2WorkspaceX4
+	ifmaSquareRawExperimentX4(&workspace[0], &q.X.limbs)
+	ifmaSquareRawExperimentX4(&workspace[1], &q.Y.limbs)
+	ifmaSquareRawExperimentX4(&workspace[2], &q.Z.limbs)
+	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
+	ifmaDoubleStage2ExperimentX4(&workspace)
+
+	e := IFMAElementX4{limbs: LimbsX4(workspace[0])}
+	f := IFMAElementX4{limbs: LimbsX4(workspace[1])}
+	g := IFMAElementX4{limbs: LimbsX4(workspace[2])}
+	h := IFMAElementX4{limbs: LimbsX4(workspace[3])}
+
+	var result IFMAPointX4
+	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &e, &f); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &g, &h); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &e, &h); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &f, &g); err != nil {
+		return err
+	}
+	*out = result
+	return nil
+}
+
 // ifmaPointDoubleNoCopyExperimentX4 mirrors the current normalized production
 // schedule while reading q directly. The output remains local until every
 // input read is complete, so exact out==q aliasing does not require the
@@ -175,6 +208,25 @@ func TestExperimentalIFMARawStage2PointDoubleX4Chaining(t *testing.T) {
 	}
 }
 
+func TestExperimentalIFMARawSquareStage2PointDoubleX4Differential(t *testing.T) {
+	requireRawStage2PointIFMA(t)
+	rng := rand.New(rand.NewSource(0x51_d02_5a7e))
+	for round := 0; round < 128; round++ {
+		reduced, got := directXYPointFixtureX4(t, rng, round)
+		want := reduced
+		for step := 0; step < 32; step++ {
+			if err := ifmaPointDoubleRawSquareStage2ExperimentX4(&got, &got); err != nil {
+				t.Fatalf("round=%d step=%d: %v", round, step, err)
+			}
+			want.Double(&want)
+			if got.Reduced() != want {
+				t.Fatalf("round=%d step=%d: raw-square Stage2 mismatch", round, step)
+			}
+			assertRawStage2PointU52(t, "raw-square-chain", round, step, &got)
+		}
+	}
+}
+
 func TestExperimentalIFMARawStage2PointDoubleX4Aliasing(t *testing.T) {
 	requireRawStage2PointIFMA(t)
 	rng := rand.New(rand.NewSource(0x51_d02_a11a))
@@ -278,6 +330,27 @@ func ifmaRawStage2PreparedRadix64LoopX4(out, start, addend0, addend1 *IFMAPointX
 		if round != 0 {
 			for doubling := 0; doubling < quadRadix64LoopDoubles; doubling++ {
 				if err := ifmaPointDoubleRawStage2ExperimentX4(&state, &state); err != nil {
+					return err
+				}
+			}
+		}
+		if err := ifmaPointAddComposableStaticX4(&state, &state, addend0); err != nil {
+			return err
+		}
+		if err := ifmaPointAddComposableStaticX4(&state, &state, addend1); err != nil {
+			return err
+		}
+	}
+	*out = state
+	return nil
+}
+
+func ifmaRawSquareStage2PreparedRadix64LoopX4(out, start, addend0, addend1 *IFMAPointX4) error {
+	state := *start
+	for round := 0; round < quadRadix64LoopRounds; round++ {
+		if round != 0 {
+			for doubling := 0; doubling < quadRadix64LoopDoubles; doubling++ {
+				if err := ifmaPointDoubleRawSquareStage2ExperimentX4(&state, &state); err != nil {
 					return err
 				}
 			}
@@ -456,6 +529,18 @@ func BenchmarkExperimentalIFMARawStage2PointDoubleX4(b *testing.B) {
 		}
 		benchmarkRawStage2PointSink = state
 	})
+
+	b.Run("doubling=raw-square-stage2", func(b *testing.B) {
+		state := seed
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleRawSquareStage2ExperimentX4(&state, &state); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkRawStage2PointSink = state
+	})
 }
 
 func BenchmarkExperimentalIFMARawStage2PreparedRadix64LoopX4(b *testing.B) {
@@ -507,6 +592,18 @@ func BenchmarkExperimentalIFMARawStage2PreparedRadix64LoopX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := ifmaRawStage2PreparedRadix64LoopX4(&out, &start, &addend0, &addend1); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkRawStage2PointSink = out
+	})
+
+	b.Run("doubling=raw-square-stage2", func(b *testing.B) {
+		var out IFMAPointX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaRawSquareStage2PreparedRadix64LoopX4(&out, &start, &addend0, &addend1); err != nil {
 				b.Fatal(err)
 			}
 		}
