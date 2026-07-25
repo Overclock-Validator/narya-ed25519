@@ -75,6 +75,27 @@ func (p *IFMAPointX8) Reduced() PointX8 {
 	}
 }
 
+// SplitX4 copies lanes 0..3 and 4..7 into two four-lane composable points.
+// It performs no field arithmetic or normalization: every u52 limb is copied
+// bit-for-bit, so the output has exactly the input range contract. This layout
+// boundary lets an x8 evaluator reuse the independently audited x4 batch-Q
+// encoder without converting through canonical field elements.
+func (p *IFMAPointX8) SplitX4(out *[2]IFMAPointX4) {
+	splitIFMAElementX8(&out[0].X, &out[1].X, &p.X)
+	splitIFMAElementX8(&out[0].Y, &out[1].Y, &p.Y)
+	splitIFMAElementX8(&out[0].Z, &out[1].Z, &p.Z)
+	splitIFMAElementX8(&out[0].T, &out[1].T, &p.T)
+}
+
+func splitIFMAElementX8(low, high *IFMAElementX4, source *IFMAElementX8) {
+	for limb := range source.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			low.limbs[limb][lane] = source.limbs[limb][lane]
+			high.limbs[limb][lane] = source.limbs[limb][lane+X4Lanes]
+		}
+	}
+}
+
 type ifmaComposableMulX4 func(out, x, y *IFMAElementX4) error
 type ifmaComposableMulX8 func(out, x, y *IFMAElementX8) error
 

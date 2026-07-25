@@ -9,6 +9,34 @@ import (
 	"testing"
 )
 
+func TestIFMAPointX8SplitX4BitIdentity(t *testing.T) {
+	var source IFMAPointX8
+	coordinates := []*IFMAElementX8{&source.X, &source.Y, &source.Z, &source.T}
+	for coordinate, element := range coordinates {
+		for limb := range element.limbs {
+			for lane := 0; lane < X8Lanes; lane++ {
+				element.limbs[limb][lane] = (uint64(coordinate+1)<<48 | uint64(limb)<<12 | uint64(lane+1)) & (ifmaComposableLimbLimit - 1)
+			}
+		}
+	}
+
+	var split [2]IFMAPointX4
+	source.SplitX4(&split)
+	for half := range split {
+		outputs := []*IFMAElementX4{&split[half].X, &split[half].Y, &split[half].Z, &split[half].T}
+		for coordinate, element := range outputs {
+			for limb := range element.limbs {
+				for lane := 0; lane < X4Lanes; lane++ {
+					sourceLane := half*X4Lanes + lane
+					if got, want := element.limbs[limb][lane], coordinates[coordinate].limbs[limb][sourceLane]; got != want {
+						t.Fatalf("half=%d coordinate=%d limb=%d lane=%d got=%#x want=%#x", half, coordinate, limb, lane, got, want)
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestIFMAComposableAnalyticBounds(t *testing.T) {
 	// After splitting each product at bit 52 and moving doubled high halves
 	// into the next radix-2^51 degree, degrees 0..9 have these conservative

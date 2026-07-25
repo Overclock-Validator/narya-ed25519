@@ -19,6 +19,7 @@ import (
 // oracle. Automatic backend selection does not reach this type.
 type r51IFMABatchQPipeline struct {
 	core      *r51IFMAPipeline
+	wideCore  *r51IFMAPipeline
 	finalizer r51IFMABatchQFinalizer
 
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
@@ -92,6 +93,23 @@ func newR51IFMABatchQCombPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer)
 		return nil, err
 	}
 	return newR51IFMABatchQPipelineWithCore(finalizer, core)
+}
+
+// newR51IFMABatchQX8CombPipelineWithFinalizer adds an x8/radix-32/comb256
+// evaluator for complete eight-signature groups while retaining the promoted
+// two-x4 comb core for tails. It is kept behind an explicit candidate
+// constructor until microarchitecture dispatch is reviewed and measured.
+func newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
+	pipeline, err := newR51IFMABatchQCombPipelineWithFinalizer(finalizer)
+	if err != nil {
+		return nil, err
+	}
+	wideCore, err := newR51IFMACombPipeline(r51IFMAX8, 5, 8)
+	if err != nil {
+		return nil, err
+	}
+	pipeline.wideCore = wideCore
+	return pipeline, nil
 }
 
 func newR51IFMABatchQPipelineWithCore(finalizer r51IFMABatchQFinalizer, core *r51IFMAPipeline) (*r51IFMABatchQPipeline, error) {
@@ -172,7 +190,34 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 		pipeline.final[group] = 0
 	}
 
-	if compactMisses {
+	if pipeline.wideCore != nil && decoded == nil && compactMisses {
+		wideCount := count &^ (r51x5.X8Lanes - 1)
+		for relative := 0; relative < wideCount; relative += r51x5.X8Lanes {
+			if err := pipeline.evaluateX8Group(
+				profile,
+				pubs,
+				msgs,
+				sigs,
+				offset+relative,
+				relative/r51x5.X4Lanes,
+			); err != nil {
+				return err
+			}
+		}
+		if tail := count - wideCount; tail != 0 {
+			if err := pipeline.evaluateTwoX4Group(
+				profile,
+				pubs,
+				msgs,
+				sigs,
+				offset+wideCount,
+				tail,
+				wideCount/r51x5.X4Lanes,
+			); err != nil {
+				return err
+			}
+		}
+	} else if compactMisses {
 		live, err := pipeline.prepareDecodedAChunk(profile, pubs, sigs, decoded, offset, count)
 		if err != nil {
 			return err
@@ -279,6 +324,76 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 	default:
 		panic("ed25519: unreachable r51 batch-Q finalizer")
 	}
+}
+
+func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
+	profile Profile,
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	offset, outputGroup int,
+) error {
+	if pipeline.wideCore == nil || pipeline.wideCore.kind != r51IFMAX8 || pipeline.wideCore.fixedBaseComb == nil || pipeline.wideCore.variableX8 == nil {
+		panic("ed25519: uninitialized forced r51 IFMA x8 comb workspace")
+	}
+
+	var aBytes [r51x5.X8Lanes][32]byte
+	var s [r51x5.X8Lanes][32]byte
+	var candidates uint8
+	for lane := 0; lane < r51x5.X8Lanes; lane++ {
+		index := offset + lane
+		coefficient, valid := prepareR51Signature(profile, pubs[index], sigs[index])
+		if !valid {
+			continue
+		}
+		aBytes[lane] = *pubs[index]
+		s[lane] = coefficient
+		candidates |= 1 << lane
+	}
+	if candidates == 0 {
+		return nil
+	}
+
+	var A r51x5.PointX8
+	live, err := r51x5.ExperimentalIFMADecodeX8(&A, &aBytes, candidates)
+	if err != nil {
+		return err
+	}
+	live &= candidates
+	if live == 0 {
+		return nil
+	}
+
+	var k [r51x5.X8Lanes][32]byte
+	live, err = reduceR51NativeChallengesX8(&k, pubs, msgs, sigs, offset, r51x5.X8Lanes, live, sha512mb.ExperimentalWidthX8)
+	if err != nil || live == 0 {
+		return err
+	}
+
+	if err := pipeline.wideCore.variableX8.Prepare(&A, pipeline.wideCore.radixBits); err != nil {
+		return err
+	}
+	var aTerm, bTerm r51x5.IFMAPointX8
+	usableA, err := pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
+	if err != nil {
+		return err
+	}
+	usableB, err := r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8(&bTerm, pipeline.wideCore.fixedBaseComb, &s, live)
+	if err != nil {
+		return err
+	}
+	var combined r51x5.IFMAPointX8
+	if err := r51x5.ExperimentalIFMAPointAddComposableX8(&combined, &aTerm, &bTerm); err != nil {
+		return err
+	}
+	live &= usableA & usableB
+	var split [2]r51x5.IFMAPointX4
+	combined.SplitX4(&split)
+	for half := range split {
+		group := outputGroup + half
+		pipeline.points[group] = split[half]
+		pipeline.active[group] = uint8(live>>(half*r51x5.X4Lanes)) & 0x0f
+	}
+	return nil
 }
 
 func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4Group(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, offset, count, outputGroup int) error {
@@ -624,5 +739,9 @@ func (pipeline *r51IFMABatchQPipeline) String() string {
 	if pipeline.finalizer == r51IFMABatchQFinalizerYFirst {
 		finalizer = "y-first"
 	}
-	return fmt.Sprintf("%s/radix=%d/fixed=%s/%s", pipeline.core.kind, 1<<pipeline.core.radixBits, pipeline.core.fixedBaseLabel(), finalizer)
+	wide := ""
+	if pipeline.wideCore != nil {
+		wide = fmt.Sprintf("/wide=%s", pipeline.wideCore.kind)
+	}
+	return fmt.Sprintf("%s/radix=%d/fixed=%s%s/%s", pipeline.core.kind, 1<<pipeline.core.radixBits, pipeline.core.fixedBaseLabel(), wide, finalizer)
 }
