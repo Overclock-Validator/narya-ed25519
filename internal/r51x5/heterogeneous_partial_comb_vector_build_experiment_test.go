@@ -25,6 +25,11 @@ const (
 // across unavailable-hardware, input-range, zero-Z, and injected arithmetic
 // failures.
 type heterogeneousPartialCombA6R9VectorBuildWorkspaceExperiment struct {
+	// rowBase lives in caller-owned scratch because the model-capable point
+	// helper conservatively makes its point argument escape under the Go 1.26
+	// compiler. Keeping the 640-byte value here avoids one heap allocation per
+	// hardware table build without weakening the shared model/hardware oracle.
+	rowBase    IFMAPointX4
 	projective [heterogeneousPartialCombA6R9VectorPointCountExperiment]IFMAPointX4
 	prefix     [heterogeneousPartialCombA6R9VectorPointCountExperiment]IFMAElementX4
 	inverseZ   [heterogeneousPartialCombA6R9VectorPointCountExperiment]IFMAElementX4
@@ -99,23 +104,23 @@ func buildHeterogeneousPartialCombA6R9VectorGroupWithOpsExperiment(
 		return errIFMAComposableInputRange
 	}
 
-	var rowBase IFMAPointX4
+	rowBase := &workspace.rowBase
 	rowBase.SetReduced(bases)
 	pointIndex := 0
 	for row := 0; row < heterogeneousPartialCombA6R9VectorRowsExperiment; row++ {
-		multiple := rowBase
+		multiple := *rowBase
 		for entry := 0; entry < heterogeneousPartialCombA6R9VectorEntriesExperiment; entry++ {
 			workspace.projective[pointIndex] = multiple
 			pointIndex++
 			if entry+1 < heterogeneousPartialCombA6R9VectorEntriesExperiment {
-				if err := heterogeneousPartialCombA6R9VectorPointAddExperiment(&multiple, &multiple, &rowBase, ops); err != nil {
+				if err := heterogeneousPartialCombA6R9VectorPointAddExperiment(&multiple, &multiple, rowBase, ops); err != nil {
 					return err
 				}
 			}
 		}
 		if row+1 < heterogeneousPartialCombA6R9VectorRowsExperiment {
 			for doubling := 0; doubling < int(heterogeneousPartialCombA6R9Experiment.width)*heterogeneousPartialCombA6R9Experiment.passes; doubling++ {
-				if err := heterogeneousPartialCombA6R9VectorPointDoubleExperiment(&rowBase, &rowBase, ops); err != nil {
+				if err := heterogeneousPartialCombA6R9VectorPointDoubleExperiment(rowBase, rowBase, ops); err != nil {
 					return err
 				}
 			}
@@ -272,8 +277,8 @@ func TestHeterogeneousPartialCombA6R9VectorBuilderShapeAndWorkspaceExperiment(t 
 		heterogeneousPartialCombA6R9Experiment.entriesPerRow() != heterogeneousPartialCombA6R9VectorEntriesExperiment {
 		t.Fatalf("A6/r9 vector constants no longer match spec")
 	}
-	if got := int(unsafe.Sizeof(heterogeneousPartialCombA6R9VectorBuildWorkspaceExperiment{})); got != 230_400 {
-		t.Fatalf("workspace bytes=%d want=230400", got)
+	if got := int(unsafe.Sizeof(heterogeneousPartialCombA6R9VectorBuildWorkspaceExperiment{})); got != 231_040 {
+		t.Fatalf("workspace bytes=%d want=231040", got)
 	}
 	if got := int(unsafe.Sizeof([X4Lanes][heterogeneousPartialCombA6R9VectorPointCountExperiment]ifmaAffine3MicroAoSEntryExperiment{})); got != 76_800 {
 		t.Fatalf("output payload bytes=%d want=76800", got)
