@@ -30,10 +30,9 @@ type r51Backend struct {
 }
 
 type r51BatchWorker struct {
-	pipeline       *r51IFMABatchQPipeline
-	decodedStorage [r51BatchQMaxChunk]r51DecodedAEntry
-	decoded        [r51BatchQMaxChunk]*r51DecodedAEntry
-	err            error
+	pipeline *r51IFMABatchQPipeline
+	decoded  [r51BatchQMaxChunk]*r51DecodedAEntry
+	err      error
 }
 
 type r51SingleWorker struct {
@@ -43,14 +42,15 @@ type r51SingleWorker struct {
 
 var registeredR51Backend = new(r51Backend)
 
-// r51DecodedATable is the broad, batch-oriented warm tier. It retains only a
-// permissively decoded point; PrecomputedKey.raw separately binds it to the
-// exact original encoding that must remain in H(R || A || M).
+// r51DecodedATable is the broad, batch-oriented warm tier. Its immutable entry
+// is stored in the exact form consumed by the batch pipeline so a lookup does
+// not copy a 160-byte point into worker scratch. PrecomputedKey.raw separately
+// retains the public cache-key binding.
 type r51DecodedATable struct {
-	point r51x5.Point
+	entry r51DecodedAEntry
 }
 
-const r51DecodedATableBytes = 4 * 5 * 8
+const r51DecodedATableBytes = 32 + 4*5*8
 
 func init() { register("r51", registeredR51Backend) }
 
@@ -111,7 +111,7 @@ func (b *r51Backend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
 	}
 	return &PrecomputedKey{
 		raw:   *pub,
-		table: &r51DecodedATable{point: point},
+		table: &r51DecodedATable{entry: r51DecodedAEntry{raw: *pub, point: point}},
 		size:  r51DecodedATableBytes,
 	}, nil
 }
@@ -285,8 +285,10 @@ func (worker *r51BatchWorker) resolveDecodedA(pubs []*[32]byte, pre []*Precomput
 		if !ok || table == nil {
 			continue
 		}
-		worker.decodedStorage[index] = r51DecodedAEntry{raw: prepared.raw, point: table.point}
-		worker.decoded[index] = &worker.decodedStorage[index]
+		if table.entry.raw != prepared.raw {
+			continue
+		}
+		worker.decoded[index] = &table.entry
 	}
 	return worker.decoded[:len(pubs)]
 }

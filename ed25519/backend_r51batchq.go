@@ -44,14 +44,14 @@ type r51IFMABatchQPipeline struct {
 	beforeBatchEncode func() error
 }
 
-// r51DecodedAEntry is the smallest benchmark representation of a reusable
-// decoded public key. raw is load-bearing: Ed25519 hashes the caller's original
+// r51DecodedAEntry is the native reusable decoded-public-key representation.
+// raw is load-bearing: Ed25519 hashes the caller's original
 // public-key bytes, and the permissive decoder can map more than one byte
 // string to the same point. A lookup hit is therefore usable only for the exact
 // raw encoding that produced point.
 //
-// This remains private to the r51 implementation. It is not a cache policy
-// and carries no admission, eviction, synchronization, or profile state.
+// This remains private to the r51 implementation. It carries no admission,
+// eviction, synchronization, or profile state.
 type r51DecodedAEntry struct {
 	raw   [32]byte
 	point r51x5.Point

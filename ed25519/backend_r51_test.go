@@ -86,7 +86,10 @@ func TestR51BackendDecodedAPrecomputeShape(t *testing.T) {
 	if !ok || table == nil {
 		t.Fatalf("decoded-A table type %T", pre.table)
 	}
-	if got := table.point.Bytes(); got != fixture.pub {
+	if table.entry.raw != fixture.pub {
+		t.Fatalf("decoded-A entry raw=%x, want %x", table.entry.raw, fixture.pub)
+	}
+	if got := table.entry.point.Bytes(); got != fixture.pub {
 		t.Fatalf("decoded-A point re-encoded as %x, want %x", got, fixture.pub)
 	}
 	if !pre.VerifyStrict(fixture.msg, fixture.sig) {
