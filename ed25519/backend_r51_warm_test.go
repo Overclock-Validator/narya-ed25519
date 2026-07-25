@@ -215,3 +215,90 @@ func BenchmarkR51WarmCacheGroup(b *testing.B) {
 		})
 	}
 }
+
+func prepareR51CacheTierBenchmark(
+	b *testing.B,
+	backend *r51Backend,
+	fixture *batchFixture,
+	warmGroups int,
+) *Cache {
+	b.Helper()
+	cache := &Cache{MaxTableBytes: int64(len(fixture.pubs)) * r51WarmTableBytes}
+	for _, pub := range fixture.pubs {
+		admitR51DecodedATestEntry(b, cache, backend, pub)
+	}
+	for group := 0; group < warmGroups; group++ {
+		start := group * r51x5.X4Lanes
+		end := start + r51x5.X4Lanes
+		for hit := int32(0); hit < backend.promotionThreshold(); hit++ {
+			if !cache.verifyBatchWithBackend(
+				backend,
+				DalekStrict,
+				fixture.pubs[start:end],
+				fixture.msgs[start:end],
+				fixture.sigs[start:end],
+				fixture.ok[start:end],
+			) {
+				b.Fatal("warm-tier promotion rejected valid group")
+			}
+		}
+	}
+	// Keep the timed hit density stable. Candidate keys that the setup did not
+	// promote remain immutable decoded entries and cannot cross a threshold
+	// during b.N.
+	for index := warmGroups * r51x5.X4Lanes; index < len(fixture.pubs); index++ {
+		value, _ := cache.promotions.LoadOrStore(*fixture.pubs[index], new(promotionState))
+		value.(*promotionState).status.Store(promotionDisabled)
+	}
+	if got := cache.Stats().PromotedTables; got != int64(warmGroups*r51x5.X4Lanes) {
+		b.Fatalf("warm-tier setup promoted=%d want=%d", got, warmGroups*r51x5.X4Lanes)
+	}
+	return cache
+}
+
+// BenchmarkR51CacheTierMatrix compares the stable production paths: no Cache,
+// first-tier decoded/staging entries, and homogeneous warm x4 groups. Warm
+// percentages count complete groups rather than scattered individual hits,
+// because a partial group deliberately remains on the cold/decoded path.
+func BenchmarkR51CacheTierMatrix(b *testing.B) {
+	backend := requireR51Backend(b)
+	for _, messageSize := range []int{64, 200, 1232} {
+		for _, count := range []int{4, 8, 64} {
+			fixture := makeBatchFixture(b, count, messageSize)
+			b.Run(fmt.Sprintf("tier=cold/warm=0/n=%d/msg=%d", count, messageSize), func(b *testing.B) {
+				b.ReportAllocs()
+				b.ResetTimer()
+				for iteration := 0; iteration < b.N; iteration++ {
+					if !backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+						b.Fatal("cold verification rejected valid batch")
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/sig")
+			})
+
+			percentages := []int{0, 100}
+			if count == 8 {
+				percentages = []int{0, 50, 100}
+			} else if count == 64 {
+				percentages = []int{0, 25, 50, 75, 100}
+			}
+			for _, percent := range percentages {
+				warmGroups := (count / r51x5.X4Lanes) * percent / 100
+				cache := prepareR51CacheTierBenchmark(b, backend, &fixture, warmGroups)
+				b.Run(fmt.Sprintf("tier=cache/warm=%d/n=%d/msg=%d", percent, count, messageSize), func(b *testing.B) {
+					b.ReportAllocs()
+					b.ResetTimer()
+					for iteration := 0; iteration < b.N; iteration++ {
+						if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+							b.Fatal("cache-tier verification rejected valid batch")
+						}
+					}
+					stats := cache.Stats()
+					b.ReportMetric(float64(stats.PromotedTables), "warm-tables")
+					b.ReportMetric(float64(stats.TableBytes), "table-bytes")
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/sig")
+				})
+			}
+		}
+	}
+}
