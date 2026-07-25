@@ -150,7 +150,7 @@ rather than as a single figure of merit.
 | `crypto/ed25519` loop | ~36.6 | baseline |
 | `generic`, cold key, `DalekStrict` | ~36.1 | **shipping**; stricter predicate than stdlib |
 | `generic`, hot key (comb cache) | ~16.3 | **shipping** |
-| packed x4 singleton | ~29.3 | experimental; not reachable from a registered backend |
+| packed x4 singleton, paired A/R | ~25.6 | experimental; not reachable from a registered backend |
 | `r51` batch-Q, n=64 | ~14.8 | experimental; not reachable from a registered backend |
 
 Two things this table says plainly:
@@ -171,6 +171,11 @@ are intentionally excluded until they improve a complete verifier. The newest
 prepared-table partial-comb experiment reduces the r51 point loop to about
 4.2 us/signature, but it is not included in the table because construction,
 cache policy, decoding, hashing, and finalization have not yet been charged.
+Its current scalar builder needs roughly 650 key reuses to amortize, so a
+vectorized batch-normalizing builder is the next cache gate. The packed
+singleton row includes the strict paired-A/R decode and projective finalizer,
+but remains test-only.
+
 Detailed commands, statistical samples, and caveats are recorded in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
 
