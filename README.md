@@ -191,13 +191,15 @@ and are not selected by default.
 
 Apache-2.0. See [NOTICE](NOTICE) for the full attribution list.
 
-**Vendored code.** `internal/edwards25519` and `internal/edwards25519/field`
-derive from the Go standard library's `crypto/internal/edwards25519` and from
-`filippo.io/edwards25519` v1.0.0 (BSD-3-Clause); the upstream LICENSE files are
-preserved in those directories. Narya has **modified** files in that tree —
-notably `field/fe.go` (square-root-ratio derivation) and `scalarmult.go`
-(leading-zero skip) — and has added first-party files there. Narya-authored
-files inside the vendored tree are Apache-2.0.
+**Vendored code.** `internal/edwards25519` derives from the Go standard
+library's `crypto/internal/edwards25519` and from
+`filippo.io/edwards25519` v1.0.0; its `field` subpackage is synchronized to
+`filippo.io/edwards25519` v1.2.0 (BSD-3-Clause). The upstream LICENSE files
+are preserved in those directories. Narya has **modified** files in that tree
+— notably `field/fe.go` (the v1.2.0 field code retains Narya's
+square-root-ratio derivation) and `scalarmult.go` (leading-zero skip) — and has
+added first-party files there. Narya-authored files inside the vendored tree
+are Apache-2.0.
 
 **Derived work.** The `r43x6` AVX-512 IFMA design and the constants in
 `internal/r43x6` follow
