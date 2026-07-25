@@ -301,11 +301,19 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 	for offset := 0; offset < len(pubs); offset += r51BatchQMaxChunk {
 		count := minR51(len(pubs)-offset, r51BatchQMaxChunk)
 		var pre [r51BatchQMaxChunk]*PrecomputedKey
+		hits := 0
 		for index := 0; index < count; index++ {
 			absolute := offset + index
 			if !rejectedByProfile(profile, pubs[absolute], sigs[absolute]) {
 				pre[index] = lookup.lookup(pubs[absolute])
+				if pre[index] != nil {
+					hits++
+				}
 			}
+		}
+		var prepared []*PrecomputedKey
+		if hits != 0 {
+			prepared = pre[:count]
 		}
 		chunkAll, err := b.verifyBatchRawPrecomputedErr(
 			profile,
@@ -313,7 +321,7 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 			msgs[offset:offset+count],
 			sigs[offset:offset+count],
 			ok[offset:offset+count],
-			pre[:count],
+			prepared,
 		)
 		if err != nil {
 			b.faults.Add(1)
