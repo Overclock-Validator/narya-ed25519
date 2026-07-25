@@ -216,6 +216,60 @@ func BenchmarkNativeX8(b *testing.B) {
 	}
 }
 
+// BenchmarkNativeCompress separates the native SHA-512 compression kernels
+// from segmented-input assembly, padding, transposition, and digest extraction.
+// The x8/two-x4 comparison is therefore a kernel-only architecture decision;
+// BenchmarkNativeX8 remains the complete-hash gate.
+func BenchmarkNativeCompress(b *testing.B) {
+	if nativeX4Available() {
+		var state0, state1 nativeStateX4
+		var block0, block1 nativeBlockX4
+		for word := range state0 {
+			for lane := range state0[word] {
+				state0[word][lane] = nativeInitialState[word]
+				state1[word][lane] = nativeInitialState[word]
+			}
+		}
+		for word := range block0 {
+			for lane := range block0[word] {
+				block0[word][lane] = uint64(word*nativeX4Width + lane + 1)
+				block1[word][lane] = uint64(word*nativeX4Width + lane + 101)
+			}
+		}
+		b.Run("two-x4", func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				nativeCompressX4(&state0, &block0)
+				nativeCompressX4(&state1, &block1)
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
+		})
+	}
+	if nativeX8Available() {
+		var state nativeStateX8
+		var block nativeBlockX8
+		for word := range state {
+			for lane := range state[word] {
+				state[word][lane] = nativeInitialState[word]
+			}
+		}
+		for word := range block {
+			for lane := range block[word] {
+				block[word][lane] = uint64(word*nativeX8Width + lane + 1)
+			}
+		}
+		b.Run("x8", func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				nativeCompressX8(&state, &block)
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
+		})
+	}
+}
+
 // BenchmarkNativeTails exposes the utilization crossover for naturally
 // available batch widths. Every case reuses fixed input descriptors, so any
 // reported allocation belongs to the implementation under test.
