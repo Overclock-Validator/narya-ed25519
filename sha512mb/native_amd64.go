@@ -26,6 +26,14 @@ func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)
 //go:noescape
 func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
 
+// nativeCompressFinalX8Rolling compresses the exact SHA-512 final-block shapes
+// whose variable prefix contains zero, one, or two complete 64-bit words.
+// tail is already transposed and expressed as host uint64 values equal to the
+// corresponding big-endian SHA words.
+//
+//go:noescape
+func nativeCompressFinalX8Rolling(state *nativeStateX8, tail *nativeTailX8, tailWords, totalBits uint64)
+
 //go:noescape
 func nativeTransposeX8(block *nativeBlockX8, raw *[nativeX8Width][128]byte)
 

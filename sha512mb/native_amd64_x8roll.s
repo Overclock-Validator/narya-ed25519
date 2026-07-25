@@ -3,6 +3,9 @@
 #include "textflag.h"
 #include "native_amd64_transpose.h"
 
+DATA nativePaddingWord<>+0(SB)/8, $0x8000000000000000
+GLOBL nativePaddingWord<>(SB), RODATA|NOPTR, $8
+
 // ROUND8R is the register-schedule SHA-512 round. The eight working words
 // rotate through Z0..Z7 by changing macro arguments. W is one of Z16..Z31.
 #define ROUND8R(A, B, C, D, E, F, G, H, W, K) \
@@ -174,7 +177,63 @@ fusedStateReady:
 	MOVQ $·nativeRoundConstants(SB), BP
 	JMP nativeCompressX8RollingRounds<>(SB)
 
-// Both public assembly entry points arrive here with W[0..15] in Z16..Z31,
+// func nativeCompressFinalX8Rolling(state *nativeStateX8, tail *nativeTailX8, tailWords, totalBits uint64)
+//
+// Requires AVX-512F. tailWords must be 0, 1, or 2. tail already contains
+// the transposed host-uint64 values of the big-endian SHA words. The remaining
+// words are the SHA-512 padding bit, zeros, and the 64-bit low message length;
+// all supported verifier inputs have a zero high message-length word.
+TEXT ·nativeCompressFinalX8Rolling(SB), 0, $0-32
+	VPXORQ Z31, Z31, Z31
+	VMOVDQA64 Z31, Z16
+	VMOVDQA64 Z31, Z17
+	VMOVDQA64 Z31, Z18
+	VMOVDQA64 Z31, Z19
+	VMOVDQA64 Z31, Z20
+	VMOVDQA64 Z31, Z21
+	VMOVDQA64 Z31, Z22
+	VMOVDQA64 Z31, Z23
+	VMOVDQA64 Z31, Z24
+	VMOVDQA64 Z31, Z25
+	VMOVDQA64 Z31, Z26
+	VMOVDQA64 Z31, Z27
+	VMOVDQA64 Z31, Z28
+	VMOVDQA64 Z31, Z29
+	VMOVDQA64 Z31, Z30
+
+	MOVQ tail+8(FP), SI
+	MOVQ tailWords+16(FP), AX
+	CMPQ AX, $0
+	JE finalTailZero
+	VMOVDQU64 0(SI), Z16
+	CMPQ AX, $1
+	JE finalTailOne
+	VMOVDQU64 64(SI), Z17
+	VPBROADCASTQ nativePaddingWord<>(SB), Z18
+	JMP finalTailReady
+finalTailZero:
+	VPBROADCASTQ nativePaddingWord<>(SB), Z16
+	JMP finalTailReady
+finalTailOne:
+	VPBROADCASTQ nativePaddingWord<>(SB), Z17
+finalTailReady:
+	MOVQ totalBits+24(FP), AX
+	VMOVQ AX, X15
+	VPBROADCASTQ X15, Z31
+
+	MOVQ state+0(FP), DI
+	VMOVDQU64   0(DI), Z0
+	VMOVDQU64  64(DI), Z1
+	VMOVDQU64 128(DI), Z2
+	VMOVDQU64 192(DI), Z3
+	VMOVDQU64 256(DI), Z4
+	VMOVDQU64 320(DI), Z5
+	VMOVDQU64 384(DI), Z6
+	VMOVDQU64 448(DI), Z7
+	MOVQ $·nativeRoundConstants(SB), BP
+	JMP nativeCompressX8RollingRounds<>(SB)
+
+// All public assembly entry points arrive here with W[0..15] in Z16..Z31,
 // the current state in Z0..Z7, DI pointing at the original state, and BP
 // pointing at the scalar round constants. Tail jumps preserve the Go caller's
 // return address, so this shared body returns directly to Go.

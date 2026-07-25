@@ -167,6 +167,47 @@ func TestNativeCompressX8RollingAlias(t *testing.T) {
 	}
 }
 
+func TestNativeCompressFinalX8RollingDifferential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F")
+	}
+	rng := rand.New(rand.NewSource(0x512f1a1))
+	for tailWords := 0; tailWords <= 2; tailWords++ {
+		for iteration := 0; iteration < 100; iteration++ {
+			var got nativeStateX8
+			var want [8][referenceMaxLanes]uint64
+			var tail nativeTailX8
+			var blocks [referenceMaxLanes][128]byte
+			var active [referenceMaxLanes]bool
+			totalBits := uint64(8 * (128 + iteration*17 + tailWords*8))
+			for lane := 0; lane < nativeX8Width; lane++ {
+				active[lane] = true
+				for word := range nativeInitialState {
+					value := rng.Uint64()
+					got[word][lane] = value
+					want[word][lane] = value
+				}
+				for word := 0; word < tailWords; word++ {
+					value := rng.Uint64()
+					tail[word][lane] = value
+					binary.BigEndian.PutUint64(blocks[lane][word*8:], value)
+				}
+				blocks[lane][tailWords*8] = 0x80
+				binary.BigEndian.PutUint64(blocks[lane][120:], totalBits)
+			}
+			compressReference(&want, &blocks, &active, nativeX8Width)
+			nativeCompressFinalX8Rolling(&got, &tail, uint64(tailWords), totalBits)
+			for word := range got {
+				for lane := range got[word] {
+					if got[word][lane] != want[word][lane] {
+						t.Fatalf("tailWords=%d iteration=%d word=%d lane=%d: got=%016x want=%016x", tailWords, iteration, word, lane, got[word][lane], want[word][lane])
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestNativeTransposeX8Differential(t *testing.T) {
 	if !nativeX8Available() {
 		t.Skip("requires AVX-512F and AVX-512BW")
@@ -386,6 +427,31 @@ func TestExperimentalSum512Batch3Differential(t *testing.T) {
 	}
 	if !tested {
 		t.Skip("requires AVX2 or AVX-512F")
+	}
+}
+
+func TestExperimentalSum512Batch3UniformVerifierShapesX8(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(0x512f13d))
+	for _, messageSize := range []int{64, 200, 1232} {
+		for _, count := range []int{nativeX8Width, 2 * nativeX8Width} {
+			msgs := make([][3][]byte, count)
+			for lane := range msgs {
+				msgs[lane][0] = make([]byte, 32)
+				msgs[lane][1] = make([]byte, 32)
+				msgs[lane][2] = make([]byte, messageSize)
+				for part := range msgs[lane] {
+					_, _ = rng.Read(msgs[lane][part])
+				}
+			}
+			out := make([][64]byte, count)
+			if !ExperimentalSum512Batch3(out, msgs, nativeX8Width) {
+				t.Fatal("AVX-512 availability changed during the test")
+			}
+			checkNativeDigests3(t, msgs, out)
+		}
 	}
 }
 

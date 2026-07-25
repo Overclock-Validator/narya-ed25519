@@ -118,6 +118,7 @@ type nativeStateX4 [8][nativeX4Width]uint64
 type nativeBlockX4 [16][nativeX4Width]uint64
 type nativeStateX8 [8][nativeX8Width]uint64
 type nativeBlockX8 [16][nativeX8Width]uint64
+type nativeTailX8 [2][nativeX8Width]uint64
 
 type nativeLane struct {
 	parts          [][]byte
@@ -398,6 +399,9 @@ func sum512NativeGroupX8(out [][64]byte, msgs [][][]byte, lanes int) {
 }
 
 func sum512NativeGroup3X8(out [][64]byte, msgs [][3][]byte, lanes int) {
+	if lanes == nativeX8Width && sum512NativeFixed3X8(out, msgs) {
+		return
+	}
 	var lane [nativeX8Width]nativeLane
 	var maxBlocks uint64
 	for i := 0; i < nativeX8Width; i++ {
@@ -409,6 +413,73 @@ func sum512NativeGroup3X8(out [][64]byte, msgs [][3][]byte, lanes int) {
 		}
 	}
 	sum512NativeLanesX8(out, &lane, lanes, maxBlocks)
+}
+
+// sum512NativeFixed3X8 recognizes the equal-width verifier shapes that are
+// important to sigverify: R and A are each 32 bytes, followed by a message of
+// 64, 200, or 1232 bytes. In those shapes the first block always consists of
+// R || A || message[:64], every middle block is a direct slice of message,
+// and the final block contains only 0, 8, or 16 variable bytes. Building the
+// latter directly in transposed word form avoids eight 128-byte padding
+// buffers, their pointer scan, and a full 8x8 input transpose.
+//
+// The generic segmented implementation remains the fallback and differential
+// oracle for every other shape and for partial x8 groups.
+func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
+	if len(out) != nativeX8Width || len(msgs) != nativeX8Width {
+		return false
+	}
+	messageSize := len(msgs[0][2])
+	switch messageSize {
+	case 64, 200, 1232:
+	default:
+		return false
+	}
+	for lane := range msgs {
+		if len(msgs[lane][0]) != 32 || len(msgs[lane][1]) != 32 || len(msgs[lane][2]) != messageSize {
+			return false
+		}
+	}
+
+	var state nativeStateX8
+	var first [nativeX8Width][128]byte
+	var ptrs [nativeX8Width]*byte
+	for lane := range msgs {
+		copy(first[lane][0:32], msgs[lane][0])
+		copy(first[lane][32:64], msgs[lane][1])
+		copy(first[lane][64:128], msgs[lane][2][:64])
+		ptrs[lane] = &first[lane][0]
+	}
+	nativeTransposeCompressX8Rolling(&state, &ptrs, 1)
+
+	middleBlocks := (messageSize - 64) / 128
+	for block := 0; block < middleBlocks; block++ {
+		offset := 64 + block*128
+		for lane := range msgs {
+			ptrs[lane] = &msgs[lane][2][offset]
+		}
+		nativeTransposeCompressX8Rolling(&state, &ptrs, 0)
+	}
+
+	tailBytes := (messageSize - 64) % 128
+	var tail nativeTailX8
+	for lane := range msgs {
+		offset := messageSize - tailBytes
+		if tailBytes >= 8 {
+			tail[0][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset:])
+		}
+		if tailBytes == 16 {
+			tail[1][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset+8:])
+		}
+	}
+	nativeCompressFinalX8Rolling(&state, &tail, uint64(tailBytes/8), uint64(64+messageSize)*8)
+
+	for lane := range out {
+		for word := range nativeInitialState {
+			binary.BigEndian.PutUint64(out[lane][word*8:], state[word][lane])
+		}
+	}
+	return true
 }
 
 func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes int, maxBlocks uint64) {
