@@ -260,20 +260,22 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 }
 
 func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
-	qq := *q
 	var A, B, C, D, E, F, G, H IFMAElementX8
-	if err := ifmaMultiplyComposableUncheckedX8(&A, &qq.X, &qq.X); err != nil {
+	// As in the x4 counterpart, every input read completes before result is
+	// assigned to out. Exact out==q aliasing therefore does not require a
+	// 1,280-byte defensive point copy.
+	if err := ifmaMultiplyComposableUncheckedX8(&A, &q.X, &q.X); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&B, &qq.Y, &qq.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&B, &q.Y, &q.Y); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&C, &qq.Z, &qq.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&C, &q.Z, &q.Z); err != nil {
 		return err
 	}
 	C.Add(&C, &C)
 	// See the x4 schedule above: direct E=2XY removes two carry boundaries.
-	if err := ifmaMultiplyComposableUncheckedX8(&E, &qq.X, &qq.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&E, &q.X, &q.Y); err != nil {
 		return err
 	}
 	E.Add(&E, &E)
@@ -426,20 +428,21 @@ func ifmaPointAddComposableX8(out, a, b *IFMAPointX8, mul ifmaComposableMulX8) e
 }
 
 func ifmaPointDoubleComposableX4(out, q *IFMAPointX4, mul ifmaComposableMulX4) error {
-	qq := *q
 	var A, B, C, D, E, F, G, H IFMAElementX4
-	if err := mul(&A, &qq.X, &qq.X); err != nil {
+	// The result is committed only after the final multiply, so exact out==q
+	// aliasing does not require copying the input point.
+	if err := mul(&A, &q.X, &q.X); err != nil {
 		return err
 	}
-	if err := mul(&B, &qq.Y, &qq.Y); err != nil {
+	if err := mul(&B, &q.Y, &q.Y); err != nil {
 		return err
 	}
-	if err := mul(&C, &qq.Z, &qq.Z); err != nil {
+	if err := mul(&C, &q.Z, &q.Z); err != nil {
 		return err
 	}
 	C.Add(&C, &C)
 	// Keep the injected model on the same direct-XY formula as the static core.
-	if err := mul(&E, &qq.X, &qq.Y); err != nil {
+	if err := mul(&E, &q.X, &q.Y); err != nil {
 		return err
 	}
 	E.Add(&E, &E)
@@ -466,20 +469,21 @@ func ifmaPointDoubleComposableX4(out, q *IFMAPointX4, mul ifmaComposableMulX4) e
 }
 
 func ifmaPointDoubleComposableX8(out, q *IFMAPointX8, mul ifmaComposableMulX8) error {
-	qq := *q
 	var A, B, C, D, E, F, G, H IFMAElementX8
-	if err := mul(&A, &qq.X, &qq.X); err != nil {
+	// The result is committed only after the final multiply, so exact out==q
+	// aliasing does not require copying the input point.
+	if err := mul(&A, &q.X, &q.X); err != nil {
 		return err
 	}
-	if err := mul(&B, &qq.Y, &qq.Y); err != nil {
+	if err := mul(&B, &q.Y, &q.Y); err != nil {
 		return err
 	}
-	if err := mul(&C, &qq.Z, &qq.Z); err != nil {
+	if err := mul(&C, &q.Z, &q.Z); err != nil {
 		return err
 	}
 	C.Add(&C, &C)
 	// Keep the injected model on the same direct-XY formula as the static core.
-	if err := mul(&E, &qq.X, &qq.Y); err != nil {
+	if err := mul(&E, &q.X, &q.Y); err != nil {
 		return err
 	}
 	E.Add(&E, &E)
