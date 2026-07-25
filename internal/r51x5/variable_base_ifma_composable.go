@@ -93,7 +93,7 @@ func (w *experimentalIFMAVariableBaseWorkspaceX4[Storage]) Evaluate(out *IFMAPoi
 			continue
 		}
 		var selected IFMAPointX4
-		SelectIFMAFullTableX4Public(&selected, &w.table, digit, usable)
+		selectIFMAFullTableX4PublicUncheckedNoAlias(&selected, &w.table, digit, usable)
 		if err := ifmaPointAddComposableStaticX4(&acc, &acc, &selected); err != nil {
 			return 0, err
 		}
@@ -130,7 +130,7 @@ func (w *experimentalIFMAVariableBaseWorkspaceX8[Storage]) Evaluate(out *IFMAPoi
 			continue
 		}
 		var selected IFMAPointX8
-		SelectIFMAFullTableX8Public(&selected, &w.table, digit, usable)
+		selectIFMAFullTableX8PublicUncheckedNoAlias(&selected, &w.table, digit, usable)
 		if err := ifmaPointAddComposableStaticX8(&acc, &acc, &selected); err != nil {
 			return 0, err
 		}

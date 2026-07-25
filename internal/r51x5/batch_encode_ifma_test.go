@@ -1,7 +1,6 @@
 package r51x5
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -181,9 +180,12 @@ func TestBatchEncodeIFMATorsionAndSignBoundaries(t *testing.T) {
 	torsion := referenceTorsionPoints(t)
 	rng := rand.New(rand.NewSource(0x51e1917))
 	var points [ExperimentalIFMABatchEncodeMaxX4Groups]IFMAPointX4
-	var references [ExperimentalIFMABatchEncodeMaxX4Groups]PointX4
+	var scalarPoints [ExperimentalIFMABatchEncodeMaxX4Groups]PointX4
+	var references batchEncodeReferenceEncodings
 	for index := 0; index < len(torsion); index++ {
 		encoded := torsion[index].Bytes()
+		group, lane := index/X4Lanes, index%X4Lanes
+		copy(references[group][lane][:], encoded)
 		var point Point
 		if _, err := point.SetBytes(encoded); err != nil {
 			t.Fatal(err)
@@ -193,11 +195,10 @@ func TestBatchEncodeIFMATorsionAndSignBoundaries(t *testing.T) {
 		point.Y.Multiply(&point.Y, &lambda)
 		point.Z.Multiply(&point.Z, &lambda)
 		point.T.Multiply(&point.T, &lambda)
-		group, lane := index/X4Lanes, index%X4Lanes
-		references[group].SetLane(lane, &point)
+		scalarPoints[group].SetLane(lane, &point)
 	}
 	for group := 0; group < 2; group++ {
-		points[group].SetReduced(&references[group])
+		points[group].SetReduced(&scalarPoints[group])
 	}
 	var active [ExperimentalIFMABatchEncodeMaxX4Groups]uint8
 	active[0], active[1] = 0x0f, 0x0f
@@ -461,17 +462,25 @@ func addModulusAliasIFMAX4(t *testing.T, value *IFMAElementX4) {
 
 func makeBatchEncodeRandomPoints(t *testing.T, rng *rand.Rand) (
 	[ExperimentalIFMABatchEncodeMaxX4Groups]IFMAPointX4,
-	[ExperimentalIFMABatchEncodeMaxX4Groups]PointX4,
+	batchEncodeReferenceEncodings,
 ) {
 	t.Helper()
 	var points [ExperimentalIFMABatchEncodeMaxX4Groups]IFMAPointX4
-	var references [ExperimentalIFMABatchEncodeMaxX4Groups]PointX4
+	var scalarPoints [ExperimentalIFMABatchEncodeMaxX4Groups]PointX4
+	var references batchEncodeReferenceEncodings
 	torsion := referenceTorsionPoints(t)
-	for group := range references {
+	for group := range scalarPoints {
 		var lanes [X4Lanes]Point
 		for lane := range lanes {
 			ref := randomMixedReferencePoint(t, rng, torsion[(group+lane)%X8Lanes])
-			if _, err := lanes[lane].SetBytes(ref.Bytes()); err != nil {
+			// Capture the canonical encoding produced by the independent
+			// edwards25519 reference implementation before converting the point
+			// into this package's representation or randomizing its projective Z.
+			// The batch encoder's oracle must not share Point.Bytes, Element.Invert,
+			// or sign-bit construction with the implementation under test.
+			encoded := ref.Bytes()
+			copy(references[group][lane][:], encoded)
+			if _, err := lanes[lane].SetBytes(encoded); err != nil {
 				t.Fatal(err)
 			}
 			lambda := randomNonUnitElement(t, rng)
@@ -481,30 +490,32 @@ func makeBatchEncodeRandomPoints(t *testing.T, rng *rand.Rand) (
 			lanes[lane].T.Multiply(&lanes[lane].T, &lambda)
 			assertScalarPointInvariant(t, "batch-encode fixture", &lanes[lane])
 		}
-		references[group].SetPoints(&lanes)
-		points[group].SetReduced(&references[group])
+		scalarPoints[group].SetPoints(&lanes)
+		points[group].SetReduced(&scalarPoints[group])
 	}
 	return points, references
 }
 
+// batchEncodeReferenceEncodings contains canonical compressed points emitted
+// directly by the independent edwards25519 reference implementation. Keeping
+// raw encodings instead of PointX4 values prevents the assertion path from
+// re-encoding with the same field and sign primitives as the code under test.
+type batchEncodeReferenceEncodings [ExperimentalIFMABatchEncodeMaxX4Groups][X4Lanes][32]byte
+
 func assertBatchEncodeOutputs(
 	t *testing.T,
 	got *[ExperimentalIFMABatchEncodeMaxX4Groups][X4Lanes][32]byte,
-	references *[ExperimentalIFMABatchEncodeMaxX4Groups]PointX4,
+	references *batchEncodeReferenceEncodings,
 	active *[ExperimentalIFMABatchEncodeMaxX4Groups]uint8,
 	groups int,
 ) {
 	t.Helper()
 	for group := range got {
-		var want [X4Lanes][32]byte
-		if group < groups {
-			want = references[group].Bytes()
-		}
 		for lane := 0; lane < X4Lanes; lane++ {
 			live := group < groups && active[group]&(1<<lane) != 0
 			if live {
-				if !bytes.Equal(got[group][lane][:], want[lane][:]) {
-					t.Fatalf("group=%d lane=%d got=%x want=%x", group, lane, got[group][lane], want[lane])
+				if got[group][lane] != references[group][lane] {
+					t.Fatalf("group=%d lane=%d got=%x want=%x", group, lane, got[group][lane], references[group][lane])
 				}
 			} else if got[group][lane] != ([32]byte{}) {
 				t.Fatalf("inactive group=%d lane=%d output=%x", group, lane, got[group][lane])

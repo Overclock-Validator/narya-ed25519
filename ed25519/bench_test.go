@@ -317,14 +317,145 @@ func BenchmarkVerifyBatchInvalidLane(b *testing.B) {
 	}
 }
 
-// BenchmarkTableBuild measures the one-time cost of admitting a key into
-// the comb cache (the amortized-over-8-sightings expense).
+// BenchmarkTableBuild measures the one-time build cost of each native
+// precomputation tier.
 func BenchmarkTableBuild(b *testing.B) {
 	f := makeFixture(b, 200)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if _, err := Precompute(&f.pub); err != nil {
+	generic := genericBackend{}
+	b.Run("tier=compact-naf", func(b *testing.B) {
+		b.ReportMetric(genericCompactTableBytes, "table-bytes")
+		for i := 0; i < b.N; i++ {
+			if _, err := generic.buildCompactPrecomp(&f.pub); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("tier=hot-comb", func(b *testing.B) {
+		b.ReportMetric(genericTableBytes, "table-bytes")
+		for i := 0; i < b.N; i++ {
+			if _, err := generic.buildPrecomp(&f.pub); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+// BenchmarkGenericPrecomputeTier measures the complete portable verifier with
+// no table, the compact width-5 NAF table, and the existing full comb table.
+// The compact tier is native Narya code and remains experimental until its
+// build and reuse crossover is established on production-shaped hardware.
+func BenchmarkGenericPrecomputeTier(b *testing.B) {
+	generic := genericBackend{}
+	for _, sz := range []int{64, 200, 1232} {
+		f := makeFixture(b, sz)
+		compact, err := generic.buildCompactPrecomp(&f.pub)
+		if err != nil {
 			b.Fatal(err)
+		}
+		hot, err := generic.buildPrecomp(&f.pub)
+		if err != nil {
+			b.Fatal(err)
+		}
+		for _, tc := range []struct {
+			name string
+			pre  *PrecomputedKey
+		}{
+			{name: "cold"},
+			{name: "compact-naf", pre: compact},
+			{name: "hot-comb", pre: hot},
+		} {
+			b.Run(fmt.Sprintf("tier=%s/msg=%d", tc.name, sz), func(b *testing.B) {
+				var tableBytes int64
+				if tc.pre != nil {
+					tableBytes = tc.pre.size
+				}
+				b.ReportMetric(float64(tableBytes), "table-bytes")
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					if !verifyOne(generic, DalekStrict, &f.pub, f.msg, f.sig, tc.pre) {
+						b.Fatal("verify failed")
+					}
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkGenericPrecomputeLifecycle includes construction and every verify
+// in a finite recurrence episode. Unlike the steady-state tier benchmark, it
+// directly exposes when compact and hot precomputation repay their build cost.
+func BenchmarkGenericPrecomputeLifecycle(b *testing.B) {
+	generic := genericBackend{}
+	fixtures := makeFixtures(b, 64, 200)
+	for _, repeats := range []int{1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64} {
+		for _, tier := range []string{"cold", "compact-naf", "hot-comb"} {
+			b.Run(fmt.Sprintf("tier=%s/repeats=%d", tier, repeats), func(b *testing.B) {
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					f := &fixtures[i%len(fixtures)]
+					var pre *PrecomputedKey
+					var err error
+					switch tier {
+					case "compact-naf":
+						pre, err = generic.buildCompactPrecomp(&f.pub)
+					case "hot-comb":
+						pre, err = generic.buildPrecomp(&f.pub)
+					}
+					if err != nil {
+						b.Fatal(err)
+					}
+					for verifyIndex := 0; verifyIndex < repeats; verifyIndex++ {
+						if !verifyOne(generic, DalekStrict, &f.pub, f.msg, f.sig, pre) {
+							b.Fatal("verify failed")
+						}
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*repeats)/1000, "µs/sig")
+			})
+		}
+	}
+}
+
+// BenchmarkGenericCompactBatchTail measures the native compact table for the
+// n=1..4 remainder regime. Every item has a distinct recurring key, which is
+// the harder cache-locality case than a homogeneous signer group.
+func BenchmarkGenericCompactBatchTail(b *testing.B) {
+	generic := genericBackend{}
+	for _, sz := range []int{64, 200, 1232} {
+		for _, n := range []int{1, 2, 3, 4} {
+			bf := makeBatchFixture(b, n, sz)
+			compact := make(map[[32]byte]*PrecomputedKey, n)
+			hot := make(map[[32]byte]*PrecomputedKey, n)
+			for i := range bf.fs {
+				var err error
+				compact[bf.fs[i].pub], err = generic.buildCompactPrecomp(&bf.fs[i].pub)
+				if err != nil {
+					b.Fatal(err)
+				}
+				hot[bf.fs[i].pub], err = generic.buildPrecomp(&bf.fs[i].pub)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+
+			for _, tc := range []struct {
+				name   string
+				lookup func(*[32]byte) *PrecomputedKey
+			}{
+				{name: "cold"},
+				{name: "compact-naf", lookup: func(pub *[32]byte) *PrecomputedKey { return compact[*pub] }},
+				{name: "hot-comb", lookup: func(pub *[32]byte) *PrecomputedKey { return hot[*pub] }},
+			} {
+				b.Run(fmt.Sprintf("tier=%s/n=%d/msg=%d", tc.name, n, sz), func(b *testing.B) {
+					b.ResetTimer()
+					for i := 0; i < b.N; i++ {
+						if !verifyBatch(generic, DalekStrict, bf.pubs, bf.msgs, bf.sigs, bf.ok, tc.lookup) {
+							b.Fatal("verify failed")
+						}
+					}
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*n)/1000, "µs/sig")
+				})
+			}
 		}
 	}
 }
@@ -350,5 +481,44 @@ func BenchmarkVerifyWorkingSet(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// BenchmarkGenericPrecomputeWorkingSet compares all three native tiers at the
+// same deterministic reuse distance. It deliberately bypasses Cache policy so
+// the arithmetic and table-footprint crossover can be measured independently
+// from admission bookkeeping.
+func BenchmarkGenericPrecomputeWorkingSet(b *testing.B) {
+	generic := genericBackend{}
+	for _, nKeys := range []int{1, 16, 512, 4096} {
+		fs := makeFixtures(b, nKeys, 200)
+		for _, tier := range []string{"cold", "compact-naf", "hot-comb"} {
+			b.Run(fmt.Sprintf("tier=%s/keys=%d", tier, nKeys), func(b *testing.B) {
+				precomputed := make([]*PrecomputedKey, nKeys)
+				for i := range fs {
+					var err error
+					switch tier {
+					case "compact-naf":
+						precomputed[i], err = generic.buildCompactPrecomp(&fs[i].pub)
+					case "hot-comb":
+						precomputed[i], err = generic.buildPrecomp(&fs[i].pub)
+					}
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+				if nKeys > 0 && precomputed[0] != nil {
+					b.ReportMetric(float64(precomputed[0].size), "bytes/key")
+				}
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					index := i % nKeys
+					f := &fs[index]
+					if !verifyOne(generic, DalekStrict, &f.pub, f.msg, f.sig, precomputed[index]) {
+						b.Fatal("verify failed")
+					}
+				}
+			})
+		}
 	}
 }

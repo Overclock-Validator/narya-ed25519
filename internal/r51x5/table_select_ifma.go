@@ -124,6 +124,30 @@ func SelectIFMAFullTableX4Public[Storage ifmaFullTableStorageX4](out *IFMAPointX
 	return out
 }
 
+// selectIFMAFullTableX4PublicUncheckedNoAlias is the hot verifier counterpart
+// of SelectIFMAFullTableX4Public. out must not alias table (its prior contents
+// are ignored), and round must come from one of this package's validated x4
+// recoders for this table's radix. Those invariants let the selector write
+// gathered lanes directly and initialize only zero/inactive lanes instead of
+// constructing and copying a full 640-byte identity point on every loop term.
+//
+// The checked, alias-safe exported helper remains the differential oracle.
+func selectIFMAFullTableX4PublicUncheckedNoAlias[Storage ifmaFullTableStorageX4](out *IFMAPointX4, table *ifmaFullTableX4[Storage], round *RadixRoundX4, active uint8) *IFMAPointX4 {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	negativeMask := round.NegativeMask & lookupMask
+	for lane := 0; lane < X4Lanes; lane++ {
+		laneMask := uint8(1 << lane)
+		if lookupMask&laneMask == 0 {
+			setIdentityIFMAPointLaneX4(out, lane)
+			continue
+		}
+		source := &table.points[int(round.Magnitude[lane])-1]
+		gatherIFMAPointLaneX4(out, source, lane)
+	}
+	conditionalNegateIFMAPointX4(out, negativeMask)
+	return out
+}
+
 // SelectIFMAFullTableX8Public is the eight-lane counterpart of
 // SelectIFMAFullTableX4Public.
 func SelectIFMAFullTableX8Public[Storage ifmaFullTableStorageX8](out *IFMAPointX8, table *ifmaFullTableX8[Storage], round *RadixRoundX8, active uint8) *IFMAPointX8 {
@@ -142,6 +166,30 @@ func SelectIFMAFullTableX8Public[Storage ifmaFullTableStorageX8](out *IFMAPointX
 	}
 	conditionalNegateIFMAPointX8(&selected, negativeMask)
 	*out = selected
+	return out
+}
+
+// selectIFMAFullTableX8PublicUncheckedNoAlias is the x8 hot-verifier
+// counterpart of SelectIFMAFullTableX8Public. out must not alias table (its
+// prior contents are ignored), and round must come from one of this package's
+// validated x8 recoders for this table's radix. It writes selected lanes
+// directly and initializes only zero/inactive lanes instead of constructing
+// and copying a complete 1,280-byte identity point on every loop term.
+//
+// The checked, alias-safe exported helper remains the differential oracle.
+func selectIFMAFullTableX8PublicUncheckedNoAlias[Storage ifmaFullTableStorageX8](out *IFMAPointX8, table *ifmaFullTableX8[Storage], round *RadixRoundX8, active uint8) *IFMAPointX8 {
+	lookupMask := round.NonzeroMask & active
+	negativeMask := round.NegativeMask & lookupMask
+	for lane := 0; lane < X8Lanes; lane++ {
+		laneMask := uint8(1 << lane)
+		if lookupMask&laneMask == 0 {
+			setIdentityIFMAPointLaneX8(out, lane)
+			continue
+		}
+		source := &table.points[int(round.Magnitude[lane])-1]
+		gatherIFMAPointLaneX8(out, source, lane)
+	}
+	conditionalNegateIFMAPointX8(out, negativeMask)
 	return out
 }
 
@@ -178,6 +226,17 @@ func gatherIFMAPointLaneX4(out, source *IFMAPointX4, lane int) {
 	}
 }
 
+func setIdentityIFMAPointLaneX4(out *IFMAPointX4, lane int) {
+	for limb := range modulusLimbs {
+		out.X.limbs[limb][lane] = 0
+		out.Y.limbs[limb][lane] = 0
+		out.Z.limbs[limb][lane] = 0
+		out.T.limbs[limb][lane] = 0
+	}
+	out.Y.limbs[0][lane] = 1
+	out.Z.limbs[0][lane] = 1
+}
+
 func gatherIFMAPointLaneX8(out, source *IFMAPointX8, lane int) {
 	for limb := range modulusLimbs {
 		out.X.limbs[limb][lane] = source.X.limbs[limb][lane]
@@ -185,6 +244,17 @@ func gatherIFMAPointLaneX8(out, source *IFMAPointX8, lane int) {
 		out.Z.limbs[limb][lane] = source.Z.limbs[limb][lane]
 		out.T.limbs[limb][lane] = source.T.limbs[limb][lane]
 	}
+}
+
+func setIdentityIFMAPointLaneX8(out *IFMAPointX8, lane int) {
+	for limb := range modulusLimbs {
+		out.X.limbs[limb][lane] = 0
+		out.Y.limbs[limb][lane] = 0
+		out.Z.limbs[limb][lane] = 0
+		out.T.limbs[limb][lane] = 0
+	}
+	out.Y.limbs[0][lane] = 1
+	out.Z.limbs[0][lane] = 1
 }
 
 func conditionalNegateIFMAPointX4(point *IFMAPointX4, negativeMask uint8) {

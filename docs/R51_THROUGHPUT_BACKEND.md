@@ -121,6 +121,19 @@ x8 four-coordinate table: 40 KiB
 two x8 point tables:       80 KiB
 ```
 
+Table footprint alone did not predict measured selection cost on Zen 4. A
+dense full-lane x8 selector stayed near 206 ns for radix 16, 32, and 64 even
+though the per-table footprint grew from 10 to 40 KiB. Removing the temporary
+identity and final full-point copy reduced it to roughly 159--160 ns and
+improved complete x8 verification by about 2.4%. Therefore the private
+internally-recoded path writes directly into non-aliasing output, while the
+checked public selector remains the safety oracle. A lane-contiguous packed
+table is deferred: it would require transposing back into the SoA vectors
+consumed by IFMA addition. The dense benchmark uses predictable accesses to
+one table, while the real DSM alternates two tables with irregular public
+digits, and privileged PMU counters are unavailable; current timing therefore
+does not establish L1/L2 traffic as the bottleneck.
+
 Its loop has 43 fixed rounds instead of 51 for radix 32, but the larger cold-A
 build and L1 footprint are included in the complete benchmark. HEEA continues
 to benchmark radix 16/32 in the complete harness. A radix-64 HEEA storage
@@ -147,6 +160,65 @@ the decoded point), then measure the cost of packing the current batch into
 SoA form. Replicating one key across all lanes is a separate same-key batching
 optimization and is eligible only when the trace shows that grouping occurs
 naturally without added latency.
+
+### Same-key grouping and batch-local preparation reuse
+
+Keep same-key grouping as a measurement-gated scheduling candidate, distinct
+from a persistent key cache. A dispatcher may inspect only work already
+available in its nonblocking drain, group exact repeated public-key byte
+strings, carry an original-result index through the permutation, and send all
+resulting `Q` points through the same cross-group finalizer. It must never wait
+for another occurrence merely to fill a same-key group.
+
+An all-same-key x4 group does **not** by itself imply that three x4 decodes or
+three table builds disappear. The current lane-parallel decoder and radix-64
+builder already execute four independent keys with one SIMD instruction
+schedule; duplicating one key in every lane ordinarily executes that same
+schedule. A claimed `4 decodes -> 1` or `4 builds -> 1` speedup therefore needs
+a different measured implementation, not an operation-count assumption.
+
+The more credible opportunities are:
+
+1. one raw key occurs in multiple x4 groups in the same drained dispatch, so
+   one batch-local decoded point or scalar/native table can be reused by later
+   groups;
+2. a retained backend-native table can be packed or selected more cheaply when
+   every lane uses the same base; or
+3. a scalar-stored table plus lane-specific digit selection is cheaper than
+   rebuilding duplicate SoA state.
+
+The scalars remain independent, so same-base lanes can request different table
+entries in the same round. A broadcast-table design must include that
+selection and packing cost; it cannot assume that one selected entry is shared
+by all lanes. Grouping and table reuse also must preserve the original public
+key bytes in `H(R || A || message)`. Use the complete raw `[32]byte` key (or a
+hash followed by a complete raw-key collision check), never an unchecked
+prefix such as the first eight bytes.
+
+A bounded, allocation-free scheduling experiment should compare:
+
+- all-distinct keys as the no-benefit and adversarial-overhead control;
+- one same-key x4 group;
+- the same key spanning 2, 4, 8, and 16 x4 groups;
+- naturally clustered and randomly interleaved occurrences;
+- cold batch-local decoded-point reuse, prepared-table reuse, and the ordinary
+  independent-key path; and
+- scheduler-only time separately from complete verification time.
+
+Extract same-key work before cold/warm phase compaction, but do not split it
+into a separate verifier call that loses cross-group inversion amortization.
+Unprofitable remainders return to the ordinary full-occupancy path. All-distinct
+traffic must degrade to one bounded classification pass, zero heap allocation,
+and no persistent admission, so rotating-key spam cannot pollute a cache.
+
+Mithril scheduling-simulation traces already report naturally contiguous x4
+and x8 same-key groups. Before implementing a broadcast kernel, extend the
+analysis to report the number of full same-key x4 groups obtainable by
+regrouping *within each existing dispatch* and the number of keys spanning
+multiple x4 groups. This estimates batch-local reuse without pretending that
+work from different dispatches can be combined. Keep the candidate only if it
+improves the complete selected verifier by at least 2% on a representative
+trace, retains exact predicates and result mapping, and adds no batching wait.
 
 ## Implementation sequence
 

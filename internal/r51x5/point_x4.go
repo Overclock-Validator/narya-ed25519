@@ -13,10 +13,16 @@ type PointX4 struct {
 
 // NewIdentityPointX4 returns four neutral points.
 func NewIdentityPointX4() *PointX4 {
+	return new(PointX4).SetIdentity()
+}
+
+// SetIdentity sets all four lanes to the neutral point and returns p.
+func (p *PointX4) SetIdentity() *PointX4 {
 	var one Element
 	one.One()
 	ones := broadcastX4(&one)
-	return &PointX4{Y: ones, Z: ones}
+	*p = PointX4{Y: ones, Z: ones}
+	return p
 }
 
 // Set sets p=q and returns p.

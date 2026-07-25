@@ -676,7 +676,7 @@ func (w *experimentalIFMAHEEABaseSplitWorkspaceX8[Storage]) Evaluate(out *IFMAPo
 				continue
 			}
 			var selected IFMAPointX8
-			SelectIFMAFullTableX8Public(&selected, &w.tables[term], digit, usable)
+			selectIFMAFullTableX8PublicUncheckedNoAlias(&selected, &w.tables[term], digit, usable)
 			if err := ifmaPointAddComposableStaticX8(&acc, &acc, &selected); err != nil {
 				return 0, active, err
 			}

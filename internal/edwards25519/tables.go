@@ -23,6 +23,18 @@ type nafLookupTable5 struct {
 	points [8]projCached
 }
 
+// PubkeyNAFTable retains the width-5 odd multiples of an arbitrary point used
+// by variable-time double-scalar multiplication. It is substantially smaller
+// than PubkeyTable and only avoids decoding the point and rebuilding this
+// table; unlike PubkeyTable, it does not remove the doubling chain.
+//
+// Verification scalars and public keys are public, so the variable-time table
+// lookup is appropriate for Ed25519 verification. Callers must not use this
+// table with secret scalars.
+type PubkeyNAFTable struct {
+	table nafLookupTable5
+}
+
 // A precomputed lookup table for fixed-base, variable-time scalar muls.
 type nafLookupTable8 struct {
 	points [64]affineCached
@@ -70,6 +82,15 @@ func (v *nafLookupTable5) FromP3(q *Point) {
 	for i := 0; i < 7; i++ {
 		v.points[i+1].FromP3(tmpP3.fromP1xP1(tmpP1xP1.Add(&q2, &v.points[i])))
 	}
+}
+
+// NewPubkeyNAFTable builds the compact width-5 table used by
+// VarTimeDoubleScalarBaseMultTable.
+func NewPubkeyNAFTable(q *Point) *PubkeyNAFTable {
+	checkInitialized(q)
+	t := new(PubkeyNAFTable)
+	t.table.FromP3(q)
+	return t
 }
 
 // This is not optimised for speed; fixed-base tables should be precomputed.

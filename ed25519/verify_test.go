@@ -70,6 +70,17 @@ func check(t *testing.T, c *Cache, pub *[32]byte, msg, sig []byte) {
 	} else if want {
 		t.Fatalf("Precompute failed for a key with a valid signature\npub %x", pub)
 	}
+	// Exercise the compact native warm-key candidate independently of cache
+	// admission policy. It must remain predicate-identical before benchmarks
+	// can justify exposing it as a real tier.
+	generic := genericBackend{}
+	if pre, err := generic.buildCompactPrecomp(pub); err == nil {
+		if got := verifyOne(generic, DefaultProfile(), pub, msg, sig, pre); got != want {
+			t.Fatalf("compact PrecomputedKey.Verify=%v want %v\npub %x\nmsg %x\nsig %x", got, want, pub, msg, sig)
+		}
+	} else if want {
+		t.Fatalf("compact precompute failed for a key with a valid signature\npub %x", pub)
+	}
 }
 
 func TestDifferential(t *testing.T) {

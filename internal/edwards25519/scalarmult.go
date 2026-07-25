@@ -160,6 +160,22 @@ func (v *Point) VarTimeDoubleScalarBaseMult(a *Scalar, A *Point, b *Scalar) *Poi
 	basepointNafTable := basepointNafTable()
 	var aTable nafLookupTable5
 	aTable.FromP3(A)
+	return v.varTimeDoubleScalarBaseMult(a, &aTable, b, basepointNafTable)
+}
+
+// VarTimeDoubleScalarBaseMultTable sets v = a * A + b * B using a compact
+// width-5 table previously built for A. B is the canonical generator.
+//
+// Execution time depends on the inputs. The table and scalars are expected to
+// come from public Ed25519 verification inputs, never secret-key operations.
+func (v *Point) VarTimeDoubleScalarBaseMultTable(a *Scalar, aTable *PubkeyNAFTable, b *Scalar) *Point {
+	if aTable == nil {
+		panic("edwards25519: nil PubkeyNAFTable")
+	}
+	return v.varTimeDoubleScalarBaseMult(a, &aTable.table, b, basepointNafTable())
+}
+
+func (v *Point) varTimeDoubleScalarBaseMult(a *Scalar, aTable *nafLookupTable5, b *Scalar, basepointNafTable *nafLookupTable8) *Point {
 	// Because the basepoint is fixed, we can use a wider NAF
 	// corresponding to a bigger table.
 	aNaf := a.nonAdjacentForm(5)
@@ -167,10 +183,7 @@ func (v *Point) VarTimeDoubleScalarBaseMult(a *Scalar, A *Point, b *Scalar) *Poi
 
 	// Find the first nonzero coefficient.
 	i := 255
-	for j := i; j >= 0; j-- {
-		if aNaf[j] != 0 || bNaf[j] != 0 {
-			break
-		}
+	for ; i >= 0 && aNaf[i] == 0 && bNaf[i] == 0; i-- {
 	}
 
 	multA := &projCached{}
