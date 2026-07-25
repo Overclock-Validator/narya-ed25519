@@ -65,6 +65,14 @@ type cachedRawBatchBackend interface {
 	verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool
 }
 
+// batchOnlyPrecompBackend marks a backend whose native precomputation is
+// useful only to its batch pipeline. Cache still grants admission after a
+// successful singleton, but skips a lookup that the singleton verifier could
+// not consume.
+type batchOnlyPrecompBackend interface {
+	batchOnlyPrecomp()
+}
+
 // activatingBackend is implemented only by explicitly gated native backends.
 // Activation happens after a backend name has been selected, never as part of
 // registration or automatic CPU dispatch.

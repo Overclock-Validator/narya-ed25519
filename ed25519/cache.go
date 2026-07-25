@@ -79,6 +79,13 @@ func (c *Cache) verifyWithBackend(b backend, profile Profile, pub *[32]byte, mes
 	if !b.supportsPrecomp() {
 		return b.verify(profile, pub, message, sig, nil)
 	}
+	if _, batchOnly := b.(batchOnlyPrecompBackend); batchOnly {
+		ok := b.verify(profile, pub, message, sig, nil)
+		if ok {
+			c.admit(b, pub)
+		}
+		return ok
+	}
 	pre := c.lookup(pub)
 	ok := b.verify(profile, pub, message, sig, pre)
 	if ok && pre == nil {

@@ -143,6 +143,37 @@ func TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit(t *testing.T) {
 	}
 }
 
+func TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeBatchFixture(t, 3, 200)
+	cache := &Cache{MaxTableBytes: 3 * r51DecodedATableBytes}
+
+	for sighting := 0; sighting < buildThreshold; sighting++ {
+		if !cache.verifyWithBackend(backend, DalekStrict, fixture.pubs[0], fixture.msgs[0], fixture.sigs[0]) {
+			t.Fatalf("singleton sighting %d rejected", sighting)
+		}
+	}
+	if got := cache.Stats(); got.Tables != 1 || got.Hits != 0 || got.Misses != 0 {
+		t.Fatalf("singleton batch-only admission stats: %+v", got)
+	}
+
+	for count := 1; count < r51x5.X4Lanes; count++ {
+		if !cache.verifyBatchWithBackend(
+			backend,
+			DalekStrict,
+			fixture.pubs[:count],
+			fixture.msgs[:count],
+			fixture.sigs[:count],
+			fixture.ok[:count],
+		) {
+			t.Fatalf("n=%d narrow cached batch rejected", count)
+		}
+	}
+	if got := cache.Stats(); got.Hits != 0 || got.Misses != 0 {
+		t.Fatalf("narrow batch performed unusable lookups: %+v", got)
+	}
+}
+
 func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
 	backend := requireR51Backend(t)
 	for _, count := range []int{4, 8, 64} {

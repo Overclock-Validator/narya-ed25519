@@ -66,6 +66,8 @@ func (b *r51Backend) backendStats() BackendStats {
 // comb tables remain behind their separate complete-verifier/cache-policy gate.
 func (*r51Backend) supportsPrecomp() bool { return true }
 
+func (*r51Backend) batchOnlyPrecomp() {}
+
 func (b *r51Backend) activate() error {
 	b.activateOnce.Do(func() {
 		firstBatch := b.newBatchWorker()
@@ -295,6 +297,13 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 	}
 	if lookup == nil {
 		panic("ed25519: nil r51 precomputed-key lookup")
+	}
+	// The packed strict singleton/two-item path cannot consume a decoded point,
+	// and the three-item x4 tail cannot amortize a mixed hit. Cache admission is
+	// still performed by Cache after these verdicts, so bypassing lookup here
+	// does not prevent recurring narrow traffic from warming a later batch.
+	if len(pubs) < r51x5.X4Lanes {
+		return b.verifyBatchRaw(profile, pubs, msgs, sigs, ok)
 	}
 
 	all := true
