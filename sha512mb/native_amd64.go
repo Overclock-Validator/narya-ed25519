@@ -26,6 +26,13 @@ func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)
 //go:noescape
 func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
 
+// nativeCompressVerifierFirstX8Rolling initializes state and compresses the
+// fixed-layout verifier prefix R[32] || A[32] || message[:64] directly from
+// three pointer vectors.
+//
+//go:noescape
+func nativeCompressVerifierFirstX8Rolling(state *nativeStateX8, rPtrs, aPtrs, messagePtrs *[nativeX8Width]*byte)
+
 // nativeCompressFinalX8Rolling compresses the exact SHA-512 final-block shapes
 // whose variable prefix contains zero, one, or two complete 64-bit words.
 // tail is already transposed and expressed as host uint64 values equal to the

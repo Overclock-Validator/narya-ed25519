@@ -177,6 +177,123 @@ fusedStateReady:
 	MOVQ $·nativeRoundConstants(SB), BP
 	JMP nativeCompressX8RollingRounds<>(SB)
 
+// func nativeCompressVerifierFirstX8Rolling(state *nativeStateX8, rPtrs, aPtrs, messagePtrs *[nativeX8Width]*byte)
+//
+// Requires AVX-512F and AVX-512BW. Each R and A pointer must address 32
+// readable bytes and each message pointer must address 64. Loading the two
+// half-block segments independently avoids materializing eight concatenated
+// R || A || message[:64] buffers in Go. All inputs are loaded before the
+// initialized state is stored, so exact input/state aliasing is safe.
+TEXT ·nativeCompressVerifierFirstX8Rolling(SB), 0, $0-32
+	// R supplies W0..W3. A 256-bit load zeros the unused upper half of
+	// each ZMM input row; the four unused transpose outputs are discarded.
+	MOVQ rPtrs+8(FP), SI
+	MOVQ  0(SI), AX
+	MOVQ  8(SI), CX
+	MOVQ 16(SI), DX
+	MOVQ 24(SI), BX
+	MOVQ 32(SI), R8
+	MOVQ 40(SI), R9
+	MOVQ 48(SI), R10
+	MOVQ 56(SI), R11
+	VMOVDQU64 0(AX), Y0
+	VMOVDQU64 0(CX), Y1
+	VMOVDQU64 0(DX), Y2
+	VMOVDQU64 0(BX), Y3
+	VMOVDQU64 0(R8), Y4
+	VMOVDQU64 0(R9), Y5
+	VMOVDQU64 0(R10), Y6
+	VMOVDQU64 0(R11), Y7
+	VMOVDQU64 ·nativeByteSwapMaskX8(SB), Z31
+	VPSHUFB Z31, Z0, Z0
+	VPSHUFB Z31, Z1, Z1
+	VPSHUFB Z31, Z2, Z2
+	VPSHUFB Z31, Z3, Z3
+	VPSHUFB Z31, Z4, Z4
+	VPSHUFB Z31, Z5, Z5
+	VPSHUFB Z31, Z6, Z6
+	VPSHUFB Z31, Z7, Z7
+	TRANSPOSE8(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z16, Z17, Z18, Z19, Z20, Z21, Z22, Z23, Z8, Z9, Z10, Z11, Z12, Z13, Z14, Z15)
+
+	// A supplies W4..W7.
+	MOVQ aPtrs+16(FP), SI
+	MOVQ  0(SI), AX
+	MOVQ  8(SI), CX
+	MOVQ 16(SI), DX
+	MOVQ 24(SI), BX
+	MOVQ 32(SI), R8
+	MOVQ 40(SI), R9
+	MOVQ 48(SI), R10
+	MOVQ 56(SI), R11
+	VMOVDQU64 0(AX), Y0
+	VMOVDQU64 0(CX), Y1
+	VMOVDQU64 0(DX), Y2
+	VMOVDQU64 0(BX), Y3
+	VMOVDQU64 0(R8), Y4
+	VMOVDQU64 0(R9), Y5
+	VMOVDQU64 0(R10), Y6
+	VMOVDQU64 0(R11), Y7
+	VMOVDQU64 ·nativeByteSwapMaskX8(SB), Z31
+	VPSHUFB Z31, Z0, Z0
+	VPSHUFB Z31, Z1, Z1
+	VPSHUFB Z31, Z2, Z2
+	VPSHUFB Z31, Z3, Z3
+	VPSHUFB Z31, Z4, Z4
+	VPSHUFB Z31, Z5, Z5
+	VPSHUFB Z31, Z6, Z6
+	VPSHUFB Z31, Z7, Z7
+	TRANSPOSE8(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z20, Z21, Z22, Z23, Z24, Z25, Z26, Z27, Z8, Z9, Z10, Z11, Z12, Z13, Z14, Z15)
+
+	// The first 64 message bytes supply W8..W15.
+	MOVQ messagePtrs+24(FP), SI
+	MOVQ  0(SI), AX
+	MOVQ  8(SI), CX
+	MOVQ 16(SI), DX
+	MOVQ 24(SI), BX
+	MOVQ 32(SI), R8
+	MOVQ 40(SI), R9
+	MOVQ 48(SI), R10
+	MOVQ 56(SI), R11
+	VMOVDQU64 0(AX), Z0
+	VMOVDQU64 0(CX), Z1
+	VMOVDQU64 0(DX), Z2
+	VMOVDQU64 0(BX), Z3
+	VMOVDQU64 0(R8), Z4
+	VMOVDQU64 0(R9), Z5
+	VMOVDQU64 0(R10), Z6
+	VMOVDQU64 0(R11), Z7
+	VMOVDQU64 ·nativeByteSwapMaskX8(SB), Z31
+	VPSHUFB Z31, Z0, Z0
+	VPSHUFB Z31, Z1, Z1
+	VPSHUFB Z31, Z2, Z2
+	VPSHUFB Z31, Z3, Z3
+	VPSHUFB Z31, Z4, Z4
+	VPSHUFB Z31, Z5, Z5
+	VPSHUFB Z31, Z6, Z6
+	VPSHUFB Z31, Z7, Z7
+	TRANSPOSE8(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z24, Z25, Z26, Z27, Z28, Z29, Z30, Z31, Z8, Z9, Z10, Z11, Z12, Z13, Z14, Z15)
+
+	MOVQ state+0(FP), DI
+	MOVQ $·nativeInitialState(SB), SI
+	VPBROADCASTQ   0(SI), Z0
+	VPBROADCASTQ   8(SI), Z1
+	VPBROADCASTQ  16(SI), Z2
+	VPBROADCASTQ  24(SI), Z3
+	VPBROADCASTQ  32(SI), Z4
+	VPBROADCASTQ  40(SI), Z5
+	VPBROADCASTQ  48(SI), Z6
+	VPBROADCASTQ  56(SI), Z7
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VMOVDQU64 Z5, 320(DI)
+	VMOVDQU64 Z6, 384(DI)
+	VMOVDQU64 Z7, 448(DI)
+	MOVQ $·nativeRoundConstants(SB), BP
+	JMP nativeCompressX8RollingRounds<>(SB)
+
 // func nativeCompressFinalX8Rolling(state *nativeStateX8, tail *nativeTailX8, tailWords, totalBits uint64)
 //
 // Requires AVX-512F. tailWords must be 0, 1, or 2. tail already contains

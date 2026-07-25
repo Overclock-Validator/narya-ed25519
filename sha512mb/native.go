@@ -442,16 +442,15 @@ func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
 	}
 
 	var state nativeStateX8
-	var first [nativeX8Width][128]byte
-	var ptrs [nativeX8Width]*byte
+	var rPtrs, aPtrs, messagePtrs [nativeX8Width]*byte
 	for lane := range msgs {
-		copy(first[lane][0:32], msgs[lane][0])
-		copy(first[lane][32:64], msgs[lane][1])
-		copy(first[lane][64:128], msgs[lane][2][:64])
-		ptrs[lane] = &first[lane][0]
+		rPtrs[lane] = &msgs[lane][0][0]
+		aPtrs[lane] = &msgs[lane][1][0]
+		messagePtrs[lane] = &msgs[lane][2][0]
 	}
-	nativeTransposeCompressX8Rolling(&state, &ptrs, 1)
+	nativeCompressVerifierFirstX8Rolling(&state, &rPtrs, &aPtrs, &messagePtrs)
 
+	var ptrs [nativeX8Width]*byte
 	middleBlocks := (messageSize - 64) / 128
 	for block := 0; block < middleBlocks; block++ {
 		offset := 64 + block*128
