@@ -171,10 +171,14 @@ are intentionally excluded until they improve a complete verifier. The newest
 prepared-table partial-comb experiment reduces the r51 point loop to about
 4.2 us/signature, but it is not included in the table because construction,
 cache policy, decoding, hashing, and finalization have not yet been charged.
-Its current scalar builder needs roughly 650 key reuses to amortize, so a
-vectorized batch-normalizing builder is the next cache gate. The packed
-singleton row includes the strict paired-A/R decode and projective finalizer,
-but remains test-only.
+A test-only four-key vector builder now constructs those per-key tables in
+about 66 us/group with zero allocations, versus about 15.95 ms for four scalar
+builders. Against the measured B10 online saving, that moves the arithmetic
+break-even to roughly three uses per key. The remaining gates are complete
+verification under mixed warm/cold traffic, cache admission and churn, and
+production-safe ownership of the reusable workspace. The packed singleton row
+includes the strict paired-A/R decode and projective finalizer, but remains
+test-only.
 
 Detailed commands, statistical samples, and caveats are recorded in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
