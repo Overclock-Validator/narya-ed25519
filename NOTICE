@@ -240,13 +240,21 @@ that backend's radix-25.5 four-way field representation. It is selected
 whenever cpu.X86.HasAVX2 holds, so voi's uncached single-signature timings
 are vectorized results rather than scalar ones.
 
-Narya's own coordinate-parallel packed-x4 work reaches the same
-intra-signature orientation independently, from Firedancer's r43x6 rather
-than from dalek, and at radix 2^51 on AVX-512 IFMA rather than radix 25.5
-on AVX2. No dalek or voi code was consulted or copied in its development.
-The parallel is recorded because a reader comparing the two benchmark
-columns should know they are comparing the same architectural idea, and
-because credit for that idea belongs to the curve25519-dalek authors.
+This is recorded because the intra-signature orientation it uses -- one
+point's coordinates spread across vector lanes, rather than one signature
+per lane -- is prior art with a known lineage, and Narya's experimental
+coordinate-parallel packed-x4 work uses the same orientation.
+
+The earliest widely known instance of that design for Edwards curves is
+curve25519-dalek's AVX2 backend, cited above. Firedancer's r43x6 "QUAD"
+packing, which Narya's internal/r43x6 credits as its source, is the same
+idea at AVX-512 width. Narya's packed-x4 experiment applies it at radix
+2^51 on four lanes.
+
+Narya distributes no dalek or voi code, so nothing here is a license
+obligation. It is recorded as credit for an architectural idea Narya did
+not originate, and so that a reader comparing benchmark columns knows the
+two libraries are running the same architecture rather than different ones.
 
 
 =======================================================================

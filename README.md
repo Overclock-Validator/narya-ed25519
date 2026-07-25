@@ -235,8 +235,10 @@ voi is itself largely derived from
 [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek), and
 the vectorized Edwards backend that produces its uncached single-signature
 timings is a Go port of dalek's AVX2 backend (Copyright isis agora lovecruft,
-Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. Narya's
-own coordinate-parallel work reaches the same intra-signature orientation
-independently, from Firedancer's `r43x6` and at radix 2^51 on AVX-512 IFMA. See
-[NOTICE](NOTICE): credit for that architectural idea belongs to the dalek
-authors, not to voi.
+Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. That intra-signature
+orientation — one point's coordinates across vector lanes — is prior art that
+Narya did not originate: dalek's AVX2 backend is its earliest widely known
+instance, and Firedancer's `r43x6` QUAD packing, which `internal/r43x6`
+credits, is the same idea at AVX-512 width. Narya's experimental
+coordinate-parallel work uses that orientation at radix 2^51. See
+[NOTICE](NOTICE).
