@@ -2,8 +2,10 @@
 
 The strict cold path may decode `A` and `R` together, retain affine `R`, and
 finish with two projective cross-products instead of encoding the computed
-point. This remains an IFMA experiment until complete-verifier benchmarks on
-Zen 4 clear the 2% gate.
+point. Zen 4 complete-verifier measurements admitted this mechanism for the
+registered forced r51 strict singleton. Full x4 batch groups instead decode A
+only and amortize canonical Q encoding across the batch; the broader paired
+x4/x8 comparison remains experimental.
 
 ## Square-root-ratio primitive
 
@@ -94,12 +96,13 @@ group with two x4 groups, and retains a checked-every-multiply row to isolate
 the cost of the removed u52 input scans. A skipped non-IFMA run is not a
 performance result.
 
-The current hardware experiment is deliberately correctness-first. Input
-unpacking, carry normalization, equality masks, and final reduction remain Go
-code; active tails do not skip exponentiation work; and no custom register or
-spill convention has been implemented. Zen 4 measurements must therefore
-include stack traffic and generated code as well as elapsed time before this
-schedule can satisfy the complete-pipeline 2% gate.
+The general x4/x8 hardware comparison remains deliberately
+correctness-first. Input unpacking, carry normalization, equality masks, and
+final reduction remain Go code; active tails do not skip exponentiation work;
+and no custom register or spill convention has been implemented. Complete
+measurements must therefore include stack traffic and generated code as well
+as elapsed time. The packed singleton's admitted schedule is narrower than
+this general comparison.
 
 ## Strict pipeline invariants
 
@@ -124,8 +127,9 @@ XQ == xR*ZQ and YQ == yR*ZQ
 The encoded-`Q` verifier remains the differential reference. The scalar
 generic implementation also keeps encoded-`Q` in production: its separately
 decoded-`R` complete pipeline was about 2% slower on the development machine.
-Only a paired IFMA decoder that improves complete cold verification by at
-least 2% is eligible for dispatch.
+The paired packed singleton cleared its complete-path gate and is used by the
+forced r51 backend. Other paired SIMD shapes remain eligible only through a
+complete-path improvement, not a decompression-only result.
 
 The differential suite covers all edge-encoding pairs, wrong lengths,
 negative zero in both positions, random decodable and non-decodable inputs,

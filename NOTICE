@@ -18,7 +18,10 @@ Derived from the Go standard library's crypto/internal/edwards25519 and
 from filippo.io/edwards25519. The non-field vendored baseline is
 filippo.io/edwards25519 v1.0.0; internal/edwards25519/field is synchronized
 to filippo.io/edwards25519 v1.2.0, except for the modifications and
-Narya-authored additions listed below.
+Narya-authored additions listed below. The source tags are:
+
+    https://github.com/FiloSottile/edwards25519/tree/v1.0.0
+    https://github.com/FiloSottile/edwards25519/tree/v1.2.0
 
 The v1.2.0 field sync covers fe.go, fe_generic.go, fe_amd64.go,
 fe_amd64.s, fe_amd64_noasm.go, and fe_extra.go, plus the upstream arithmetic,
@@ -41,32 +44,44 @@ MODIFICATIONS. Narya has changed files in this tree relative to upstream:
     VarTimeDoubleScalarBaseMult was rewritten. Upstream's loop iterates a
     local variable but returns the unmodified bound, so the skip is inert
     and 256 doublings always run; Narya's form actually advances the index.
-    The computed result is unchanged.
-  * internal/edwards25519/tables.go — Narya-authored API was added.
+    The computed result is unchanged. Narya also factors the common DSM loop
+    and adds VarTimeDoubleScalarBaseMultTable for a previously prepared
+    width-5 public-key table.
+  * internal/edwards25519/tables.go — PubkeyNAFTable and its constructor were
+    added for the prepared width-5 DSM path.
+  * internal/edwards25519/extra.go — MultiScalarMult initializes its receiver
+    to the identity before accumulating. This fixes a latent use of an
+    uninitialized zero Point as an accumulator.
   * import paths were rewritten to the Narya module path throughout.
 
-Narya-authored files inside this tree — comb.go, smallorder.go,
-equal_affine.go, tables.go additions, field/sqrt_ratio_test.go, and their
-tests — are Apache-2.0, not BSD-3-Clause. The vendored files, including the
-v1.2.0 field arithmetic and alias tests, remain BSD-3-Clause.
+Standalone Narya-authored files inside this tree — including comb.go,
+smallorder.go, equal_affine.go, field/sqrt_ratio_test.go, and their first-party
+tests — carry Apache-2.0 headers. Modified upstream files retain their
+BSD-3-Clause headers, including the Narya changes enumerated above. The
+vendored v1.2.0 field arithmetic and upstream alias tests also remain
+BSD-3-Clause.
 
 
 =======================================================================
 DERIVED WORK — internal/r43x6
 =======================================================================
 
-The r43x6 six-limb representation, the reduced curve constants in
-internal/r43x6/constants.go (converted from Firedancer's C source into Go
-limb literals), and the regression vectors in the firedancer_regression
-test files follow Firedancer.
+The r43x6 six-limb representation and the reduced curve constants in
+internal/r43x6/constants.go follow Firedancer commit
+3ed37488372b7e50bb03ca30477be48508ee7022. The constants were converted from
+Firedancer's C source into Go limb literals:
+
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/avx512/fd_r43x6.h
 
     Copyright 2022 Firedancer Contributors
-    https://github.com/firedancer-io/firedancer
+    https://github.com/firedancer-io/firedancer/tree/3ed37488372b7e50bb03ca30477be48508ee7022
     Apache License 2.0
 
 Per Apache-2.0 section 4(d), the following attribution notice is carried
 forward from Firedancer's own NOTICE file, because Narya redistributes
 portions of the work it covers:
+
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/NOTICE
 
     The ed25519 implementation in src/ballet/ed25519 is currently a very
     heavily optimized implementation originally based on the OpenSSL
@@ -84,8 +99,42 @@ portions of the work it covers:
      * https://www.openssl.org/source/license.html
      */
 
-This lineage applies to internal/r43x6 only. It does NOT apply to
-sha512mb or to internal/r51x5; see those sections below.
+This implementation lineage applies to internal/r43x6 only. It does NOT apply
+to sha512mb or to the independently implemented internal/r51x5 arithmetic.
+The separate regression-fixture section below records the Firedancer test
+inputs reused across those packages.
+
+
+=======================================================================
+TEST FIXTURES — Firedancer arithmetic and fuzz regressions
+=======================================================================
+
+The following test files transcribe public regression inputs retained by
+Firedancer after they exposed bugs in its Ed25519 implementation:
+
+  * internal/r43x6/firedancer_regression_test.go
+  * internal/r51x5/firedancer_regression_test.go
+  * ed25519/vectors_firedancer_regression_test.go
+
+Only the test fixtures, expected results, and their provenance are derived
+from Firedancer; this does not make internal/r51x5 a Firedancer-derived
+implementation. The pinned corpus source and fixes are:
+
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519.c
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/fuzz_ed25519_sigverify.c
+    https://github.com/firedancer-io/firedancer/commit/e49d8f36aeb0c803be345a23a3e25b763c11fcf4
+    https://github.com/firedancer-io/firedancer/commit/d823719a97fa730f7abad362486fd5b4d3ba296d
+    https://github.com/firedancer-io/firedancer/commit/d2d03d7b890f8babb9d7e7fa68938dfa46e6bc62
+    https://github.com/firedancer-io/firedancer/commit/432463091c6c981fd99e29aa95b4863017c381ea
+    https://github.com/firedancer-io/firedancer/commit/af4f2ef8f47c47b4bc25fe120b1411cc6bd836fa
+    https://github.com/firedancer-io/firedancer/commit/d5b5bfd52e0a1138d07ab3cc5cfbf9f9605ead87
+
+    Copyright 2022 Firedancer Contributors
+    Apache License 2.0
+
+The test files add Narya's Go harnesses, lane replication, and independent
+known-answer checks. Their file headers and source comments point back to this
+section.
 
 
 =======================================================================
@@ -104,7 +153,9 @@ TEST CORPORA — ed25519/vectors_cctv_test.go
 
 Contains the C2SP CCTV ed25519vectors corpus
 (https://github.com/C2SP/CCTV, ed25519/ed25519vectors.json), transcribed
-into Go by way of Firedancer's src/ballet/ed25519/test_ed25519_cctv.c.
+into Go by way of Firedancer's pinned source:
+
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519_cctv.c
 
 This corpus is distributed under the following terms, reproduced here as
 its license requires of any redistribution in source form:
@@ -139,7 +190,7 @@ its license requires of any redistribution in source form:
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The vectors accompany "Taming the many EdDSAs"
-(https://eprint.iacr.org/2020/823) and Henry de Valence's survey at
+(https://eprint.iacr.org/2020/1244) and Henry de Valence's survey at
 https://hdevalence.ca/blog/2020-10-04-its-25519am.
 
 
@@ -148,16 +199,27 @@ TEST CORPORA — ed25519/vectors_wycheproof_test.go
 =======================================================================
 
 Contains EdDSA (Ed25519) verification cases from Project Wycheproof
-(https://github.com/google/wycheproof,
-testvectors/eddsa_test.json), transcribed into Go by way of Firedancer's
-src/ballet/ed25519/test_ed25519_wycheproof.c.
+(https://github.com/C2SP/wycheproof), transcribed into Go by way of
+Firedancer's pinned snapshot:
+
+    https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519_wycheproof.c
 
     Copyright Google LLC
     Apache License 2.0
 
-Project Wycheproof does not ship a NOTICE file, so Apache-2.0 section 4(d)
-imposes no additional propagation requirement. The transcription changed
-the encoding of the data, not its content.
+The transcribed Wycheproof snapshot carried no separate NOTICE file. The
+transcription changed the encoding of the data, not its content.
+
+
+=======================================================================
+SPECIFICATION VECTORS — ed25519/vectors_rfc8032_test.go
+=======================================================================
+
+Contains all five plain Ed25519 known-answer vectors from RFC 8032 section
+7.1. The Ed25519ctx, Ed25519ph, Ed448, and Ed448ph profiles use different APIs
+and are outside Narya's contract.
+
+    https://www.rfc-editor.org/rfc/rfc8032#section-7.1
 
 
 =======================================================================
@@ -179,8 +241,11 @@ The radix-2^51 five-limb, lane-per-signature layout is Narya's own
 implementation. It was motivated by independent published evidence that the
 representation suits AVX-512 IFMA:
 
-  * ENG25519, Zhang et al., USENIX Security 2024
+  * Jipeng Zhang, Junhao Huang, Lirui Zhao, Donglong Chen, and Çetin Kaya
+    Koç, "ENG25519: Faster TLS 1.3 Handshake Using Optimized X25519 and
+    Ed25519," 33rd USENIX Security Symposium, 2024, pp. 6381–6398.
     https://www.usenix.org/conference/usenixsecurity24/presentation/zhang-jipeng
+    https://github.com/Ji-Peng/eng25519_artifact/tree/usenix_security2024
   * "Breaking 10 million TPS", Eclipse Labs
     https://www.eclipselabs.io/blogs/breaking-10-million-tps
 
@@ -192,9 +257,14 @@ and no code was taken from either.
 RESEARCH TRACK — internal/heea8l
 =======================================================================
 
-The half-extended-Euclidean scalar decomposition track follows the artifact
-and paper archived at https://artifacts.iacr.org/tches/2025/a26/
-(IACR Transactions on Cryptographic Hardware and Embedded Systems, 2025).
+The half-extended-Euclidean scalar decomposition track follows Muhammad
+ElSheikh, İrem Keskinkurt Paksoy, Murat Cenk, and M. Anwar Hasan, IACR
+Transactions on Cryptographic Hardware and Embedded Systems 2025(3),
+pp. 493–515, DOI 10.46586/tches.v2025.i3.493-515, and its artifact:
+
+    https://doi.org/10.46586/tches.v2025.i3.493-515
+    https://artifacts.iacr.org/tches/2025/a26/
+
 The comparison baseline quoted in docs/HEEA.md is that artifact's, measured
 against ed25519-donna (Andrew Moon). This code is a research prototype and
 is not part of any production build.
@@ -220,21 +290,25 @@ sources; they are recorded because the behavior they define is the product.
     https://zips.z.cash/zip-0215
   * BoringSSL — the square-root-ratio derivation used in
     internal/edwards25519/field/fe.go and internal/r43x6/arithmetic.go.
-    https://boringssl.googlesource.com/boringssl/
+    https://boringssl.googlesource.com/boringssl/+/0fc57bef1821c163ac023a0aa96e4fb2a67c0d82
   * NIST FIPS 180-4 — SHA-512, implemented by sha512mb.
+    https://csrc.nist.gov/pubs/fips/180-4/upd1/final
 
 
 =======================================================================
 COMPARISON AND DIFFERENTIAL ORACLE
 =======================================================================
 
-curve25519-voi (Oasis Protocol Foundation, BSD-3-Clause,
-https://github.com/oasisprotocol/curve25519-voi) is used as a
+curve25519-voi v0.0.0-20230904125328-1f23a7beb09a (Oasis Protocol
+Foundation, BSD-3-Clause,
+https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a) is used as a
 cross-library differential oracle for the acceptance predicate and as a
 performance baseline. It is a test-only dependency behind the
 oasis_compare build tag and a separate module file; no curve25519-voi code
-is redistributed with Narya. Narya does not implement its ABGLSV-Pornin
-cofactored algorithm, which is incompatible with the strict predicate.
+is redistributed with Narya. Narya does not use voi's shipped cofactored
+ABGLSV-Pornin verification path for DalekStrict: multiplying the error point
+by a non-injective cofactor can change that predicate. Narya's independently
+implemented torsion-safe modulo-8L HEEA research remains test-only.
 
 curve25519-voi is itself, by its own account, "mostly derived from
 curve25519-dalek" (https://github.com/dalek-cryptography/curve25519-dalek).
@@ -257,11 +331,10 @@ point's coordinates spread across vector lanes, rather than one signature
 per lane -- is prior art with a known lineage, and Narya's experimental
 coordinate-parallel packed-x4 work uses the same orientation.
 
-The earliest widely known instance of that design for Edwards curves is
-curve25519-dalek's AVX2 backend, cited above. Firedancer's r43x6 "QUAD"
-packing, which Narya's internal/r43x6 credits as its source, is the same
-idea at AVX-512 width. Narya's packed-x4 experiment applies it at radix
-2^51 on four lanes.
+curve25519-dalek's AVX2 backend is a documented prior implementation of that
+design. Firedancer's r43x6 "QUAD" packing, which Narya's internal/r43x6
+credits as its source, is the same idea at AVX-512 width. Narya's packed-x4
+path applies it at radix 2^51 on four lanes.
 
 Narya distributes no dalek or voi code, so nothing here is a license
 obligation. It is recorded as credit for an architectural idea Narya did

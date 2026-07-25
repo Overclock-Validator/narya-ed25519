@@ -3,13 +3,27 @@
 This is the correctness and benchmark plan for Narya's throughput backend.
 It is deliberately separate from `internal/r43x6`:
 
+> **Current status.** The reviewed Zen 4 composition is registered as backend
+> `r51` for explicit selection. Automatic selection remains `generic`.
+> `r51` uses a packed paired-A/R singleton and two-x4 radix-64 batch-Q groups;
+> the true-x8, alternative-radix, warm-comb, wider-B, and HEEA variants described
+> below remain benchmark candidates rather than dispatch choices.
+
 | Backend | Vector interpretation | Intended job |
 |---|---|---|
 | r43x6 | six limbs of one field element in a vector | single-signature latency and a forced correctness baseline |
 | r51x5 x4/x8 | one signature per SIMD lane, five vectors per field element | batch throughput |
 
-Neither representation is an automatic production choice. The Ryzen 7 PRO
-8700GE measurements decide the first dispatch policy.
+Neither representation is an automatic production choice. Measurements on
+the Ryzen 7 PRO 8700GE selected x4-oriented r51 for the first forced backend;
+x8 remains tested for future microarchitectures such as Zen 5.
+
+Zen 5 is a measurement target, not a current speed claim. Its native 512-bit
+datapath may change the x8-versus-two-x4 result, but enabling a different
+shape will require target-hardware benchmarks, CPUID family/model dispatch
+rather than the shared IFMA feature bit alone, and lane-width-specific retuning
+of per-key comb parameters and table pressure. Keep x8 differentials green so
+that evaluation is a benchmark decision rather than a code-revival project.
 
 The representation is supported by independent implementation evidence:
 [ENG25519](https://www.usenix.org/conference/usenixsecurity24/presentation/zhang-jipeng)
@@ -266,12 +280,14 @@ implementations, with an important performance boundary:
   shared-doubling accumulator in the u52 domain. Fixed B preparation is
   separate from cold per-key A preparation, and exact negative digits preserve
   `-k` rather than substituting `L-k`; and
-- a dormant, unregistered complete batch verifier now connects strict byte predicates,
-  canonical S, segmented hashing of the original bytes, canonical challenge
-  reduction, paired A/R decode, two-term exact-integer DSM, compact-affine
-  strict equality, and compatibility encoded-Q equality. CCTV, Wycheproof,
-  x4/x8, ordinary radix-16/32/64, every-lane, tail, and randomized mixture tests all run
-  through this boundary, including the ordinary radix-64 candidate; and
+- a complete batch verifier connects strict byte predicates, canonical S,
+  segmented hashing of the original bytes, canonical challenge reduction,
+  point decoding, exact-integer DSM, and profile-specific final equality.
+  The selected forced backend decodes only A for full x4 groups and
+  batch-encodes Q; the paired A/R form remains the strict singleton path and a
+  complete comparison oracle. CCTV, Wycheproof, x4/x8, ordinary
+  radix-16/32/64, every-lane, tail, and randomized mixture tests all run
+  through this boundary; and
 - the four-slot QSM accepts arbitrary-width signed integers and implements the
   exact modulo-8L HEEA equation without reducing A/R multipliers modulo L; and
 - a forced strict HEEA verifier now carries selector admission and fallback
@@ -281,45 +297,44 @@ implementations, with an important performance boundary:
   width, reusing decode/hash results; kernel errors remain explicit and clear
   all verdicts rather than being disguised as lane fallback.
 
-None of this changes backend dispatch. The forced complete verifier now
-connects the paired IFMA decompressor, native x4/x8 SHA-512, fixed-storage
-challenge reduction, composable IFMA DSM, and both final-equation forms. Its
-x4, true-x8, and two-x4 paths are allocation-free and include cold arbitrary-A
-table construction in the timed boundary. A second complete-path candidate
-splits `[s]B` into the scalar-stored shared comb and keeps exactly one SoA table
-for `-[k]A`, so wider-B measurements no longer retain a dummy identity table.
+The selected composition now changes explicitly forced `r51` dispatch, but
+not automatic dispatch. It connects the packed strict singleton, native x4
+SHA-512, fixed-storage challenge reduction, composable radix-64 x4 DSM, and
+cross-group Q encoding. The broader x4, true-x8, two-x4, alternate-radix, and
+comb matrix remains allocation-free benchmarking infrastructure. Its cold
+rows include arbitrary-A table construction. A separate candidate splits
+`[s]B` into a scalar-stored shared comb and keeps exactly one SoA table for
+`-[k]A`, so wider-B measurements do not retain a dummy identity table.
 
-The public batch dispatcher has a private optional raw-slice backend contract.
-The forced candidate benchmarks enter through that contract, including public
-length/dispatch checks, instead of bypassing the wrapper while charging the
-generic baseline for a `batchItem` allocation. Cache batches deliberately keep
-the item path because lookup results are per signature. No registered backend
-or automatic selection uses the raw contract yet.
+The public batch dispatcher has an optional raw-slice backend contract. The
+registered forced `r51` backend and candidate benchmarks enter through that
+contract, including public length/dispatch checks, instead of bypassing the
+wrapper while charging the generic baseline for a `batchItem` allocation.
+Table-capable cache backends keep the item path because lookup results are per
+signature. Because PR 1's r51 backend intentionally reports
+`supportsPrecomp() == false`, `Cache.VerifyBatchStrict` bypasses cache
+bookkeeping and uses the same raw r51 path. Automatic selection still does not
+use the raw contract.
 
 ### Promotion boundary
 
-The complete ordinary verifier kernel now lives in
-`ed25519/backend_r51experiment.go`, a normal non-`_test.go` compilation unit.
-This makes the x8/two-x4, radix-16/32/64, and fixed-B-comb code exercised by
-the complete-pipeline benchmarks the exact private artifact that could later
-be registered after the release gates pass. It is not a second test-only copy.
-
-That move does **not** enable the artifact. The file has no `init`, implements
-no registered backend, exposes no public API, and is unreachable from
-`SetBackend`, automatic selection, and production `Verify`/`VerifyBatch`
-calls. The raw-dispatch adapter, fixtures, assertions, fuzz entry point, and
-benchmarks remain in `backend_r51ifma_test.go`. A registration-boundary test
-checks both that automatic selection stays `generic` and that no r51 adapter
-appears in the backend registry.
+The complete ordinary verifier core lives in
+`ed25519/backend_r51experiment.go`, a normal non-`_test.go` compilation unit;
+`ed25519/backend_r51.go` registers and pools the selected composition. The
+same normal-source core continues to expose the wider x8/two-x4,
+radix-16/32/64, and fixed-B-comb matrix to complete-pipeline benchmarks, so
+there is no divergent test-only implementation. Tests require automatic
+selection to remain `generic`, hardware activation to fail closed, and forced
+`r51` to preserve every public profile and batch contract.
 
 The remaining Go carry/fold, field add/subtract, scalar unpacking, digest
 compaction for the two-x4 reducer, final mask work, and compiler-selected spills
 are still correctness-first schedules. Every IFMA multiplication carry/folds
-and validates its raw output before reuse. Zen 4 hardware execution and
-profiling—not source-level operation counts—must decide whether any of these
-forced candidates deserve production dispatch. A fused native scalar reducer
-or tighter carry/add/sub assembly remains optional follow-up only if the full
-profile shows those stages are material.
+and validates its raw output before reuse. Zen 4 hardware execution selected
+the current forced composition; the same complete-path measurement rule still
+decides whether any additional candidate belongs in dispatch. A fused native
+scalar reducer or tighter carry/add/sub assembly remains optional follow-up
+only if a complete profile shows those stages are material.
 
 ## x8 versus two x4 groups
 
@@ -388,7 +403,7 @@ an x8 selector needs its own measured packing schedule. A second Zen 5-only
 candidate may pack two signatures times four Edwards coordinates into one ZMM
 register, combining coordinate parallelism with two-way signature parallelism.
 That orientation is a prototype question for real hardware, not part of the
-Zen 4 production path.
+registered forced Zen 4 path.
 
 The optional W132/radix-32 HEEA experiment repeats its x8/two-x4 n=8/64
 release matrix with `BenchmarkR51HEEACompletePipelineParallel`. HEEA promotion
@@ -427,10 +442,12 @@ independent test oracles. `StdlibCompat` must not inherit strict prechecks.
 
 ## Gates
 
-The implementation stays private, unregistered, and benchmark-only until it has:
+The selected cold x4 composition has crossed the explicit-registration gate.
+Every additional variant remains private and benchmark-only until it has:
 
 - zero corpus, fuzz, mixed-order, and lane-mask mismatches;
-- hardware execution on Zen 4 (a skipped test is not a result);
+- hardware execution on its target microarchitecture (a skipped test is not a
+  result);
 - complete-verifier x8 versus two-x4 measurements;
 - release-size rows at 64, 200, and 1232 bytes plus diagnostic rows at 176,
   512, and 1024 bytes;

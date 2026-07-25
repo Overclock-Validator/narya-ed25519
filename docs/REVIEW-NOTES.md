@@ -1,9 +1,9 @@
 # Narya — review notes / PR description
 
 > Consensus-exact, accelerated Ed25519 verification for a Go Solana node.
-> Alpha. This branch is up for review. Experimental r43/r51 AVX-512 kernels
-> are present but forced/test-only; Zen 4 correctness and performance gates
-> still prevent automatic dispatch.
+> Alpha. This branch is up for review. The Zen 4 r51 composition is registered
+> for explicit selection; automatic dispatch remains generic. The r43
+> reference, x8/Zen 5, warm-comb, and HEEA variants remain forced experiments.
 
 ## Why
 
@@ -24,10 +24,9 @@ Two packages:
   and a `Cache` for per-key acceleration. Runtime-selected backends behind
   one API.
 - **`sha512mb`** — multi-buffer SHA-512. Digests are bit-identical to
-  `crypto/sha512`; the batch API exists so a vector kernel can hash
-  `Lanes()` messages at once. Production remains a scalar fallback (correct
-  everywhere); forced-only AVX2 x4 and AVX-512F x8 experiments are present
-  but await Ryzen execution and complete-verifier measurement.
+  `crypto/sha512`. The public `Lanes`/`Sum512Batch` API remains scalar and
+  portable; hardware-gated AVX2 x4 and AVX-512F x8 entry points are present.
+  The explicitly forced r51 verifier consumes the x4 entry point internally.
 
 ## Acceptance semantics (the load-bearing part)
 
@@ -59,8 +58,9 @@ availability.
 Narya never uses random-coefficient (cofactored) batch verification: its
 aggregate equation can accept adversarial signatures that per-signature
 verification rejects. "Batch" is a per-signature-verdict dispatch surface.
-The selectable backends currently hash and decode scalar items; paired lane
-decoding and parallel SHA-512 remain experimental.
+The default generic backend processes items independently. The forced r51
+backend uses lane-parallel hashing and decoding while retaining independent
+verdicts.
 
 ## Architecture
 
@@ -71,13 +71,13 @@ decoding and parallel SHA-512 remain experimental.
     the doubling chain for recurring signers. **Implemented.**
   - `ifma` — a forced-only AVX-512 IFMA correctness backend after
     Firedancer's `r43x6` representation. The first field kernel and complete
-    scalar reference verifier are implemented; Zen 4 hardware validation and
-    the optimized point schedules remain release gates. Automatic selection
+    scalar reference verifier are implemented and have executed on Zen 4; its
+    performance does not displace the selected r51 path. Automatic selection
     deliberately remains `generic`.
-  - `r51x5` — an isolated five-limb, lane-per-signature x4/x8 throughput
-    experiment. It is not a registered backend yet. Its independent field
-    model and IFMA kernels must pass range, lane, full-predicate, and Zen 4
-    gates before it can compete for dispatch. See
+  - `r51` — a registered, forced-only five-limb lane-per-signature Zen 4
+    backend. It uses a packed singleton and x4 batch-Q groups; automatic
+    selection remains generic. The wider x8, warm-comb, and alternate-radix
+    configurations remain benchmark candidates. See
     `docs/R51_THROUGHPUT_BACKEND.md`.
   - `stdlib` — routes to `crypto/ed25519`; the rollback proof point.
 - No cgo anywhere. The current AVX-512 primitives are Go assembly, gated on
@@ -91,14 +91,14 @@ decoding and parallel SHA-512 remain experimental.
 |---|---|
 | `generic` backend + comb cache | done |
 | Profiles + `VerifyStrict` + small-order rejection | done |
-| `VerifyBatch` pipeline (per-signature verdicts) | done (scalar hashing) |
-| Differential test corpus (CCTV 914, Wycheproof 133, fuzz) | done |
-| forced-only `sha512mb` AVX2 x4 / AVX-512F x8 kernels | implemented; Ryzen hardware validation pending |
-| forced-only `ifma` r43x6 reference backend | implemented; Zen 4 validation pending |
-| 5x51 lane-per-signature x4/x8 substrate | scalar field/point models and true x4/x8 IFMA multiply kernels implemented; Zen 4 execution pending |
-| exact modulo-8L HEEA selector/QSM | allocation-free selector, exact signed x4/x8 IFMA QSM, scalar end-to-end oracle, and forced complete verifier implemented; Ryzen gate pending |
-| optimized IFMA point schedules | composable u52 x4/x8 point add/double, paired decode, radix-16/32/64 ordinary DSM, and complete forced verifier implemented; fused carry/reduction work and Zen 4 validation pending |
-| Per-key tables in IFMA layout | cold variable-base tables implemented in the forced verifier; production cache policy/packing pending real traces and Zen 4 data |
+| `VerifyBatch` pipeline (per-signature verdicts) | done; forced r51 uses native x4 hashing |
+| Differential test corpus (RFC 8032, CCTV 914, Wycheproof 133, Firedancer regressions, fuzz) | done |
+| `sha512mb` AVX2 x4 / AVX-512F x8 kernels | hardware-tested; x4 consumed by forced r51, public hash dispatch remains scalar |
+| forced-only `ifma` r43x6 reference backend | implemented and hardware-tested; not automatic |
+| registered r51 cold backend | done for explicit Zen 4 selection; packed singleton plus x4 batch-Q dispatcher |
+| exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
+| additional r51 x8/alternate-radix/comb schedules | benchmark-only; x8 retained for Zen 5 measurement |
+| Per-key tables in IFMA layout | cold tables used; warm cache admission/packing pending real traces and churn tests |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
 ## Testing
@@ -117,15 +117,13 @@ profile's predicate returns. Enforced by:
 - Fuzz targets (three-way: stdlib vs generic vs cached vs batch; sha512mb
   vs `crypto/sha512`).
 
-The Zen 4 evaluator deliberately has two different implementation policies,
-because its benchmark surfaces are not interchangeable:
-
-- Cold single-call dispatch is an r43 decision. The r43 measurement must beat
-  the public stdlib single-call API by at least 10% at 64, 200, and 1232-byte
-  messages without increasing B/op or allocs/op.
-- r51 is a batch/throughput decision. Its `n=1` private-pipeline measurement is
-  tail evidence only; its percentage improvement can never select or replace
-  r43 because it uses a different harness and denominator.
+The registered r51 dispatcher's core is measured at all batch widths. PR 1's
+external-package release benchmark forces it through `SetBackend("r51")` and
+calls only exported `VerifyBatchStrict`; the public result must remain within
+2% of the core. On the Ryzen 7 PRO 8700GE it uses the packed path at n=1 and x4
+groups plus exact tails for wider batches. Future r43, x8, warm-cache, and HEEA
+changes must beat the final registered public-dispatch baseline rather than an
+older private-pipeline denominator.
 
 `scripts/zen4-evaluate.py RESULT_DIR --decision-output decision-v1.json`
 writes a mode-0600, versioned decision artifact inside the result bundle. The
@@ -222,19 +220,18 @@ turbine transaction-verifier seam. Not in this branch.
 
 ## 4. AVX-512 kernels
 
-Keep two distinct arithmetic tracks: r43x6 for single-signature latency and
-5x51 transposed x4/x8 arithmetic for throughput. The latter now has independent
+Keep two distinct arithmetic tracks: r43x6 as a correctness/latency reference
+and 5x51 transposed x4/x8 arithmetic for throughput. The latter has independent
 scalar x4/x8 field and point models, real ZMM/YMM IFMA multiplication kernels,
 composable u52 point operations, paired decompression, regular
 radix-16/radix-32/radix-64 ordinary variable-base tables, exact signed DSM/QSM,
 native x4/x8 SHA-512, and a complete forced verifier. Fixed IFMA table and
 workspace storage is now physically specialized to 8/16/32 positive entries;
 smaller radices neither retain nor clear radix-64 capacity. Radix 64 is measured
-only for the ordinary DSM; HEEA retains radix 16/32. It is intentionally not a registered
-backend: scalar reduction and some carry/add/sub work remain
-correctness-first, and the complete x8 versus two-x4 result has not yet been
-executed on the Ryzen. The forced verifier now provides that target
-measurement boundary without changing automatic dispatch.
+only for the ordinary DSM; HEEA retains radix 16/32. The selected packed
+singleton plus radix-64 x4 batch-Q composition is registered as forced backend
+`r51`. Alternative x8, radix, comb, and HEEA configurations remain private.
+Automatic dispatch remains generic.
 
 The optional HEEA handoff preserves arbitrary-width signed coefficients for
 mixed-order A/R points and has an allocation-free modulo-8L selector. On the

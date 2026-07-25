@@ -1,11 +1,14 @@
+// Reduced constants derived from Firedancer's r43x6 representation at commit
+// 3ed37488372b7e50bb03ca30477be48508ee7022.
+// Copyright 2022 Firedancer Contributors. Licensed under Apache-2.0.
+// Converted from C source form into Go limb literals by Overclock Validator;
+// see the repository NOTICE for the Apache-2.0 change notice and inherited
+// attribution.
+
 package r43x6
 
-// Reduced constants copied from Firedancer's r43x6 representation
-// (https://github.com/firedancer-io/firedancer, Copyright 2022 Firedancer
-// Contributors, Apache License 2.0) and converted from its C source form into
-// Go limb literals. This notice is the change notice required by Apache-2.0
-// section 4(b); see the NOTICE file for the section 4(d) attributions that
-// accompany this material.
+// Source:
+// https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/avx512/fd_r43x6.h
 //
 // Keeping them in limb form also checks that the scalar reference and a future
 // SIMD backend agree on the representation boundary.

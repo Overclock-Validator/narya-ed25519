@@ -88,7 +88,8 @@
 //
 // Requires AVX2. state is [8][4]uint64 and block is [16][4]uint64, both
 // transposed by message lane. The 80-vector schedule occupies the stack
-// frame. Inputs and outputs may not overlap.
+// frame. state and block may overlap: all 16 block vectors are copied to the
+// stack before state is loaded or written.
 TEXT ·nativeCompressX4(SB), 0, $2560-16
 	MOVQ block+8(FP), SI
 	LEAQ 0(SP), BX
@@ -256,7 +257,8 @@ expand_schedule:
 // Requires AVX-512F. This is a true eight-stream ZMM schedule, not two calls
 // to nativeCompressX4. Zen 4 implements 512-bit operations over its 256-bit
 // datapaths, so complete benchmarks must decide between this kernel and two
-// x4 groups.
+// x4 groups. state and block may overlap because the complete block is copied
+// to the stack before state is loaded or written.
 TEXT ·nativeCompressX8(SB), 0, $5120-16
 	MOVQ block+8(FP), SI
 	LEAQ 0(SP), BX

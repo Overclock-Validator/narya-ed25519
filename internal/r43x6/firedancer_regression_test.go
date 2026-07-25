@@ -1,3 +1,7 @@
+// Test fixtures derived from Firedancer's Ed25519 regression corpus.
+// Copyright 2022 Firedancer Contributors. Licensed under Apache-2.0.
+// Narya adds the Go harness and independent checks; see the repository NOTICE.
+
 package r43x6
 
 import (

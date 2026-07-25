@@ -3,8 +3,9 @@ package sha512mb
 import "encoding/binary"
 
 // The native multi-buffer implementation is intentionally disconnected from
-// Lanes and Sum512Batch. It is a forced, test/benchmark-only experiment until
-// its complete verifier win has been measured on the target machine.
+// the public Lanes and Sum512Batch dispatch. Its hardware-gated Experimental
+// entry points are used by the explicitly forced r51 verifier and by direct
+// tests/benchmarks; automatic backend selection never reaches them.
 
 const (
 	// ExperimentalWidthX4 selects the AVX2 four-stream prototype.
@@ -189,8 +190,9 @@ func sum512x4Native(out [][64]byte, msgs [][][]byte) bool {
 }
 
 // ExperimentalNativeAvailable reports whether width selects a native kernel
-// that is safe to execute on this machine. Availability never changes
-// Lanes(), Sum512Batch, or any production dispatch decision.
+// that is safe to execute on this machine. Availability never changes the
+// public Lanes or Sum512Batch behavior and never enables a verifier backend
+// automatically.
 func ExperimentalNativeAvailable(width int) bool {
 	switch width {
 	case nativeX4Width:
@@ -205,8 +207,9 @@ func ExperimentalNativeAvailable(width int) bool {
 // ExperimentalSum512Batch explicitly forces a hardware-gated multi-buffer
 // SHA-512 experiment. width must be 4 or 8. The call returns false and leaves
 // out untouched when that kernel is unavailable. len(out) must equal
-// len(msgs), even for an unavailable kernel. Production callers should use
-// Sum512Batch instead.
+// len(msgs), even for an unavailable kernel. General callers should use
+// Sum512Batch; the forced r51 backend is the reviewed internal consumer of
+// this explicit-width surface.
 func ExperimentalSum512Batch(out [][64]byte, msgs [][][]byte, width int) bool {
 	if len(out) != len(msgs) {
 		panic("sha512mb: experimental out/msgs length mismatch")
@@ -234,8 +237,9 @@ func ExperimentalSum512Batch(out [][64]byte, msgs [][][]byte, width int) bool {
 //
 // width must be 4 or 8. The call returns false and leaves out untouched when
 // that kernel is unavailable. len(out) must equal len(msgs), even for an
-// unavailable or unsupported kernel. Production callers should continue to
-// use Sum512Batch.
+// unavailable or unsupported kernel. General callers should continue to use
+// Sum512Batch; the forced r51 backend is the reviewed internal consumer of
+// this fixed-three-segment surface.
 func ExperimentalSum512Batch3(out [][64]byte, msgs [][3][]byte, width int) bool {
 	if len(out) != len(msgs) {
 		panic("sha512mb: experimental fixed3 out/msgs length mismatch")

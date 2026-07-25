@@ -182,11 +182,11 @@ func active() backend {
 	return b
 }
 
-// pick resolves a backend name. During IFMA development, the empty/auto
-// choice deliberately remains generic even when an experimental IFMA kernel
-// is registered. IFMA can be exercised only through SetBackend("ifma") or
-// OVERCLOCK_ED25519_BACKEND=ifma until the Zen 4 correctness and performance
-// gates are met. A requested name that cannot be honored panics rather than
+// pick resolves a backend name. The empty/auto choice deliberately remains
+// generic even though the forced ifma reference and cold r51 backend are
+// registered. They can be exercised only through SetBackend or
+// OVERCLOCK_ED25519_BACKEND until a separately reviewed automatic-dispatch
+// policy exists. A requested name that cannot be honored panics rather than
 // silently degrading because it represents explicit operator intent.
 func pick(name string) backend {
 	if name == "" {

@@ -2,8 +2,10 @@
 
 The short fuzz rounds in `scripts/zen4-gate.sh` are smoke tests. They do not
 constitute the prolonged generic and IFMA differential fuzzing required before
-production dispatch. Run the separate soak on the Ryzen 7 PRO 8700GE after the
-ordinary and optional candidates compile there:
+automatic SIMD dispatch or release sign-off. The r51 backend is registered for
+explicit use, but remains outside automatic selection. Run the separate soak
+on the Ryzen 7 PRO 8700GE after the ordinary and optional candidates compile
+there:
 
 ```text
 ./scripts/zen4-fuzz-soak.sh ../narya-zen4-fuzz-run-001 2h 8 0-7

@@ -69,18 +69,26 @@ small-order set, cross-checked against Firedancer's independent verdict.
 Narya never uses random-coefficient (cofactored) batch verification:
 its aggregate equation can accept adversarial signatures that
 per-signature verification rejects. "Batch" preserves an independent verdict
-for every signature and is the dispatch surface for future parallel hashing
-and paired decoding. The currently selectable production backends still hash
-and decode each item independently.
+for every signature. The default `generic` backend processes signatures
+independently. The explicitly selected `r51` backend instead hashes and
+decodes several independent signatures in SIMD lanes while retaining a
+separate verdict for every input.
 A future `ZIP215` profile will track Solana's proposed
 [SIMD-0376](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0376-verify-strict.md)
 loosening only after it is accepted and its feature gate activates on mainnet.
 The existence of a ZIP-215 implementation is not itself an activation signal.
 
-**Narya has no signing API, deliberately.** It cannot be misused in the way
-catalogued by
-[ed25519-unsafe-libs](https://github.com/MystenLabs/ed25519-unsafe-libs),
-because it never accepts a caller-supplied private/public key pair.
+**Narya has no signing API, deliberately.** The mismatched private/public-key
+signing-oracle failures catalogued by
+[ed25519-unsafe-libs](https://github.com/MystenLabs/ed25519-unsafe-libs)
+are therefore outside its API: Narya never accepts a caller-supplied
+private/public key pair. Verification still has its own consensus and input
+validation risks, which are addressed by the profile contract and differential
+test corpus below. If signing is ever added, it must derive or validate the
+public key from the secret as required by the
+[RFC 8032 signing procedure](https://www.rfc-editor.org/rfc/rfc8032#section-5.1.6);
+merely verifying the emitted signature is not a sufficient defense against the
+mixed-order substitution described by the Mysten audit.
 
 ## API
 
@@ -128,92 +136,106 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. The only backend supporting precomputation. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
+| `r51` | **registered, forced-only** | Zen 4 lane-per-signature r51 backend. Strict singletons use paired A/R decode and a packed projective finalizer; batches use x4 groups, native AVX2 multi-buffer SHA-512, A-only decode, and cross-group batch encoding of Q. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
 
-Selection is deliberately non-degrading: an unknown backend name, or `ifma` on
-a CPU without IFMA, is an error from `SetBackend` and a panic on the
-environment-variable path. A forced name represents explicit operator intent
-and must not silently fall back.
+Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
+IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
+native x4 SHA-512 path. `SetBackend` performs the complete activation check
+synchronously; an unknown or unsupported forced name returns an error there
+and panics on the environment-variable path. A forced name represents explicit
+operator intent and must not silently fall back.
 
-`sha512mb`'s AVX2 and AVX-512 kernels are present and tested but **not yet
-wired into production dispatch** — `Lanes()` currently reports 1 and
-`Sum512Batch` loops `crypto/sha512`. The vector kernels are reachable only
-through the `Experimental*` entry points.
+`sha512mb`'s public `Lanes()` and `Sum512Batch` surface remains the portable
+scalar implementation. Its AVX2 and AVX-512 kernels are hardware-gated behind
+the `Experimental*` entry points; the forced `r51` backend calls the x4 native
+entry point internally. Automatic backend selection never reaches it.
 
 ## Performance
 
-Ryzen 7 PRO 8700GE (Zen 4), 200-byte messages, zero allocations in the timed
-path. Numbers move with message size and batch width, so read these as shape
-rather than as a single figure of merit.
+The following preliminary results are from the registered `r51` dispatcher's
+private core on an AMD Ryzen 7 PRO 8700GE (Zen 4), one pinned core,
+`GOMAXPROCS=1`, valid signatures, and zero allocations in the timed verification
+path. Values are microseconds per signature; the backend was forced explicitly
+and is not the automatic default. PR 1's dated evidence replaces these rows
+with the exported `SetBackend("r51")` plus `VerifyBatchStrict` release benchmark
+and requires it to stay within 2% of this core measurement.
 
-| path | µs/signature | status |
-| --- | ---: | --- |
-| `crypto/ed25519` loop | ~36.6 | baseline |
-| `generic`, cold key, `DalekStrict` | ~36.1 | **shipping**; stricter predicate than stdlib |
-| `generic`, hot key (comb cache) | ~16.3 | **shipping** |
-| packed x4 singleton, paired A/R | ~25.6 | experimental; not reachable from a registered backend |
-| `r51` batch-Q, n=64 | ~14.8 | experimental; not reachable from a registered backend |
+| message bytes | n=1 | n=4 | n=8 | n=64 |
+| ---: | ---: | ---: | ---: | ---: |
+| 64 | 25.80 | 15.24 | 14.75 | 14.55 |
+| 200 | 26.26 | 15.32 | 14.99 | 14.66 |
+| 1232 | 27.20 | 16.05 | 15.71 | 15.40 |
 
-Two things this table says plainly:
+The same 200-byte Go benchmark binary also measured the comparison libraries;
+each value below is the median of six two-second samples.
 
-1. **The generic strict path now roughly matches the standard library on a
-   cold arbitrary key** while enforcing the additional small-order checks the
-   standard library omits. Recurring signers gain substantially from the
-   shipping comb cache.
-2. **The large speedups live in an experimental tier no registered backend can
-   reach.** `internal/r51x5` is compiled and tested but has no backend adapter;
-   `internal/heea8l` is not in the non-test build at all. Neither is part of the
-   supported surface, and neither should be assumed in capacity planning.
+| implementation | n=1 | n=4 | n=8 | n=64 |
+| --- | ---: | ---: | ---: | ---: |
+| Narya r51 dispatcher core, cold strict | 26.26 | 15.32 | 14.99 | 14.66 |
+| Go `crypto/ed25519` loop | 36.82 | 36.72 | 36.69 | 36.73 |
+| curve25519-voi, cold strict | 25.55 | 25.61 | 25.47 | 25.60 |
+| curve25519-voi, pre-expanded key | 21.36 | 21.40 | 21.37 | 21.40 |
 
-The generic rows above are from the same pinned-core field-v1.2 comparison;
-the r51 row is from the later no-copy complete batch-Q gate. Experimental
-microbenchmarks for denser per-key table layouts and wider fixed-base windows
-are intentionally excluded until they improve a complete verifier. The newest
-prepared-table partial-comb experiment reduces the r51 point loop to about
-4.2 us/signature, but it is not included in the table because construction,
-cache policy, decoding, hashing, and finalization have not yet been charged.
-A test-only four-key vector builder now constructs those per-key tables in
-about 66 us/group with zero allocations, versus about 15.95 ms for four scalar
-builders. Against the measured B10 online saving, that moves the arithmetic
-break-even to roughly three uses per key. The remaining gates are complete
-verification under mixed warm/cold traffic, cache admission and churn, and
-production-safe ownership of the reusable workspace. A further test-only
-variant stores both signs of the process-wide fixed-B table. On a rotating
-64-group scalar corpus it reduces the prepared B8 and B10 loops by about 7.4%
-and 6.7%; an isolated shared-B pressure gate preserves roughly 10--12% lower
-wall time from one through eight physical Zen 4 cores without degrading
-scaling. That result costs twice the shared-B payload (330 KiB for B8 or
-720 KiB for B10) and still excludes simultaneous random-A table pressure and
-the rest of verification, so it remains out of dispatch and the headline
-table. The packed singleton row includes the strict paired-A/R decode and
-projective finalizer, but remains test-only.
+The expanded-key row excludes key-expansion cost and is therefore a warm-key
+comparison. Narya trails both voi rows at a cold singleton, but overtakes both
+by n=3; the exact tail-width sweep is in the cross-library note. For additional
+context, the same machine previously measured generic cold strict verification
+at about 36.1 us/signature and the generic hot comb cache at about
+16.3 us/signature. Those generic rows came from an earlier pinned run.
+
+An independent native C harness linked against Firedancer commit
+`3ed37488372b7e50bb03ca30477be48508ee7022` measured roughly
+20.9/21.0/21.9 us per signature for 64/200/1232-byte messages, essentially
+independent of batch width because that API verifies serially. Firedancer is
+therefore still faster for a cold singleton, while forced r51 is faster for
+full x4 groups. Exact rows and invalid-input caveats are recorded in
+[`docs/CROSS_LIBRARY_ZEN4_2026-07-24.md`](docs/CROSS_LIBRARY_ZEN4_2026-07-24.md).
+
+The registered r51 path is a cold arbitrary-key implementation: its full x4
+groups still decode A and build the small variable-base table for every
+signature. The warm per-key r51 comb, wider fixed-base tables, x8/Zen 5 tuning,
+and HEEA remain experiments. The test-only prepared A6/r9+B10 warm verifier has
+measured about 4.7--4.8 us/signature at n=64 across distinct, four-key, and
+same-key fixtures, but it excludes table construction and production cache
+lookup/admission/eviction. It is neither reachable through public `Cache` APIs
+nor a cold-key result. Other point-loop microbenchmarks exclude still more of
+the complete verifier and are likewise not headline results.
 
 Detailed commands, statistical samples, and caveats are recorded in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
+The reproducible standalone C driver is in
+[`scripts/firedancer-compare`](scripts/firedancer-compare).
 
 ## Verification
 
-- 914 [CCTV](https://github.com/C2SP/CCTV) `ed25519vectors` and 133
-  [Project Wycheproof](https://github.com/google/wycheproof) `eddsa_test`
-  vectors, plus Firedancer regression vectors and a generated edge-point corpus.
+- All five plain Ed25519 known-answer vectors from
+  [RFC 8032 section 7.1](https://www.rfc-editor.org/rfc/rfc8032#section-7.1),
+  914 [CCTV](https://github.com/C2SP/CCTV) `ed25519vectors`, and 133
+  [Project Wycheproof](https://github.com/C2SP/wycheproof) `eddsa_test`
+  vectors, plus pinned Firedancer regression vectors and a generated edge-point
+  corpus.
 - Differential tests anchoring every backend — cached or not, batched or single
   — to `crypto/ed25519` and to the generic backend, per profile.
 - A cross-library differential against
-  [curve25519-voi](https://github.com/oasisprotocol/curve25519-voi) configured
-  to the equivalent strict option set.
+  [curve25519-voi](https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a)
+  version `v0.0.0-20230904125328-1f23a7beb09a`, configured to the equivalent
+  strict option set.
 - Fuzz targets comparing backends three ways.
 
 **Known gap.** CI runs on `ubuntu-latest` and `macos-latest`, neither of which
 has AVX512-IFMA. On those hosts the IFMA paths short-circuit on feature
 detection, so a green run does **not** execute the SIMD kernels. An Intel SDE
-job and an IFMA-capable runner are prerequisites for registering any SIMD tier
-as a production backend.
+job and an IFMA-capable runner are prerequisites before any SIMD tier can be
+selected automatically.
 
 ## Status
 
 Alpha. The `generic` backend, the profile contract, and the per-key comb cache
-are functional and differential-tested. The `ifma` backend, the vectorized
-`sha512mb` kernels, and the `r51` throughput tier are under active development
-and are not selected by default.
+are functional and differential-tested. The `r51` throughput backend is
+registered for explicit selection on supported hardware but remains outside
+automatic dispatch. The `ifma` reference backend, additional vectorized
+`sha512mb` surfaces, and r51 warm-cache/Zen 5 variants remain under active
+development.
 
 ## License
 
@@ -221,19 +243,20 @@ Apache-2.0. See [NOTICE](NOTICE) for the full attribution list.
 
 **Vendored code.** `internal/edwards25519` derives from the Go standard
 library's `crypto/internal/edwards25519` and from
-`filippo.io/edwards25519` v1.0.0; its `field` subpackage is synchronized to
-`filippo.io/edwards25519` v1.2.0 (BSD-3-Clause). The upstream LICENSE files
-are preserved in those directories. Narya has **modified** files in that tree
-— notably `field/fe.go` (the v1.2.0 field code retains Narya's
-square-root-ratio derivation) and `scalarmult.go` (leading-zero skip) — and has
-added first-party files there. Narya-authored files inside the vendored tree
-are Apache-2.0.
+[`filippo.io/edwards25519` v1.0.0](https://github.com/FiloSottile/edwards25519/tree/v1.0.0);
+its `field` subpackage is synchronized to
+[`filippo.io/edwards25519` v1.2.0](https://github.com/FiloSottile/edwards25519/tree/v1.2.0)
+(BSD-3-Clause). The upstream LICENSE files and BSD headers are preserved.
+Modified vendored files retain those headers and are enumerated in
+[NOTICE](NOTICE); standalone Narya-authored files carry Apache-2.0 headers.
 
-**Derived work.** The `r43x6` AVX-512 IFMA design and the constants in
+**Derived work.** The `r43x6` AVX-512 IFMA design and constants in
 `internal/r43x6` follow
-[Firedancer](https://github.com/firedancer-io/firedancer), Copyright 2022
-Firedancer Contributors, Apache-2.0. Firedancer's Ed25519 implementation is in
-turn based on the OpenSSL project's Ed25519 implementation (Apache-2.0).
+[Firedancer at `3ed37488372b7e50bb03ca30477be48508ee7022`](https://github.com/firedancer-io/firedancer/tree/3ed37488372b7e50bb03ca30477be48508ee7022),
+Copyright 2022 Firedancer Contributors, Apache-2.0. Firedancer records that its
+Ed25519 implementation was originally based on OpenSSL's circa-October-2022
+implementation; the inherited notice and license text are carried in
+[NOTICE](NOTICE).
 
 **Prior work this library descends from.** The generic backend, the per-key
 comb cache, and `internal/edwards25519/comb.go` originate in `pkg/ed25519fast`
@@ -247,7 +270,7 @@ that of [ed25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek)
 verdict must match. The reserved `ZIP215` profile name is from Zcash's
 [ZIP 215](https://zips.z.cash/zip-0215). `sha512mb` implements FIPS 180-4. The
 square-root-ratio derivation used in `field/fe.go` and `internal/r43x6` follows
-[BoringSSL](https://boringssl.googlesource.com/boringssl/).
+[BoringSSL commit `0fc57bef1821c163ac023a0aa96e4fb2a67c0d82`](https://boringssl.googlesource.com/boringssl/+/0fc57bef1821c163ac023a0aa96e4fb2a67c0d82).
 
 **Test corpora.** The CCTV `ed25519vectors` corpus is redistributed under
 BSD-3-Clause, Copyright 2019 Google LLC and Copyright 2022 Filippo Valsorda;
@@ -256,10 +279,12 @@ requires. Project Wycheproof vectors are redistributed under Apache-2.0,
 Copyright Google LLC.
 
 **Comparison and prior art.**
-[curve25519-voi](https://github.com/oasisprotocol/curve25519-voi) (Oasis
-Protocol, BSD-3-Clause) serves as a cross-library differential oracle and
-performance baseline. Narya does **not** implement its ABGLSV–Pornin cofactored
-algorithm, which is incompatible with the strict predicate.
+[curve25519-voi at `1f23a7beb09a`](https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a)
+(Oasis Protocol, BSD-3-Clause) serves as a cross-library differential oracle
+and performance baseline. Narya does not use voi's shipped cofactored
+ABGLSV–Pornin verification path for `DalekStrict`; multiplying the error point
+by a non-injective cofactor can change that predicate. Narya's separate
+torsion-safe modulo-8L HEEA work remains experimental.
 
 voi is itself largely derived from
 [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek), and
@@ -267,8 +292,8 @@ the vectorized Edwards backend that produces its uncached single-signature
 timings is a Go port of dalek's AVX2 backend (Copyright isis agora lovecruft,
 Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. That intra-signature
 orientation — one point's coordinates across vector lanes — is prior art that
-Narya did not originate: dalek's AVX2 backend is its earliest widely known
-instance, and Firedancer's `r43x6` QUAD packing, which `internal/r43x6`
-credits, is the same idea at AVX-512 width. Narya's experimental
+Narya did not originate: dalek's AVX2 backend is a documented implementation,
+and Firedancer's `r43x6` QUAD packing, which `internal/r43x6` credits, is the
+same idea at AVX-512 width. Narya's experimental
 coordinate-parallel work uses that orientation at radix 2^51. See
 [NOTICE](NOTICE).

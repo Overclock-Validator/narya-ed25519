@@ -1,5 +1,11 @@
 # Experimental r51 Fixed-Base Comb
 
+> **Historical/superseded design note.** The registered forced r51 backend
+> still uses its cold radix-64 path. This symmetric fixed-B experiment remains
+> outside dispatch and has been superseded for new work by asymmetric A/B and
+> prepared warm-key comb measurements. The measurements below remain useful as
+> pinned evidence for the original layout decision.
+
 This experiment evaluates a wider fixed-base table for the Ed25519 generator
 `B`. Its complete verifier artifact is private and compiled in normal source,
 but remains unregistered and benchmark-only: production dispatch cannot

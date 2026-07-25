@@ -1,8 +1,9 @@
 # Experimental SHA-512 Digest Reduction
 
-`internal/r51x5` contains a forced, test/benchmark-only scalar-reduction
-component for the lane-per-signature verifier. It does not participate in
-production dispatch.
+`internal/r51x5` contains the fixed-storage scalar-reduction component used by
+the explicitly forced r51 verifier. The implementation remains portable Go;
+the SIMD/native reducer variants discussed below are benchmark-only. This
+component does not alter automatic backend selection.
 
 ## API and semantics
 

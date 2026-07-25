@@ -4,13 +4,14 @@
 // transcribed from Firedancer's src/ballet/ed25519/test_ed25519_cctv.c,
 // which embeds it from upstream:
 //
+//	https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519_cctv.c
 //	https://github.com/C2SP/CCTV/blob/main/ed25519/ed25519vectors.json
 //
 // The corpus is BSD-3-Clause, Copyright 2019 Google LLC and Copyright 2022
 // Filippo Valsorda. Its license requires that redistribution in source form
 // retain the copyright notice, conditions, and disclaimer; those are
 // reproduced in full in this repository's NOTICE file. See also
-// https://eprint.iacr.org/2020/823.
+// https://eprint.iacr.org/2020/1244.
 //
 // Every vector in this corpus has a 32-byte public key and a 64-byte
 // signature (the generator asserts this), so all of them are

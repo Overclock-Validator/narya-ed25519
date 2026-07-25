@@ -6,7 +6,11 @@ verification relative to its ed25519-donna DSM baseline. That result justifies
 an early prototype; it does not predict the gain over Narya's IFMA/SIMD
 baseline or over the corrected full-group construction.
 
-The artifact and paper are available from the
+The paper is Muhammad ElSheikh, İrem Keskinkurt Paksoy, Murat Cenk, and
+M. Anwar Hasan, "Accelerating EdDSA Signature Verification with Faster Scalar
+Size Halving," TCHES 2025(3), pp. 493–515,
+[DOI 10.46586/tches.v2025.i3.493-515](https://doi.org/10.46586/tches.v2025.i3.493-515).
+The implementation artifact is available from the
 [IACR artifact archive](https://artifacts.iacr.org/tches/2025/a26/).
 
 ## Full-group correction

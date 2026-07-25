@@ -1,3 +1,7 @@
+// Test fixtures derived from Firedancer's Ed25519 fuzz regression corpus.
+// Copyright 2022 Firedancer Contributors. Licensed under Apache-2.0.
+// Narya adds pinned KATs and independent regeneration; see the repository NOTICE.
+
 package ed25519
 
 import (
@@ -25,6 +29,7 @@ import (
 //   - https://github.com/firedancer-io/firedancer/commit/432463091c6c981fd99e29aa95b4863017c381ea
 //   - https://github.com/firedancer-io/firedancer/commit/af4f2ef8f47c47b4bc25fe120b1411cc6bd836fa
 //   - https://github.com/firedancer-io/firedancer/commit/d5b5bfd52e0a1138d07ab3cc5cfbf9f9605ead87
+//   - https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/fuzz_ed25519_sigverify.c
 //
 // Public keys and signatures are pinned as KATs instead of being generated as
 // the sole expectation. The test also regenerates them with crypto/ed25519 to

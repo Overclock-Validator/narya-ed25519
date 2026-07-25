@@ -1,5 +1,9 @@
 # Double-scalar multiplication experiments
 
+> **Current status.** Zen 4 measurements selected two-x4 radix-64 DSM for the
+> registered, forced-only r51 batch backend. The other widths and true-x8
+> shapes below remain comparison candidates; x8 is retained for Zen 5.
+
 The current r43x6 scalar reference keeps width-5 signed NAF for the
 variable-base point and width 8 for the basepoint. Widths 4, 5, and 6 remain
 test-only comparisons; no result from a non-target scalar benchmark changes
@@ -13,7 +17,8 @@ The native ordinary-verifier candidates are:
 4. x4/x8 signed radix 64 with a 32-point table and 43 fixed rounds;
 5. x8 versus two independent x4 groups on Zen 4.
 
-Radix 64 is deliberately a complete-path candidate rather than a conclusion.
+Radix 64 was deliberately evaluated as a complete-path candidate rather than
+accepted from operation counts alone.
 For four-coordinate tables its nominal payload is 20 KiB at x4 and 40 KiB at
 x8; a two-term x8 DSM retains 80 KiB if both point tables are materialized.
 The shared-B complete candidate retains only the cold 40 KiB A table, but must

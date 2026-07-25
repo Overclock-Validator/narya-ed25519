@@ -1,3 +1,7 @@
+// Test fixtures derived from Firedancer's Ed25519 regression corpus.
+// Copyright 2022 Firedancer Contributors. Licensed under Apache-2.0.
+// Narya adds lane replication and independent checks; see the repository NOTICE.
+
 package r51x5
 
 import (
@@ -53,6 +57,7 @@ var firedancerPointRegressions = []firedancerPointRegression{
 //   - https://github.com/firedancer-io/firedancer/commit/e49d8f36aeb0c803be345a23a3e25b763c11fcf4
 //   - https://github.com/firedancer-io/firedancer/commit/d823719a97fa730f7abad362486fd5b4d3ba296d
 //   - https://github.com/firedancer-io/firedancer/commit/d2d03d7b890f8babb9d7e7fa68938dfa46e6bc62
+//   - https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519.c
 func TestFiredancerPointArithmeticRegressionsX4X8(t *testing.T) {
 	for _, test := range firedancerPointRegressions {
 		test := test

@@ -10,10 +10,12 @@ import (
 
 func init() { register("generic", genericBackend{}) }
 
-// genericBackend is pure Go over the vendored crypto/ed25519 internals
-// (filippo.io/edwards25519 v1.0.0), so it agrees with the standard
-// library on every decoding edge case by construction. Hot keys get a
-// fixed-base comb table that removes the doubling chain.
+// genericBackend is pure Go over vendored edwards25519 internals: the
+// non-field baseline is filippo.io/edwards25519 v1.0.0 and the field package
+// is synchronized to v1.2.0, with the local modifications recorded in NOTICE.
+// Its profile semantics are established by edge-case and differential tests,
+// not assumed from shared implementation ancestry. Hot keys get a fixed-base
+// comb table that removes the doubling chain.
 type genericBackend struct{}
 
 func (genericBackend) name() string { return "generic" }

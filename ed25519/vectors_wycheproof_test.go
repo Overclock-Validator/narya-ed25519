@@ -4,7 +4,8 @@
 // transcribed from Firedancer's src/ballet/ed25519/test_ed25519_wycheproof.c,
 // which embeds them from upstream:
 //
-//	https://github.com/google/wycheproof/blob/master/testvectors/eddsa_test.json
+//	https://github.com/firedancer-io/firedancer/blob/3ed37488372b7e50bb03ca30477be48508ee7022/src/ballet/ed25519/test_ed25519_wycheproof.c
+//	https://github.com/C2SP/wycheproof
 //
 // Project Wycheproof is Copyright Google LLC, Apache License 2.0. See this
 // repository's NOTICE file.

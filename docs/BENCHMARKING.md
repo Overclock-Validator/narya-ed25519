@@ -58,11 +58,13 @@ runs (use `COUNT=6 make bench` for stable deltas).
 ## Which backend runs
 
 During development, `ActiveBackend()` keeps the empty/automatic choice on
-`generic`. An experimental IFMA backend must be forced with
-`OVERCLOCK_ED25519_BACKEND=ifma` (or `SetBackend("ifma")`) on a CPU with
-AVX-512+IFMA. Automatic selection stays disabled until the Zen 4 correctness
-and performance gates pass. On an arm64 dev machine only `generic` and
-`stdlib` can execute, so IFMA measurements require an x86 Zen box.
+`generic`. The r43 correctness backend is forced with
+`OVERCLOCK_ED25519_BACKEND=ifma`; the registered Zen 4 throughput backend is
+forced with `OVERCLOCK_ED25519_BACKEND=r51` (or the corresponding
+`SetBackend` call). Both require AVX-512+IFMA, and r51 also requires its native
+SHA kernel. Automatic selection remains generic. On an arm64 dev machine only
+`generic` and `stdlib` can execute, so IFMA measurements require a supported
+x86 machine.
 `sha512mb` reports its lane count in the benchmark name (`x1` scalar fallback,
 plus forced-only native `x4` and `x8` rows on supported hardware).
 
@@ -84,24 +86,42 @@ taskset -c 2 env GOMAXPROCS=1 go test -run '^$' \
 On a CPU without the complete IFMA feature gate these benchmarks skip before
 any assembly instruction executes. A skip is not a performance result.
 
-The complete forced r51 candidate is separate from the registered r43
-backend. It composes strict/compat byte preparation, paired IFMA `A/R`
-decompression, native multi-buffer SHA-512 over the original bytes, canonical
-challenge reduction, cold variable-base table construction, exact signed DSM,
-and the profile-specific final equation. It exposes true x8, x4, and two-x4
-paths at arbitrary-A radix 16, 32, and 64, plus shared scalar-stored B-comb
-widths 16/32/256 with a one-table arbitrary-A workspace, without changing
-production dispatch. Radix 64 is an ordinary-verifier candidate only: its
-43-round loop trades fewer doublings for a 32-point table, so only the complete
-cold-path benchmark can justify its larger build and cache footprint.
+The registered forced r51 backend is separate from the r43 correctness
+backend. The selected Zen 4 path composes strict/compat byte preparation,
+native x4 multi-buffer SHA-512 over the original bytes, canonical challenge
+reduction, cold variable-base table construction, radix-64 exact signed DSM,
+and batch encoding of Q. Its strict singleton uses paired IFMA A/R decode and
+projective equality. The same core exposes true x8, x4, and two-x4 paths at
+arbitrary-A radix 16, 32, and 64, plus shared scalar-stored B-comb widths
+16/32/256, as a private comparison matrix. Only the selected composition is
+reachable through `SetBackend("r51")`.
 
-The complete kernel is compiled from the private normal source file
+The PR 1 release benchmark is deliberately in external package
+`ed25519_test` and has no access to the private dispatcher core. It forces and
+checks the selected backend through exported functions, then invokes only
+`VerifyBatchStrict`:
+
+```text
+taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
+  -bench '^BenchmarkPublicR51VerifyBatchStrict$' -benchmem \
+  -benchtime=3s -count=10 ./ed25519
+
+taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
+  -bench '^BenchmarkPublicR51VerifyBatchStrictInvalid$' -benchmem \
+  -benchtime=2s -count=6 ./ed25519
+```
+
+Run these in a fresh process: backend selection is process-global. The valid
+benchmark covers messages 64/200/1232 and exact widths
+1--5/8/12/16/17/32/64. Its result must be within 2% of the private core before
+private diagnostic numbers may be described as public performance.
+
+The complete core is compiled from the normal source file
 `ed25519/backend_r51experiment.go`; the benchmark does not use a separate
-`_test.go` implementation. Only its raw-dispatch adapter and harness live in
-test source. The normal artifact deliberately has no backend registration,
-public entry point, or automatic/explicit selector name, so this promotion
-boundary changes what can be reviewed and linked into tests, not production
-behavior.
+`_test.go` implementation. `ed25519/backend_r51.go` provides the registered
+forced adapter and pooled workspaces, while fixtures and the broader
+configuration harness remain in test source. Automatic selection still does
+not choose r51.
 
 The r51 IFMA table benchmarks distinguish three quantities that must not be
 conflated: active coordinate payload, concrete table size, and complete
@@ -119,14 +139,15 @@ taskset -c 2 env GOMAXPROCS=1 go test -run '^$' \
   -benchtime=3s -count=10 ./ed25519
 ```
 
-Candidate rows enter through the same private dispatcher used by the public
-`VerifyBatchStrict` API. An optional raw-slice backend interface performs the
-length check and then hands the caller-owned slices directly to a native batch
-pipeline, avoiding an otherwise artificial `[]batchItem` allocation/copy.
-Generic baselines retain their existing item path, and cache batches retain it
-because each item must carry a key lookup result. Tests require the raw public
-shape to allocate zero bytes and require cache-shaped calls not to bypass
-their item metadata.
+Candidate rows enter through the same raw-slice backend contract used by the
+registered r51 implementation behind public `VerifyBatchStrict`. It performs
+the length check and then hands the caller-owned slices directly to a native
+batch pipeline, avoiding an otherwise artificial `[]batchItem`
+allocation/copy. Generic baselines retain their existing item path.
+Table-capable cache backends retain that item path because each item must carry
+a key lookup result; forced r51 reports `supportsPrecomp() == false`, so
+`Cache.VerifyBatchStrict` deliberately bypasses cache bookkeeping and retains
+the same raw allocation-free path. Tests cover both routing cases.
 
 Paired decompression has its own complete-path admission comparator:
 
@@ -151,7 +172,8 @@ BenchmarkR51IFMAPairedGate/stage=cold-A/path={two-x4,x8}/decode=paired-AR/final=
 Only the complete paired row may pass the paired-decode gate, and only when it
 improves the corresponding control by at least 2%. A decompression-only win is
 diagnostic because the avoided final inversion/encoding is part of the same
-trade. Both modes remain private, forced, and unregistered.
+trade. The strict singleton uses the admitted paired/projective mechanism;
+the benchmark's alternate group widths and encoded-Q control remain private.
 
 The benchmark deliberately contains the full counts 1--17/32/64 and all six
 message sizes, as well as same-harness stdlib and generic-strict baselines. An
