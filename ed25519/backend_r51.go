@@ -3,6 +3,7 @@ package ed25519
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/Overclock-Validator/narya/internal/r51x5"
 )
@@ -23,6 +24,7 @@ type r51Backend struct {
 	activateErr  error
 	batchPool    sync.Pool
 	singlePool   sync.Pool
+	faults       atomic.Uint64
 }
 
 type r51BatchWorker struct {
@@ -40,6 +42,10 @@ var registeredR51Backend = new(r51Backend)
 func init() { register("r51", registeredR51Backend) }
 
 func (*r51Backend) name() string { return "r51" }
+
+func (b *r51Backend) backendStats() BackendStats {
+	return BackendStats{InternalFaultFallbacks: b.faults.Load()}
+}
 
 // Per-key partial-comb tables remain behind a complete-verifier/cache-policy
 // gate, so this first promoted cold backend does not claim native precompute
@@ -87,7 +93,11 @@ func (b *r51Backend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
 
 func (b *r51Backend) verify(profile Profile, pub *[32]byte, message, sig []byte, _ *PrecomputedKey) bool {
 	ok, err := b.verifyOne(profile, pub, message, sig)
-	return err == nil && ok
+	if err == nil {
+		return ok
+	}
+	b.faults.Add(1)
+	return verifyOne(genericBackend{}, profile, pub, message, sig, nil)
 }
 
 func (b *r51Backend) verifyOne(profile Profile, pub *[32]byte, message, sig []byte) (bool, error) {
@@ -124,10 +134,8 @@ func (b *r51Backend) verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sig
 	}
 	all, err := b.verifyBatchRawErr(profile, pubs, msgs, sigs, ok)
 	if err != nil {
-		for i := range ok {
-			ok[i] = false
-		}
-		return false
+		b.faults.Add(1)
+		return fallbackGenericBatch(profile, pubs, msgs, sigs, ok)
 	}
 	return all
 }
@@ -204,14 +212,19 @@ func (b *r51Backend) verifyBatch(profile Profile, items []batchItem) {
 			item := &items[offset+i]
 			pubs[i], msgs[i], sigs[i] = item.pub, item.msg, item.sig
 		}
-		if _, err := b.verifyBatchRawErr(profile, pubs[:count], msgs[:count], sigs[:count], verdicts[:count]); err != nil {
-			for i := range items {
-				items[i].ok = false
-			}
-			return
-		}
+		b.verifyBatchRaw(profile, pubs[:count], msgs[:count], sigs[:count], verdicts[:count])
 		for i := 0; i < count; i++ {
 			items[offset+i].ok = verdicts[i]
 		}
 	}
+}
+
+func fallbackGenericBatch(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	all := true
+	generic := genericBackend{}
+	for i := range ok {
+		ok[i] = verifyOne(generic, profile, pubs[i], msgs[i], sigs[i], nil)
+		all = all && ok[i]
+	}
+	return all
 }

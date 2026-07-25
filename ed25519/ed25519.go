@@ -13,6 +13,12 @@
 // backend, cached or not.
 package ed25519
 
+import "errors"
+
+// ErrInvalidPublicKey is returned when a precomputation request does not
+// provide a public key. Bool-returning verification APIs fail closed instead.
+var ErrInvalidPublicKey = errors.New("ed25519: nil public key")
+
 // Verify reports whether sig is a valid signature of message by pub
 // under the default profile (DalekStrict — current Solana mainnet
 // transaction semantics).
@@ -125,11 +131,27 @@ type PrecomputedKey struct {
 // means pub does not decode as a curve point — every Verify against
 // such a key returns false — which callers may negative-cache.
 func Precompute(pub *[32]byte) (*PrecomputedKey, error) {
+	if pub == nil {
+		return nil, ErrInvalidPublicKey
+	}
 	return active().buildPrecomp(pub)
 }
 
 // Verify reports whether sig is a valid signature of message by the
 // precomputed key, exactly like the package-level Verify.
 func (k *PrecomputedKey) Verify(message, sig []byte) bool {
+	if k == nil {
+		return false
+	}
 	return verifyOne(active(), DefaultProfile(), &k.raw, message, sig, k)
+}
+
+// VerifyStrict reports whether sig is valid under DalekStrict semantics,
+// regardless of the package default profile. It is the prepared-key analogue
+// of VerifyStrict and returns false for a nil receiver.
+func (k *PrecomputedKey) VerifyStrict(message, sig []byte) bool {
+	if k == nil {
+		return false
+	}
+	return verifyOne(active(), DalekStrict, &k.raw, message, sig, k)
 }

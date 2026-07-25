@@ -8,6 +8,9 @@ import (
 // Cache verifies signatures, building a per-key table for public keys
 // that keep recurring. It is safe for concurrent use.
 //
+// A Cache must not be copied after first use. MaxTableBytes must be configured
+// before first use and must not be changed concurrently with verification.
+//
 // The current conservative policy waits for buildThreshold successful
 // verifications, while invalid signatures and one-shot keys never earn a
 // table. The threshold is an implementation default, not a claim about a
@@ -63,9 +66,18 @@ func (c *Cache) VerifyStrict(pub *[32]byte, message, sig []byte) bool {
 }
 
 func (c *Cache) verify(profile Profile, pub *[32]byte, message, sig []byte) bool {
-	b := active()
+	return c.verifyWithBackend(active(), profile, pub, message, sig)
+}
+
+func (c *Cache) verifyWithBackend(b backend, profile Profile, pub *[32]byte, message, sig []byte) bool {
 	if rejectedByProfile(profile, pub, sig) {
 		return false
+	}
+	// A backend without native tables cannot turn a lookup into useful work.
+	// Bypass cache bookkeeping entirely; in particular this preserves the raw,
+	// allocation-free r51 batch path.
+	if !b.supportsPrecomp() {
+		return b.verify(profile, pub, message, sig, nil)
 	}
 	pre := c.lookup(pub)
 	ok := b.verify(profile, pub, message, sig, pre)
@@ -93,7 +105,13 @@ func (c *Cache) VerifyBatchStrict(pubs []*[32]byte, msgs, sigs [][]byte, ok []bo
 }
 
 func (c *Cache) verifyBatch(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
-	b := active()
+	return c.verifyBatchWithBackend(active(), profile, pubs, msgs, sigs, ok)
+}
+
+func (c *Cache) verifyBatchWithBackend(b backend, profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	if !b.supportsPrecomp() {
+		return verifyBatch(b, profile, pubs, msgs, sigs, ok, nil)
+	}
 	all := verifyBatch(b, profile, pubs, msgs, sigs, ok, func(pub *[32]byte) *PrecomputedKey {
 		return c.lookup(pub)
 	})
@@ -262,8 +280,8 @@ func (c *Cache) reserveTableBytes(size, max int64) bool {
 type CacheStats struct {
 	Tables     int64 // per-key tables held
 	TableBytes int64 // memory held by tables
-	Hits       int64 // verifications that found a table
-	Misses     int64 // verifications that did not
+	Hits       int64 // table-capable backend verifications that found a table
+	Misses     int64 // table-capable backend verifications that did not
 }
 
 func (c *Cache) Stats() CacheStats {

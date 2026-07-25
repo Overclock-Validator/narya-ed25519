@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	mrand "math/rand"
 	"testing"
 )
@@ -93,6 +94,58 @@ func TestVerifyStrictIgnoresDefault(t *testing.T) {
 			t.Fatal("VerifyStrict accepted a 31-byte pub")
 		}
 	})
+}
+
+func TestNilPublicKeysFailClosed(t *testing.T) {
+	sig := make([]byte, ed25519.SignatureSize)
+	if Verify(nil, nil, sig) {
+		t.Fatal("Verify accepted a nil public key")
+	}
+	if new(Cache).Verify(nil, nil, sig) {
+		t.Fatal("Cache.Verify accepted a nil public key")
+	}
+	ok := []bool{true}
+	if VerifyBatch([]*[32]byte{nil}, [][]byte{nil}, [][]byte{sig}, ok) || ok[0] {
+		t.Fatalf("VerifyBatch accepted a nil public key: %v", ok)
+	}
+	if _, err := Precompute(nil); !errors.Is(err, ErrInvalidPublicKey) {
+		t.Fatalf("Precompute(nil) error = %v, want ErrInvalidPublicKey", err)
+	}
+	var pre *PrecomputedKey
+	if pre.Verify(nil, sig) || pre.VerifyStrict(nil, sig) {
+		t.Fatal("nil PrecomputedKey accepted a signature")
+	}
+}
+
+func TestPrecomputedVerifyStrictIgnoresDefault(t *testing.T) {
+	for _, vector := range cctvVectors {
+		pubBytes, _ := hex.DecodeString(vector.pub)
+		msg, _ := hex.DecodeString(vector.msg)
+		sig, _ := hex.DecodeString(vector.sig)
+		if len(pubBytes) != ed25519.PublicKeySize || len(sig) != ed25519.SignatureSize {
+			continue
+		}
+		if !ed25519.Verify(pubBytes, msg, sig) ||
+			(!smallOrderEncoding(pubBytes) && !smallOrderEncoding(sig[:32])) {
+			continue
+		}
+		var pub [32]byte
+		copy(pub[:], pubBytes)
+		pre, err := Precompute(&pub)
+		if err != nil {
+			t.Fatalf("Precompute CCTV tc %d: %v", vector.tcID, err)
+		}
+		withProfile(StdlibCompat, func() {
+			if !pre.Verify(msg, sig) {
+				t.Fatalf("compat prepared verification rejected CCTV tc %d", vector.tcID)
+			}
+			if pre.VerifyStrict(msg, sig) {
+				t.Fatalf("strict prepared verification accepted CCTV tc %d", vector.tcID)
+			}
+		})
+		return
+	}
+	t.Fatal("CCTV corpus has no stdlib-accepted strict divergence")
 }
 
 // TestStrictRejectsSmallOrder is the consensus fix: mainnet

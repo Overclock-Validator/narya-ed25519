@@ -191,6 +191,31 @@ func TestRawBatchBackendUsesAllocationFreePublicShapeButCacheKeepsItems(t *testi
 	}
 }
 
+func TestCacheBypassesBookkeepingForNoTableRawBackend(t *testing.T) {
+	backend := new(rawBatchProbeBackend)
+	cache := new(Cache)
+	pub := &[32]byte{0x03}
+	sig := make([]byte, ed25519.SignatureSize)
+	sig[0] = 0x03
+
+	if !cache.verifyWithBackend(backend, DalekStrict, pub, nil, sig) {
+		t.Fatal("no-table single verification failed")
+	}
+	pubs := []*[32]byte{pub, pub}
+	msgs := [][]byte{nil, nil}
+	sigs := [][]byte{sig, sig}
+	ok := make([]bool, len(pubs))
+	if !cache.verifyBatchWithBackend(backend, DalekStrict, pubs, msgs, sigs, ok) {
+		t.Fatalf("no-table batch verification failed: %v", ok)
+	}
+	if backend.rawCalls != 1 || backend.itemCalls != 0 {
+		t.Fatalf("no-table cache dispatch raw=%d items=%d", backend.rawCalls, backend.itemCalls)
+	}
+	if stats := cache.Stats(); stats != (CacheStats{}) {
+		t.Fatalf("no-table backend affected cache statistics: %+v", stats)
+	}
+}
+
 func TestRawBatchBackendOwnsStrictProfilePrecheck(t *testing.T) {
 	backend := new(rawBatchProbeBackend)
 	// y=1 is the identity encoding. StdlibCompat leaves small-order policy to

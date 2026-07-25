@@ -1,6 +1,7 @@
 package ed25519
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -27,6 +28,30 @@ func TestR51BackendUnsupportedGate(t *testing.T) {
 	}
 	if err := new(r51Backend).activate(); err == nil {
 		t.Fatal("r51 backend activated without the required IFMA and SHA kernels")
+	}
+}
+
+func TestR51BackendInternalFaultFallsBackToGeneric(t *testing.T) {
+	fault := errors.New("injected native fault")
+	b := new(r51Backend)
+	// Mark activation complete without touching hardware, then inject workers
+	// that fail before any native instruction. This makes the operational
+	// fault policy testable on every architecture.
+	b.activateOnce.Do(func() {})
+	b.singlePool.New = func() any { return &r51SingleWorker{err: fault} }
+	b.batchPool.New = func() any { return &r51BatchWorker{err: fault} }
+
+	single := makeFixture(t, 200)
+	if !b.verify(DalekStrict, &single.pub, single.msg, single.sig, nil) {
+		t.Fatal("singleton native fault did not fall back to generic verification")
+	}
+	batch := makeBatchFixture(t, 4, 200)
+	verdicts := make([]bool, len(batch.pubs))
+	if !b.verifyBatchRaw(DalekStrict, batch.pubs, batch.msgs, batch.sigs, verdicts) {
+		t.Fatalf("batch native fault did not fall back: %v", verdicts)
+	}
+	if got := b.backendStats().InternalFaultFallbacks; got != 2 {
+		t.Fatalf("fault fallback count=%d, want 2", got)
 	}
 }
 

@@ -37,8 +37,9 @@ type backend interface {
 // rawBatchBackend is an optional allocation-free batch entry point for
 // backends whose native pipeline already consumes the public raw-slice shape.
 // It must apply profile rejection itself and write every ok element. Cache
-// batches intentionally continue through batchItem because their per-key
-// lookup results must be attached before backend execution.
+// batches use this path too when the selected backend has no native per-key
+// tables; table-capable backends continue through batchItem so their lookup
+// results can be attached before execution.
 //
 // Keeping this interface private preserves the public API while allowing a
 // future SIMD backend to avoid allocating and copying one batchItem per
@@ -78,6 +79,12 @@ func applyProfile(profile Profile, items []batchItem) {
 }
 
 func rejectedByProfile(profile Profile, pub *[32]byte, sig []byte) bool {
+	// All bool-returning public verification APIs fail closed on a missing
+	// public key. Keeping this in the shared pre-pass makes the behavior
+	// backend- and profile-independent.
+	if pub == nil {
+		return true
+	}
 	switch profile {
 	case DalekStrict:
 		return rejectedByStrict(pub, sig)
@@ -97,11 +104,34 @@ var (
 
 type backendBox struct{ b backend }
 
+// BackendStats is a point-in-time snapshot of the selected arithmetic
+// backend. InternalFaultFallbacks counts operations that encountered an
+// unexpected native-backend error and were recomputed by the portable generic
+// verifier. A nonzero value is an operational fault signal, not an invalid
+// signature count.
+type BackendStats struct {
+	InternalFaultFallbacks uint64
+}
+
+type backendStatsReporter interface {
+	backendStats() BackendStats
+}
+
 func register(name string, b backend) { registry[name] = b }
 
 // ActiveBackend returns the name of the backend in use ("r51", "ifma",
 // "generic", "stdlib"), selecting one if none is active yet.
 func ActiveBackend() string { return active().name() }
+
+// ActiveBackendStats reports operational counters for the selected backend.
+// Backends without native fault recovery return the zero value.
+func ActiveBackendStats() BackendStats {
+	b := active()
+	if reporter, ok := b.(backendStatsReporter); ok {
+		return reporter.backendStats()
+	}
+	return BackendStats{}
+}
 
 // SetBackend forces a backend by name. It must be called before the
 // first verification; once a backend is active it cannot be changed.
@@ -114,13 +144,23 @@ func SetBackend(name string) error {
 		}
 		return fmt.Errorf("ed25519: cannot switch backend, %q already active", cur.b.name())
 	}
-	if _, ok := registry[name]; !ok {
+	b, ok := registry[name]
+	if !ok {
 		return fmt.Errorf("ed25519: unknown backend %q", name)
 	}
 	if (name == "ifma" || name == "r51") && !cpufeat.IFMA() {
 		return fmt.Errorf("ed25519: %s backend requires AVX512-IFMA (Ice Lake / Zen 4 or newer)", name)
 	}
+	// Explicit selection is also an explicit startup health check. Complete
+	// activation here so SetBackend cannot report success only for the first
+	// Verify or ActiveBackend call to panic later.
+	if a, ok := b.(activatingBackend); ok {
+		if err := a.activate(); err != nil {
+			return fmt.Errorf("ed25519: activating backend %q: %w", name, err)
+		}
+	}
 	requested = name
+	current.Store(&backendBox{b: b})
 	return nil
 }
 
