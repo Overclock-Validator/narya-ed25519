@@ -66,23 +66,32 @@ func newR51IFMABatchQPipeline() (*r51IFMABatchQPipeline, error) {
 }
 
 func newR51IFMABatchQPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
-	if finalizer != r51IFMABatchQFinalizerLiteral && finalizer != r51IFMABatchQFinalizerYFirst {
-		return nil, fmt.Errorf("ed25519: unsupported r51 batch-Q finalizer %d", finalizer)
-	}
-	// Measured faster shapes exist on Zen 5 but neither is reachable by changing
-	// this call, because verifyChunk evaluates through core.x4[half] only:
-	//
-	//   x8 / radixA=32 / comb256      9.24 us/sig at n>=8, 17.68 at n=4
-	//   two-x4 / radixA=32 / comb256  12.50 us/sig at every width
-	//   two-x4 / radixA=64 / shared   13.32 us/sig  <- this one
-	//
-	// newR51IFMACombPipeline populates variableX4 plus a shared fixed-base comb
-	// and leaves x4 empty, and the x8 kind populates x8 instead. Adopting either
-	// needs a matching evaluation path here, not a different constructor.
-	// See docs/ZEN5_9700X_2026-07-25.md.
 	core, err := newR51IFMAPipeline(r51IFMATwoX4, 6)
 	if err != nil {
 		return nil, err
+	}
+	return newR51IFMABatchQPipelineWithCore(finalizer, core)
+}
+
+// newR51IFMABatchQCombPipelineWithFinalizer is the cold two-x4 candidate that
+// keeps A on a radix-32 variable-base table and evaluates B with the shared
+// radix-256 comb before using the same cross-group batch-Q finalizer. It is a
+// complete-verifier measurement seam; the registered r51 backend continues to
+// use newR51IFMABatchQPipeline until this shape passes the Zen 4 gate.
+func newR51IFMABatchQCombPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
+	core, err := newR51IFMACombPipeline(r51IFMATwoX4, 5, 8)
+	if err != nil {
+		return nil, err
+	}
+	return newR51IFMABatchQPipelineWithCore(finalizer, core)
+}
+
+func newR51IFMABatchQPipelineWithCore(finalizer r51IFMABatchQFinalizer, core *r51IFMAPipeline) (*r51IFMABatchQPipeline, error) {
+	if finalizer != r51IFMABatchQFinalizerLiteral && finalizer != r51IFMABatchQFinalizerYFirst {
+		return nil, fmt.Errorf("ed25519: unsupported r51 batch-Q finalizer %d", finalizer)
+	}
+	if core == nil || core.kind != r51IFMATwoX4 {
+		return nil, fmt.Errorf("ed25519: batch-Q requires a two-x4 r51 core")
 	}
 	return &r51IFMABatchQPipeline{core: core, finalizer: finalizer}, nil
 }
@@ -321,14 +330,8 @@ func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4Group(profile Profile, pubs 
 			s4[local], k4[local] = s[lane], k[lane]
 		}
 
-		if err := pipeline.core.x4[half].PrepareVariableBase(&A[half]); err != nil {
-			return err
-		}
-		var coefficients r51x5.FixedDSMScalarsX4
-		coefficients[0], coefficients[1] = s4, k4
-		negative := [r51x5.DSMTerms]uint8{0, active}
 		group := outputGroup + half
-		usable, err := pipeline.core.x4[half].Evaluate(&pipeline.points[group], &coefficients, &negative, active)
+		usable, err := pipeline.evaluateX4(&pipeline.points[group], &A[half], &s4, &k4, active, half)
 		if err != nil {
 			return err
 		}
@@ -453,15 +456,9 @@ func (pipeline *r51IFMABatchQPipeline) evaluatePreparedTwoX4Group(
 			k4[local] = k[lane]
 		}
 
-		A := &pipeline.decodedAPoints[outputGroup+half]
-		if err := pipeline.core.x4[half].PrepareVariableBase(A); err != nil {
-			return err
-		}
-		var coefficients r51x5.FixedDSMScalarsX4
-		coefficients[0], coefficients[1] = s4, k4
-		negative := [r51x5.DSMTerms]uint8{0, active}
 		group := outputGroup + half
-		usable, err := pipeline.core.x4[half].Evaluate(&pipeline.points[group], &coefficients, &negative, active)
+		A := &pipeline.decodedAPoints[group]
+		usable, err := pipeline.evaluateX4(&pipeline.points[group], A, &s4, &k4, active, half)
 		if err != nil {
 			return err
 		}
@@ -558,14 +555,8 @@ func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4GroupWithDecodedAUncompacted
 			s4[local], k4[local] = s[lane], k[lane]
 		}
 
-		if err := pipeline.core.x4[half].PrepareVariableBase(&A[half]); err != nil {
-			return err
-		}
-		var coefficients r51x5.FixedDSMScalarsX4
-		coefficients[0], coefficients[1] = s4, k4
-		negative := [r51x5.DSMTerms]uint8{0, active}
 		group := outputGroup + half
-		usable, err := pipeline.core.x4[half].Evaluate(&pipeline.points[group], &coefficients, &negative, active)
+		usable, err := pipeline.evaluateX4(&pipeline.points[group], &A[half], &s4, &k4, active, half)
 		if err != nil {
 			return err
 		}
@@ -574,10 +565,56 @@ func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4GroupWithDecodedAUncompacted
 	return nil
 }
 
+// evaluateX4 computes [s]B-[k]A into the batch-Q point representation. The
+// registered radix-64 core uses the existing shared two-term DSM workspace;
+// the cold-comb candidate uses a radix-32 A table plus the shared B comb.
+// Keeping the branch outside internal/r51x5 preserves one finalizer and one
+// verdict mapping for differential tests of both arithmetic shapes.
+func (pipeline *r51IFMABatchQPipeline) evaluateX4(
+	out *r51x5.IFMAPointX4,
+	A *r51x5.PointX4,
+	s, k *[r51x5.X4Lanes][32]byte,
+	active uint8,
+	half int,
+) (uint8, error) {
+	if pipeline.core.fixedBaseComb == nil {
+		if err := pipeline.core.x4[half].PrepareVariableBase(A); err != nil {
+			return 0, err
+		}
+		var coefficients r51x5.FixedDSMScalarsX4
+		coefficients[0], coefficients[1] = *s, *k
+		negative := [r51x5.DSMTerms]uint8{0, active}
+		return pipeline.core.x4[half].Evaluate(out, &coefficients, &negative, active)
+	}
+
+	variable := pipeline.core.variableX4[half]
+	if variable == nil {
+		panic("ed25519: uninitialized forced r51 IFMA x4 comb workspace")
+	}
+	if err := variable.Prepare(A, pipeline.core.radixBits); err != nil {
+		return 0, err
+	}
+	var aTerm, bTerm r51x5.IFMAPointX4
+	usableA, err := variable.Evaluate(&aTerm, k, active, active)
+	if err != nil {
+		return 0, err
+	}
+	usableB, err := r51x5.ExperimentalIFMAFixedBaseCombScalarMultX4(&bTerm, pipeline.core.fixedBaseComb, s, active)
+	if err != nil {
+		return 0, err
+	}
+	var combined r51x5.IFMAPointX4
+	if err := r51x5.ExperimentalIFMAPointAddComposableX4(&combined, &aTerm, &bTerm); err != nil {
+		return 0, err
+	}
+	*out = combined
+	return usableA & usableB, nil
+}
+
 func (pipeline *r51IFMABatchQPipeline) String() string {
 	finalizer := "batch-Q"
 	if pipeline.finalizer == r51IFMABatchQFinalizerYFirst {
 		finalizer = "y-first"
 	}
-	return fmt.Sprintf("%s/radix=%d/%s", pipeline.core.kind, 1<<pipeline.core.radixBits, finalizer)
+	return fmt.Sprintf("%s/radix=%d/fixed=%s/%s", pipeline.core.kind, 1<<pipeline.core.radixBits, pipeline.core.fixedBaseLabel(), finalizer)
 }
