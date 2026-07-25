@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+// Architectural prior art: curve25519-dalek's AVX2 backend and
+// curve25519-voi's Go port use this coordinate-parallel orientation;
+// Firedancer r43x6 uses analogous AVX-512 QUAD packing. See NOTICE for the
+// full lineage and license details.
+//
 // quadPackedPointX4 is a test-only coordinate-parallel point layout. Unlike
 // IFMAPointX4, whose lanes hold four independent points, its lanes hold the
 // four coordinates of one point in [X, Y, T, Z] order. The field multiply ABI
