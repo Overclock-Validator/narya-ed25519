@@ -225,6 +225,11 @@ func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
 		cache := &Cache{MaxTableBytes: int64(count) * r51DecodedATableBytes}
 		for _, pub := range fixture.pubs {
 			admitR51DecodedATestEntry(t, cache, backend, pub)
+			// This gate measures the steady decoded-A tier. Promotion has its
+			// own build/accounting and warm-verifier allocation gates; allowing
+			// it to cross its threshold inside AllocsPerRun would deliberately
+			// measure one-time table construction rather than verification.
+			cache.promotionState(*pub).status.Store(promotionDisabled)
 		}
 		if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
 			t.Fatalf("count=%d warmup rejected valid batch", count)
