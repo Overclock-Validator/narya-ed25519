@@ -169,6 +169,22 @@ func (lane *nativeLane) fill(block *[128]byte, blockIndex uint64) {
 	}
 }
 
+// takeDirectBlock returns the next complete 128-byte block when it lies in one
+// contiguous input segment. Segment crossings and final padding blocks stay on
+// fill, which is the exact segmented-hash reference path.
+func (lane *nativeLane) takeDirectBlock() (*byte, bool) {
+	for lane.part < len(lane.parts) && lane.offset == len(lane.parts[lane.part]) {
+		lane.part++
+		lane.offset = 0
+	}
+	if lane.part == len(lane.parts) || len(lane.parts[lane.part])-lane.offset < 128 {
+		return nil, false
+	}
+	ptr := &lane.parts[lane.part][lane.offset]
+	lane.offset += 128
+	return ptr, true
+}
+
 // sum512x4Native hashes arbitrary batches in independent groups of four. It
 // returns false, without touching out, when the AVX2 kernel is unavailable.
 // Production dispatch does not call this function.
@@ -403,15 +419,23 @@ func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes 
 		}
 	}
 	var raw [nativeX8Width][128]byte
+	var zero [128]byte
+	var ptrs [nativeX8Width]*byte
 	var block nativeBlockX8
 	for blockIndex := uint64(0); blockIndex < maxBlocks; blockIndex++ {
-		raw = [nativeX8Width][128]byte{}
-		for i := 0; i < lanes; i++ {
-			if blockIndex < lane[i].blocks {
+		for i := 0; i < nativeX8Width; i++ {
+			ptrs[i] = &zero[0]
+			if i < lanes && blockIndex < lane[i].blocks {
+				if direct, ok := lane[i].takeDirectBlock(); ok {
+					ptrs[i] = direct
+					continue
+				}
+				raw[i] = [128]byte{}
 				lane[i].fill(&raw[i], blockIndex)
+				ptrs[i] = &raw[i][0]
 			}
 		}
-		nativeTransposeX8(&block, &raw)
+		nativeTransposePointersX8(&block, &ptrs)
 
 		nativeCompressX8Rolling(&state, &block)
 		for i := 0; i < lanes; i++ {

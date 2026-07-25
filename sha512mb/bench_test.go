@@ -153,7 +153,7 @@ func BenchmarkNativeX4(b *testing.B) {
 // datapaths, so x8 must earn its added code path empirically.
 func BenchmarkNativeX8(b *testing.B) {
 	if !nativeX8Available() || !nativeX4Available() {
-		b.Skip("requires AVX2 and AVX-512F")
+		b.Skip("requires AVX2, AVX-512F, and AVX-512BW")
 	}
 	for _, messageSize := range []int{0, 64, 200, 1232} {
 		var storage [nativeX8Width][64 + 1232]byte

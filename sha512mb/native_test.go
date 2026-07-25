@@ -192,6 +192,37 @@ func TestNativeTransposeX8Differential(t *testing.T) {
 	}
 }
 
+func TestNativeTransposePointersX8Differential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(0x512d1ec7))
+	for iteration := 0; iteration < 100; iteration++ {
+		var storage [nativeX8Width][129]byte
+		var ptrs [nativeX8Width]*byte
+		var raw [nativeX8Width][128]byte
+		for lane := range storage {
+			if _, err := rng.Read(storage[lane][:]); err != nil {
+				t.Fatal(err)
+			}
+			// Deliberately use unaligned addresses to match arbitrary message
+			// slice offsets in the segmented verifier input.
+			ptrs[lane] = &storage[lane][1]
+			copy(raw[lane][:], storage[lane][1:])
+		}
+		var got, want nativeBlockX8
+		for word := range want {
+			for lane := range want[word] {
+				want[word][lane] = binary.BigEndian.Uint64(raw[lane][word*8:])
+			}
+		}
+		nativeTransposePointersX8(&got, &ptrs)
+		if got != want {
+			t.Fatalf("iteration=%d: pointer transpose differs from scalar reference", iteration)
+		}
+	}
+}
+
 func TestNativeX4Differential(t *testing.T) {
 	if !nativeX4Available() {
 		t.Skip("requires AVX2")
@@ -219,7 +250,7 @@ func TestNativeX4Differential(t *testing.T) {
 
 func TestNativeX8Differential(t *testing.T) {
 	if !nativeX8Available() {
-		t.Skip("requires AVX-512F")
+		t.Skip("requires AVX-512F and AVX-512BW")
 	}
 	rng := rand.New(rand.NewSource(55))
 	edges := []int{0, 1, 47, 48, 63, 64, 111, 112, 127, 128, 129, 176, 200, 512, 1024, 1232, 4096}
@@ -236,7 +267,7 @@ func TestNativeX8Differential(t *testing.T) {
 		}
 		out := make([][64]byte, count)
 		if !ExperimentalSum512Batch(out, msgs, nativeX8Width) {
-			t.Fatal("AVX-512F availability changed during the test")
+			t.Fatal("AVX-512F/BW availability changed during the test")
 		}
 		checkNativeDigests(t, msgs, out)
 	}
@@ -289,6 +320,28 @@ func TestNativeX4RandomizedDifferential(t *testing.T) {
 		out := make([][64]byte, count)
 		if !sum512x4Native(out, msgs) {
 			t.Fatal("AVX2 availability changed during the test")
+		}
+		checkNativeDigests(t, msgs, out)
+	}
+}
+
+func TestNativeX8RandomizedDifferential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(57))
+	for iteration := 0; iteration < 500; iteration++ {
+		count := 1 + rng.Intn(17)
+		msgs := make([][][]byte, count)
+		for lane := range msgs {
+			length := rng.Intn(4097)
+			buf := make([]byte, length)
+			_, _ = rng.Read(buf)
+			msgs[lane] = splitNativeMessage(buf, rng, iteration+lane)
+		}
+		out := make([][64]byte, count)
+		if !ExperimentalSum512Batch(out, msgs, nativeX8Width) {
+			t.Fatal("AVX-512 availability changed during the test")
 		}
 		checkNativeDigests(t, msgs, out)
 	}

@@ -20,3 +20,7 @@ func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8) {
 func nativeTransposeX8(block *nativeBlockX8, raw *[nativeX8Width][128]byte) {
 	panic("sha512mb: AVX-512 x8 transpose unavailable")
 }
+
+func nativeTransposePointersX8(block *nativeBlockX8, ptrs *[nativeX8Width]*byte) {
+	panic("sha512mb: AVX-512 x8 pointer transpose unavailable")
+}

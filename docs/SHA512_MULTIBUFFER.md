@@ -21,14 +21,20 @@ and message without constructing a contiguous buffer. Empty segments,
 arbitrary segment boundaries, SHA-512 padding boundaries, unequal lane
 lengths, and final groups smaller than the selected width are supported.
 
-The wrapper constructs and transposes one block per live lane. The native
-compression function processes all physical lanes. A short final group uses
-zero-filled dummy lanes whose results are ignored. When lanes have unequal
-numbers of blocks, a completed lane's digest is written immediately after its
-final real/padding block; later dummy compression in that physical lane cannot
-change the saved digest. There is consequently no public validity bitmask:
-every logical input has exactly one output and tail lanes beyond `len(msgs)`
-are unobservable.
+The wrapper constructs and transposes one block per live lane. For x8, a
+complete 128-byte block contained in one input segment is loaded and
+transposed directly from that segment. Blocks crossing segment boundaries and
+blocks containing SHA-512 padding use the byte-for-byte segmented fallback.
+The fallback storage is cleared only for lanes that actually need it; full
+direct groups do not clear a dummy 1 KiB matrix on every block.
+
+The native compression function processes all physical lanes. A short final
+group uses a shared zero-filled dummy block for lanes whose results are
+ignored. When lanes have unequal numbers of blocks, a completed lane's digest
+is written immediately after its final real/padding block; later dummy
+compression in that physical lane cannot change the saved digest. There is
+consequently no public validity bitmask: every logical input has exactly one
+output and tail lanes beyond `len(msgs)` are unobservable.
 
 The x4 compression schedule uses AVX2 YMM registers. The x8 schedule is a
 true AVX-512 ZMM implementation, not a wrapper around two x4 calls. Its
@@ -55,6 +61,20 @@ go test -run '^$' -bench 'BenchmarkNativeX(4|8)$' -benchmem -count=10 -benchtime
 `BenchmarkNativeX8` directly compares scalar-eight, two AVX2 x4 groups, and
 one AVX-512F x8 group. Digest-to-scalar reduction remains separate until these
 hash kernels pass their correctness and complete-verifier performance gates.
+
+On the Ryzen 7 PRO 8700GE, a pinned `GOMAXPROCS=1` development measurement of
+the fixed `R || A || message` entry point after the rolling schedule, native
+transpose, and direct-block ingestion gave:
+
+| message bytes | scalar Go | native x8 | speedup |
+|---:|---:|---:|---:|
+| 200 | about 402 ns/message | 143.6--143.9 ns/message | about 2.80x |
+| 1232 | about 1,348 ns/message | 436.6--437.6 ns/message | about 3.08x |
+
+These are hash-only figures, not complete signature-verification numbers. The
+long-message result is especially relevant to Solana's 1232-byte transaction
+ceiling. Automatic SHA or verifier dispatch remains unchanged while B1 is an
+experimental branch.
 
 `BenchmarkNativeTails` compares the scalar dispatcher, native x4, and native
 x8 for every naturally available count from 1 through 17. The scalar row is

@@ -65,7 +65,7 @@ func FuzzSum512Differential(f *testing.F) {
 				name: "native-x8",
 				fn: func(out [][64]byte, msgs [][][]byte) {
 					if !ExperimentalSum512Batch(out, msgs, nativeX8Width) {
-						t.Fatal("AVX-512F availability changed during fuzzing")
+						t.Fatal("AVX-512F/BW availability changed during fuzzing")
 					}
 				},
 			})
