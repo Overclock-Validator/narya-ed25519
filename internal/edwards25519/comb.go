@@ -33,8 +33,12 @@ func NewPubkeyTable(p *Point) *PubkeyTable {
 		for j := 1; j < 8; j++ {
 			pts[i*8+j].Add(&pts[i*8+j-1], q)
 		}
-		for j := 0; j < 8; j++ {
-			q.Add(q, q)
+		// Advancing q after the final row cannot contribute to the table.
+		// Avoid the eight otherwise-unused point doublings in each build.
+		if i+1 < len(PubkeyTable{}) {
+			for j := 0; j < 8; j++ {
+				q.Add(q, q)
+			}
 		}
 	}
 
