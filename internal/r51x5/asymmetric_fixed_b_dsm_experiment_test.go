@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"math/rand"
 	"testing"
+	"unsafe"
 
 	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
 )
@@ -14,8 +15,9 @@ import (
 // this is an ordinary signed-window table: entry i is [(i+1)]B. It is stored
 // once as scalar affine-cached points and gathered into four lanes at use.
 type asymmetricFixedBTableExperiment struct {
-	points    []fixedBaseAffineCached
-	radixBits uint
+	points      []fixedBaseAffineCached
+	densePoints []ifmaAffine3MicroAoSEntryExperiment
+	radixBits   uint
 }
 
 // asymmetricFixedBRoundX4 is local to this experiment because widths 9 and 10
@@ -39,17 +41,30 @@ func buildAsymmetricFixedBTableExperiment(base *Point, radixBits uint) *asymmetr
 	}
 	entries := 1 << (radixBits - 1)
 	table := &asymmetricFixedBTableExperiment{
-		points:    make([]fixedBaseAffineCached, entries),
-		radixBits: radixBits,
+		points:      make([]fixedBaseAffineCached, entries),
+		densePoints: make([]ifmaAffine3MicroAoSEntryExperiment, entries),
+		radixBits:   radixBits,
 	}
 	multiple := *base
 	for entry := range table.points {
 		fixedBaseCacheAffine(&table.points[entry], &multiple)
+		importAsymmetricFixedBDenseAffine3EntryExperiment(&table.densePoints[entry], &table.points[entry])
 		if entry+1 < len(table.points) {
 			fixedBasePointAdd(&multiple, &multiple, base)
 		}
 	}
 	return table
+}
+
+func importAsymmetricFixedBDenseAffine3EntryExperiment(
+	out *ifmaAffine3MicroAoSEntryExperiment,
+	source *fixedBaseAffineCached,
+) {
+	for limb := range modulusLimbs {
+		out[limb][0] = source.YPlusX.limbs[limb]
+		out[limb][1] = source.YMinusX.limbs[limb]
+		out[limb][2] = source.T2D.limbs[limb]
+	}
 }
 
 func asymmetricFixedBRoundCount(radixBits uint) int {
@@ -166,6 +181,93 @@ func selectAsymmetricFixedBIFMACachedX4(
 	}
 }
 
+// selectAsymmetricFixedBDenseAffine3CheckedX4 preserves the scalar selector's
+// public-metadata validation and output atomicity while using the dense
+// affine3 transpose ABI. The uint16 magnitude checks are local because widths
+// 9 and 10 exceed RadixRoundX4's uint8 digit ABI.
+func selectAsymmetricFixedBDenseAffine3CheckedX4(
+	out *fixedBaseIFMACachedX4,
+	table *asymmetricFixedBTableExperiment,
+	round *asymmetricFixedBRoundX4,
+	active uint8,
+) *fixedBaseIFMACachedX4 {
+	active &= 0x0f
+	lookupMask := round.NonzeroMask & active
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
+	for lane := 0; lane < X4Lanes; lane++ {
+		laneMask := uint8(1 << lane)
+		if active&laneMask == 0 {
+			continue
+		}
+		magnitude := round.Magnitude[lane]
+		nonzero := round.NonzeroMask&laneMask != 0
+		negative := round.NegativeMask&laneMask != 0
+		if !nonzero {
+			if magnitude != 0 || negative {
+				panic("r51x5: zero asymmetric fixed-B digit has metadata")
+			}
+			continue
+		}
+		if magnitude < 1 || int(magnitude) > len(table.densePoints) {
+			panic("r51x5: asymmetric fixed-B magnitude outside dense table")
+		}
+		source := &table.densePoints[int(magnitude)-1]
+		switch lane {
+		case 0:
+			p0 = source
+		case 1:
+			p1 = source
+		case 2:
+			p2 = source
+		case 3:
+			p3 = source
+		}
+	}
+
+	var selected fixedBaseIFMACachedX4
+	ifmaAffine3MicroAoSTransposeSelectExperimentX4(&selected, p0, p1, p2, p3)
+	conditionalNegateIFMAAffine3MicroAoSX4(&selected, round.NegativeMask&lookupMask)
+	*out = selected
+	return out
+}
+
+// selectAsymmetricFixedBDenseAffine3UncheckedX4 is the validated hot-loop
+// counterpart. It selects four source pointers before the transpose and then
+// applies the exact signed-digit negation to the cached affine representation.
+func selectAsymmetricFixedBDenseAffine3UncheckedX4(
+	out *fixedBaseIFMACachedX4,
+	table *asymmetricFixedBTableExperiment,
+	round *asymmetricFixedBRoundX4,
+	active uint8,
+) *fixedBaseIFMACachedX4 {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
+	if lookupMask == 0x0f {
+		p0 = &table.densePoints[int(round.Magnitude[0])-1]
+		p1 = &table.densePoints[int(round.Magnitude[1])-1]
+		p2 = &table.densePoints[int(round.Magnitude[2])-1]
+		p3 = &table.densePoints[int(round.Magnitude[3])-1]
+	} else {
+		if lookupMask&0x01 != 0 {
+			p0 = &table.densePoints[int(round.Magnitude[0])-1]
+		}
+		if lookupMask&0x02 != 0 {
+			p1 = &table.densePoints[int(round.Magnitude[1])-1]
+		}
+		if lookupMask&0x04 != 0 {
+			p2 = &table.densePoints[int(round.Magnitude[2])-1]
+		}
+		if lookupMask&0x08 != 0 {
+			p3 = &table.densePoints[int(round.Magnitude[3])-1]
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+	conditionalNegateIFMAAffine3MicroAoSX4(out, round.NegativeMask&lookupMask)
+	return out
+}
+
 // evaluateAsymmetricFixedBPreparedRadix64DSMX4 computes [s]B+[-k]A on one
 // exact merged timeline. A remains the current radix-64 per-key micro-AoS
 // path. B alone varies from width 6 through 10 and uses a shared scalar affine
@@ -207,6 +309,67 @@ func evaluateAsymmetricFixedBPreparedRadix64DSMX4(
 				if round.NonzeroMask&usable != 0 {
 					var selected fixedBaseIFMACachedX4
 					selectAsymmetricFixedBIFMACachedX4(&selected, bTable, round, usable)
+					if err := addFixedBaseIFMACachedX4(&acc, &acc, &selected); err != nil {
+						return 0, err
+					}
+				}
+			}
+		}
+		if exponent%6 == 0 {
+			roundIndex := exponent / 6
+			round := aDigits.Round(roundIndex)
+			if round.NonzeroMask&usable != 0 {
+				var selected IFMAPointX4
+				selectIFMAMicroAoSUncheckedExperimentX4(&selected, aTables, round, usable)
+				if err := ifmaPointAddComposableStaticX4(&acc, &acc, &selected); err != nil {
+					return 0, err
+				}
+			}
+		}
+	}
+	*out = acc
+	return usable, nil
+}
+
+// evaluateAsymmetricFixedBDensePreparedRadix64DSMX4 is the dense-affine-B
+// candidate. It intentionally mirrors evaluateAsymmetricFixedBPreparedRadix64DSMX4
+// so the existing scalar-affine implementation remains an unmodified control.
+func evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(
+	out *IFMAPointX4,
+	aTables *[X4Lanes]ifmaMicroAoSPerKeyTableExperiment,
+	bTable *asymmetricFixedBTableExperiment,
+	scalars *FixedDSMScalarsX4,
+	negativeMasks *[DSMTerms]uint8,
+	active uint8,
+) (uint8, error) {
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	active &= 0x0f
+	var aDigits FixedRadixDigitsX4
+	usable := RecodeCanonicalScalarsX4(&aDigits, &scalars[1], negativeMasks[1], active, 6)
+	var bDigits asymmetricFixedBDigitsX4
+	usable &= recodeAsymmetricFixedBScalarsX4(&bDigits, &scalars[0], negativeMasks[0], active, bTable.radixBits)
+	acc := identityIFMAPointX4Value()
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+
+	const topExponent = 42 * 6
+	for exponent := topExponent; exponent >= 0; exponent-- {
+		if exponent != topExponent {
+			if err := ifmaPointDoubleComposableStaticX4(&acc, &acc); err != nil {
+				return 0, err
+			}
+		}
+		if exponent%int(bTable.radixBits) == 0 {
+			roundIndex := exponent / int(bTable.radixBits)
+			if roundIndex < int(bDigits.count) {
+				round := &bDigits.rounds[roundIndex]
+				if round.NonzeroMask&usable != 0 {
+					var selected fixedBaseIFMACachedX4
+					selectAsymmetricFixedBDenseAffine3UncheckedX4(&selected, bTable, round, usable)
 					if err := addFixedBaseIFMACachedX4(&acc, &acc, &selected); err != nil {
 						return 0, err
 					}
@@ -310,6 +473,64 @@ func TestAsymmetricFixedBRecodingReconstructsCanonicalEdges(t *testing.T) {
 	}
 }
 
+func TestAsymmetricFixedBDenseAffine3SelectorMatchesScalarAllMasksAndSigns(t *testing.T) {
+	if !microAoSSelectorExperimentCanCall() {
+		t.Skip("requires AVX-512 IFMA target on amd64")
+	}
+	baseEncoding := newGeneratorEncodingForTest(t)
+	var base Point
+	if _, err := base.SetBytes(baseEncoding[:]); err != nil {
+		t.Fatal(err)
+	}
+	table := buildAsymmetricFixedBTableExperiment(&base, 10)
+	patterns := []asymmetricFixedBRoundX4{
+		{},
+		{
+			Magnitude:    [X4Lanes]uint16{1, 128, 256, 512},
+			NonzeroMask:  0x0f,
+			NegativeMask: 0x0a,
+		},
+		{
+			Magnitude:    [X4Lanes]uint16{512, 0, 17, 0},
+			NonzeroMask:  0x05,
+			NegativeMask: 0x01,
+		},
+	}
+	for patternIndex := range patterns {
+		round := &patterns[patternIndex]
+		for active := uint8(0); active < 1<<X4Lanes; active++ {
+			var want fixedBaseIFMACachedX4
+			selectAsymmetricFixedBIFMACachedX4(&want, table, round, active)
+			var checked fixedBaseIFMACachedX4
+			selectAsymmetricFixedBDenseAffine3CheckedX4(&checked, table, round, active)
+			if checked != want {
+				t.Fatalf("pattern=%d active=%02x checked mismatch", patternIndex, active)
+			}
+			var unchecked fixedBaseIFMACachedX4
+			selectAsymmetricFixedBDenseAffine3UncheckedX4(&unchecked, table, round, active)
+			if unchecked != want {
+				t.Fatalf("pattern=%d active=%02x unchecked mismatch", patternIndex, active)
+			}
+		}
+	}
+
+	bad := asymmetricFixedBRoundX4{Magnitude: [X4Lanes]uint16{513}, NonzeroMask: 1}
+	sentinel := fixedBaseIFMACachedX4{
+		YPlusX:  patternedIFMAElementX4Garbage(),
+		YMinusX: patternedIFMAElementX4Garbage(),
+		T2D:     patternedIFMAElementX4Garbage(),
+	}
+	got := sentinel
+	if !microAoSSelectorExperimentPanics(func() {
+		selectAsymmetricFixedBDenseAffine3CheckedX4(&got, table, &bad, 1)
+	}) {
+		t.Fatal("invalid dense asymmetric metadata did not panic")
+	}
+	if got != sentinel {
+		t.Fatal("invalid dense asymmetric metadata changed output")
+	}
+}
+
 type asymmetricFixedBCorrectnessFixture struct {
 	workspace ExperimentalIFMAFixedDSMWorkspaceRadix64X4
 	aTables   [X4Lanes]ifmaMicroAoSPerKeyTableExperiment
@@ -397,6 +618,17 @@ func TestAsymmetricFixedBPreparedRadix64DSMX4ExactMixedOrderAllMasks(t *testing.
 				}
 				got := gotLoose.Reduced()
 				assertMaskedPointX4(t, fmt.Sprintf("asymmetric B width=%d iteration=%d active=%02x", width, iteration, active), &got, &want4, active)
+
+				var denseLoose IFMAPointX4
+				denseUsable, denseErr := evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&denseLoose, &fixture.aTables, fixture.bTables[width], &scalars4, &signs4, active)
+				if denseErr != nil || denseUsable != usable {
+					t.Fatalf("iteration=%d width=%d active=%02x dense=(%02x,%v) scalar-mask=%02x", iteration, width, active, denseUsable, denseErr, usable)
+				}
+				dense := denseLoose.Reduced()
+				if dense != got {
+					t.Fatalf("iteration=%d width=%d active=%02x dense/scalar mismatch", iteration, width, active)
+				}
+				assertMaskedPointX4(t, fmt.Sprintf("dense asymmetric B width=%d iteration=%d active=%02x", width, iteration, active), &dense, &want4, active)
 			}
 		}
 	}
@@ -429,6 +661,20 @@ func TestAsymmetricFixedBPreparedRadix64DSMX4InvalidFailClosed(t *testing.T) {
 			if gotLane.IsIdentity() != 1 {
 				t.Fatalf("width=%d invalid lane=%d did not fail closed", width, invalidLane)
 			}
+
+			var denseLoose IFMAPointX4
+			denseUsable, denseErr := evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&denseLoose, &fixture.aTables, fixture.bTables[width], &invalid, &signs, 0x0f)
+			if denseErr != nil || denseUsable != wantMask {
+				t.Fatalf("dense width=%d invalid lane=%d evaluate=(%02x,%v) want=%02x", width, invalidLane, denseUsable, denseErr, wantMask)
+			}
+			dense := denseLoose.Reduced()
+			denseLane := dense.Lane(invalidLane)
+			if denseLane.IsIdentity() != 1 {
+				t.Fatalf("dense width=%d invalid lane=%d did not fail closed", width, invalidLane)
+			}
+			if dense != got {
+				t.Fatalf("dense width=%d invalid lane=%d scalar/dense mismatch", width, invalidLane)
+			}
 		}
 	}
 }
@@ -446,7 +692,48 @@ func TestAsymmetricFixedBPreparedRadix64DSMX4ZeroAllocations(t *testing.T) {
 				panic(err)
 			}
 		}); allocs != 0 {
-			t.Fatalf("width=%d allocations=%v want=0", width, allocs)
+			t.Fatalf("scalar width=%d allocations=%v want=0", width, allocs)
+		}
+		if allocs := testing.AllocsPerRun(20, func() {
+			if _, err := evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&out, &fixture.aTables, table, &scalars, &signs, 0x0f); err != nil {
+				panic(err)
+			}
+		}); allocs != 0 {
+			t.Fatalf("dense width=%d allocations=%v want=0", width, allocs)
+		}
+	}
+}
+
+func asymmetricFixedBProjectivelyEqual(x, y *PointX4, active uint8) bool {
+	active &= 0x0f
+	return x.Equal(y)&active == active
+}
+
+// The projective and affine-cached evaluators are free to return different
+// projective scales. A benchmark preflight must compare Edwards points by
+// cross multiplication, never by coordinate-array equality.
+func TestAsymmetricFixedBBenchmarkFixtureProjectivePreflight(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("requires AVX-512 IFMA target")
+	}
+	fixture, scalars, signs := newAsymmetricFixedBBenchmarkFixture(t)
+	var controlLoose IFMAPointX4
+	controlMask, err := evaluateIFMAMicroAoSPreparedRadix64DSMX4(&controlLoose, &fixture.workspace, &fixture.microTables, &scalars, &signs, 0x0f)
+	if err != nil || controlMask != 0x0f {
+		t.Fatalf("control=(%02x,%v)", controlMask, err)
+	}
+	control := controlLoose.Reduced()
+	for _, width := range []uint{6, 8, 9, 10} {
+		var scalarLoose, denseLoose IFMAPointX4
+		scalarMask, scalarErr := evaluateAsymmetricFixedBPreparedRadix64DSMX4(&scalarLoose, &fixture.aTables, fixture.bTables[width], &scalars, &signs, 0x0f)
+		denseMask, denseErr := evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&denseLoose, &fixture.aTables, fixture.bTables[width], &scalars, &signs, 0x0f)
+		if scalarErr != nil || denseErr != nil || scalarMask != controlMask || denseMask != controlMask {
+			t.Fatalf("width=%d scalar=(%02x,%v) dense=(%02x,%v) control=%02x", width, scalarMask, scalarErr, denseMask, denseErr, controlMask)
+		}
+		scalar, dense := scalarLoose.Reduced(), denseLoose.Reduced()
+		if !asymmetricFixedBProjectivelyEqual(&scalar, &control, controlMask) ||
+			!asymmetricFixedBProjectivelyEqual(&dense, &control, controlMask) {
+			t.Fatalf("width=%d projective preflight mismatch", width)
 		}
 	}
 }
@@ -500,8 +787,16 @@ func BenchmarkAsymmetricFixedBPreparedRadix64DSMX4(b *testing.B) {
 		if candidateErr != nil || mask != 0x0f {
 			b.Fatalf("shared affine B%d preflight=(%02x,%v)", width, mask, candidateErr)
 		}
-		if candidate := candidateLoose.Reduced(); candidate != control {
-			b.Fatalf("shared affine B%d preflight=(%02x,%v) matches-control=%v", width, mask, candidateErr, candidate == control)
+		if candidate := candidateLoose.Reduced(); !asymmetricFixedBProjectivelyEqual(&candidate, &control, mask) {
+			b.Fatalf("shared affine B%d preflight=(%02x,%v) projectively matches-control=false", width, mask, candidateErr)
+		}
+		var denseLoose IFMAPointX4
+		denseMask, denseErr := evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&denseLoose, &fixture.aTables, fixture.bTables[width], &scalars, &signs, 0x0f)
+		if denseErr != nil || denseMask != mask {
+			b.Fatalf("dense affine B%d preflight=(%02x,%v) scalar-mask=%02x", width, denseMask, denseErr, mask)
+		}
+		if dense := denseLoose.Reduced(); !asymmetricFixedBProjectivelyEqual(&dense, &control, denseMask) {
+			b.Fatalf("dense affine B%d preflight=(%02x,%v) projectively matches-control=false", width, denseMask, denseErr)
 		}
 	}
 	b.Run("implementation=current-micro-aos-B6-projective", func(b *testing.B) {
@@ -532,6 +827,23 @@ func BenchmarkAsymmetricFixedBPreparedRadix64DSMX4(b *testing.B) {
 			for iteration := 0; iteration < b.N; iteration++ {
 				var err error
 				mask, err = evaluateAsymmetricFixedBPreparedRadix64DSMX4(&out, &fixture.aTables, table, &scalars, &signs, 0x0f)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+			benchmarkAsymmetricFixedBPointSink = out
+			benchmarkAsymmetricFixedBMaskSink = mask
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X4Lanes), "ns/signature")
+		})
+		b.Run(fmt.Sprintf("implementation=dense-affine-B%d", width), func(b *testing.B) {
+			var out IFMAPointX4
+			var mask uint8
+			b.ReportAllocs()
+			b.ReportMetric(float64(len(table.densePoints)*int(unsafe.Sizeof(ifmaAffine3MicroAoSEntryExperiment{}))), "B-table-bytes")
+			b.ResetTimer()
+			for iteration := 0; iteration < b.N; iteration++ {
+				var err error
+				mask, err = evaluateAsymmetricFixedBDensePreparedRadix64DSMX4(&out, &fixture.aTables, table, &scalars, &signs, 0x0f)
 				if err != nil {
 					b.Fatal(err)
 				}
