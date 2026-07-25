@@ -243,9 +243,10 @@ compression function of NIST FIPS 180-4, using that standard's published
 initial hash value and round constants.
 
 The sixteen-register rolling message-schedule organization in
-sha512mb/native_amd64_x8roll.s and the byte-swap/8x8 input transpose in
-sha512mb/native_amd64_transpose.s were adapted from the data flow in
-Firedancer's fd_sha512_batch_avx512.c and fd_avx512_wwv.h at commit
+sha512mb/native_amd64_x8roll.s and the shared byte-swap/8x8 input transpose in
+sha512mb/native_amd64_transpose.h and sha512mb/native_amd64_transpose.s were
+adapted from the data flow in Firedancer's fd_sha512_batch_avx512.c and
+fd_avx512_wwv.h at commit
 55ccb6246a6102dc37f8a8506979746ada1a58b2:
 
     https://github.com/firedancer-io/firedancer/blob/55ccb6246a6102dc37f8a8506979746ada1a58b2/src/ballet/sha512/fd_sha512_batch_avx512.c
