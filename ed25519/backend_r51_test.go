@@ -452,6 +452,49 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 	}
 }
 
+// BenchmarkR51DecodedACacheHardwareBypass pins the non-degrading Zen 4 route.
+// When decoded-A precomputation is not profitable, Cache must reach the same
+// raw native batch entry point without lookup/admission bookkeeping.
+func BenchmarkR51DecodedACacheHardwareBypass(b *testing.B) {
+	backend := requireR51Backend(b)
+	if backend.supportsPrecomp() {
+		b.Skip("r51 decoded-A Cache tier is enabled on this CPU")
+	}
+	for _, messageSize := range []int{64, 200, 1232} {
+		for _, count := range []int{8, 64} {
+			fixture := makeBatchFixture(b, count, messageSize)
+			cache := new(Cache)
+			for _, path := range []struct {
+				name   string
+				verify func() bool
+			}{
+				{name: "cold", verify: func() bool {
+					return backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
+				}},
+				{name: "cache-bypass", verify: func() bool {
+					return cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
+				}},
+			} {
+				b.Run(fmt.Sprintf("path=%s/n=%d/msg=%d", path.name, count, messageSize), func(b *testing.B) {
+					if !path.verify() {
+						b.Fatal("warmup rejected valid batch")
+					}
+					faultsBefore := backend.faults.Load()
+					b.ReportAllocs()
+					b.ResetTimer()
+					for range b.N {
+						if !path.verify() {
+							b.Fatal("verification rejected valid batch")
+						}
+					}
+					b.ReportMetric(float64(backend.faults.Load()-faultsBefore), "native-faults")
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
+				})
+			}
+		}
+	}
+}
+
 // BenchmarkR51PublicWrapperGate measures the exported strict-batch wrapper and
 // the registered backend's raw entry point in the same binary, on the same
 // fixtures. Comparing this gate is stronger than comparing unrelated test
