@@ -1,0 +1,14 @@
+=== RUN   TestR51BackendDecodedACacheHardwareGate
+--- PASS: TestR51BackendDecodedACacheHardwareGate (0.03s)
+=== RUN   TestR51BackendDecodedAPrecomputeShape
+--- PASS: TestR51BackendDecodedAPrecomputeShape (0.00s)
+=== RUN   TestR51BackendDecodedACacheDifferential
+--- PASS: TestR51BackendDecodedACacheDifferential (0.02s)
+=== RUN   TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit
+--- PASS: TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit (0.00s)
+=== RUN   TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup
+--- PASS: TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup (0.00s)
+=== RUN   TestR51BackendDecodedACacheHitZeroAllocations
+--- PASS: TestR51BackendDecodedACacheHitZeroAllocations (0.07s)
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	0.124s

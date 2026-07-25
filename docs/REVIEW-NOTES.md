@@ -98,7 +98,7 @@ verdicts.
 | registered r51 cold backend | done for explicit Zen 4 selection; packed singleton plus x4 batch-Q dispatcher |
 | exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
 | r51 x8 plus radix-32/comb256 cold schedule | promoted inside forced `r51`; CPUID selects x8 only on AMD family 1Ah+ |
-| r51 variable-base tables | small cold table rebuilt per verification; reusable per-key warm tables remain experimental and `supportsPrecomp()` is false |
+| r51 variable-base tables | small cold table rebuilt per verification; the Zen 5 Cache tier reuses only a 192-byte decoded A, while the larger per-key warm comb remains experimental; Zen 4 `supportsPrecomp()` is false |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
 The branch is an audit candidate, not a release tag. After review findings are

@@ -142,13 +142,17 @@ taskset -c 2 env GOMAXPROCS=1 go test -run '^$' \
 
 Candidate rows enter through the same raw-slice backend contract used by the
 registered r51 implementation behind public `VerifyBatchStrict`. It performs
-the length check and then hands the caller-owned slices directly to a native
-batch pipeline, avoiding an otherwise artificial `[]batchItem`
-allocation/copy. Generic baselines retain their existing item path.
-Table-capable cache backends retain that item path because each item must carry
-a key lookup result; forced r51 reports `supportsPrecomp() == false`, so
-`Cache.VerifyBatchStrict` deliberately bypasses cache bookkeeping and retains
-the same raw allocation-free path. Tests cover both routing cases.
+the length check and then hands caller-owned slices directly to the native
+batch pipeline, avoiding an artificial `[]batchItem` allocation/copy. Generic
+baselines retain their existing item path.
+
+Forced r51 also has a private cache-aware raw contract. Zen 5 can pass exact
+raw-bound decoded-A hits through fixed worker scratch without allocations;
+Zen 4 reports `supportsPrecomp() == false` after complete Cache A/B showed no
+win and therefore bypasses lookup/admission entirely. Use
+`BenchmarkR51DecodedACacheTier` for the Zen 5 0/25/50/75/100% hit-density
+matrix and `BenchmarkR51DecodedACacheHardwareBypass` for the Zen 4 routing
+gate. Both report native-fault deltas and allocations.
 
 Paired decompression has its own complete-path admission comparator:
 

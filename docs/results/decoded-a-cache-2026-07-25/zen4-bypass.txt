@@ -1,0 +1,42 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=64         	    7641	    117057 ns/op	         0 native-faults	        14.63 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=64         	    7662	    117016 ns/op	         0 native-faults	        14.63 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=64         	    7675	    117003 ns/op	         0 native-faults	        14.63 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=64 	    8097	    110639 ns/op	         0 native-faults	        13.83 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=64 	    8108	    110680 ns/op	         0 native-faults	        13.83 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=64 	    8070	    110566 ns/op	         0 native-faults	        13.82 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=64        	     980	    916915 ns/op	         0 native-faults	        14.33 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=64        	     980	    916828 ns/op	         0 native-faults	        14.33 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=64        	     980	    918072 ns/op	         0 native-faults	        14.34 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=64         	    1038	    866300 ns/op	         0 native-faults	        13.54 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=64         	    1038	    866112 ns/op	         0 native-faults	        13.53 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=64         	    1038	    866150 ns/op	         0 native-faults	        13.53 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=200                 	    7614	    117722 ns/op	         0 native-faults	        14.72 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=200                 	    7587	    117702 ns/op	         0 native-faults	        14.71 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=200                 	    7603	    117756 ns/op	         0 native-faults	        14.72 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=200         	    8048	    111166 ns/op	         0 native-faults	        13.90 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=200         	    8064	    111181 ns/op	         0 native-faults	        13.90 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=200         	    8050	    111193 ns/op	         0 native-faults	        13.90 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=200                	     973	    923094 ns/op	         0 native-faults	        14.42 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=200                	     972	    923354 ns/op	         0 native-faults	        14.43 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=200                	     973	    923507 ns/op	         0 native-faults	        14.43 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=200        	    1030	    871729 ns/op	         0 native-faults	        13.62 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=200        	    1032	    871292 ns/op	         0 native-faults	        13.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=200        	    1032	    871241 ns/op	         0 native-faults	        13.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=1232                	    7204	    124353 ns/op	         0 native-faults	        15.54 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=1232                	    7182	    124343 ns/op	         0 native-faults	        15.54 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=8/msg=1232                	    7207	    124353 ns/op	         0 native-faults	        15.54 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=1232        	    7590	    117832 ns/op	         0 native-faults	        14.73 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=1232        	    7604	    117829 ns/op	         0 native-faults	        14.73 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=8/msg=1232        	    7574	    117794 ns/op	         0 native-faults	        14.72 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=1232               	     921	    973863 ns/op	         0 native-faults	        15.22 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=1232               	     922	    973646 ns/op	         0 native-faults	        15.21 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cold/n=64/msg=1232               	     921	    974160 ns/op	         0 native-faults	        15.22 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=1232       	     973	    922305 ns/op	         0 native-faults	        14.41 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=1232       	     974	    922265 ns/op	         0 native-faults	        14.41 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheHardwareBypass/path=cache-bypass/n=64/msg=1232       	     974	    922016 ns/op	         0 native-faults	        14.41 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	34.285s

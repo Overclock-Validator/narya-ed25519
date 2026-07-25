@@ -1,0 +1,18 @@
+=== RUN   TestR51BackendDecodedACacheHardwareGate
+--- PASS: TestR51BackendDecodedACacheHardwareGate (0.05s)
+=== RUN   TestR51BackendDecodedAPrecomputeShape
+--- PASS: TestR51BackendDecodedAPrecomputeShape (0.00s)
+=== RUN   TestR51BackendDecodedACacheDifferential
+    backend_r51_test.go:117: r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs
+--- SKIP: TestR51BackendDecodedACacheDifferential (0.00s)
+=== RUN   TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit
+    backend_r51_test.go:145: r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs
+--- SKIP: TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit (0.00s)
+=== RUN   TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup
+    backend_r51_test.go:166: r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs
+--- SKIP: TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup (0.00s)
+=== RUN   TestR51BackendDecodedACacheHitZeroAllocations
+    backend_r51_test.go:219: r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs
+--- SKIP: TestR51BackendDecodedACacheHitZeroAllocations (0.00s)
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	0.051s

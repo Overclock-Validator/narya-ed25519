@@ -1,0 +1,12 @@
+go version go1.26.4 linux/amd64
+Linux 6.8.0-134-generic x86_64 GNU/Linux
+CPU: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+Vendor: AuthenticAMD
+Family: 25 (0x19)
+Model: 117
+Required flags present: avx2 avx512f avx512dq avx512ifma avx512bw avx512vl avx512vbmi sha_ni
+Pinned logical CPU: 2
+Governor: performance
+Negative Cache A/B commit: 9ca01ecee3eeb0c89edc2b6b5e762dd5f8a003cc
+Final bypass evidence commit: 9aeff61899d494be8d8a622a7cfaa93d806ded13
+

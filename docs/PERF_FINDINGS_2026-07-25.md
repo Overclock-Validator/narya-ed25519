@@ -43,9 +43,10 @@ arithmetic, which was already finished and tested.
 | best cold measured (x8 / radixA=32 / comb256, n>=8) | 9.24 | 2.97x |
 | warm partial comb (A6r9-B10r5) | 4.49 | 6.12x |
 
-The warm comb is worth roughly **3x the cold path**, and it is gated entirely
-behind `r51Backend.supportsPrecomp() == false`. Everything else on this list is
-worth 6-30%. If only one thing gets done, it should be the warm path.
+The warm comb is worth roughly **3x the cold path**, but the current production
+table behind `supportsPrecomp()` contains only decoded A; it does not expose the
+comb. Everything else on this list is worth 6-30%. If only one larger cache
+experiment gets done, it should be the warm comb path.
 
 ### Why the cache is justified
 
@@ -225,17 +226,24 @@ the caller's original public-key bytes, performs every strict precheck, and runs
 the full scalar multiplication. It therefore composes with a much smaller hot
 comb tier instead of competing with it.
 
-The point payload is about 160 bytes per key, versus 19,200 bytes for A6/r9.
-Ignoring map/key metadata, 128 MiB can hold roughly 840,000 decoded points rather
-than 7,158 comb tables. A real Go cache must also retain or key by the exact 32
-input bytes and pay map/concurrency metadata, so 840,000 is an arithmetic ceiling,
-not a promised capacity. The benchmarked saving on Zen 4 was about 0.9--1.3 us
-per useful-width signature after miss compaction.
+The exact-byte-bound production entry is 192 bytes per key, versus 19,200 bytes
+for A6/r9. Ignoring map/key metadata, 128 MiB can hold roughly 699,000 entries
+rather than 7,158 comb tables. The current admission-entry limit is 131,072, so
+that arithmetic capacity is not the effective default and must not be quoted as
+one.
 
-This is the highest-priority cache experiment if recurrence is long-tailed:
-measure lookup plus verification at 0/25/50/75/100% hits, reuse distance, memory
-budget, concurrency, and adversarial churn. Invalid signatures must not earn
-admission. The decoded tier has no homogeneous-group or minimum-batch requirement.
+The complete Cache experiment is now closed for the two measured CPUs. Zen 5
+fully warm `n=64` improved about 9--10% at 64/200/1232-byte messages. Zen 4 was
+about 1% slower even at 100% hits, so `supportsPrecomp()` is enabled only on the
+native-wide Zen 5 dispatch. Mixed hit preparation regressed small Zen 5 chunks;
+the supported rule requires all hits below 64 items and at least 25% hits for a
+complete 64-item encoder chunk. The implementation performs one lookup, admits
+only valid misses, stores an immutable entry without per-hit point copies, and
+reports native fallback faults in its benchmark.
+
+Invalid signatures never earn admission. Reuse distance, memory budget,
+concurrency, and adversarial churn remain traffic-policy questions rather than
+arithmetic questions; a larger hot comb tier remains separate.
 
 ### 5.5 Mixed warm/cold lanes and cross-call lane refill
 
@@ -278,5 +286,6 @@ with x4 tails retained for thin traffic at the tip.
   deliberate. I scoped work there before checking and it would have been wasted.
 - **Cached Y+-X tables and AffineNiels mixed addition** (open tasks) are ~3-6% on
   the cold path. Real, but not before §4.
-- **No default was changed.** Automatic dispatch still selects `generic`;
-  `supportsPrecomp()` is still false. Everything here is additive.
+- **No default was changed.** Automatic dispatch still selects `generic`.
+  Decoded-A precomputation is enabled only for explicitly forced r51 on Zen 5;
+  Zen 4 and every automatic path retain their former routing.

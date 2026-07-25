@@ -133,10 +133,10 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 
 | backend | status | notes |
 | --- | --- | --- |
-| `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. The only backend supporting precomputation. |
+| `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses two x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses two x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. Zen 5 `Cache` batches may reuse an exact-byte-bound 192-byte decoded-A entry; Zen 4 bypasses that tier because its complete Cache path did not beat cold verification. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -210,10 +210,21 @@ therefore still faster for a cold singleton, while forced r51 is faster for
 full x4 groups. Exact rows and invalid-input caveats are recorded in
 [`docs/CROSS_LIBRARY_ZEN4_2026-07-24.md`](docs/CROSS_LIBRARY_ZEN4_2026-07-24.md).
 
-The registered r51 path is a cold arbitrary-key implementation: its full SIMD
-groups still decode A and build the small variable-base table for every
-signature. The warm per-key r51 comb and HEEA remain experiments. The prepared
-A6/r9+B10 warm verifier has
+The registered r51 cold path remains arbitrary-key verification: its full SIMD
+groups decode A and build the small variable-base table for every signature.
+On Zen 5 only, `Cache.VerifyBatchStrict` can retain a 192-byte immutable decoded
+A entry bound to the exact original public-key bytes. The entry skips only A
+decompression; hashing, strict prechecks, scalar multiplication, and final
+equality are unchanged. At commit `9ca01ec`, fully warm `n=64` measured
+7.20/7.25/7.50 us/signature for 64/200/1232-byte messages versus
+7.98/8.02/8.26 cold (about 9--10%). Mixed hits are used only for a complete
+64-signature chunk at at least 25% density; smaller chunks require all hits.
+The same complete Cache path was about 1% slower than cold on Zen 4 at every
+message size, so commit `7983032` disables its bookkeeping there. Raw outputs
+and the negative result are in
+[`docs/results/decoded-a-cache-2026-07-25/`](docs/results/decoded-a-cache-2026-07-25/).
+
+The warm per-key r51 comb and HEEA remain experiments. The prepared A6/r9+B10 warm verifier has
 measured about 4.7--4.8 us/signature at n=64 across distinct, four-key, and
 same-key fixtures, but it excludes table construction and production cache
 lookup/admission/eviction. It is neither reachable through public `Cache` APIs

@@ -301,15 +301,21 @@ process-shared radix-256 B comb, and cross-group Q encoding. The broader
 alternate-radix, table, HEEA, and warm-comb matrix remains allocation-free
 benchmarking infrastructure. Cold rows include arbitrary-A table construction.
 
-The public batch dispatcher has an optional raw-slice backend contract. The
-registered forced `r51` backend and candidate benchmarks enter through that
-contract, including public length/dispatch checks, instead of bypassing the
-wrapper while charging the generic baseline for a `batchItem` allocation.
-Table-capable cache backends keep the item path because lookup results are per
-signature. Because PR 1's r51 backend intentionally reports
-`supportsPrecomp() == false`, `Cache.VerifyBatchStrict` bypasses cache
-bookkeeping and uses the same raw r51 path. Automatic selection still does not
-use the raw contract.
+The public batch dispatcher has optional ordinary and cache-aware raw-slice
+backend contracts. The registered forced `r51` backend and candidate
+benchmarks enter through those contracts, including public length/dispatch
+checks, instead of allocating `batchItem` records. The cache-aware form keeps
+lookup, exact-key binding, verdicts, and post-valid-miss admission allocation
+free. Its immutable decoded-A entry is 192 bytes; it never replaces the
+original A bytes used by the challenge hash.
+
+Complete Cache A/B measurements enable this decoded-A tier only when
+`cpufeat.PreferWideIFMA()` selects native-wide Zen 5. Zen 4 reports
+`supportsPrecomp() == false`, so `Cache.VerifyBatchStrict` bypasses cache
+bookkeeping and uses the ordinary raw r51 path. On Zen 5, all-hit chunks of
+width at least four use decoded A; mixed hits are admitted to the prepared path
+only for a complete 64-item chunk at at least 25% density. Automatic backend
+selection still does not use either raw contract.
 
 ### Promotion boundary
 

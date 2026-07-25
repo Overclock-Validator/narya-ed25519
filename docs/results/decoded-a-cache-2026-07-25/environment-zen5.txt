@@ -1,0 +1,11 @@
+go version go1.26.4 linux/amd64
+Linux 7.0.0-28-generic x86_64 GNU/Linux
+CPU: AMD Ryzen 7 9700X 8-Core Processor
+Vendor: AuthenticAMD
+Family: 26 (0x1a)
+Model: 68
+Required flags present: avx2 avx512f avx512dq avx512ifma avx512bw avx512vl avx512vbmi sha_ni
+Pinned logical CPU: 2
+Governor: performance
+Final evidence commit: df90de2165e1b47a75b25a6648a86ed435d1b86a
+

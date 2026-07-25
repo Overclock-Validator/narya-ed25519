@@ -1,0 +1,21 @@
+# Zen 5 correctness and final hit-density matrix (commit df90de2)
+/usr/local/go/bin/go test ./ed25519 \
+  -run 'TestR51BackendDecodedA(Cache|Precompute|Hardware)' -v -count=1
+
+taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' \
+  -bench '^BenchmarkR51DecodedACacheTier$/path=(cold|cache)/hits=(0|25|50|75|100)/n=(8|17|64)/msg=1232$' \
+  -benchmem -benchtime=500ms -count=3 ./ed25519
+
+# Complete message-size A/B on both CPUs (commit 9ca01ec)
+taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' \
+  -bench '^BenchmarkR51DecodedACacheTier$/path=(cold|cache)/hits=(0|100)/n=64/msg=(64|200|1232)$' \
+  -benchmem -benchtime=750ms -count=3 ./ed25519
+
+# Zen 4 hardware gate and bypass route (commits df90de2 and 9aeff61)
+/usr/local/go/bin/go test ./ed25519 \
+  -run 'TestR51BackendDecodedA(Cache|Precompute|Hardware)' -v -count=1
+
+taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' \
+  -bench '^BenchmarkR51DecodedACacheHardwareBypass$' \
+  -benchmem -benchtime=750ms -count=3 ./ed25519
+

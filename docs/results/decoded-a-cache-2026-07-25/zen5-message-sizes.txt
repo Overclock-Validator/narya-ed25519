@@ -1,0 +1,33 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=64         	    1758	    511120 ns/op	         0 native-faults	         7.986 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=64         	    1760	    511035 ns/op	         0 native-faults	         7.985 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=64         	    1761	    510741 ns/op	         0 native-faults	         7.980 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=64        	    1798	    499959 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.812 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=64        	    1798	    499991 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.812 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=64        	    1779	    500014 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.813 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=64      	    1948	    461062 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.204 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=64      	    1950	    461105 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.205 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=64      	    1950	    461217 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.207 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=200        	    1750	    513199 ns/op	         0 native-faults	         8.019 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=200        	    1752	    512825 ns/op	         0 native-faults	         8.013 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=200        	    1754	    512995 ns/op	         0 native-faults	         8.016 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=200       	    1791	    501908 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.842 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=200       	    1790	    501823 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.841 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=200       	    1791	    501852 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         7.841 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=200     	    1935	    463491 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.242 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=200     	    1939	    464013 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.250 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=200     	    1938	    464933 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.265 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=1232       	    1700	    528367 ns/op	         0 native-faults	         8.256 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=1232       	    1701	    528765 ns/op	         0 native-faults	         8.262 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cold/hits=0/n=64/msg=1232       	    1704	    528206 ns/op	         0 native-faults	         8.253 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=1232      	    1737	    517458 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         8.085 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=1232      	    1736	    517612 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         8.088 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=0/n=64/msg=1232      	    1736	    517789 ns/op	         0 decoded-hits/op	         0 native-faults	         0 table-bytes	         8.090 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=1232    	    1876	    478847 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.482 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=1232    	    1874	    479916 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.499 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51DecodedACacheTier/path=cache/hits=100/n=64/msg=1232    	    1873	    479835 ns/op	        64.00 decoded-hits/op	         0 native-faults	     12288 table-bytes	         7.497 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	25.758s
