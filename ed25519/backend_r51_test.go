@@ -138,18 +138,20 @@ func TestR51BackendConcurrentWorkers(t *testing.T) {
 
 func TestR51BackendSteadyStateZeroAllocations(t *testing.T) {
 	b := requireR51Backend(t)
-	bf := makeBatchFixture(t, 64, 200)
-	verdicts := make([]bool, len(bf.pubs))
-	if !b.verifyBatchRaw(DalekStrict, bf.pubs, bf.msgs, bf.sigs, verdicts) {
-		t.Fatal("warmup rejected valid batch")
-	}
-	allocs := testing.AllocsPerRun(100, func() {
+	for _, count := range []int{2, 64} {
+		bf := makeBatchFixture(t, count, 200)
+		verdicts := make([]bool, len(bf.pubs))
 		if !b.verifyBatchRaw(DalekStrict, bf.pubs, bf.msgs, bf.sigs, verdicts) {
-			panic("r51 backend rejected valid batch")
+			t.Fatalf("count=%d warmup rejected valid batch", count)
 		}
-	})
-	if allocs != 0 {
-		t.Fatalf("steady-state allocations=%v want=0", allocs)
+		allocs := testing.AllocsPerRun(100, func() {
+			if !b.verifyBatchRaw(DalekStrict, bf.pubs, bf.msgs, bf.sigs, verdicts) {
+				panic("r51 backend rejected valid batch")
+			}
+		})
+		if allocs != 0 {
+			t.Fatalf("count=%d steady-state allocations=%v want=0", count, allocs)
+		}
 	}
 }
 

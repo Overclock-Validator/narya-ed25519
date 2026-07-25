@@ -14,11 +14,13 @@ import (
 // decoder, DSM, and batch-finalizer scratch; workers share no mutable curve
 // state.
 //
-// The current dispatch keeps full x4 groups together, sends two- and
-// three-signature tails through one partial x4 group, and leaves a singleton
-// to the lower-latency single-signature implementation. In particular, a
-// five-signature batch is one full r51 group plus one singleton rather than
-// two underfilled r51 groups.
+// The current dispatch keeps full x4 groups together. Strict one- and two-item
+// tails use the lower-latency packed singleton implementation, while a strict
+// three-item tail uses one partial x4 group. StdlibCompat retains the native
+// partial-group path for two and three items because the packed verifier
+// intentionally implements only DalekStrict. In particular, a five-signature
+// batch is one full r51 group plus one singleton rather than two underfilled
+// r51 groups.
 type r51Backend struct {
 	activateOnce sync.Once
 	activateErr  error
@@ -152,7 +154,9 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 	}
 
 	full := len(ok) &^ (r51x5.X4Lanes - 1)
-	needsBatchWorker := full != 0 || len(ok)-full > 1
+	tail := len(ok) - full
+	strictPackedPair := profile == DalekStrict && tail == 2
+	needsBatchWorker := full != 0 || (tail > 1 && !strictPackedPair)
 	var worker *r51BatchWorker
 	if needsBatchWorker {
 		worker = b.batchPool.Get().(*r51BatchWorker)
@@ -175,7 +179,6 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 		}
 	}
 
-	tail := len(ok) - full
 	switch tail {
 	case 0:
 	case 1:
@@ -184,7 +187,21 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 			return false, err
 		}
 		ok[full] = verdict
-	case 2, 3:
+	case 2:
+		if strictPackedPair {
+			for index := full; index < full+tail; index++ {
+				verdict, err := b.verifyOne(profile, pubs[index], msgs[index], sigs[index])
+				if err != nil {
+					return false, err
+				}
+				ok[index] = verdict
+			}
+			break
+		}
+		if _, err := worker.pipeline.VerifyBatch(profile, pubs[full:], msgs[full:], sigs[full:], ok[full:]); err != nil {
+			return false, err
+		}
+	case 3:
 		if _, err := worker.pipeline.VerifyBatch(profile, pubs[full:], msgs[full:], sigs[full:], ok[full:]); err != nil {
 			return false, err
 		}
