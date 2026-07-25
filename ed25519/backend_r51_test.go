@@ -355,6 +355,7 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 				if !backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
 					b.Fatal("cold warmup rejected valid batch")
 				}
+				faultsBefore := backend.faults.Load()
 				b.ReportAllocs()
 				b.ResetTimer()
 				for range b.N {
@@ -362,6 +363,7 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 						b.Fatal("cold verification rejected valid batch")
 					}
 				}
+				b.ReportMetric(float64(backend.faults.Load()-faultsBefore), "native-faults")
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
 			})
 
@@ -391,6 +393,7 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 					if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
 						b.Fatal("cache warmup rejected valid batch")
 					}
+					faultsBefore := backend.faults.Load()
 					b.ReportAllocs()
 					b.ResetTimer()
 					for range b.N {
@@ -399,6 +402,7 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 						}
 					}
 					b.ReportMetric(float64(hitCount), "decoded-hits/op")
+					b.ReportMetric(float64(backend.faults.Load()-faultsBefore), "native-faults")
 					b.ReportMetric(float64(cache.Stats().TableBytes), "table-bytes")
 					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
 				})
