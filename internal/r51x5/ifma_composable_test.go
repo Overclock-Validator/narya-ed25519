@@ -595,54 +595,6 @@ func TestExperimentalIFMAComposableGate(t *testing.T) {
 	}
 }
 
-func modelMultiplyComposableX8(out, x, y *IFMAElementX8) error {
-	if !isIFMAElementX8(x) || !isIFMAElementX8(y) {
-		return errIFMAComposableInputRange
-	}
-	var raw IFMAProductX8
-	for lane := 0; lane < X8Lanes; lane++ {
-		var xl, yl Limbs
-		for limb := range xl {
-			xl[limb] = x.limbs[limb][lane]
-			yl[limb] = y.limbs[limb][lane]
-		}
-		product := ifmaLooseLaneModel(xl, yl)
-		for limb := range product {
-			raw[limb][lane] = product[limb]
-		}
-	}
-	normalized, ok := normalizeIFMAProductX8(&raw)
-	if !ok {
-		return errIFMAOutputRange
-	}
-	out.limbs = normalized
-	return nil
-}
-
-func modelMultiplyComposableX4(out, x, y *IFMAElementX4) error {
-	if !isIFMAElementX4(x) || !isIFMAElementX4(y) {
-		return errIFMAComposableInputRange
-	}
-	var raw IFMAProductX4
-	for lane := 0; lane < X4Lanes; lane++ {
-		var xl, yl Limbs
-		for limb := range xl {
-			xl[limb] = x.limbs[limb][lane]
-			yl[limb] = y.limbs[limb][lane]
-		}
-		product := ifmaLooseLaneModel(xl, yl)
-		for limb := range product {
-			raw[limb][lane] = product[limb]
-		}
-	}
-	normalized, ok := normalizeIFMAProductX4(&raw)
-	if !ok {
-		return errIFMAOutputRange
-	}
-	out.limbs = normalized
-	return nil
-}
-
 func testIFMAComposableVectorOpsX8(t *testing.T, x, y *IFMAElementX8) {
 	t.Helper()
 	wantAdd := referenceAddIFMAElementX8(t, x, y)

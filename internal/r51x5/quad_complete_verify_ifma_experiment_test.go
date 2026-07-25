@@ -4,8 +4,6 @@ import (
 	"bytes"
 	stded25519 "crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha512"
-	"hash"
 	"testing"
 )
 
@@ -19,10 +17,7 @@ import (
 // justifies promoting the packed point representation into ordinary package
 // code. Production verification and dispatch cannot reach it.
 type quadStrictVerifierX4 struct {
-	ops          quadDSMOperationsX4
-	bTable       quadNAFTable8X4
-	hash         hash.Hash
-	digest       [64]byte
+	*ExperimentalPackedStrictVerifierX4
 	encoder      ExperimentalIFMABatchEncodeWorkspaceX4
 	encodePoints [ExperimentalIFMABatchEncodeMaxX4Groups]IFMAPointX4
 	encodeActive [ExperimentalIFMABatchEncodeMaxX4Groups]uint8
@@ -30,23 +25,11 @@ type quadStrictVerifierX4 struct {
 }
 
 func newQuadStrictVerifierX4() (*quadStrictVerifierX4, error) {
-	var generatorEncoding [32]byte
-	generatorEncoding[0] = 0x58
-	for index := 1; index < len(generatorEncoding); index++ {
-		generatorEncoding[index] = 0x66
-	}
-	var generator Point
-	if _, err := generator.SetBytes(generatorEncoding[:]); err != nil {
+	packed, err := NewExperimentalPackedStrictVerifierX4()
+	if err != nil {
 		return nil, err
 	}
-	verifier := &quadStrictVerifierX4{
-		ops:  quadDSMOperationsX4{hardware: true},
-		hash: sha512.New(),
-	}
-	if err := buildQuadNAFTable8X4(&verifier.bTable, &generator, verifier.ops); err != nil {
-		return nil, err
-	}
-	return verifier, nil
+	return &quadStrictVerifierX4{ExperimentalPackedStrictVerifierX4: packed}, nil
 }
 
 func (verifier *quadStrictVerifierX4) verify(pub *[32]byte, message, signature []byte) (bool, error) {

@@ -6,136 +6,15 @@ import (
 	"testing"
 )
 
-// Architectural prior art: curve25519-dalek's AVX2 backend and
-// curve25519-voi's Go port use this coordinate-parallel orientation;
-// Firedancer r43x6 uses analogous AVX-512 QUAD packing. See NOTICE for the
-// full lineage and license details.
-//
-// quadPackedPointX4 is a test-only coordinate-parallel point layout. Unlike
-// IFMAPointX4, whose lanes hold four independent points, its lanes hold the
-// four coordinates of one point in [X, Y, T, Z] order. The field multiply ABI
-// is unchanged: it still computes four independent radix-2^51 products.
-type quadPackedPointX4 struct {
-	coordinates IFMAElementX4
-}
-
-func (p *quadPackedPointX4) setReduced(q *Point) *quadPackedPointX4 {
-	var coordinates ElementX4
-	coordinates.SetLane(0, &q.X)
-	coordinates.SetLane(1, &q.Y)
-	coordinates.SetLane(2, &q.T)
-	coordinates.SetLane(3, &q.Z)
-	p.coordinates.SetReduced(&coordinates)
-	return p
-}
-
-func (p *quadPackedPointX4) reduced() Point {
-	coordinates := p.coordinates.Reduced()
-	return Point{
-		X: coordinates.Lane(0),
-		Y: coordinates.Lane(1),
-		T: coordinates.Lane(2),
-		Z: coordinates.Lane(3),
-	}
-}
-
-// quadDoubleFirstOperandsX4 permutes [X,Y,T,Z] into the operands
-// U=[X,Y,Z,X] and V=[X,Y,Z,Y]. Their lane-wise product is [A,B,C,D] with
-// A=X^2, B=Y^2, C=Z^2, and D=XY. T is deliberately not read: the doubling
-// formula computes the new extended T coordinate from X, Y, and Z.
-func quadDoubleFirstOperandsX4(u, v *IFMAElementX4, q *quadPackedPointX4) {
-	for limb := range q.coordinates.limbs {
-		x := q.coordinates.limbs[limb][0]
-		y := q.coordinates.limbs[limb][1]
-		z := q.coordinates.limbs[limb][3]
-		u.limbs[limb] = [X4Lanes]uint64{x, y, z, x}
-		v.limbs[limb] = [X4Lanes]uint64{x, y, z, y}
-	}
-}
-
-// quadDoubleFinalOperandsX4 normalizes one packed vector
-// K=[E,G,H,F], then derives the two multiplicands for the final lane-wise
-// multiply with pure lane copies:
-//
-//	left  = [E, G, E, F]
-//	right = [F, H, H, G]
-//
-// Their product is [X3,Y3,T3,Z3]. Eight copies of p keep every subtraction
-// non-negative even for F=B-A-2*Z^2; the normalizer then returns the standard
-// bounded u52 composable representation.
-func quadDoubleFinalOperandsX4(left, right, products *IFMAElementX4) {
-	var rawK IFMAProductX4
-	for limb := range rawK {
-		a := products.limbs[limb][0]
-		b := products.limbs[limb][1]
-		c := products.limbs[limb][2]
-		d := products.limbs[limb][3]
-		bias8P := 2 * ifmaSubtractionBias(limb)
-
-		e := 2 * d
-		g := b + bias8P - a
-		h := bias8P - a - b
-		f := b + bias8P - a - 2*c
-		rawK[limb] = [X4Lanes]uint64{e, g, h, f}
-	}
-
-	var k IFMAElementX4
-	ifmaNormalizeProductUncheckedX4(&k.limbs, &rawK)
-	for limb := range k.limbs {
-		e := k.limbs[limb][0]
-		g := k.limbs[limb][1]
-		h := k.limbs[limb][2]
-		f := k.limbs[limb][3]
-		left.limbs[limb] = [X4Lanes]uint64{e, g, e, f}
-		right.limbs[limb] = [X4Lanes]uint64{f, h, h, g}
-	}
-}
-
 // quadPointDoubleHardwareX4 is the minimum coordinate-parallel hardware
 // prototype: two existing x4 IFMA multiplications plus one standalone packed
-// normalization. It is intentionally test-only and is not wired into verifier
-// dispatch.
+// normalization. Production callers gate IFMA once in the constructor and
+// use the unchecked core directly.
 func quadPointDoubleHardwareX4(out, q *quadPackedPointX4) error {
 	if !ExperimentalIFMAAvailable() {
 		return ErrIFMAUnavailable
 	}
 	return quadPointDoubleHardwareUncheckedX4(out, q)
-}
-
-// quadPointDoubleHardwareUncheckedX4 is the benchmarkable core used after a
-// caller has gated IFMA once. This matches the existing DSM point schedule,
-// which does not repeat the CPU feature check for every doubling.
-func quadPointDoubleHardwareUncheckedX4(out, q *quadPackedPointX4) error {
-	var u, v, products, left, right IFMAElementX4
-	quadDoubleFirstOperandsX4(&u, &v, q)
-	if err := ifmaMultiplyComposableUncheckedX4(&products, &u, &v); err != nil {
-		return err
-	}
-	quadDoubleFinalOperandsX4(&left, &right, &products)
-	var result IFMAElementX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result, &left, &right); err != nil {
-		return err
-	}
-	out.coordinates = result
-	return nil
-}
-
-// quadPointDoubleModelX4 exercises the identical packing schedule through the
-// independent scalar model, so its algebra and range handling remain tested
-// on machines without AVX-512 IFMA.
-func quadPointDoubleModelX4(out, q *quadPackedPointX4) error {
-	var u, v, products, left, right IFMAElementX4
-	quadDoubleFirstOperandsX4(&u, &v, q)
-	if err := modelMultiplyComposableX4(&products, &u, &v); err != nil {
-		return err
-	}
-	quadDoubleFinalOperandsX4(&left, &right, &products)
-	var result IFMAElementX4
-	if err := modelMultiplyComposableX4(&result, &left, &right); err != nil {
-		return err
-	}
-	out.coordinates = result
-	return nil
 }
 
 func TestExperimentalCoordinateParallelDoubleX4(t *testing.T) {

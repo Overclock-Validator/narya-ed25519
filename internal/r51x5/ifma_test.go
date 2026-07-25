@@ -3,37 +3,10 @@ package r51x5
 import (
 	"errors"
 	"math/big"
-	"math/bits"
 	"math/rand"
 	"runtime"
 	"testing"
 )
-
-func ifmaLooseLaneModel(x, y Limbs) Limbs {
-	const mask52 = uint64(1<<52) - 1
-	var low, high [9]uint64
-	for i := range x {
-		for j := range y {
-			hi, lo := bits.Mul64(x[i], y[j])
-			degree := i + j
-			low[degree] += lo & mask52
-			high[degree] += lo>>52 | hi<<12
-		}
-	}
-
-	var coefficients [10]uint64
-	for degree := range low {
-		coefficients[degree] += low[degree]
-		coefficients[degree+1] += 2 * high[degree]
-	}
-	return Limbs{
-		coefficients[0] + 19*coefficients[5],
-		coefficients[1] + 19*coefficients[6],
-		coefficients[2] + 19*coefficients[7],
-		coefficients[3] + 19*coefficients[8],
-		coefficients[4] + 19*coefficients[9],
-	}
-}
 
 func ifmaLooseX8Model(x, y *ElementX8) IFMALooseX8 {
 	var out IFMALooseX8

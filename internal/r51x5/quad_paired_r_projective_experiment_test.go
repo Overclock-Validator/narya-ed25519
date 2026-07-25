@@ -40,102 +40,13 @@ func quadPairedRStrictBytePrechecksX4(pub *[32]byte, signature []byte, s *[32]by
 	return quadCanonicalRAfterSmallOrderCheckX4(signature[:32])
 }
 
-// quadPackedEqualDecodedAffineLaneX4 compares packed Q=[X,Y,T,Z] with one
-// affine lane of decoded using X_Q=x_R*Z_Q and Y_Q=y_R*Z_Q. The two required
-// cross-products occupy lanes zero and one of a single field multiplication.
-// Both products and Q are canonically reduced before limb equality, so the
-// comparison is modulo p rather than over redundant IFMA representatives.
-func quadPackedEqualDecodedAffineLaneX4(
-	q *quadPackedPointX4,
-	decoded *PointX4,
-	decodedLane int,
-	ops quadDSMOperationsX4,
-) (bool, error) {
-	checkLane(decodedLane, X4Lanes)
-	if !isIFMAElementX4(&q.coordinates) {
-		// The hardware multiply below is deliberately unchecked, so preserve
-		// the encoded-Q control's external-to-composable range gate here.
-		// Otherwise VPMADD52 would silently truncate an out-of-range source.
-		return false, errIFMAComposableInputRange
-	}
-	qReduced := q.coordinates.Reduced()
-	qz := qReduced.Lane(3)
-	if qz.IsZero() != 0 {
-		// The DSM can only produce valid projective points, but keep the final
-		// condition fail-closed if a future fault path supplies an uncommitted
-		// or otherwise invalid all-zero output. Cross-multiplication alone
-		// would make X=Y=Z=0 compare equal to every affine point.
-		return false, nil
-	}
-	var affineXY, qZ IFMAElementX4
-	for limb := range affineXY.limbs {
-		affineXY.limbs[limb][0] = decoded.X.limbs[limb][decodedLane]
-		affineXY.limbs[limb][1] = decoded.Y.limbs[limb][decodedLane]
-		qZ.limbs[limb][0] = q.coordinates.limbs[limb][3]
-		qZ.limbs[limb][1] = q.coordinates.limbs[limb][3]
-	}
-	var cross IFMAElementX4
-	if err := ops.multiply(&cross, &affineXY, &qZ); err != nil {
-		return false, err
-	}
-	crossReduced := cross.Reduced()
-	qx, qy := qReduced.Lane(0), qReduced.Lane(1)
-	rxZ, ryZ := crossReduced.Lane(0), crossReduced.Lane(1)
-	return qx.Equal(&rxZ)&qy.Equal(&ryZ) != 0, nil
-}
-
-// verifyPairedRProjective is intentionally kept next to the literal encoded-Q
-// control rather than replacing it. It hashes the original R and A bytes,
-// permits noncanonical decodable A, and applies canonical-R validation before
-// accepting decoded-point equality.
+// verifyPairedRProjective keeps the historical test name while exercising the
+// promoted reusable API against the literal encoded-Q control.
 func (verifier *quadStrictVerifierX4) verifyPairedRProjective(
 	pub *[32]byte,
 	message, signature []byte,
 ) (bool, error) {
-	var s [32]byte
-	if !quadPairedRStrictBytePrechecksX4(pub, signature, &s) {
-		return false, nil
-	}
-
-	var encoded [X4Lanes][32]byte
-	encoded[0] = *pub
-	copy(encoded[1][:], signature[:32])
-	var decoded PointX4
-	valid, err := ExperimentalIFMADecodeX4(&decoded, &encoded, 0b0011)
-	if err != nil {
-		return false, err
-	}
-	if valid&0b0011 != 0b0011 {
-		return false, nil
-	}
-
-	a := decoded.Lane(0)
-	var aTable quadNAFTable5X4
-	if err := buildQuadNAFTable5X4(&aTable, &a, verifier.ops); err != nil {
-		return false, err
-	}
-
-	verifier.hash.Reset()
-	_, _ = verifier.hash.Write(signature[:32])
-	_, _ = verifier.hash.Write(pub[:])
-	_, _ = verifier.hash.Write(message)
-	sum := verifier.hash.Sum(verifier.digest[:0])
-	if len(sum) != len(verifier.digest) {
-		panic("r51x5: SHA-512 returned an invalid digest length")
-	}
-	var wide [X4Lanes][64]byte
-	wide[0] = verifier.digest
-	var reduced [X4Lanes][32]byte
-	if ExperimentalReduceUniformScalarsX4(&reduced, &wide, 1)&1 == 0 {
-		return false, nil
-	}
-
-	var q quadPackedPointX4
-	usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops)
-	if err != nil || !usable {
-		return false, err
-	}
-	return quadPackedEqualDecodedAffineLaneX4(&q, &decoded, 1, verifier.ops)
+	return verifier.ExperimentalPackedStrictVerifierX4.Verify(pub, message, signature)
 }
 
 func TestExperimentalCoordinateParallelPairedRProjectiveEqualityX4(t *testing.T) {
@@ -239,6 +150,23 @@ func TestExperimentalCoordinateParallelPairedRCompleteStrictX4(t *testing.T) {
 	quadAssertPairedRMatchesLiteralX4(t, verifier, "missing-X", &minusPub, minusMessage, minusSignature, false)
 }
 
+func TestExperimentalPackedStrictVerifierX4APIGate(t *testing.T) {
+	verifier, err := NewExperimentalPackedStrictVerifierX4()
+	if !ExperimentalIFMAAvailable() {
+		if verifier != nil || !errors.Is(err, ErrIFMAUnavailable) {
+			t.Fatalf("unavailable constructor=(%p,%v), want (nil,%v)", verifier, err, ErrIFMAUnavailable)
+		}
+	} else if err != nil || verifier == nil {
+		t.Fatalf("available constructor=(%p,%v)", verifier, err)
+	}
+
+	var zero ExperimentalPackedStrictVerifierX4
+	accepted, verifyErr := zero.Verify(nil, nil, nil)
+	if accepted || !errors.Is(verifyErr, errExperimentalPackedStrictVerifierUninitialized) {
+		t.Fatalf("zero-value Verify=(%v,%v)", accepted, verifyErr)
+	}
+}
+
 func TestExperimentalCoordinateParallelPairedRStrictEdgesX4(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skip("AVX-512 IFMA is unavailable")
@@ -340,7 +268,7 @@ func TestExperimentalCoordinateParallelPairedRCompleteStrictX4ZeroAllocations(t 
 	}
 	fixture := newQuadStrictFixtureX4(t, 200)
 	if allocations := testing.AllocsPerRun(20, func() {
-		accepted, err := verifier.verifyPairedRProjective(&fixture.pub, fixture.message, fixture.signature)
+		accepted, err := verifier.ExperimentalPackedStrictVerifierX4.Verify(&fixture.pub, fixture.message, fixture.signature)
 		if err != nil || !accepted {
 			panic("r51x5: paired-R packed verifier rejected honest signature")
 		}
