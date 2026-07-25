@@ -17,3 +17,8 @@ func nativeCompressX4(state *nativeStateX4, block *nativeBlockX4)
 //
 //go:noescape
 func nativeCompressX8(state *nativeStateX8, block *nativeBlockX8)
+
+// nativeCompressX8Rolling is the rolling-register-schedule candidate.
+//
+//go:noescape
+func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)

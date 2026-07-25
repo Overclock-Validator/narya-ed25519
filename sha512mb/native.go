@@ -417,7 +417,7 @@ func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes 
 			}
 		}
 
-		nativeCompressX8(&state, &block)
+		nativeCompressX8Rolling(&state, &block)
 		for i := 0; i < lanes; i++ {
 			if blockIndex+1 != lane[i].blocks {
 				continue

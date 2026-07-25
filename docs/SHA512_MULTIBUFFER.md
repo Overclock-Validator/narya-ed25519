@@ -31,9 +31,13 @@ every logical input has exactly one output and tail lanes beyond `len(msgs)`
 are unobservable.
 
 The x4 compression schedule uses AVX2 YMM registers. The x8 schedule is a
-true AVX-512F ZMM implementation, not a wrapper around two x4 calls. Zen 4
-executes 512-bit operations over 256-bit datapaths, so neither width is selected
-without target measurements.
+true AVX-512F ZMM implementation, not a wrapper around two x4 calls. Its
+production candidate retains the sixteen message words in ZMM registers and
+updates them as a rolling ring; the original 80-word stack schedule remains an
+independent differential and benchmark control. The rolling organization is
+adapted from Firedancer's pinned AVX-512 batch SHA-512 data flow, as recorded
+in [NOTICE](../NOTICE). Zen 4 executes 512-bit operations over 256-bit datapaths,
+so neither width is selected without target measurements.
 
 Correctness tests compare both the raw compression state and complete
 segmented hashing against independent Go/`crypto/sha512` references. Coverage

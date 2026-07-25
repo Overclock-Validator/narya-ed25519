@@ -104,10 +104,11 @@ Firedancer. Narya does not fetch from that moving URL: the redistributed r43x6
 source and the inherited notice are both pinned by the Firedancer commit links
 at the start of this section.
 
-This implementation lineage applies to internal/r43x6 only. It does NOT apply
-to sha512mb or to the independently implemented internal/r51x5 arithmetic.
-The separate regression-fixture section below records the Firedancer test
-inputs reused across those packages.
+This redistributed implementation lineage applies to internal/r43x6 only.
+The separate sha512mb section below records a later, narrower Firedancer design
+influence on Narya's rolling AVX-512 SHA-512 schedule. It does not apply to the
+independently implemented internal/r51x5 arithmetic. The regression-fixture
+section below records the Firedancer test inputs reused across those packages.
 
 
 =======================================================================
@@ -236,11 +237,23 @@ and are outside Narya's contract.
 FIRST-PARTY — sha512mb
 =======================================================================
 
-sha512mb, including the AVX2 and AVX-512 multi-buffer kernels in
-sha512mb/native_amd64.s, is original Overclock Validator work implementing
-the SHA-512 compression function of NIST FIPS 180-4, using that standard's
-published initial hash value and round constants. It is not derived from
-Firedancer, OpenSSL, or any other implementation.
+sha512mb and the original full-schedule AVX2 and AVX-512 kernels in
+sha512mb/native_amd64.s are Overclock Validator work implementing the SHA-512
+compression function of NIST FIPS 180-4, using that standard's published
+initial hash value and round constants.
+
+The sixteen-register rolling message-schedule organization in
+sha512mb/native_amd64_x8roll.s was adapted from the data flow in Firedancer's
+fd_sha512_batch_avx512.c at commit
+55ccb6246a6102dc37f8a8506979746ada1a58b2:
+
+    https://github.com/firedancer-io/firedancer/blob/55ccb6246a6102dc37f8a8506979746ada1a58b2/src/ballet/sha512/fd_sha512_batch_avx512.c
+
+Narya rewrites that organization in Go assembly around its own segmented-input
+API, independently tested round macro, and runtime dispatch. The source is:
+
+    Copyright 2022 Firedancer Contributors
+    Apache License 2.0
 
 
 =======================================================================

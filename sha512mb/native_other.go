@@ -12,3 +12,7 @@ func nativeCompressX4(state *nativeStateX4, block *nativeBlockX4) {
 func nativeCompressX8(state *nativeStateX8, block *nativeBlockX8) {
 	panic("sha512mb: AVX-512F x8 compression unavailable")
 }
+
+func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8) {
+	panic("sha512mb: AVX-512F x8 rolling compression unavailable")
+}

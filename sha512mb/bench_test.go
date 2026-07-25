@@ -247,11 +247,12 @@ func BenchmarkNativeCompress(b *testing.B) {
 		})
 	}
 	if nativeX8Available() {
-		var state nativeStateX8
+		var state, rollingState nativeStateX8
 		var block nativeBlockX8
 		for word := range state {
 			for lane := range state[word] {
 				state[word][lane] = nativeInitialState[word]
+				rollingState[word][lane] = nativeInitialState[word]
 			}
 		}
 		for word := range block {
@@ -264,6 +265,14 @@ func BenchmarkNativeCompress(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				nativeCompressX8(&state, &block)
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
+		})
+		b.Run("x8-rolling", func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				nativeCompressX8Rolling(&rollingState, &block)
 			}
 			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
 		})

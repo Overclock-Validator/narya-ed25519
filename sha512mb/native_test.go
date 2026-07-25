@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"math/rand"
 	"testing"
+	"unsafe"
 )
 
 func TestNativeConstantsMatchReference(t *testing.T) {
@@ -88,6 +89,79 @@ func TestNativeCompressX8Differential(t *testing.T) {
 				if got[word][lane] != want[word][lane] {
 					t.Fatalf("iteration=%d word=%d lane=%d: got %016x, want %016x", iteration, word, lane, got[word][lane], want[word][lane])
 				}
+			}
+		}
+	}
+}
+
+func TestNativeCompressX8RollingDifferential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F")
+	}
+	rng := rand.New(rand.NewSource(0x5128a11))
+	for iteration := 0; iteration < 100; iteration++ {
+		var got nativeStateX8
+		var want [8][referenceMaxLanes]uint64
+		var nativeBlock nativeBlockX8
+		var blocks [referenceMaxLanes][128]byte
+		var active [referenceMaxLanes]bool
+		for lane := 0; lane < nativeX8Width; lane++ {
+			active[lane] = true
+			for word := range nativeInitialState {
+				value := rng.Uint64()
+				got[word][lane] = value
+				want[word][lane] = value
+			}
+			for word := range nativeBlock {
+				value := rng.Uint64()
+				nativeBlock[word][lane] = value
+				binary.BigEndian.PutUint64(blocks[lane][word*8:], value)
+			}
+		}
+		compressReference(&want, &blocks, &active, nativeX8Width)
+		nativeCompressX8Rolling(&got, &nativeBlock)
+		for word := range nativeInitialState {
+			for lane := 0; lane < nativeX8Width; lane++ {
+				if got[word][lane] != want[word][lane] {
+					t.Fatalf("iteration=%d word=%d lane=%d: got=%016x want=%016x", iteration, word, lane, got[word][lane], want[word][lane])
+				}
+			}
+		}
+	}
+}
+
+func TestNativeCompressX8RollingAlias(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F")
+	}
+	rng := rand.New(rand.NewSource(0x512a11a5))
+	var storage nativeBlockX8
+	for word := range storage {
+		for lane := range storage[word] {
+			storage[word][lane] = rng.Uint64()
+		}
+	}
+	state := (*nativeStateX8)(unsafe.Pointer(&storage))
+	var want [8][referenceMaxLanes]uint64
+	for word := range *state {
+		for lane := range (*state)[word] {
+			want[word][lane] = (*state)[word][lane]
+		}
+	}
+	var blocks [referenceMaxLanes][128]byte
+	var active [referenceMaxLanes]bool
+	for lane := 0; lane < nativeX8Width; lane++ {
+		active[lane] = true
+		for word := range storage {
+			binary.BigEndian.PutUint64(blocks[lane][word*8:], storage[word][lane])
+		}
+	}
+	compressReference(&want, &blocks, &active, nativeX8Width)
+	nativeCompressX8Rolling(state, &storage)
+	for word := range *state {
+		for lane := range (*state)[word] {
+			if (*state)[word][lane] != want[word][lane] {
+				t.Fatalf("word=%d lane=%d: got=%016x want=%016x", word, lane, (*state)[word][lane], want[word][lane])
 			}
 		}
 	}
