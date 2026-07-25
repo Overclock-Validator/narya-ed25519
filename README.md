@@ -148,19 +148,28 @@ rather than as a single figure of merit.
 | path | µs/signature | status |
 | --- | ---: | --- |
 | `crypto/ed25519` loop | ~36.6 | baseline |
-| `generic`, cold key, `DalekStrict` | slower than stdlib | performs strictly more work |
-| `generic`, hot key (comb cache) | ~24.6 | **shipping** |
-| `r51` batch-Q, n=64 | ~15.5 | experimental; not reachable from a registered backend |
+| `generic`, cold key, `DalekStrict` | ~36.1 | **shipping**; stricter predicate than stdlib |
+| `generic`, hot key (comb cache) | ~16.3 | **shipping** |
+| packed x4 singleton | ~29.3 | experimental; not reachable from a registered backend |
+| `r51` batch-Q, n=64 | ~14.8 | experimental; not reachable from a registered backend |
 
 Two things this table says plainly:
 
-1. **On a cold arbitrary key, `DalekStrict` is slower than the standard
-   library**, because it performs the small-order checks the standard library
-   omits. The shipping speed win is on recurring signers.
+1. **The generic strict path now roughly matches the standard library on a
+   cold arbitrary key** while enforcing the additional small-order checks the
+   standard library omits. Recurring signers gain substantially from the
+   shipping comb cache.
 2. **The large speedups live in an experimental tier no registered backend can
    reach.** `internal/r51x5` is compiled and tested but has no backend adapter;
    `internal/heea8l` is not in the non-test build at all. Neither is part of the
    supported surface, and neither should be assumed in capacity planning.
+
+The generic rows above are from the same pinned-core field-v1.2 comparison;
+the r51 row is from the later no-copy complete batch-Q gate. Experimental
+microbenchmarks for denser per-key table layouts and wider fixed-base windows
+are intentionally excluded until they improve a complete verifier. Detailed
+commands, statistical samples, and caveats are recorded in
+[`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
 
 ## Verification
 
