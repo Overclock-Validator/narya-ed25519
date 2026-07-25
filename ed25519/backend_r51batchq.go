@@ -8,9 +8,11 @@ import (
 	"github.com/Overclock-Validator/narya/sha512mb"
 )
 
-// r51IFMABatchQPipeline is the complete two-x4, radix-64 r51 path selected by
-// the forced r51 backend. It decodes A only, retains ready DSM outputs, and
-// canonical-encodes up to 64 Q points with one cross-group x4 inversion.
+// r51IFMABatchQPipeline is the complete two-x4 r51 path selected by the forced
+// r51 backend. It decodes A only, retains ready DSM outputs, and canonical-
+// encodes up to 64 Q points with one cross-group x4 inversion. The registered
+// core uses a radix-32 A table and one process-shared radix-256 B comb; the
+// earlier radix-64 two-term DSM remains a differential and benchmark reference.
 //
 // The ordinary r51IFMAPipeline remains the paired A/R-decode baseline, and
 // newR51IFMAEncodedQReferencePipeline remains the literal per-group encoding
@@ -66,6 +68,12 @@ func newR51IFMABatchQPipeline() (*r51IFMABatchQPipeline, error) {
 }
 
 func newR51IFMABatchQPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
+	return newR51IFMABatchQCombPipelineWithFinalizer(finalizer)
+}
+
+// newR51IFMABatchQSharedPipelineWithFinalizer retains the former registered
+// radix-64 shared two-term DSM for differential tests and complete-path A/Bs.
+func newR51IFMABatchQSharedPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
 	core, err := newR51IFMAPipeline(r51IFMATwoX4, 6)
 	if err != nil {
 		return nil, err
@@ -76,8 +84,8 @@ func newR51IFMABatchQPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r
 // newR51IFMABatchQCombPipelineWithFinalizer is the cold two-x4 candidate that
 // keeps A on a radix-32 variable-base table and evaluates B with the shared
 // radix-256 comb before using the same cross-group batch-Q finalizer. It is a
-// complete-verifier measurement seam; the registered r51 backend continues to
-// use newR51IFMABatchQPipeline until this shape passes the Zen 4 gate.
+// complete-verifier core. It became the registered forced-r51 batch core after
+// passing the Zen 4 and Zen 5 exact-path, allocation, and performance gates.
 func newR51IFMABatchQCombPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
 	core, err := newR51IFMACombPipeline(r51IFMATwoX4, 5, 8)
 	if err != nil {

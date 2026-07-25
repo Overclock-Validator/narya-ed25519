@@ -24,7 +24,19 @@ func requireR51IFMABatchQPipelineFinalizer(t testing.TB, finalizer r51IFMABatchQ
 	}
 	pipeline, err := newR51IFMABatchQPipelineWithFinalizer(finalizer)
 	if err != nil {
-		t.Fatalf("new forced two-x4 radix-64 batch-Q pipeline finalizer=%d: %v", finalizer, err)
+		t.Fatalf("new registered forced two-x4 batch-Q pipeline finalizer=%d: %v", finalizer, err)
+	}
+	return pipeline
+}
+
+func requireR51IFMABatchQSharedPipeline(t testing.TB) *r51IFMABatchQPipeline {
+	t.Helper()
+	if !r51IFMAPipelineAvailable(r51IFMATwoX4) {
+		t.Skipf("forced two-x4 r51 IFMA batch-Q pipeline unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	pipeline, err := newR51IFMABatchQSharedPipelineWithFinalizer(r51IFMABatchQFinalizerLiteral)
+	if err != nil {
+		t.Fatalf("new forced two-x4 radix-64 shared batch-Q pipeline: %v", err)
 	}
 	return pipeline
 }
@@ -41,7 +53,7 @@ func requireR51IFMABatchQCombPipeline(t testing.TB) *r51IFMABatchQPipeline {
 	return pipeline
 }
 
-func assertR51IFMABatchQVectors(t *testing.T, batchQ, comb, yFirst, paired, literal *r51IFMABatchQPipelineSet, vectors []r51ReferenceVector, profile Profile) {
+func assertR51IFMABatchQVectors(t *testing.T, batchQ, shared, yFirst, paired, literal *r51IFMABatchQPipelineSet, vectors []r51ReferenceVector, profile Profile) {
 	t.Helper()
 	pubs := make([]*[32]byte, len(vectors))
 	msgs := make([][]byte, len(vectors))
@@ -54,7 +66,7 @@ func assertR51IFMABatchQVectors(t *testing.T, batchQ, comb, yFirst, paired, lite
 		wantAll = wantAll && want[index]
 	}
 
-	sets := []*r51IFMABatchQPipelineSet{batchQ, comb, yFirst, paired, literal}
+	sets := []*r51IFMABatchQPipelineSet{batchQ, shared, yFirst, paired, literal}
 	for _, set := range sets {
 		got := make([]bool, len(vectors))
 		gotAll, err := set.verify(profile, pubs, msgs, sigs, got)
@@ -88,14 +100,14 @@ func (set *r51IFMABatchQPipelineSet) verify(profile Profile, pubs []*[32]byte, m
 	return set.ordinary.VerifyBatch(profile, pubs, msgs, sigs, ok)
 }
 
-func newR51IFMABatchQPipelineSets(t testing.TB) (batchQ, comb, yFirst, paired, literal *r51IFMABatchQPipelineSet) {
+func newR51IFMABatchQPipelineSets(t testing.TB) (batchQ, shared, yFirst, paired, literal *r51IFMABatchQPipelineSet) {
 	t.Helper()
 	return &r51IFMABatchQPipelineSet{
 			name:   "single-A/cross-group-batch-Q",
 			batchQ: requireR51IFMABatchQPipeline(t),
 		}, &r51IFMABatchQPipelineSet{
-			name:   "single-A/radix32-comb256/cross-group-batch-Q",
-			batchQ: requireR51IFMABatchQCombPipeline(t),
+			name:   "single-A/radix64-shared/cross-group-batch-Q-reference",
+			batchQ: requireR51IFMABatchQSharedPipeline(t),
 		}, &r51IFMABatchQPipelineSet{
 			name:   "single-A/y-first",
 			batchQ: requireR51IFMABatchQPipelineFinalizer(t, r51IFMABatchQFinalizerYFirst),
@@ -109,7 +121,7 @@ func newR51IFMABatchQPipelineSets(t testing.TB) (batchQ, comb, yFirst, paired, l
 }
 
 func TestR51IFMABatchQPipelineDifferential(t *testing.T) {
-	batchQ, comb, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
+	batchQ, shared, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
 
 	mixture := makeR51HonestVectors(t, 67)
 	for index := range mixture {
@@ -128,15 +140,15 @@ func TestR51IFMABatchQPipelineDifferential(t *testing.T) {
 
 	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
 		t.Run(fmt.Sprintf("profile=%d/cctv", profile), func(t *testing.T) {
-			assertR51IFMABatchQVectors(t, batchQ, comb, yFirst, paired, literal, r51CCTVVectors(t), profile)
+			assertR51IFMABatchQVectors(t, batchQ, shared, yFirst, paired, literal, r51CCTVVectors(t), profile)
 		})
 		t.Run(fmt.Sprintf("profile=%d/wycheproof", profile), func(t *testing.T) {
-			assertR51IFMABatchQVectors(t, batchQ, comb, yFirst, paired, literal, r51WycheproofVectors(t), profile)
+			assertR51IFMABatchQVectors(t, batchQ, shared, yFirst, paired, literal, r51WycheproofVectors(t), profile)
 		})
 		for _, count := range []int{1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 32, 63, 64, 65, 67} {
 			count := count
 			t.Run(fmt.Sprintf("profile=%d/mixture/n=%d", profile, count), func(t *testing.T) {
-				assertR51IFMABatchQVectors(t, batchQ, comb, yFirst, paired, literal, mixture[:count], profile)
+				assertR51IFMABatchQVectors(t, batchQ, shared, yFirst, paired, literal, mixture[:count], profile)
 			})
 		}
 	}
@@ -321,22 +333,22 @@ func TestR51IFMABatchQDecodedAInvalidMissScatter(t *testing.T) {
 }
 
 func TestR51IFMABatchQPipelineFiredancerFuzzRegressions(t *testing.T) {
-	batchQ, comb, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
+	batchQ, shared, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
 	vectors := repeatFiredancerFuzzRegressionVectors(t, 17)
 	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
-		assertR51IFMABatchQVectors(t, batchQ, comb, yFirst, paired, literal, vectors, profile)
+		assertR51IFMABatchQVectors(t, batchQ, shared, yFirst, paired, literal, vectors, profile)
 	}
 }
 
 func TestR51IFMABatchQPipelineEveryLaneAndTailMapping(t *testing.T) {
-	batchQ, comb, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
+	batchQ, shared, yFirst, paired, literal := newR51IFMABatchQPipelineSets(t)
 	honest := makeR51HonestVectors(t, 64)
 	for _, count := range []int{1, 4, 8, 9, 16, 17, 32, 64} {
 		for lane := 0; lane < count; lane++ {
 			invalid := cloneR51Vectors(honest[:count])
 			invalid[lane].msg[0] ^= 0x80
 			t.Run(fmt.Sprintf("n=%d/lane=%d", count, lane), func(t *testing.T) {
-				assertR51IFMABatchQVectors(t, batchQ, comb, yFirst, paired, literal, invalid, DalekStrict)
+				assertR51IFMABatchQVectors(t, batchQ, shared, yFirst, paired, literal, invalid, DalekStrict)
 			})
 		}
 	}
@@ -400,8 +412,8 @@ func TestR51IFMABatchQPipelineZeroAllocations(t *testing.T) {
 	}
 }
 
-func TestR51IFMABatchQCombPipelineZeroAllocations(t *testing.T) {
-	pipeline := requireR51IFMABatchQCombPipeline(t)
+func TestR51IFMABatchQSharedPipelineZeroAllocations(t *testing.T) {
+	pipeline := requireR51IFMABatchQSharedPipeline(t)
 	for _, count := range []int{1, 4, 8, 16, 32, 64, 65} {
 		fixture := makeBatchFixture(t, count, 200)
 		if allocs := testing.AllocsPerRun(10, func() {
@@ -567,7 +579,7 @@ func BenchmarkR51IFMABatchQGate(b *testing.B) {
 				benchmarkR51IFMABatchQOrdinary(b, requireR51IFMAEncodedQReferencePipeline(b, r51IFMATwoX4, 6), &fixture, count)
 			})
 			b.Run(fmt.Sprintf("decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=%d/msg=%d", count, messageSize), func(b *testing.B) {
-				pipeline := requireR51IFMABatchQPipeline(b)
+				pipeline := requireR51IFMABatchQSharedPipeline(b)
 				b.ReportAllocs()
 				b.ResetTimer()
 				var result bool

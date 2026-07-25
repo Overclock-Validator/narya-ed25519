@@ -114,7 +114,25 @@ path. This is recorded at the call site; a one-line attempt panics with
 `two-x4 / radixA=32 / comb256` measures 12.50 us/sig at **every** width (n=4
 through 64) against 13.32 for the registered shape. About 6% everywhere, no
 dispatch logic, and the comb is one process-wide table rather than per-key state.
-Lowest-risk win available.
+Lowest-risk win available. Commit `832e751` wires this arithmetic shape into
+the same cross-group batch-Q finalizer as a complete-verifier candidate; it does
+not change registered dispatch. Ten pinned one-second samples at `msg=1232`
+retained the win on both machines:
+
+| CPU | n | radix64 shared (us/sig) | radix32 comb256 (us/sig) | change |
+|---|---:|---:|---:|---:|
+| Zen 4 8700GE | 4 | 16.108 | 15.265 | -5.23% |
+| Zen 4 8700GE | 8 | 15.730 | 14.915 | -5.18% |
+| Zen 4 8700GE | 64 | 15.423 | 14.597 | -5.35% |
+| Zen 5 9700X | 4 | 13.528 | 12.907 | -4.59% |
+| Zen 5 9700X | 8 | 13.119 | 12.537 | -4.44% |
+| Zen 5 9700X | 64 | 12.766 | 12.185 | -4.55% |
+
+Both native differential corpora and the zero-allocation gate passed before the
+benchmark. Zen 4 reported the `performance` governor. Zen 5 reported `powersave`,
+so its absolute times remain provisional; the within-host candidate delta was
+stable. Raw output and checksums are in
+`docs/results/cold-comb-batchq-2026-07-25/`.
 
 ### 4.2 x8 evaluation path in batchQ — bigger, needs dispatch
 
@@ -164,17 +182,24 @@ Worth asking whether anyone has published a heterogeneous-lane scalar
 multiplication scheme, or a way to express the comb's schedule as a special case
 of the windowed one so both can run together with per-lane digit selection.
 
-### 5.2 Partial-group efficiency for x8
+### 5.2 Partial-group efficiency for x8 — closed
 
 A half-full x8 group costs full price — that is the entire n=4 cliff. AVX-512 has
 native mask registers, so the question is whether masking can actually skip work,
 or whether the cost is inherently in the shared doubling chain, which runs once
 per group regardless of how many lanes are live.
 
-My reading is the latter: doublings dominate and they are per-group, not per-lane.
-If that is right, masking cannot help and the dual-kernel dispatch in §4.2 is
-unavoidable. If some windowing trick can shorten the chain for a partially filled
-group, the n=4 cliff disappears and one kernel suffices.
+The measurements settle this. One half-full x8 group costs about 70.72 us and a
+full group about 73.92 us. Adding four live lanes changes group time by only
+4.3%, so roughly 96% of the work is occupancy-independent. Register masks can
+avoid some lane-specific loads and stores but cannot turn ZMM arithmetic into a
+YMM schedule. Leading-zero shortening and vector-wide sparse-digit skipping do
+not materially change the fixed doubling chain and are adversarially removable.
+
+Keep the dual-kernel rule: two-x4 below eight usable signatures, x8 for complete
+eight-lane groups on CPUs where native ZMM wins. Do not build a masked-elastic
+x8 kernel or an x4-by-two hybrid unless new hardware measurements overturn this
+bound.
 
 ### 5.3 Comb width versus cache capacity
 
@@ -191,6 +216,40 @@ Whether 2.5x the keys is worth a slower warm path depends entirely on the
 fee-payer recurrence distribution, which nobody has measured. **That measurement
 is more valuable than any further tuning here** — it decides both the comb width
 and whether the cache is worth its complexity at all.
+
+### 5.4 Broad decoded-A cache tier
+
+`r51IFMABatchQPipeline.verifyBatchWithDecodedA` is already a private exact-path
+measurement seam. A hit bypasses only public-key decompression; it still hashes
+the caller's original public-key bytes, performs every strict precheck, and runs
+the full scalar multiplication. It therefore composes with a much smaller hot
+comb tier instead of competing with it.
+
+The point payload is about 160 bytes per key, versus 19,200 bytes for A6/r9.
+Ignoring map/key metadata, 128 MiB can hold roughly 840,000 decoded points rather
+than 7,158 comb tables. A real Go cache must also retain or key by the exact 32
+input bytes and pay map/concurrency metadata, so 840,000 is an arithmetic ceiling,
+not a promised capacity. The benchmarked saving on Zen 4 was about 0.9--1.3 us
+per useful-width signature after miss compaction.
+
+This is the highest-priority cache experiment if recurrence is long-tailed:
+measure lookup plus verification at 0/25/50/75/100% hits, reuse distance, memory
+budget, concurrency, and adversarial churn. Invalid signatures must not earn
+admission. The decoded tier has no homogeneous-group or minimum-batch requirement.
+
+### 5.5 Mixed warm/cold lanes and cross-call lane refill
+
+Mixed per-key comb and cold arithmetic in one SIMD group remains a high-ceiling
+research question, but the schedules currently have incompatible doubling
+chains. Do not add a third consensus-critical kernel on speculation.
+
+The lower-risk way to recover occupancy is a result-index-preserving ready queue:
+fill an incomplete group with compatible signatures from later arrivals, and
+compact survivors again after cheap prechecks/decode. Narya already compacts
+decode misses within one call; refill across calls belongs at the eventual
+integration boundary so it can respect each caller's latency and failure policy.
+It should use no batching timer: nonblocking drain for replay/repair/backlogs,
+with x4 tails retained for thin traffic at the tip.
 
 ---
 

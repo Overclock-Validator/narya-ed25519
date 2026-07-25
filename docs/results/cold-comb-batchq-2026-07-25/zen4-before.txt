@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18657	     64400 ns/op	        16.10 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18603	     64463 ns/op	        16.12 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18628	     64433 ns/op	        16.11 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18625	     64413 ns/op	        16.10 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18631	     64412 ns/op	        16.10 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18628	     64428 ns/op	        16.11 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18620	     64464 ns/op	        16.12 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18618	     64445 ns/op	        16.11 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18625	     64425 ns/op	        16.11 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=4/msg=1232         	   18620	     64419 ns/op	        16.10 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9488	    125944 ns/op	        15.74 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9528	    125920 ns/op	        15.74 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9526	    125920 ns/op	        15.74 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9554	    125531 ns/op	        15.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9559	    125567 ns/op	        15.70 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9554	    125850 ns/op	        15.73 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9523	    125978 ns/op	        15.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9512	    125992 ns/op	        15.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9519	    125962 ns/op	        15.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=8/msg=1232         	    9513	    125733 ns/op	        15.72 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1215	    986119 ns/op	        15.41 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    986945 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987127 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987130 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987111 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987087 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987138 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1215	    987398 ns/op	        15.43 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1213	    987630 ns/op	        15.43 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMABatchQGate/decode=single-A/final=batch-Q/path=two-x4/radixA=64/n=64/msg=1232        	    1214	    987075 ns/op	        15.42 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	43.639s
