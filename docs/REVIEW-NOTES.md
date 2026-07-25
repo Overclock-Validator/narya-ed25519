@@ -50,7 +50,7 @@ The production strict pre-pass classifies the exact seven low-255-bit values
 that the permissive decoder maps into the small torsion subgroup. Tests retain
 permissive decode plus `[8]P == identity` as an independent mathematical
 oracle. A future `ZIP215` profile is reserved for Solana's proposed
-[SIMD-0376](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0376-verify-strict.md)
+[SIMD-0376 at `b13be70`](https://github.com/solana-foundation/solana-improvement-documents/blob/b13be70e7454144becbe9c474b296d737d72df98/proposals/0376-verify-strict.md)
 loosening (cofactored). The proposal currently has no assigned feature; any
 accepted rollout must be slot-gated rather than inferred from library
 availability.
@@ -98,7 +98,7 @@ verdicts.
 | registered r51 cold backend | done for explicit Zen 4 selection; packed singleton plus x4 batch-Q dispatcher |
 | exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
 | additional r51 x8/alternate-radix/comb schedules | benchmark-only; x8 retained for Zen 5 measurement |
-| Per-key tables in IFMA layout | cold tables used; warm cache admission/packing pending real traces and churn tests |
+| r51 variable-base tables | small cold table rebuilt per verification; reusable per-key warm tables remain experimental and `supportsPrecomp()` is false |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
 The branch is an audit candidate, not a release tag. After review findings are
@@ -149,6 +149,16 @@ release decision, never that decision itself.
   `ed25519.go` / `profile.go`), and the argument that `stdlib_accept AND
   !smallOrder(A) AND !smallOrder(R)` is exactly `verify_strict` (dalek's
   "R must decode" clause is implied by the byte-compare).
+- The independent canonical-R gate, original-byte challenge hash, and both
+  projective cross-products in the packed singleton; the batch-Q path must
+  remain equivalent to literal `Encode(Q) == original Rbytes`.
+- Every IFMA input/range and alias contract, including atomic output on native
+  errors and the generic recomputation plus `InternalFaultFallbacks` signal.
+- Synchronous CPU activation: forced r51 requires the complete IFMA feature
+  set and the AVX2 x4 SHA kernel, while an unsupported force fails rather than
+  silently selecting another backend.
+- The main module graph contains no Oasis dependency. The pinned voi oracle is
+  reachable only with `go.oasis.mod` plus the `oasis_compare` test tag.
 - The one-active-backend invariant and `Cache` concurrency.
 - That `VerifyStrict` can never be weakened by a global profile flip.
 

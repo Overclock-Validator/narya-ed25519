@@ -74,7 +74,7 @@ independently. The explicitly selected `r51` backend instead hashes and
 decodes several independent signatures in SIMD lanes while retaining a
 separate verdict for every input.
 A future `ZIP215` profile will track Solana's proposed
-[SIMD-0376](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0376-verify-strict.md)
+[SIMD-0376 at `b13be70`](https://github.com/solana-foundation/solana-improvement-documents/blob/b13be70e7454144becbe9c474b296d737d72df98/proposals/0376-verify-strict.md)
 loosening only after it is accepted and its feature gate activates on mainnet.
 The existence of a ZIP-215 implementation is not itself an activation signal.
 
@@ -269,9 +269,10 @@ in [Mithril](https://github.com/Overclock-Validator/mithril), authored by
 palmer.
 
 **Specifications and reference implementations.** The acceptance predicate is
-that of [ed25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek)
-`verify_strict`, as reached by [Agave](https://github.com/anza-xyz/agave)
-(Anza) through the `solana-signature` crate; Agave is the reference narya's
+that of [ed25519-dalek 2.2.0 at `8016d6d`](https://github.com/dalek-cryptography/curve25519-dalek/tree/8016d6d9b9cdbaa681f24147e0b9377cc8cef934/ed25519-dalek)
+`verify_strict`, as reached by
+[Agave audit snapshot `7e51da9`](https://github.com/anza-xyz/agave/tree/7e51da963aee49622a395f562386a6bd8ba0e717)
+(Anza) through the `solana-signature` crate; Agave is the reference Narya's
 verdict must match. The reserved `ZIP215` profile name is from Zcash's
 [ZIP 215](https://zips.z.cash/zip-0215). `sha512mb` implements FIPS 180-4. The
 square-root-ratio derivation used in `field/fe.go` and `internal/r43x6` follows
@@ -296,7 +297,7 @@ voi is an opt-in test dependency only. The main `go.mod` retains only
 `make test-oasis` and the separately recorded comparison benchmarks.
 
 voi is itself largely derived from
-[curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek), and
+[curve25519-dalek 3.2.0 at `09a726c`](https://github.com/dalek-cryptography/curve25519-dalek/tree/09a726cc8c995a7565d80148536df21f1f287659), and
 the vectorized Edwards backend that produces its uncached single-signature
 timings is a Go port of dalek's AVX2 backend (Copyright isis agora lovecruft,
 Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. That intra-signature
