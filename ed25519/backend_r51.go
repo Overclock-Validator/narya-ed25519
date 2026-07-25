@@ -116,7 +116,12 @@ func (b *r51Backend) verifyOne(profile Profile, pub *[32]byte, message, sig []by
 	case StdlibCompat:
 		// The packed projective finalizer intentionally implements only the
 		// strict predicate. Compat retains its literal encoded-Q comparison.
-		return (genericBackend{}).verify(profile, pub, message, sig, nil), nil
+		//
+		// genericBackend.verify documents that the shared entry point has
+		// already applied the profile pre-pass, but a raw-batch backend skips
+		// applyProfile, so this branch has to supply the nil guard itself. The
+		// strict branch below gets it from packedStrictBytePrechecksX4.
+		return verifyOne(genericBackend{}, profile, pub, message, sig, nil), nil
 	case DalekStrict:
 	default:
 		panic("ed25519: unsupported r51 singleton profile")
@@ -173,6 +178,11 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 			return false, fmt.Errorf("ed25519: construct r51 worker: nil pipeline")
 		}
 	}
+	// Deliberately not deferred. Every error below is an internal fault, and the
+	// caller answers it by recomputing the whole batch on the generic backend; a
+	// pipeline that just failed keeps its partially written scratch, so it is
+	// dropped for the garbage collector rather than recycled. Only a clean run
+	// puts the worker back, matching the singleton pool's `if err == nil` above.
 	returnWorker := func() {
 		if worker != nil {
 			b.batchPool.Put(worker)
@@ -215,7 +225,6 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 		panic("ed25519: unreachable r51 tail width")
 	}
 	returnWorker()
-	worker = nil
 
 	all := true
 	for _, verdict := range ok {

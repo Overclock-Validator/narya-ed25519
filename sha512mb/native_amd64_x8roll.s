@@ -1,3 +1,8 @@
+// The sixteen-register rolling message schedule and the 8x8 input transpose
+// here were adapted from the data flow in Firedancer's fd_sha512_batch_avx512.c
+// and fd_avx512_wwv.h (Apache-2.0, Copyright 2022 Firedancer Contributors); see
+// the repository NOTICE for the pinned sources and terms.
+
 //go:build amd64
 
 #include "textflag.h"
@@ -18,7 +23,7 @@ GLOBL nativePaddingWord<>(SB), RODATA|NOPTR, $8
 	VPTERNLOGQ $0xca, G, F, Z10;                 \
 	VPADDQ H, Z8, Z8;                           \
 	VPADDQ Z10, Z8, Z8;                         \
-	VPBROADCASTQ K(BP), Z15;                    \
+	VPBROADCASTQ K(R12), Z15;                    \
 	VPADDQ Z15, Z8, Z8;                         \
 	VPADDQ W, Z8, Z8;                           \
 	VPRORQ $28, A, Z9;                          \
@@ -83,7 +88,7 @@ TEXT ·nativeCompressX8Rolling(SB), 0, $0-16
 	VMOVDQU64 320(DI), Z5
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
@@ -174,7 +179,7 @@ fusedLoadState:
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
 fusedStateReady:
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeCompressVerifierFirstX8Rolling(state *nativeStateX8, rPtrs, aPtrs, messagePtrs *[nativeX8Width]*byte)
@@ -291,7 +296,7 @@ TEXT ·nativeCompressVerifierFirstX8Rolling(SB), 0, $0-32
 	VMOVDQU64 Z5, 320(DI)
 	VMOVDQU64 Z6, 384(DI)
 	VMOVDQU64 Z7, 448(DI)
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeCompressFinalX8Rolling(state *nativeStateX8, tail *nativeTailX8, tailWords, totalBits uint64)
@@ -347,11 +352,11 @@ finalTailReady:
 	VMOVDQU64 320(DI), Z5
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // All public assembly entry points arrive here with W[0..15] in Z16..Z31,
-// the current state in Z0..Z7, DI pointing at the original state, and BP
+// the current state in Z0..Z7, DI pointing at the original state, and R12
 // pointing at the scalar round constants. Tail jumps preserve the Go caller's
 // return address, so this shared body returns directly to Go.
 TEXT nativeCompressX8RollingRounds<>(SB), NOSPLIT, $0-0
