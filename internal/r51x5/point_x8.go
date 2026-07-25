@@ -13,10 +13,16 @@ type PointX8 struct {
 
 // NewIdentityPointX8 returns eight neutral points.
 func NewIdentityPointX8() *PointX8 {
+	return new(PointX8).SetIdentity()
+}
+
+// SetIdentity sets all eight lanes to the neutral point and returns p.
+func (p *PointX8) SetIdentity() *PointX8 {
 	var one Element
 	one.One()
 	ones := broadcastX8(&one)
-	return &PointX8{Y: ones, Z: ones}
+	*p = PointX8{Y: ones, Z: ones}
+	return p
 }
 
 // Set sets p=q and returns p.

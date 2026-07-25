@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"unsafe"
 
 	"github.com/Overclock-Validator/narya/internal/cpufeat"
 	"github.com/Overclock-Validator/narya/internal/r51x5"
@@ -48,6 +49,120 @@ func TestR51BackendBatchWidthSelection(t *testing.T) {
 		t.Fatalf("wide=%v want=%v pipeline=%s", gotWide, cpufeat.PreferWideIFMA(), worker.pipeline)
 	}
 	t.Logf("prefer-wide=%v pipeline=%s", gotWide, worker.pipeline)
+}
+
+func admitR51DecodedATestEntry(t testing.TB, cache *Cache, backend *r51Backend, pub *[32]byte) {
+	t.Helper()
+	for sighting := 0; sighting < buildThreshold; sighting++ {
+		cache.admit(backend, pub)
+	}
+	value, ok := cache.tables.Load(*pub)
+	if !ok {
+		t.Fatal("decoded-A entry was not admitted")
+	}
+	pre := value.(*PrecomputedKey)
+	if pre.raw != *pub {
+		t.Fatal("decoded-A entry lost its exact raw-key binding")
+	}
+	if _, ok := pre.table.(*r51DecodedATable); !ok {
+		t.Fatalf("decoded-A native table type %T", pre.table)
+	}
+}
+
+func TestR51BackendDecodedAPrecomputeShape(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeFixture(t, 200)
+	pre, err := backend.buildPrecomp(&fixture.pub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pre.raw != fixture.pub || pre.size != r51DecodedATableBytes {
+		t.Fatalf("precomputed metadata raw=%x size=%d", pre.raw, pre.size)
+	}
+	if got := int64(unsafe.Sizeof(r51DecodedATable{})); got != r51DecodedATableBytes {
+		t.Fatalf("decoded-A payload size=%d accounting=%d", got, r51DecodedATableBytes)
+	}
+	table, ok := pre.table.(*r51DecodedATable)
+	if !ok || table == nil {
+		t.Fatalf("decoded-A table type %T", pre.table)
+	}
+	if got := table.point.Bytes(); got != fixture.pub {
+		t.Fatalf("decoded-A point re-encoded as %x, want %x", got, fixture.pub)
+	}
+	if !pre.VerifyStrict(fixture.msg, fixture.sig) {
+		t.Fatal("decoded-A PrecomputedKey rejected a valid strict signature")
+	}
+}
+
+func TestR51BackendDecodedACacheDifferential(t *testing.T) {
+	backend := requireR51Backend(t)
+	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
+		for _, count := range []int{1, 3, 4, 8, 9, 17, 64, 65} {
+			fixture := makeBatchFixture(t, count, 1232)
+			cache := &Cache{MaxTableBytes: int64(count+1) * r51DecodedATableBytes}
+			for lane, pub := range fixture.pubs {
+				if lane%2 == 0 {
+					admitR51DecodedATestEntry(t, cache, backend, pub)
+				}
+			}
+			verdicts := make([]bool, count)
+			gotAll := cache.verifyBatchWithBackend(backend, profile, fixture.pubs, fixture.msgs, fixture.sigs, verdicts)
+			wantAll := true
+			for lane := range verdicts {
+				want := referenceVerifyProfile(profile, fixture.pubs[lane], fixture.msgs[lane], fixture.sigs[lane])
+				wantAll = wantAll && want
+				if verdicts[lane] != want {
+					t.Fatalf("profile=%d n=%d lane=%d got=%v want=%v", profile, count, lane, verdicts[lane], want)
+				}
+			}
+			if gotAll != wantAll {
+				t.Fatalf("profile=%d n=%d aggregate=%v want=%v", profile, count, gotAll, wantAll)
+			}
+		}
+	}
+}
+
+func TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeBatchFixture(t, 8, 200)
+	for lane := range fixture.msgs {
+		fixture.msgs[lane] = append([]byte(nil), fixture.msgs[lane]...)
+		fixture.msgs[lane][0] ^= 0x80
+	}
+	cache := &Cache{MaxTableBytes: int64(len(fixture.pubs)) * r51DecodedATableBytes}
+	for attempt := 0; attempt < 2*buildThreshold; attempt++ {
+		if cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+			t.Fatalf("invalid-equation batch accepted at attempt %d", attempt)
+		}
+	}
+	if got := cache.Stats(); got.Tables != 0 || got.TableBytes != 0 {
+		t.Fatalf("invalid equations affected decoded-A admission: %+v", got)
+	}
+	if got := cache.seenCount.Load(); got != 0 {
+		t.Fatalf("invalid equations created %d admission records", got)
+	}
+}
+
+func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
+	backend := requireR51Backend(t)
+	for _, count := range []int{4, 8, 64} {
+		fixture := makeBatchFixture(t, count, 1232)
+		cache := &Cache{MaxTableBytes: int64(count) * r51DecodedATableBytes}
+		for _, pub := range fixture.pubs {
+			admitR51DecodedATestEntry(t, cache, backend, pub)
+		}
+		if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+			t.Fatalf("count=%d warmup rejected valid batch", count)
+		}
+		allocs := testing.AllocsPerRun(100, func() {
+			if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+				panic("r51 decoded-A cache rejected valid batch")
+			}
+		})
+		if allocs != 0 {
+			t.Fatalf("count=%d decoded-A cache-hit allocations=%v want=0", count, allocs)
+		}
+	}
 }
 
 func TestR51BackendInternalFaultFallsBackToGeneric(t *testing.T) {

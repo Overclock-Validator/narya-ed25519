@@ -37,15 +37,32 @@ type backend interface {
 // rawBatchBackend is an optional allocation-free batch entry point for
 // backends whose native pipeline already consumes the public raw-slice shape.
 // It must apply profile rejection itself and write every ok element. Cache
-// batches use this path too when the selected backend has no native per-key
-// tables; table-capable backends continue through batchItem so their lookup
-// results can be attached before execution.
+// batches use this path when the selected backend has no native per-key
+// representation; a table-capable native backend may additionally implement
+// cachedRawBatchBackend to retain this allocation-free shape on cache hits.
 //
 // Keeping this interface private preserves the public API while allowing a
 // native SIMD backend to avoid allocating and copying one batchItem per
 // signature merely to unpack it again into lane-native storage.
 type rawBatchBackend interface {
 	verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool
+}
+
+// precomputedKeyLookup is the cache lookup boundary used by native raw batch
+// backends. Keeping lookup behind this private interface lets the backend fill
+// fixed-size native scratch directly without allocating batchItem or a slice
+// of precomputed-key pointers merely to cross the public batch wrapper.
+type precomputedKeyLookup interface {
+	lookup(pub *[32]byte) *PrecomputedKey
+}
+
+// cachedRawBatchBackend is the cache-aware counterpart of rawBatchBackend.
+// It must perform exactly one lookup for each item the shared profile pre-pass
+// would leave live, preserve per-item verdicts, and fail closed just like the
+// ordinary raw entry point. Cache admission remains outside the backend and
+// occurs only after successful verdicts have been written.
+type cachedRawBatchBackend interface {
+	verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool
 }
 
 // activatingBackend is implemented only by explicitly gated native backends.

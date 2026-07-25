@@ -32,10 +32,12 @@ type r51IFMABatchQPipeline struct {
 	// point measurement seam. Misses are packed across the entire <=64-signature
 	// encoder chunk so every x4 decode group is full except the tail, then
 	// scattered back to the original signature lanes before hashing and DSM.
-	decodedAPoints    [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.PointX4
-	decodedAScalars   [r51BatchQMaxChunk][32]byte
-	decodedAMissBytes [r51x5.X4Lanes][32]byte
-	decodedAMissLanes [r51x5.X4Lanes]uint8
+	decodedAPoints      [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.PointX4
+	decodedAPointsX8    [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups / 2]r51x5.PointX8
+	decodedAScalars     [r51BatchQMaxChunk][32]byte
+	decodedAMissBytesX4 [r51x5.X4Lanes][32]byte
+	decodedAMissBytesX8 [r51x5.X8Lanes][32]byte
+	decodedAMissLanes   [r51x5.X8Lanes]uint8
 
 	// beforeBatchEncode is an error-injection seam for the fail-closed test.
 	// It takes no hot-path scratch so the fixed arrays above stay non-escaping.
@@ -190,30 +192,17 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 		pipeline.final[group] = 0
 	}
 
-	if pipeline.wideCore != nil && decoded == nil && compactMisses {
-		wideCount := count &^ (r51x5.X8Lanes - 1)
-		for relative := 0; relative < wideCount; relative += r51x5.X8Lanes {
-			if err := pipeline.evaluateX8Group(
-				profile,
-				pubs,
-				msgs,
-				sigs,
-				offset+relative,
-				relative/r51x5.X4Lanes,
-			); err != nil {
+	if pipeline.wideCore != nil && compactMisses {
+		if decoded == nil {
+			if err := pipeline.evaluateColdWideChunk(profile, pubs, msgs, sigs, offset, count); err != nil {
 				return err
 			}
-		}
-		if tail := count - wideCount; tail != 0 {
-			if err := pipeline.evaluateTwoX4Group(
-				profile,
-				pubs,
-				msgs,
-				sigs,
-				offset+wideCount,
-				tail,
-				wideCount/r51x5.X4Lanes,
-			); err != nil {
+		} else {
+			live, err := pipeline.prepareDecodedAWideChunk(profile, pubs, sigs, decoded, offset, count)
+			if err != nil {
+				return err
+			}
+			if err := pipeline.evaluatePreparedWideChunk(pubs, msgs, sigs, offset, count, live); err != nil {
 				return err
 			}
 		}
@@ -324,6 +313,41 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 	default:
 		panic("ed25519: unreachable r51 batch-Q finalizer")
 	}
+}
+
+func (pipeline *r51IFMABatchQPipeline) evaluateColdWideChunk(
+	profile Profile,
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	offset, count int,
+) error {
+	wideCount := count &^ (r51x5.X8Lanes - 1)
+	for relative := 0; relative < wideCount; relative += r51x5.X8Lanes {
+		if err := pipeline.evaluateX8Group(
+			profile,
+			pubs,
+			msgs,
+			sigs,
+			offset+relative,
+			relative/r51x5.X4Lanes,
+		); err != nil {
+			return err
+		}
+	}
+	if tail := count - wideCount; tail != 0 {
+		if err := pipeline.evaluateTwoX4Group(
+			profile,
+			pubs,
+			msgs,
+			sigs,
+			offset+wideCount,
+			tail,
+			wideCount/r51x5.X4Lanes,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
@@ -500,7 +524,106 @@ func (pipeline *r51IFMABatchQPipeline) prepareDecodedAChunk(
 			}
 		}
 
-		pipeline.decodedAMissBytes[missCount] = *pubs[index]
+		pipeline.decodedAMissBytesX4[missCount] = *pubs[index]
+		pipeline.decodedAMissLanes[missCount] = uint8(relative)
+		missCount++
+		if missCount == r51x5.X4Lanes {
+			decodedLive, err := pipeline.decodePreparedAMisses(missCount)
+			if err != nil {
+				return 0, err
+			}
+			live |= decodedLive
+			missCount = 0
+		}
+	}
+	if missCount != 0 {
+		decodedLive, err := pipeline.decodePreparedAMisses(missCount)
+		if err != nil {
+			return 0, err
+		}
+		live |= decodedLive
+	}
+	return live, nil
+}
+
+// prepareDecodedAWideChunk is the native-x8 analogue of prepareDecodedAChunk.
+// It preserves the exact-key hit rule and compacts only cold decode misses.
+// Full groups remain in x8 form; the final short tail is decoded directly into
+// x4 scratch so cache use cannot reintroduce the Zen 5 occupancy cliff the
+// width dispatcher was designed to avoid.
+func (pipeline *r51IFMABatchQPipeline) prepareDecodedAWideChunk(
+	profile Profile,
+	pubs []*[32]byte,
+	sigs [][]byte,
+	decoded []*r51DecodedAEntry,
+	offset, count int,
+) (uint64, error) {
+	wideCount := count &^ (r51x5.X8Lanes - 1)
+	groups := wideCount / r51x5.X8Lanes
+	for group := 0; group < groups; group++ {
+		pipeline.decodedAPointsX8[group].SetIdentity()
+	}
+	if tail := count - wideCount; tail != 0 {
+		outputGroup := wideCount / r51x5.X4Lanes
+		for half := 0; half < (tail+r51x5.X4Lanes-1)/r51x5.X4Lanes; half++ {
+			pipeline.decodedAPoints[outputGroup+half].SetIdentity()
+		}
+	}
+
+	var live uint64
+	missCount := 0
+	for relative := 0; relative < wideCount; relative++ {
+		index := offset + relative
+		coefficient, valid := prepareR51Signature(profile, pubs[index], sigs[index])
+		if !valid {
+			continue
+		}
+		pipeline.decodedAScalars[relative] = coefficient
+
+		entry := decoded[index]
+		if entry != nil && entry.raw == *pubs[index] {
+			pipeline.decodedAPointsX8[relative/r51x5.X8Lanes].SetLane(relative%r51x5.X8Lanes, &entry.point)
+			live |= uint64(1) << relative
+			continue
+		}
+
+		pipeline.decodedAMissBytesX8[missCount] = *pubs[index]
+		pipeline.decodedAMissLanes[missCount] = uint8(relative)
+		missCount++
+		if missCount == r51x5.X8Lanes {
+			decodedLive, err := pipeline.decodePreparedAMissesX8(missCount)
+			if err != nil {
+				return 0, err
+			}
+			live |= decodedLive
+			missCount = 0
+		}
+	}
+	if missCount != 0 {
+		decodedLive, err := pipeline.decodePreparedAMissesX8(missCount)
+		if err != nil {
+			return 0, err
+		}
+		live |= decodedLive
+	}
+
+	missCount = 0
+	for relative := wideCount; relative < count; relative++ {
+		index := offset + relative
+		coefficient, valid := prepareR51Signature(profile, pubs[index], sigs[index])
+		if !valid {
+			continue
+		}
+		pipeline.decodedAScalars[relative] = coefficient
+
+		entry := decoded[index]
+		if entry != nil && entry.raw == *pubs[index] {
+			pipeline.decodedAPoints[relative/r51x5.X4Lanes].SetLane(relative%r51x5.X4Lanes, &entry.point)
+			live |= uint64(1) << relative
+			continue
+		}
+
+		pipeline.decodedAMissBytesX4[missCount] = *pubs[index]
 		pipeline.decodedAMissLanes[missCount] = uint8(relative)
 		missCount++
 		if missCount == r51x5.X4Lanes {
@@ -525,7 +648,7 @@ func (pipeline *r51IFMABatchQPipeline) prepareDecodedAChunk(
 func (pipeline *r51IFMABatchQPipeline) decodePreparedAMisses(count int) (uint64, error) {
 	active := uint8((uint16(1) << count) - 1)
 	var points r51x5.PointX4
-	valid, err := r51x5.ExperimentalIFMADecodeX4(&points, &pipeline.decodedAMissBytes, active)
+	valid, err := r51x5.ExperimentalIFMADecodeX4(&points, &pipeline.decodedAMissBytesX4, active)
 	if err != nil {
 		return 0, err
 	}
@@ -540,6 +663,129 @@ func (pipeline *r51IFMABatchQPipeline) decodePreparedAMisses(count int) (uint64,
 		live |= uint64(1) << relative
 	}
 	return live, nil
+}
+
+func (pipeline *r51IFMABatchQPipeline) decodePreparedAMissesX8(count int) (uint64, error) {
+	active := uint8((uint16(1) << count) - 1)
+	var points r51x5.PointX8
+	valid, err := r51x5.ExperimentalIFMADecodeX8(&points, &pipeline.decodedAMissBytesX8, active)
+	if err != nil {
+		return 0, err
+	}
+	var live uint64
+	for packed := 0; packed < count; packed++ {
+		if valid&(1<<packed) == 0 {
+			continue
+		}
+		relative := int(pipeline.decodedAMissLanes[packed])
+		point := points.Lane(packed)
+		pipeline.decodedAPointsX8[relative/r51x5.X8Lanes].SetLane(relative%r51x5.X8Lanes, &point)
+		live |= uint64(1) << relative
+	}
+	return live, nil
+}
+
+func (pipeline *r51IFMABatchQPipeline) evaluatePreparedWideChunk(
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	offset, count int,
+	chunkLive uint64,
+) error {
+	wideCount := count &^ (r51x5.X8Lanes - 1)
+	for relative := 0; relative < wideCount; relative += r51x5.X8Lanes {
+		if err := pipeline.evaluatePreparedX8Group(
+			pubs,
+			msgs,
+			sigs,
+			offset,
+			relative,
+			chunkLive,
+			relative/r51x5.X4Lanes,
+		); err != nil {
+			return err
+		}
+	}
+
+	tail := count - wideCount
+	if tail == 0 {
+		return nil
+	}
+	outputGroup := wideCount / r51x5.X4Lanes
+	return pipeline.evaluatePreparedTwoX4Group(
+		pubs,
+		msgs,
+		sigs,
+		offset,
+		wideCount,
+		tail,
+		chunkLive,
+		outputGroup,
+	)
+}
+
+func (pipeline *r51IFMABatchQPipeline) evaluatePreparedX8Group(
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	chunkOffset, relative int,
+	chunkLive uint64,
+	outputGroup int,
+) error {
+	if pipeline.wideCore == nil || pipeline.wideCore.kind != r51IFMAX8 || pipeline.wideCore.fixedBaseComb == nil || pipeline.wideCore.variableX8 == nil {
+		panic("ed25519: uninitialized forced r51 IFMA x8 comb workspace")
+	}
+
+	live := uint8(chunkLive >> relative)
+	if live == 0 {
+		return nil
+	}
+	var k [r51x5.X8Lanes][32]byte
+	var err error
+	live, err = reduceR51NativeChallengesX8(
+		&k,
+		pubs,
+		msgs,
+		sigs,
+		chunkOffset+relative,
+		r51x5.X8Lanes,
+		live,
+		sha512mb.ExperimentalWidthX8,
+	)
+	if err != nil || live == 0 {
+		return err
+	}
+
+	var s [r51x5.X8Lanes][32]byte
+	for lane := 0; lane < r51x5.X8Lanes; lane++ {
+		if live&(1<<lane) != 0 {
+			s[lane] = pipeline.decodedAScalars[relative+lane]
+		}
+	}
+	A := &pipeline.decodedAPointsX8[relative/r51x5.X8Lanes]
+	if err := pipeline.wideCore.variableX8.Prepare(A, pipeline.wideCore.radixBits); err != nil {
+		return err
+	}
+	var aTerm, bTerm r51x5.IFMAPointX8
+	usableA, err := pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
+	if err != nil {
+		return err
+	}
+	usableB, err := r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8(&bTerm, pipeline.wideCore.fixedBaseComb, &s, live)
+	if err != nil {
+		return err
+	}
+	var combined r51x5.IFMAPointX8
+	if err := r51x5.ExperimentalIFMAPointAddComposableX8(&combined, &aTerm, &bTerm); err != nil {
+		return err
+	}
+	live &= usableA & usableB
+	var split [2]r51x5.IFMAPointX4
+	combined.SplitX4(&split)
+	for half := range split {
+		group := outputGroup + half
+		pipeline.points[group] = split[half]
+		pipeline.active[group] = uint8(live>>(half*r51x5.X4Lanes)) & 0x0f
+	}
+	return nil
 }
 
 func (pipeline *r51IFMABatchQPipeline) evaluatePreparedTwoX4Group(

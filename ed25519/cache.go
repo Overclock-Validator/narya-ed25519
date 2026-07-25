@@ -112,9 +112,14 @@ func (c *Cache) verifyBatchWithBackend(b backend, profile Profile, pubs []*[32]b
 	if !b.supportsPrecomp() {
 		return verifyBatch(b, profile, pubs, msgs, sigs, ok, nil)
 	}
-	all := verifyBatch(b, profile, pubs, msgs, sigs, ok, func(pub *[32]byte) *PrecomputedKey {
-		return c.lookup(pub)
-	})
+	var all bool
+	if raw, supported := b.(cachedRawBatchBackend); supported {
+		all = raw.verifyBatchRawCached(profile, pubs, msgs, sigs, ok, c)
+	} else {
+		all = verifyBatch(b, profile, pubs, msgs, sigs, ok, func(pub *[32]byte) *PrecomputedKey {
+			return c.lookup(pub)
+		})
+	}
 	for i := range ok {
 		if ok[i] {
 			c.admit(b, pubs[i])

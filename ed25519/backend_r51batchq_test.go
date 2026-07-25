@@ -204,29 +204,33 @@ func assertR51IFMABatchQDecodedA(t *testing.T, vectors []r51ReferenceVector, pro
 		mutateEntries(storage, entries)
 	}
 
-	for _, compactMisses := range []bool{false, true} {
-		name := "original-miss-groups"
-		if compactMisses {
-			name = "compacted-misses"
-		}
+	for _, candidate := range []struct {
+		name      string
+		pipeline  func(testing.TB) *r51IFMABatchQPipeline
+		compacted bool
+	}{
+		{name: "x4/original-miss-groups", pipeline: requireR51IFMABatchQPipeline},
+		{name: "x4/compacted-misses", pipeline: requireR51IFMABatchQPipeline, compacted: true},
+		{name: "x8-with-x4-tail/compacted-misses", pipeline: requireR51IFMABatchQX8CombPipeline, compacted: true},
+	} {
 		got := make([]bool, len(vectors))
-		pipeline := requireR51IFMABatchQPipeline(t)
+		pipeline := candidate.pipeline(t)
 		var gotAll bool
 		var err error
-		if compactMisses {
+		if candidate.compacted {
 			gotAll, err = pipeline.verifyBatchWithDecodedA(profile, pubs, msgs, sigs, got, entries)
 		} else {
 			gotAll, err = pipeline.verifyBatchWithDecodedAUncompacted(profile, pubs, msgs, sigs, got, entries)
 		}
 		if err != nil {
-			t.Fatalf("%s: %v", name, err)
+			t.Fatalf("%s: %v", candidate.name, err)
 		}
 		if gotAll != wantAll {
-			t.Fatalf("%s aggregate=%v want=%v profile=%d count=%d", name, gotAll, wantAll, profile, len(vectors))
+			t.Fatalf("%s aggregate=%v want=%v profile=%d count=%d", candidate.name, gotAll, wantAll, profile, len(vectors))
 		}
 		for index := range got {
 			if got[index] != want[index] {
-				t.Fatalf("%s lane=%d got=%v want=%v profile=%d\npub=%x\nmsg=%x\nsig=%x", name, index, got[index], want[index], profile, vectors[index].pub, vectors[index].msg, vectors[index].sig)
+				t.Fatalf("%s lane=%d got=%v want=%v profile=%d\npub=%x\nmsg=%x\nsig=%x", candidate.name, index, got[index], want[index], profile, vectors[index].pub, vectors[index].msg, vectors[index].sig)
 			}
 		}
 	}
@@ -301,9 +305,11 @@ func TestR51IFMABatchQDecodedAEveryX8HitMask(t *testing.T) {
 	_ = storage
 	direct := requireR51IFMABatchQPipeline(t)
 	compacted := requireR51IFMABatchQPipeline(t)
+	wide := requireR51IFMABatchQX8CombPipeline(t)
 	entries := make([]*r51DecodedAEntry, r51x5.X8Lanes)
 	directOK := make([]bool, r51x5.X8Lanes)
 	compactedOK := make([]bool, r51x5.X8Lanes)
+	wideOK := make([]bool, r51x5.X8Lanes)
 
 	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
 		for hitMask := 0; hitMask < 1<<r51x5.X8Lanes; hitMask++ {
@@ -321,12 +327,16 @@ func TestR51IFMABatchQDecodedAEveryX8HitMask(t *testing.T) {
 			if err != nil {
 				t.Fatalf("profile=%d mask=%02x compacted: %v", profile, hitMask, err)
 			}
-			if !directAll || !compactedAll {
-				t.Fatalf("profile=%d mask=%02x aggregate=(%v,%v), want true", profile, hitMask, directAll, compactedAll)
+			wideAll, err := wide.verifyBatchWithDecodedA(profile, fixture.pubs, fixture.msgs, fixture.sigs, wideOK, entries)
+			if err != nil {
+				t.Fatalf("profile=%d mask=%02x wide: %v", profile, hitMask, err)
+			}
+			if !directAll || !compactedAll || !wideAll {
+				t.Fatalf("profile=%d mask=%02x aggregate=(%v,%v,%v), want true", profile, hitMask, directAll, compactedAll, wideAll)
 			}
 			for lane := range directOK {
-				if !directOK[lane] || compactedOK[lane] != directOK[lane] {
-					t.Fatalf("profile=%d mask=%02x lane=%d verdicts=(%v,%v)", profile, hitMask, lane, directOK[lane], compactedOK[lane])
+				if !directOK[lane] || compactedOK[lane] != directOK[lane] || wideOK[lane] != directOK[lane] {
+					t.Fatalf("profile=%d mask=%02x lane=%d verdicts=(%v,%v,%v)", profile, hitMask, lane, directOK[lane], compactedOK[lane], wideOK[lane])
 				}
 			}
 		}
@@ -559,14 +569,22 @@ func TestR51IFMABatchQDecodedAZeroAllocations(t *testing.T) {
 					_, entries := makeR51DecodedAEntries(t, fixture.pubs, func(index int) bool {
 						return r51DecodedAHitIndex(count, hits, layout, index)
 					})
-					pipeline := requireR51IFMABatchQPipeline(t)
-					if allocs := testing.AllocsPerRun(10, func() {
-						all, err := pipeline.verifyBatchWithDecodedA(profile, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok, entries)
-						if err != nil || !all {
-							panic(fmt.Sprintf("verify=(%v,%v)", all, err))
+					for _, candidate := range []struct {
+						name string
+						new  func(testing.TB) *r51IFMABatchQPipeline
+					}{
+						{name: "x4", new: requireR51IFMABatchQPipeline},
+						{name: "x8-with-x4-tail", new: requireR51IFMABatchQX8CombPipeline},
+					} {
+						pipeline := candidate.new(t)
+						if allocs := testing.AllocsPerRun(10, func() {
+							all, err := pipeline.verifyBatchWithDecodedA(profile, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok, entries)
+							if err != nil || !all {
+								panic(fmt.Sprintf("verify=(%v,%v)", all, err))
+							}
+						}); allocs != 0 {
+							t.Fatalf("path=%s profile=%d count=%d hits=%d layout=%s allocations=%v", candidate.name, profile, count, percent, layout, allocs)
 						}
-					}); allocs != 0 {
-						t.Fatalf("profile=%d count=%d hits=%d layout=%s allocations=%v", profile, count, percent, layout, allocs)
 					}
 				}
 			}
@@ -989,7 +1007,8 @@ func BenchmarkR51IFMABatchQParallel(b *testing.B) {
 				scratchBytes := unsafe.Sizeof(pipeline.encoder) + unsafe.Sizeof(pipeline.points) +
 					unsafe.Sizeof(pipeline.active) + unsafe.Sizeof(pipeline.encoded) +
 					unsafe.Sizeof(pipeline.final) + unsafe.Sizeof(pipeline.decodedAPoints) +
-					unsafe.Sizeof(pipeline.decodedAScalars) + unsafe.Sizeof(pipeline.decodedAMissBytes) +
+					unsafe.Sizeof(pipeline.decodedAPointsX8) + unsafe.Sizeof(pipeline.decodedAScalars) +
+					unsafe.Sizeof(pipeline.decodedAMissBytesX4) + unsafe.Sizeof(pipeline.decodedAMissBytesX8) +
 					unsafe.Sizeof(pipeline.decodedAMissLanes)
 				b.ReportMetric(float64(scratchBytes), "batch-scratch-B/worker")
 			}

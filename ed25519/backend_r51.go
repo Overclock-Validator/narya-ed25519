@@ -30,8 +30,10 @@ type r51Backend struct {
 }
 
 type r51BatchWorker struct {
-	pipeline *r51IFMABatchQPipeline
-	err      error
+	pipeline       *r51IFMABatchQPipeline
+	decodedStorage [r51BatchQMaxChunk]r51DecodedAEntry
+	decoded        [r51BatchQMaxChunk]*r51DecodedAEntry
+	err            error
 }
 
 type r51SingleWorker struct {
@@ -41,6 +43,15 @@ type r51SingleWorker struct {
 
 var registeredR51Backend = new(r51Backend)
 
+// r51DecodedATable is the broad, batch-oriented warm tier. It retains only a
+// permissively decoded point; PrecomputedKey.raw separately binds it to the
+// exact original encoding that must remain in H(R || A || M).
+type r51DecodedATable struct {
+	point r51x5.Point
+}
+
+const r51DecodedATableBytes = 4 * 5 * 8
+
 func init() { register("r51", registeredR51Backend) }
 
 func (*r51Backend) name() string { return "r51" }
@@ -49,11 +60,11 @@ func (b *r51Backend) backendStats() BackendStats {
 	return BackendStats{InternalFaultFallbacks: b.faults.Load()}
 }
 
-// Per-key partial-comb tables remain behind a complete-verifier/cache-policy
-// gate, so this first promoted cold backend does not claim native precompute
-// support. Cache calls still use the native batch path; they simply cannot
-// install backend-specific entries yet.
-func (*r51Backend) supportsPrecomp() bool { return false }
+// The registered warm tier retains only decoded A. It bypasses decompression
+// in useful-width batches while leaving scalar multiplication, original-byte
+// hashing, strict prechecks, and final equality unchanged. Per-key partial
+// comb tables remain behind their separate complete-verifier/cache-policy gate.
+func (*r51Backend) supportsPrecomp() bool { return true }
 
 func (b *r51Backend) activate() error {
 	b.activateOnce.Do(func() {
@@ -96,7 +107,11 @@ func (b *r51Backend) buildPrecomp(pub *[32]byte) (*PrecomputedKey, error) {
 	if _, err := point.SetBytes(pub[:]); err != nil {
 		return nil, err
 	}
-	return &PrecomputedKey{raw: *pub, size: 32}, nil
+	return &PrecomputedKey{
+		raw:   *pub,
+		table: &r51DecodedATable{point: point},
+		size:  r51DecodedATableBytes,
+	}, nil
 }
 
 func (b *r51Backend) verify(profile Profile, pub *[32]byte, message, sig []byte, _ *PrecomputedKey) bool {
@@ -149,6 +164,13 @@ func (b *r51Backend) verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sig
 }
 
 func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) (bool, error) {
+	return b.verifyBatchRawPrecomputedErr(profile, pubs, msgs, sigs, ok, nil)
+}
+
+func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, pre []*PrecomputedKey) (bool, error) {
+	if pre != nil && len(pre) != len(pubs) {
+		panic("ed25519: r51 precomputed batch slice length differs")
+	}
 	if err := b.activate(); err != nil {
 		return false, err
 	}
@@ -180,8 +202,31 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 	}
 
 	if full != 0 {
-		if _, err := worker.pipeline.VerifyBatch(profile, pubs[:full], msgs[:full], sigs[:full], ok[:full]); err != nil {
-			return false, err
+		for offset := 0; offset < full; offset += r51BatchQMaxChunk {
+			count := minR51(full-offset, r51BatchQMaxChunk)
+			if pre == nil {
+				if _, err := worker.pipeline.VerifyBatch(
+					profile,
+					pubs[offset:offset+count],
+					msgs[offset:offset+count],
+					sigs[offset:offset+count],
+					ok[offset:offset+count],
+				); err != nil {
+					return false, err
+				}
+				continue
+			}
+			decoded := worker.resolveDecodedA(pubs[offset:offset+count], pre[offset:offset+count])
+			if _, err := worker.pipeline.verifyBatchWithDecodedA(
+				profile,
+				pubs[offset:offset+count],
+				msgs[offset:offset+count],
+				sigs[offset:offset+count],
+				ok[offset:offset+count],
+				decoded,
+			); err != nil {
+				return false, err
+			}
 		}
 	}
 
@@ -224,18 +269,80 @@ func (b *r51Backend) verifyBatchRawErr(profile Profile, pubs []*[32]byte, msgs, 
 	return all, nil
 }
 
+func (worker *r51BatchWorker) resolveDecodedA(pubs []*[32]byte, pre []*PrecomputedKey) []*r51DecodedAEntry {
+	if len(pubs) != len(pre) || len(pubs) > len(worker.decoded) {
+		panic("ed25519: invalid r51 decoded-A resolution width")
+	}
+	for index := range pubs {
+		worker.decoded[index] = nil
+		prepared := pre[index]
+		if prepared == nil || pubs[index] == nil || prepared.raw != *pubs[index] {
+			continue
+		}
+		table, ok := prepared.table.(*r51DecodedATable)
+		if !ok || table == nil {
+			continue
+		}
+		worker.decodedStorage[index] = r51DecodedAEntry{raw: prepared.raw, point: table.point}
+		worker.decoded[index] = &worker.decodedStorage[index]
+	}
+	return worker.decoded[:len(pubs)]
+}
+
+func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool {
+	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
+		panic("ed25519: r51 cached raw batch slice lengths differ")
+	}
+	if lookup == nil {
+		panic("ed25519: nil r51 precomputed-key lookup")
+	}
+
+	all := true
+	for offset := 0; offset < len(pubs); offset += r51BatchQMaxChunk {
+		count := minR51(len(pubs)-offset, r51BatchQMaxChunk)
+		var pre [r51BatchQMaxChunk]*PrecomputedKey
+		for index := 0; index < count; index++ {
+			absolute := offset + index
+			if !rejectedByProfile(profile, pubs[absolute], sigs[absolute]) {
+				pre[index] = lookup.lookup(pubs[absolute])
+			}
+		}
+		chunkAll, err := b.verifyBatchRawPrecomputedErr(
+			profile,
+			pubs[offset:offset+count],
+			msgs[offset:offset+count],
+			sigs[offset:offset+count],
+			ok[offset:offset+count],
+			pre[:count],
+		)
+		if err != nil {
+			b.faults.Add(1)
+			return fallbackGenericBatch(profile, pubs, msgs, sigs, ok)
+		}
+		all = all && chunkAll
+	}
+	return all
+}
+
 func (b *r51Backend) verifyBatch(profile Profile, items []batchItem) {
 	const maxChunk = r51BatchQMaxChunk
 	for offset := 0; offset < len(items); offset += maxChunk {
 		count := minR51(len(items)-offset, maxChunk)
 		var pubs [maxChunk]*[32]byte
 		var msgs, sigs [maxChunk][]byte
+		var pre [maxChunk]*PrecomputedKey
 		var verdicts [maxChunk]bool
 		for i := 0; i < count; i++ {
 			item := &items[offset+i]
 			pubs[i], msgs[i], sigs[i] = item.pub, item.msg, item.sig
+			pre[i] = item.pre
 		}
-		b.verifyBatchRaw(profile, pubs[:count], msgs[:count], sigs[:count], verdicts[:count])
+		all, err := b.verifyBatchRawPrecomputedErr(profile, pubs[:count], msgs[:count], sigs[:count], verdicts[:count], pre[:count])
+		if err != nil {
+			b.faults.Add(1)
+			all = fallbackGenericBatch(profile, pubs[:count], msgs[:count], sigs[:count], verdicts[:count])
+		}
+		_ = all
 		for i := 0; i < count; i++ {
 			items[offset+i].ok = verdicts[i]
 		}
