@@ -59,9 +59,12 @@ profiles, widths through 65, invalid-equation non-admission, narrow admission,
 and zero-allocation hits. The Zen 4 run pins the hardware gate and shows the
 cache-specific tests skipping by design.
 
+At the final audit SHA `778005e`, `go test -count=1 ./...` passed on both
+machines. The complete logs are `full-suite-zen5.txt` and
+`full-suite-zen4.txt`.
+
 `zen4-bypass.txt` compares two differently laid-out Go wrapper closures that
 both converge on the same raw method. As in the established public-wrapper
 gate, code layout can move those rows by several percent in either direction;
 use it to verify routing, zero allocations, and zero faults, not as a claim
 that adding a wrapper accelerates arithmetic.
-

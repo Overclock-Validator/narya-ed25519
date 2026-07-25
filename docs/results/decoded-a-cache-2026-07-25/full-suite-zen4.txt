@@ -1,0 +1,13 @@
+ok  	github.com/Overclock-Validator/narya/cmd/sigverifytracebench	0.008s
+ok  	github.com/Overclock-Validator/narya/ed25519	60.025s
+ok  	github.com/Overclock-Validator/narya/internal/cpufeat	0.002s
+ok  	github.com/Overclock-Validator/narya/internal/edwards25519	0.059s
+ok  	github.com/Overclock-Validator/narya/internal/edwards25519/field	1.373s
+ok  	github.com/Overclock-Validator/narya/internal/heea8l	36.606s
+?   	github.com/Overclock-Validator/narya/internal/heea8l/cmd/sample	[no test files]
+ok  	github.com/Overclock-Validator/narya/internal/mithriltracev3	0.005s
+ok  	github.com/Overclock-Validator/narya/internal/r43x6	2.615s
+ok  	github.com/Overclock-Validator/narya/internal/r51x5	17.574s
+ok  	github.com/Overclock-Validator/narya/internal/tracebench	0.067s
+ok  	github.com/Overclock-Validator/narya/scripts/unaffectedbench	0.002s [no tests to run]
+ok  	github.com/Overclock-Validator/narya/sha512mb	0.119s
