@@ -257,7 +257,7 @@ func (verifier *heterogeneousPartialCombCompleteVerifierExperiment) Verify(
 			copy(scalars[0][lane][:], input.signature[32:])
 			if !canonicalScalarBytes(&scalars[0][lane]) ||
 				packedEncodesSmallOrderPointX4(input.signature[:32]) ||
-				!packedCanonicalRAfterSmallOrderCheckX4(input.signature[:32]) {
+				!packedCanonicalREncodingX4(input.signature[:32]) {
 				continue
 			}
 

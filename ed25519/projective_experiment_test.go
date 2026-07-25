@@ -22,7 +22,7 @@ func verifyGenericStrictProjective(pub *[32]byte, message, sig []byte) bool {
 	if len(sig) != 64 || sig[63]&224 != 0 || rejectedByStrict(pub, sig) {
 		return false
 	}
-	if !canonicalRAfterSmallOrderCheck(sig[:32]) {
+	if !canonicalREncoding(sig[:32]) {
 		return false
 	}
 
@@ -108,7 +108,7 @@ func assertStrictPrecheckDomain(t *testing.T, pub *[32]byte, sig []byte) {
 	if rejectedByStrict(pub, sig) {
 		t.Fatal("self-consistent vector unexpectedly uses a small-order A or R")
 	}
-	if !canonicalRAfterSmallOrderCheck(sig[:32]) || !canonicalRReference(sig[:32]) {
+	if !canonicalREncoding(sig[:32]) || !canonicalRReference(sig[:32]) {
 		t.Fatal("self-consistent coordinate vector unexpectedly uses a noncanonical R")
 	}
 }
@@ -143,7 +143,7 @@ func TestNoncanonicalNonSmallOrderRRequiresCanonicalGateAtEqualityBoundary(t *te
 	if smallOrderEncoding(encoded[:]) {
 		t.Fatalf("non-small-order alias %x matched the strict torsion classifier", encoded)
 	}
-	if canonicalRAfterSmallOrderCheck(encoded[:]) || canonicalRReference(encoded[:]) {
+	if canonicalREncoding(encoded[:]) || canonicalRReference(encoded[:]) {
 		t.Fatalf("noncanonical alias %x passed canonical-R validation", encoded)
 	}
 	if decoded.EqualAffine(decoded) != 1 {

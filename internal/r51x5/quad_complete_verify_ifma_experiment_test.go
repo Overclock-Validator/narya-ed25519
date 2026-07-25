@@ -41,7 +41,7 @@ func (verifier *quadStrictVerifierX4) verify(pub *[32]byte, message, signature [
 	if !canonicalScalarBytes(&s) ||
 		quadEncodesSmallOrderPointX4(pub[:]) ||
 		quadEncodesSmallOrderPointX4(signature[:32]) ||
-		!quadCanonicalRAfterSmallOrderCheckX4(signature[:32]) {
+		!quadCanonicalREncodingX4(signature[:32]) {
 		return false, nil
 	}
 
@@ -156,19 +156,23 @@ func quadLow255EqualX4(encoded []byte, want *[32]byte) bool {
 	return diff == 0
 }
 
-func quadCanonicalRAfterSmallOrderCheckX4(encoded []byte) bool {
+func quadCanonicalREncodingX4(encoded []byte) bool {
 	if len(encoded) != 32 {
 		return false
 	}
-	if encoded[31]&0x7f != 0x7f {
+	if !packedLow255LessThanPX4(encoded) {
+		return false
+	}
+	if encoded[31]&0x80 == 0 {
 		return true
 	}
-	for index := 30; index > 0; index-- {
-		if encoded[index] != 0xff {
-			return true
-		}
+	if encoded[0] == 0x01 && quadLow255TailEqualX4(encoded, 0x00, 0x00) {
+		return false
 	}
-	return encoded[0] < 0xed
+	if encoded[0] == 0xec && quadLow255TailEqualX4(encoded, 0xff, 0x7f) {
+		return false
+	}
+	return true
 }
 
 type quadStrictFixtureX4 struct {

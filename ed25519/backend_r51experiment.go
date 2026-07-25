@@ -659,9 +659,7 @@ func prepareR51Signature(profile Profile, pub *[32]byte, sig []byte) ([32]byte, 
 		if rejectedByStrict(pub, sig) {
 			return [32]byte{}, false
 		}
-		// This abbreviated canonicality predicate is valid only after the
-		// preceding small-order rejection has eliminated x=0.
-		if !canonicalRAfterSmallOrderCheck(sig[:32]) {
+		if !canonicalREncoding(sig[:32]) {
 			return [32]byte{}, false
 		}
 	}

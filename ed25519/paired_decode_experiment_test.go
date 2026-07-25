@@ -17,7 +17,7 @@ func verifyR43PairedStrict(pub *[32]byte, message, sig []byte) bool {
 	if len(sig) != 64 || sig[63]&224 != 0 || rejectedByStrict(pub, sig) {
 		return false
 	}
-	if !canonicalRAfterSmallOrderCheck(sig[:32]) {
+	if !canonicalREncoding(sig[:32]) {
 		return false
 	}
 

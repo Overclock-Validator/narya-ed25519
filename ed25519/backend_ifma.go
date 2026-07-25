@@ -61,13 +61,12 @@ func verifyR43Pipeline(profile Profile, pub *[32]byte, message, sig []byte) bool
 		return false
 	}
 
-	// Strict verification already rejected small-order R in the shared
-	// pre-pass. Under that exact precondition, low255(R)<p is equivalent to
-	// canonical compressed R. Retaining decoded R lets the final comparison
-	// avoid Q.Bytes and its field inversion.
+	// The standalone byte predicate checks canonical compressed R independently
+	// of the shared small-order pre-pass. Retaining decoded R lets the final
+	// comparison avoid Q.Bytes and its field inversion.
 	var strictR r43x6.Point
 	if profile == DalekStrict {
-		if !canonicalRAfterSmallOrderCheck(sig[:32]) {
+		if !canonicalREncoding(sig[:32]) {
 			return false
 		}
 		if _, err := strictR.SetBytes(sig[:32]); err != nil {

@@ -125,26 +125,47 @@ func low255Equal(b []byte, want *[32]byte) bool {
 	return diff == 0
 }
 
-// canonicalRAfterSmallOrderCheck reports whether the low 255 bits encode an
-// integer smaller than p = 2^255-19. It is equivalent to canonical Edwards
-// point encoding only after the caller has rejected small-order encodings:
-// that rejection eliminates the x=0, sign-bit-one encodings that this integer
-// comparison alone intentionally cannot distinguish.
+// canonicalREncoding reports whether r satisfies the decoder-specific byte
+// canonicality condition used by strict verification. It is independent of
+// small-order rejection: besides requiring low255(r) < p, it rejects the two
+// sign-bit-one encodings whose decoded x coordinate is zero (y=1 and y=-1).
 //
-// Point decoding remains a separate requirement. This helper only checks the
-// decoder-specific canonical-encoding condition and returns false on a length
-// mismatch.
-func canonicalRAfterSmallOrderCheck(r []byte) bool {
+// Point decoding remains a separate requirement. A reduced byte string that
+// is not on the curve can pass this helper and must still fail decoding.
+func canonicalREncoding(r []byte) bool {
 	if len(r) != 32 {
 		return false
 	}
-	if r[31]&0x7f != 0x7f {
+	if !low255LessThanP(r) {
+		return false
+	}
+	if r[31]&0x80 == 0 {
 		return true
 	}
-	for i := 30; i > 0; i-- {
-		if r[i] != 0xff {
+	// On Edwards25519, x=0 iff y=1 or y=-1. Their sign-bit-one forms decode
+	// permissively but are not canonical compressed encodings.
+	if r[0] == 0x01 && low255TailEqual(r, 0x00, 0x00) {
+		return false
+	}
+	if r[0] == 0xec && low255TailEqual(r, 0xff, 0x7f) {
+		return false
+	}
+	return true
+}
+
+// low255LessThanP compares the encoded little-endian y-coordinate with
+// p=2^255-19 while ignoring the compressed x-sign bit.
+func low255LessThanP(encoded []byte) bool {
+	if len(encoded) != 32 {
+		return false
+	}
+	if encoded[31]&0x7f != 0x7f {
+		return true
+	}
+	for index := 30; index > 0; index-- {
+		if encoded[index] != 0xff {
 			return true
 		}
 	}
-	return r[0] < 0xed
+	return encoded[0] < 0xed
 }

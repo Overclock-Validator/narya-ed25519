@@ -34,10 +34,7 @@ func quadPairedRStrictBytePrechecksX4(pub *[32]byte, signature []byte, s *[32]by
 		quadEncodesSmallOrderPointX4(signature[:32]) {
 		return false
 	}
-	// This abbreviated canonical-R predicate is sound only after the small-
-	// order classifier above has eliminated the x=0 sign-bit anomaly. Keep the
-	// ordering local rather than exposing the integer comparison to callers.
-	return quadCanonicalRAfterSmallOrderCheckX4(signature[:32])
+	return quadCanonicalREncodingX4(signature[:32])
 }
 
 // verifyPairedRProjective keeps the historical test name while exercising the

@@ -143,10 +143,9 @@ func packedStrictBytePrechecksX4(pub *[32]byte, signature []byte, s *[32]byte) b
 		packedEncodesSmallOrderPointX4(signature[:32]) {
 		return false
 	}
-	// low255(R)<p is a complete canonical-R predicate only after the
-	// small-order check has removed the x=0/sign-bit-one anomaly. Keep the
-	// ordering inside this helper so callers cannot separate the preconditions.
-	return packedCanonicalRAfterSmallOrderCheckX4(signature[:32])
+	// Canonicality independently rejects the x=0/sign-bit-one anomaly; the
+	// preceding classifier remains the separate strict small-order policy.
+	return packedCanonicalREncodingX4(signature[:32])
 }
 
 // quadPackedEqualDecodedAffineLaneX4 compares Q=[X,Y,T,Z] with one decoded
@@ -230,7 +229,26 @@ func packedLow255EqualX4(encoded []byte, want *[32]byte) bool {
 	return diff == 0
 }
 
-func packedCanonicalRAfterSmallOrderCheckX4(encoded []byte) bool {
+func packedCanonicalREncodingX4(encoded []byte) bool {
+	if len(encoded) != 32 {
+		return false
+	}
+	if !packedLow255LessThanPX4(encoded) {
+		return false
+	}
+	if encoded[31]&0x80 == 0 {
+		return true
+	}
+	if encoded[0] == 0x01 && packedLow255TailEqualX4(encoded, 0x00, 0x00) {
+		return false
+	}
+	if encoded[0] == 0xec && packedLow255TailEqualX4(encoded, 0xff, 0x7f) {
+		return false
+	}
+	return true
+}
+
+func packedLow255LessThanPX4(encoded []byte) bool {
 	if len(encoded) != 32 {
 		return false
 	}

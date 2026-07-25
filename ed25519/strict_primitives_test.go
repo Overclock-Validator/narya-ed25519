@@ -147,25 +147,27 @@ func TestSmallOrderEncodingClassifier(t *testing.T) {
 	}
 }
 
-func TestCanonicalRAfterSmallOrderCheck(t *testing.T) {
-	if canonicalRAfterSmallOrderCheck(nil) || canonicalRAfterSmallOrderCheck(make([]byte, 31)) || canonicalRAfterSmallOrderCheck(make([]byte, 33)) {
+func TestCanonicalREncoding(t *testing.T) {
+	if canonicalREncoding(nil) || canonicalREncoding(make([]byte, 31)) || canonicalREncoding(make([]byte, 33)) {
 		t.Fatal("canonical-R predicate accepted a wrong-length encoding")
 	}
 
-	// This is the reason for the helper's explicit precondition: low255(1)
-	// is reduced, but x=0 with the sign bit set is not a canonical point
-	// encoding. The preceding strict small-order classifier rejects it.
-	negativeZero := make([]byte, 32)
-	negativeZero[0] = 1
-	negativeZero[31] = 0x80
-	if !smallOrderEncoding(negativeZero) {
-		t.Fatal("negative-zero precondition case was not classified small-order")
-	}
-	if !canonicalRAfterSmallOrderCheck(negativeZero) {
-		t.Fatal("integer predicate unexpectedly rejected its documented precondition case")
-	}
-	if canonicalRReference(negativeZero) {
-		t.Fatal("negative-zero encoding unexpectedly canonical")
+	// Both x=0 points have noncanonical sign-bit-one aliases. Canonicality must
+	// reject them without relying on the separate small-order classifier.
+	for _, negativeZero := range [][]byte{
+		append([]byte{1}, make([]byte, 30)...),
+		append([]byte{0xec}, bytes.Repeat([]byte{0xff}, 30)...),
+	} {
+		negativeZero = append(negativeZero, 0x80)
+		if negativeZero[0] == 0xec {
+			negativeZero[31] = 0xff
+		}
+		if !smallOrderEncoding(negativeZero) {
+			t.Fatal("negative-zero case was not classified small-order")
+		}
+		if canonicalREncoding(negativeZero) || canonicalRReference(negativeZero) {
+			t.Fatalf("negative-zero encoding passed canonicality: %x", negativeZero)
+		}
 	}
 
 	check := func(label string, r []byte) bool {
@@ -173,10 +175,7 @@ func TestCanonicalRAfterSmallOrderCheck(t *testing.T) {
 		if _, err := (&edwards25519.Point{}).SetBytes(r); err != nil {
 			return false
 		}
-		if smallOrderEncodingReference(r) {
-			return false
-		}
-		got := canonicalRAfterSmallOrderCheck(r)
+		got := canonicalREncoding(r)
 		want := canonicalRReference(r)
 		if got != want {
 			t.Fatalf("%s: canonical-R mismatch got=%v want=%v\nencoding=%x", label, got, want, r)
@@ -213,7 +212,7 @@ func TestCanonicalRAfterSmallOrderCheck(t *testing.T) {
 	for i := 0; i < 8192; i++ {
 		r := make([]byte, 32)
 		_, _ = rng.Read(r)
-		if _, err := (&edwards25519.Point{}).SetBytes(r); err != nil || smallOrderEncodingReference(r) {
+		if _, err := (&edwards25519.Point{}).SetBytes(r); err != nil {
 			continue
 		}
 		check("random decodable point", r)
@@ -363,7 +362,7 @@ func BenchmarkStrictPointPrechecks(b *testing.B) {
 		{"small-order/oracle/common", ordinary, smallOrderEncodingReference},
 		{"small-order/fast/match", small, smallOrderEncoding},
 		{"small-order/oracle/match", small, smallOrderEncodingReference},
-		{"canonical-R/fast", ordinary, canonicalRAfterSmallOrderCheck},
+		{"canonical-R/fast", ordinary, canonicalREncoding},
 		{"canonical-R/oracle", ordinary, canonicalRReference},
 	}
 	for _, tc := range cases {
