@@ -46,16 +46,10 @@
 	VPADDQ Y9, Y8, H
 
 #define ROUND8(A, B, C, D, E, F, G, H, W, K) \
-	VPSRLQ $14, E, Z8;                          \
-	VPSLLQ $50, E, Z9;                          \
+	VPRORQ $14, E, Z8;                          \
+	VPRORQ $18, E, Z9;                          \
 	VPXORQ Z9, Z8, Z8;                          \
-	VPSRLQ $18, E, Z9;                          \
-	VPXORQ Z9, Z8, Z8;                          \
-	VPSLLQ $46, E, Z9;                          \
-	VPXORQ Z9, Z8, Z8;                          \
-	VPSRLQ $41, E, Z9;                          \
-	VPXORQ Z9, Z8, Z8;                          \
-	VPSLLQ $23, E, Z9;                          \
+	VPRORQ $41, E, Z9;                          \
 	VPXORQ Z9, Z8, Z8;                          \
 	VPANDQ F, E, Z10;                           \
 	VPANDNQ G, E, Z11;                          \
@@ -65,16 +59,10 @@
 	VPBROADCASTQ K(BP), Z15;                    \
 	VPADDQ Z15, Z8, Z8;                         \
 	VPADDQ W(BX), Z8, Z8;                       \
-	VPSRLQ $28, A, Z9;                          \
-	VPSLLQ $36, A, Z11;                         \
+	VPRORQ $28, A, Z9;                          \
+	VPRORQ $34, A, Z11;                         \
 	VPXORQ Z11, Z9, Z9;                         \
-	VPSRLQ $34, A, Z11;                         \
-	VPXORQ Z11, Z9, Z9;                         \
-	VPSLLQ $30, A, Z11;                         \
-	VPXORQ Z11, Z9, Z9;                         \
-	VPSRLQ $39, A, Z11;                         \
-	VPXORQ Z11, Z9, Z9;                         \
-	VPSLLQ $25, A, Z11;                         \
+	VPRORQ $39, A, Z11;                         \
 	VPXORQ Z11, Z9, Z9;                         \
 	VPXORQ B, A, Z10;                           \
 	VPANDQ C, Z10, Z10;                         \
@@ -277,23 +265,15 @@ copy_words_x8:
 
 expand_schedule_x8:
 	VMOVDQU64 -128(BX), Z8
-	VPSRLQ $19, Z8, Z9
-	VPSLLQ $45, Z8, Z10
-	VPXORQ Z10, Z9, Z9
-	VPSRLQ $61, Z8, Z10
-	VPXORQ Z10, Z9, Z9
-	VPSLLQ $3, Z8, Z10
+	VPRORQ $19, Z8, Z9
+	VPRORQ $61, Z8, Z10
 	VPXORQ Z10, Z9, Z9
 	VPSRLQ $6, Z8, Z10
 	VPXORQ Z10, Z9, Z9
 
 	VMOVDQU64 -960(BX), Z8
-	VPSRLQ $1, Z8, Z10
-	VPSLLQ $63, Z8, Z11
-	VPXORQ Z11, Z10, Z10
-	VPSRLQ $8, Z8, Z11
-	VPXORQ Z11, Z10, Z10
-	VPSLLQ $56, Z8, Z11
+	VPRORQ $1, Z8, Z10
+	VPRORQ $8, Z8, Z11
 	VPXORQ Z11, Z10, Z10
 	VPSRLQ $7, Z8, Z11
 	VPXORQ Z11, Z10, Z10
