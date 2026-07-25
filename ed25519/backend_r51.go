@@ -291,6 +291,17 @@ func (worker *r51BatchWorker) resolveDecodedA(pubs []*[32]byte, pre []*Precomput
 	return worker.decoded[:len(pubs)]
 }
 
+// r51UseDecodedAPrecomputed reports whether the measured decode saving is
+// large enough to pay for resolving, packing, and scattering a mixed hit
+// layout. Full-hit groups win at every native batch width. On both Zen 4 and
+// Zen 5, partial hits below a complete 64-item encoder chunk were neutral or
+// slower; a full chunk crossed over at roughly 25% hits. Keep the conservative
+// common rule here rather than making an unmeasured intermediate width part of
+// the supported dispatch contract.
+func r51UseDecodedAPrecomputed(count, hits int) bool {
+	return hits == count || (count == r51BatchQMaxChunk && hits*4 >= count)
+}
+
 func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool {
 	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
 		panic("ed25519: r51 cached raw batch slice lengths differ")
@@ -321,7 +332,7 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 			}
 		}
 		var prepared []*PrecomputedKey
-		if hits != 0 {
+		if r51UseDecodedAPrecomputed(count, hits) {
 			prepared = pre[:count]
 		}
 		chunkAll, err := b.verifyBatchRawPrecomputedErr(

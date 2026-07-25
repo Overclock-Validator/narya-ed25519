@@ -174,6 +174,28 @@ func TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup(t *testing.T) {
 	}
 }
 
+func TestR51DecodedAPrecomputedDispatch(t *testing.T) {
+	for _, test := range []struct {
+		count int
+		hits  int
+		want  bool
+	}{
+		{count: 4, hits: 2, want: false},
+		{count: 4, hits: 4, want: true},
+		{count: 8, hits: 4, want: false},
+		{count: 8, hits: 8, want: true},
+		{count: 17, hits: 8, want: false},
+		{count: 17, hits: 17, want: true},
+		{count: 64, hits: 15, want: false},
+		{count: 64, hits: 16, want: true},
+		{count: 64, hits: 64, want: true},
+	} {
+		if got := r51UseDecodedAPrecomputed(test.count, test.hits); got != test.want {
+			t.Fatalf("count=%d hits=%d got=%v want=%v", test.count, test.hits, got, test.want)
+		}
+	}
+}
+
 func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
 	backend := requireR51Backend(t)
 	for _, count := range []int{4, 8, 64} {
