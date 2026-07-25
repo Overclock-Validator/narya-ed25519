@@ -8,7 +8,9 @@ It is deliberately separate from `internal/r43x6`:
 > `r51` uses a packed paired-A/R singleton plus a radix-32 A table, the shared
 > radix-256 B comb, and batch-Q finalization. Zen 4 uses two x4/YMM groups;
 > AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and
-> x4 for the tail. Warm per-key comb and HEEA variants remain experiments.
+> x4 for the tail. Its opt-in Cache admits decoded A and promotes recurring
+> valid strict keys to A6/r9 warm combs on both CPUs. HEEA remains a slower
+> research oracle rather than a dispatch candidate.
 
 | Backend | Vector interpretation | Intended job |
 |---|---|---|
@@ -157,8 +159,13 @@ The cold path includes table construction. Cache benchmarks distinguish:
 2. decoded point;
 3. backend-native precomputed table.
 
-No tier or admission threshold is enabled from a synthetic cache-hit result.
-Mithril recurrence traces select policy after arithmetic stabilizes.
+The library now implements the two arithmetic tiers, while leaving Cache use
+explicit and automatic backend selection generic. Initial admission waits for
+eight successful verifications. Eight subsequent valid strict hits make a key
+eligible for grouped A6/r9 promotion; four eligible keys share one native x4
+build, and a key left pending is flushed alone only after 32 hits. Those are
+conservative defaults, not a claim about real Mithril recurrence. Invalid
+signatures earn neither admission nor promotion.
 
 An x8 SoA table is a batch object, not a per-key cache entry: its eight lanes
 normally contain tables for eight independent public keys. A radix-32,
@@ -298,7 +305,7 @@ The selected composition now changes explicitly forced `r51` dispatch, but
 not automatic dispatch. It connects the packed strict singleton, native x4/x8
 SHA-512, fixed-storage challenge reduction, composable radix-32 A DSM, the
 process-shared radix-256 B comb, and cross-group Q encoding. The broader
-alternate-radix, table, HEEA, and warm-comb matrix remains allocation-free
+alternate-radix, table, and HEEA matrix remains allocation-free
 benchmarking infrastructure. Cold rows include arbitrary-A table construction.
 
 The public batch dispatcher has optional ordinary and cache-aware raw-slice
@@ -306,16 +313,27 @@ backend contracts. The registered forced `r51` backend and candidate
 benchmarks enter through those contracts, including public length/dispatch
 checks, instead of allocating `batchItem` records. The cache-aware form keeps
 lookup, exact-key binding, verdicts, and post-valid-miss admission allocation
-free. Its immutable decoded-A entry is 192 bytes; it never replaces the
-original A bytes used by the challenge hash.
+free. Its first immutable decoded-A entry is 192 bytes; the promoted r51 entry
+is 19,424 bytes including the original raw binding and decoded point. Neither
+entry replaces the original A bytes used by the challenge hash.
 
-Complete Cache A/B measurements enable this decoded-A tier only when
-`cpufeat.PreferWideIFMA()` selects native-wide Zen 5. Zen 4 reports
-`supportsPrecomp() == false`, so `Cache.VerifyBatchStrict` bypasses cache
-bookkeeping and uses the ordinary raw r51 path. On Zen 5, all-hit chunks of
-width at least four use decoded A; mixed hits are admitted to the prepared path
-only for a complete 64-item chunk at at least 25% density. Automatic backend
-selection still does not use either raw contract.
+Both Zen 4 and Zen 5 report `supportsPrecomp() == true` when r51 is explicitly
+forced. Zen 5 consumes decoded-A hits immediately. Zen 4 retains decoded A as
+promotion staging but continues to use cold arithmetic until a complete warm
+x4 group exists. The backend consumes only complete warm x4 groups already
+aligned in caller order; it does not permute scattered hits or wait across
+calls. Zen 4 consumes each aligned warm x4 group; Zen 5 consumes aligned pairs
+as one native-width unit and permits one final warm x4 tail. A half-warm Zen 5
+x8 group stays cold/decoded because the half-full x8 cliff is smaller than
+fragmenting it into warm and cold x4 calls. Automatic backend selection still
+does not use either raw contract.
+
+At commit `915fd6d`, n=64 and 1232-byte messages measured 8.259 us/signature
+raw, 7.688 decoded, and 5.329 fully warm on Zen 5. Zen 4 measured 14.19 raw,
+15.38 staging, and 6.728 fully warm. Thus Zen 5 benefits before promotion;
+Zen 4 callers accept about 8% staging overhead and should enable Cache only for
+workloads with demonstrated recurrence. At 25% warm density Zen 4 already
+measured 12.38 us/signature, ahead of raw cold. Timed rows allocated zero.
 
 ### Promotion boundary
 

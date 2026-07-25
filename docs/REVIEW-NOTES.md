@@ -2,8 +2,9 @@
 
 > Consensus-exact, accelerated Ed25519 verification for a Go Solana node.
 > Alpha. This branch is up for review. The Zen 4/Zen 5 r51 composition is
-> registered for explicit selection; automatic dispatch remains generic. The
-> r43 reference, warm per-key comb, and HEEA variants remain forced experiments.
+> registered for explicit selection; automatic dispatch remains generic. Its
+> opt-in Cache can promote recurring valid strict keys to the warm A6/r9 comb.
+> The r43 reference and HEEA variants remain forced experiments.
 
 ## Why
 
@@ -74,9 +75,11 @@ verdicts.
     scalar reference verifier are implemented and have executed on Zen 4; its
     performance does not displace the selected r51 path. Automatic selection
     deliberately remains `generic`.
-  - `r51` — a registered, forced-only five-limb lane-per-signature Zen 4
-    backend. It uses a packed singleton and x4 batch-Q groups; automatic
-    selection remains generic. The wider x8, warm-comb, and alternate-radix
+  - `r51` — a registered, forced-only five-limb lane-per-signature AMD
+    backend. It uses a packed singleton, x4 batch-Q groups on Zen 4, and native
+    x8 groups plus x4 tails on Zen 5. Its optional Cache promotes four recurring
+    strict keys together to immutable warm A6/r9 tables while preserving the
+    native SIMD width. Automatic selection remains generic. Alternate-radix
     configurations remain benchmark candidates. See
     `docs/R51_THROUGHPUT_BACKEND.md`.
   - `stdlib` — routes to `crypto/ed25519`; the rollback proof point.
@@ -95,10 +98,10 @@ verdicts.
 | Differential test corpus (RFC 8032, CCTV 914, Wycheproof 133, Firedancer regressions, fuzz) | done |
 | `sha512mb` AVX2 x4 / AVX-512F x8 kernels | hardware-tested; x4 consumed by forced r51, public hash dispatch remains scalar |
 | forced-only `ifma` r43x6 reference backend | implemented and hardware-tested; not automatic |
-| registered r51 cold backend | done for explicit Zen 4 selection; packed singleton plus x4 batch-Q dispatcher |
+| registered r51 cold backend | done for explicit Zen 4/Zen 5 selection; packed singleton plus width-specific batch-Q dispatcher |
 | exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
 | r51 x8 plus radix-32/comb256 cold schedule | promoted inside forced `r51`; CPUID selects x8 only on AMD family 1Ah+ |
-| r51 variable-base tables | small cold table rebuilt per verification; the Zen 5 Cache tier reuses only a 192-byte decoded A, while the larger per-key warm comb remains experimental; Zen 4 `supportsPrecomp()` is false |
+| r51 variable-base tables | small cold table rebuilt per verification; opt-in Cache admits exact-byte-bound decoded A and promotes valid strict hits to a 19,424-byte A6/r9 warm entry on Zen 4 and Zen 5 |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
 The branch is an audit candidate, not a release tag. After review findings are
@@ -160,6 +163,10 @@ release decision, never that decision itself.
 - The main module graph contains no Oasis dependency. The pinned voi oracle is
   reachable only with `go.oasis.mod` plus the `oasis_compare` test tag.
 - The one-active-backend invariant and `Cache` concurrency.
+- Cache promotion atomicity and byte accounting: only valid strict hits may
+  promote; replacement entries are immutable; build failure preserves the
+  decoded entry; Zen 5 must not fragment one native x8 group into half-warm
+  x4 work.
 - That `VerifyStrict` can never be weakened by a global profile flip.
 
 ---

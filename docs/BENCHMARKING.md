@@ -34,7 +34,7 @@ names are the comparison:
 | `impl=stdlib` | `crypto/ed25519.Verify` — the baseline Mithril used |
 | `impl=narya-compat` | narya `StdlibCompat` — **same predicate** as stdlib, narya's code path. `narya-compat − stdlib` = our wrapper overhead. |
 | `impl=narya-strict` | narya `DalekStrict` — mainnet semantics. `narya-strict − narya-compat` = the small-order pre-pass cost. |
-| `impl=narya-cached` | narya through a warm `Cache` (per-key comb table) — the recurring-signer path. |
+| `impl=narya-cached` | narya through the active backend's `Cache`. Under the default generic backend this is the generic per-key comb; forced r51 has a separate decoded-A plus promoted A6/r9 matrix described below. |
 
 So the numbers directly answer: what does mainnet-correct verification cost
 vs the standard library, and how much comes from the strict pre-pass vs the
@@ -146,13 +146,30 @@ the length check and then hands caller-owned slices directly to the native
 batch pipeline, avoiding an artificial `[]batchItem` allocation/copy. Generic
 baselines retain their existing item path.
 
-Forced r51 also has a private cache-aware raw contract. Zen 5 can pass exact
-raw-bound decoded-A hits through fixed worker scratch without allocations;
-Zen 4 reports `supportsPrecomp() == false` after complete Cache A/B showed no
-win and therefore bypasses lookup/admission entirely. Use
-`BenchmarkR51DecodedACacheTier` for the Zen 5 0/25/50/75/100% hit-density
-matrix and `BenchmarkR51DecodedACacheHardwareBypass` for the Zen 4 routing
-gate. Both report native-fault deltas and allocations.
+Forced r51 also has a private cache-aware raw contract. Its first tier binds an
+immutable decoded A to the exact original key bytes. Valid strict hits can
+promote four independent keys together to immutable A6/r9 warm-comb entries;
+a stranded key uses a higher solo threshold. Zen 5 consumes complete warm x4
+groups only in aligned pairs, except a final four-signature tail, so it does
+not trade a native x8 cold/decoded group for one warm and one cold x4 group.
+Zen 4 consumes each complete warm x4 group independently. Invalid signatures
+never earn admission or promotion.
+
+Use the complete public/private cache-tier matrix:
+
+```text
+taskset -c 2 env GOMAXPROCS=1 go test -run '^$' \
+  -bench '^BenchmarkR51CacheTierMatrix$' -benchmem \
+  -benchtime=3s -count=10 ./ed25519
+```
+
+It covers n=4/8/64, messages 64/200/1232, raw cold, cache staging/decoded,
+and 25/50/75/100% homogeneous warm-group density. The setup performs real
+Cache admission and promotion before the timer starts, then freezes the
+non-warm candidates so the timed hit-density remains stable. Every row reports
+allocations; `InternalFaultFallbacks` must remain unchanged. The older
+`BenchmarkR51DecodedACacheTier` remains a first-tier diagnostic rather than the
+current end-to-end cache release gate.
 
 Paired decompression has its own complete-path admission comparator:
 

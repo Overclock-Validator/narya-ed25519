@@ -437,6 +437,90 @@ func TestCacheGroupedPromotionAndIncrementalAccounting(t *testing.T) {
 	}
 }
 
+func TestCacheConcurrentGroupedPromotionSingleBuild(t *testing.T) {
+	b := &promotionProbeBackend{
+		cacheProbeBackend: cacheProbeBackend{supported: true, tableSize: 64},
+		groupThreshold:    1,
+		soloThreshold:     1 << 20,
+	}
+	c := &Cache{MaxTableBytes: precomputedPromotionWidth * 128}
+	var pubs [precomputedPromotionWidth][32]byte
+	var pre [precomputedPromotionWidth]*PrecomputedKey
+	for lane := range pubs {
+		pubs[lane][0] = byte(0xa0 + lane)
+		for sighting := 0; sighting < buildThreshold; sighting++ {
+			c.admit(b, &pubs[lane])
+		}
+		value, ok := c.tables.Load(pubs[lane])
+		if !ok {
+			t.Fatalf("lane=%d missing first-tier entry", lane)
+		}
+		pre[lane] = value.(*PrecomputedKey)
+	}
+
+	const callersPerKey = 16
+	start := make(chan struct{})
+	var calls sync.WaitGroup
+	for lane := range pre {
+		for caller := 0; caller < callersPerKey; caller++ {
+			calls.Add(1)
+			go func(prepared *PrecomputedKey) {
+				defer calls.Done()
+				<-start
+				c.promote(b, prepared)
+			}(pre[lane])
+		}
+	}
+	close(start)
+	calls.Wait()
+
+	if got := b.promotionBuilds.Load(); got != 1 {
+		t.Fatalf("concurrent promotion builds=%d want=1", got)
+	}
+	if got := c.Stats(); got.Tables != precomputedPromotionWidth ||
+		got.PromotedTables != precomputedPromotionWidth ||
+		got.TableBytes != precomputedPromotionWidth*128 {
+		t.Fatalf("concurrent promotion stats=%+v", got)
+	}
+}
+
+func TestCachePromotionFailureRetainsFirstTier(t *testing.T) {
+	b := &promotionProbeBackend{
+		cacheProbeBackend: cacheProbeBackend{supported: true, tableSize: 64},
+		groupThreshold:    1,
+		soloThreshold:     1 << 20,
+		failPromotion:     true,
+	}
+	c := &Cache{MaxTableBytes: precomputedPromotionWidth * 128}
+	var pubs [precomputedPromotionWidth][32]byte
+	var pre [precomputedPromotionWidth]*PrecomputedKey
+	for lane := range pubs {
+		pubs[lane][0] = byte(0xc0 + lane)
+		for sighting := 0; sighting < buildThreshold; sighting++ {
+			c.admit(b, &pubs[lane])
+		}
+		value, _ := c.tables.Load(pubs[lane])
+		pre[lane] = value.(*PrecomputedKey)
+	}
+	for lane := range pre {
+		c.promote(b, pre[lane])
+	}
+	for lane := range pre {
+		value, _ := c.tables.Load(pubs[lane])
+		if value.(*PrecomputedKey) != pre[lane] {
+			t.Fatalf("lane=%d promotion failure replaced first tier", lane)
+		}
+		c.promote(b, pre[lane])
+	}
+	if got := b.promotionBuilds.Load(); got != 1 {
+		t.Fatalf("failed promotion builds=%d want=1", got)
+	}
+	if got := c.Stats(); got.Tables != precomputedPromotionWidth ||
+		got.PromotedTables != 0 || got.TableBytes != precomputedPromotionWidth*64 {
+		t.Fatalf("failed promotion stats=%+v", got)
+	}
+}
+
 func TestCacheSoloPromotionFlushAndBudgetFailure(t *testing.T) {
 	for _, test := range []struct {
 		name         string

@@ -28,10 +28,11 @@ The first three are verbatim file moves with symbol names unchanged. The fourth
 reshapes one constructor's error reporting and keeps a `testing.TB` wrapper, so
 no test file needed editing.
 
-**The point of all of it:** the entire warm partial comb lived in `_test.go`
-files, so `go build ./...` did not cover it and no backend could reach it. It now
-builds without test files. That was the blocker in front of C2, not the
-arithmetic, which was already finished and tested.
+**The point of all of it:** the entire warm partial comb originally lived in
+`_test.go` files, so `go build ./...` did not cover it and no backend could
+reach it. The convergence branch now exposes a private immutable r51 warm key,
+builds four keys with one inversion, and reaches it through the opt-in public
+`Cache` path. Automatic backend selection remains generic.
 
 ---
 
@@ -44,10 +45,11 @@ arithmetic, which was already finished and tested.
 | best cold measured (x8 / radixA=32 / comb256, n>=8) | 9.24 | 2.97x |
 | warm partial comb (A6r9-B10r5) | 4.49 | 6.12x |
 
-The warm comb is worth roughly **3x the cold path**, but the current production
-table behind `supportsPrecomp()` contains only decoded A; it does not expose the
-comb. Everything else on this list is worth 6-30%. If only one larger cache
-experiment gets done, it should be the warm comb path.
+The warm comb was worth roughly **3x the then-current cold path** in the private
+experiment. It is now reachable through forced r51's Cache; the complete
+public/private seam, including lookup and width-aware regrouping, measures
+5.3 us/signature on Zen 5 and 6.7 on Zen 4 at n=64/msg=1232 when fully warm.
+These are warm-key results, not cold-key headline numbers.
 
 ### Why the cache is justified
 
@@ -57,16 +59,20 @@ experiment gets done, it should be the warm comb path.
 - saving per warm verify **8.30 us**
 - **break-even = 13.05 / 8.30 = 1.6 verifies**
 
-A key pays for its table the *second* time it is seen. This is a much lower bar
-than the Alpenglow key-diversity concern assumed, and it argues the planned
-`AdmitAfter = 8` is far too conservative. **Recommend 2.**
+The isolated arithmetic paid for its table near the second reuse when four
+keys built together, but production also pays admission, grouping, and a solo
+flush when four candidates do not coincide. The library therefore retains the
+conservative thresholds of eight successful sightings, eight valid strict
+hits before group eligibility, and 32 hits for a stranded solo candidate.
+Traffic traces, not this microbenchmark, should tune integration policy.
 
 ---
 
-## 3. Structural constraints (found by trying to build it)
+## 3. Structural constraints and their resolutions
 
-These are the reasons C2a stopped at step 4. None are performance problems; they
-are shape mismatches between the warm comb and the Cache.
+These shape mismatches were found while connecting the warm comb to Cache. They
+remain useful constraints even though the current branch now implements the
+resolution described for each one.
 
 ### 3.1 The warm comb cannot verify fewer than four signatures
 
@@ -75,15 +81,20 @@ Consequence: `backend.verify` — the **singleton** path — can never use a cac
 table, no matter what is in the cache. Only batches can. Any design that assumes
 "cache hit => fast single verify" is wrong for this backend.
 
+**Resolution:** singleton Cache calls retain the ordinary verifier while still
+earning valid admission credit. Warm arithmetic starts at one complete x4 batch.
+
 ### 3.2 A warm group must be homogeneous
 
 The constructor prepares tables for *every* input in the group. There is no
 representation for "lanes 0-2 cached, lane 3 cold". A group with three hits and
 one miss therefore falls **entirely** to the cold path.
 
-This is the biggest limiter on realised cache value. With diverse fee-payers,
-hits will be scattered, and requiring four cached keys to line up in one group
-wastes most of them. See §5.1 for the research question this raises.
+**Current resolution:** the dispatcher consumes complete warm x4 groups that
+are already aligned in caller order. Unmatched or scattered hits remain on the
+cold/decoded path. Zen 5 additionally requires two adjacent warm x4 groups
+before consuming them, unless exactly four signatures remain. Regrouping across
+the current call, or refilling across calls, remains integration work.
 
 ### 3.3 Single-key builds cost 4x the headline figure
 
@@ -94,18 +105,17 @@ moving break-even from 1.6 to **6.3 verifies**.
 The Cache is per-key throughout (`admit(pub)`, `buildPrecomp(pub)`,
 `lookup(pub)`), so a naive integration lands on the expensive figure.
 
-**Decision taken:** batch admissions. Hold keys that cross the threshold in a
-small pending set and build once four accumulate. Needs a flush policy so a
-partially-filled pending set does not strand keys indefinitely.
+**Resolution:** batch admissions hold eligible keys in a bounded pending set and
+build once four accumulate. A partially-filled set flushes one key only after
+the higher solo threshold, so it cannot remain stranded indefinitely.
 
-### 3.4 The registered batch pipeline supports exactly one shape
+### 3.4 The registered batch pipeline historically supported one shape
 
-`verifyChunk` in `backend_r51batchq.go` evaluates through `core.x4[half]`.
-`newR51IFMACombPipeline` populates `variableX4` plus a shared fixed-base comb and
-leaves `x4` empty; the x8 kind populates `x8` instead. So **neither faster shape
-is reachable by changing the constructor call** — both need a matching evaluation
-path. This is recorded at the call site; a one-line attempt panics with
-`uninitialized forced r51 IFMA x4 workspace`.
+This was the original integration blocker, not the current status. The branch
+now has matching evaluation paths for the promoted radix-32/comb256 x4 and x8
+cores, and CPUID chooses the native width. The old one-line constructor swap
+would still have been invalid; the lesson is that preparation and evaluation
+shape must be promoted together and protected by the complete-pipeline tests.
 
 ---
 
@@ -157,13 +167,16 @@ already in the plan: small batches happen at the tip when traffic is light and
 speed does not matter; deep batches happen when catching up, which is exactly
 when it does.
 
-### 4.3 C2a step 4 — wire the warm comb into the backend
+### 4.3 C2a step 4 — landed: warm comb through Cache
 
-`supportsPrecomp() -> true`; `buildPrecomp` builds the A6r9 table and sets
-`table` + `size = 19200` instead of the current 32-byte stub; `verify` stops
-ignoring its `*PrecomputedKey`. Plus the batch-partitioning layer that §3.1-3.3
-force: group cached keys into homogeneous x4 sets, send the remainder cold,
-batch admissions four at a time.
+Forced r51 now reports `supportsPrecomp() == true`. The first tier is an
+exact-byte-bound decoded A; four eligible valid strict keys are promoted
+together into immutable 19,424-byte entries containing A6/r9. Batch dispatch
+consumes naturally aligned all-warm x4 groups and sends every other group
+through the ordinary cold/decoded path. Zen 5 consumes warm groups in aligned
+pairs to preserve native x8 occupancy, except for one final four-item tail.
+Invalid signatures never promote, failed builds retain the decoded tier, and
+timed verification remains allocation-free.
 
 ---
 
@@ -179,20 +192,16 @@ Do not spend more implementation time on the current HEEA/QSM construction;
 retain it as proof and differential-test evidence. Exact commands and medians
 are recorded in `docs/HEEA.md`.
 
-### 5.1 Mixed warm/cold lanes in one SIMD group
+### 5.1 Mixed warm/cold lanes in one SIMD group — deferred
 
-The highest-value unknown. If lanes could independently choose comb-table versus
-from-scratch evaluation inside one group, §3.2 disappears and realised cache
-value rises sharply.
-
-The obstacle is that the two paths have different loop structures: the comb runs
-a fixed number of passes over precomputed rows, while the cold path runs a
-windowed DSM with a doubling chain. They do not share a schedule, so lanes cannot
-step in lockstep.
-
-Worth asking whether anyone has published a heterogeneous-lane scalar
-multiplication scheme, or a way to express the comb's schedule as a special case
-of the windowed one so both can run together with per-lane digit selection.
+The comb and cold paths have incompatible doubling schedules, so a
+heterogeneous lane kernel would add a third consensus-critical arithmetic path
+without evidence that its complexity pays. The implemented lower-risk policy
+uses only complete warm x4 sets already aligned in caller order and sends every
+other group through the ordinary full-occupancy path. On Zen 5, one isolated
+warm x4 is deliberately ignored inside an otherwise complete x8 group.
+Result-index-preserving regrouping and cross-call refill are future integration
+policies, not cryptographic-library dispatch.
 
 ### 5.2 Partial-group efficiency for x8 — closed
 
@@ -243,18 +252,16 @@ rather than 7,158 comb tables. The current admission-entry limit is 131,072, so
 that arithmetic capacity is not the effective default and must not be quoted as
 one.
 
-The complete Cache experiment is now closed for the two measured CPUs. Zen 5
-fully warm `n=64` improved about 9--10% at 64/200/1232-byte messages. Zen 4 was
-about 1% slower even at 100% hits, so `supportsPrecomp()` is enabled only on the
-native-wide Zen 5 dispatch. Mixed hit preparation regressed small Zen 5 chunks;
-the supported rule requires all hits below 64 items and at least 25% hits for a
-complete 64-item encoder chunk. The implementation performs one lookup, admits
-only valid misses, stores an immutable entry without per-hit point copies, and
-reports native fallback faults in its benchmark.
+The decoded tier now composes with the hot comb. At n=64/msg=1232, Zen 5 moves
+from 8.259 us raw to 7.688 decoded and 5.329 fully warm. Zen 4 deliberately
+retains decoded A only as promotion staging: it moves from 14.19 raw to 15.38
+at 0% warm, then 12.38/10.54/8.669/6.728 at 25/50/75/100% warm. Consequently
+the r51 Cache is opt-in on both CPUs, but Zen 4 integration should reserve it
+for recurrence-rich workloads rather than arbitrary TPU ingress.
 
-Invalid signatures never earn admission. Reuse distance, memory budget,
-concurrency, and adversarial churn remain traffic-policy questions rather than
-arithmetic questions; a larger hot comb tier remains separate.
+Invalid signatures never earn admission or promotion. Reuse distance, memory
+budget, concurrency, eviction, and adversarial churn remain traffic-policy
+questions rather than arithmetic questions.
 
 ### 5.5 Mixed warm/cold lanes and cross-call lane refill
 
@@ -298,5 +305,6 @@ with x4 tails retained for thin traffic at the tip.
 - **Cached Y+-X tables and AffineNiels mixed addition** (open tasks) are ~3-6% on
   the cold path. Real, but not before §4.
 - **No default was changed.** Automatic dispatch still selects `generic`.
-  Decoded-A precomputation is enabled only for explicitly forced r51 on Zen 5;
-  Zen 4 and every automatic path retain their former routing.
+  The two-tier Cache is available only when callers explicitly force r51 and
+  choose the Cache API. Raw forced-r51 and every automatic path retain their
+  former routing.

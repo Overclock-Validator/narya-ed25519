@@ -5,23 +5,28 @@ import (
 	"sync/atomic"
 )
 
-// Cache verifies signatures, building a per-key table for public keys
-// that keep recurring. It is safe for concurrent use.
+// Cache verifies signatures, building backend-native immutable state for
+// public keys that keep recurring. It is safe for concurrent use.
 //
 // A Cache must not be copied after first use. MaxTableBytes must be configured
 // before first use and must not be changed concurrently with verification.
 //
-// The current conservative policy waits for buildThreshold successful
-// verifications, while invalid signatures and one-shot keys never earn a
-// table. The threshold is an implementation default, not a claim about a
-// production signer distribution; real Mithril traces must validate policy
-// before a process-wide cache is enabled. Admission state has a hard entry
-// limit and is never cleared, so a counter cannot be detached from its key
-// while another goroutine is using it and deterministic build failures are
-// not retried.
+// The conservative first-tier policy waits for buildThreshold successful
+// verifications, while invalid signatures and one-shot keys never earn an
+// entry. A backend may then promote valid hits to a larger second tier. The
+// forced r51 backend groups four promotion candidates so its warm A6/r9 comb
+// can share one inversion; a single pending key is flushed only at the higher
+// solo threshold. Promotion replaces the immutable first-tier entry and
+// reserves only the incremental bytes. Invalid signatures never promote.
+//
+// These thresholds are implementation defaults, not claims about a production
+// signer distribution. Real Mithril traces must validate policy before a
+// process-wide cache is enabled. Admission state has a hard entry limit and is
+// never cleared, so a counter cannot be detached from its key while another
+// goroutine is using it and deterministic build failures are not retried.
 // Once the limit is reached, previously unseen keys remain on the plain path.
-// Tables are never evicted; MaxTableBytes stops admission when its strict
-// memory budget is spent.
+// Tables are never evicted; MaxTableBytes stops admission or promotion when its
+// strict memory budget is spent.
 type Cache struct {
 	// MaxTableBytes strictly bounds the memory held by per-key tables. Zero
 	// means DefaultMaxTableBytes. Configure it before the Cache's first use.

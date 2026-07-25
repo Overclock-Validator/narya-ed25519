@@ -136,7 +136,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses two x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. Zen 5 `Cache` batches may reuse an exact-byte-bound 192-byte decoded-A entry; Zen 4 bypasses that tier because its complete Cache path did not beat cold verification. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Zen 5 consumes warm x4 groups only in aligned pairs, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide path. Zen 4 uses each complete warm x4 group independently. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -212,24 +212,33 @@ full x4 groups. Exact rows and invalid-input caveats are recorded in
 
 The registered r51 cold path remains arbitrary-key verification: its full SIMD
 groups decode A and build the small variable-base table for every signature.
-On Zen 5 only, `Cache.VerifyBatchStrict` can retain a 192-byte immutable decoded
-A entry bound to the exact original public-key bytes. The entry skips only A
-decompression; hashing, strict prechecks, scalar multiplication, and final
-equality are unchanged. At commit `9ca01ec`, fully warm `n=64` measured
-7.20/7.25/7.50 us/signature for 64/200/1232-byte messages versus
-7.98/8.02/8.26 cold (about 9--10%). Mixed hits are used only for a complete
-64-signature chunk at at least 25% density; smaller chunks require all hits.
-The same complete Cache path was about 1% slower than cold on Zen 4 at every
-message size, so commit `7983032` disables its bookkeeping there. Raw outputs
-and the negative result are in
-[`docs/results/decoded-a-cache-2026-07-25/`](docs/results/decoded-a-cache-2026-07-25/).
+The opt-in `Cache.VerifyBatchStrict` path now has two exact-byte-bound tiers.
+The first retains decoded A; a valid `DalekStrict` hit can then promote four
+independent keys together to an immutable 19,424-byte entry containing the
+A6/r9 warm comb. The original public-key bytes are still hashed, and strict
+prechecks and final equality are unchanged. Invalid equations and inputs never
+earn promotion. The first-tier threshold is eight successful sightings; group
+promotion starts after eight valid hits and a stranded single key is flushed
+only after 32 hits. These are conservative library defaults, not a production
+traffic-policy recommendation.
 
-The warm per-key r51 comb and HEEA remain experiments. The prepared A6/r9+B10 warm verifier has
-measured about 4.7--4.8 us/signature at n=64 across distinct, four-key, and
-same-key fixtures, but it excludes table construction and production cache
-lookup/admission/eviction. It is neither reachable through public `Cache` APIs
-nor a cold-key result. Other point-loop microbenchmarks exclude still more of
-the complete verifier and are likewise not headline results.
+At implementation commit `915fd6d`, the complete public/private Cache seam at
+1232 bytes and n=64 measured, in microseconds per signature:
+
+| CPU | raw cold | decoded/staging, 0% warm | 25% warm | 50% warm | 75% warm | 100% warm |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Ryzen 7 9700X (Zen 5) | 8.259 | 7.688 | 7.100 | 6.533 | 5.963 | 5.329 |
+| Ryzen 7 PRO 8700GE (Zen 4) | 14.19 | 15.38 | 12.38 | 10.54 | 8.669 | 6.728 |
+
+All timed rows allocated zero. Zen 5 benefits immediately from decoded A.
+Zen 4 pays about 8% while admitted keys are only staging entries, then wins by
+25% warm density; callers should therefore enable its Cache only for workloads
+with demonstrated recurrence, such as validator-key repair or shred traffic,
+not as an unconditional TPU-spam policy. The Cache is never used by raw
+`VerifyBatchStrict`, and automatic backend selection remains `generic`.
+HEEA remains a slower research oracle rather than a dispatch candidate. Exact
+methodology and the complete n=4/8/64 matrix are in
+[`docs/results/warm-comb-cache-2026-07-25/`](docs/results/warm-comb-cache-2026-07-25/).
 
 Detailed commands, raw statistical samples, checksums, and caveats are recorded
 in [`docs/results/zen4-8700ge-pr1-2026-07-25/`](docs/results/zen4-8700ge-pr1-2026-07-25/)
@@ -271,8 +280,11 @@ Alpha. The `generic` backend, the profile contract, and the per-key comb cache
 are functional and differential-tested. The `r51` throughput backend is
 registered for explicit selection on supported hardware but remains outside
 automatic dispatch. It uses the promoted two-x4 cold comb on Zen 4 and native
-x8 groups plus x4 tails on AMD family 1Ah (Zen 5). The `ifma` reference backend
-and r51 warm-cache variants remain under active development.
+x8 groups plus x4 tails on AMD family 1Ah (Zen 5). Its opt-in two-tier Cache
+and width-aware A6/r9 warm promotion are implemented and hardware-tested; the
+traffic-specific admission and eviction policy remains integration work. The
+`ifma` reference backend and alternate arithmetic experiments remain under
+active development.
 
 ## License
 
