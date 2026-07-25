@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+
+	"github.com/Overclock-Validator/narya/internal/r51x5"
 )
 
 func requireR51Backend(t testing.TB) *r51Backend {
@@ -144,4 +146,35 @@ func BenchmarkR51BackendDispatch(b *testing.B) {
 			})
 		}
 	}
+}
+
+// BenchmarkR51SingletonDispatchOverhead keeps the packed core and backend
+// adapter in one test binary. Cross-package benchmark binaries can differ
+// enough in code layout to obscure sub-microsecond dispatch costs.
+func BenchmarkR51SingletonDispatchOverhead(b *testing.B) {
+	backend := requireR51Backend(b)
+	direct, err := r51x5.NewExperimentalPackedStrictVerifierX4()
+	if err != nil {
+		b.Fatal(err)
+	}
+	f := makeFixture(b, 200)
+
+	b.Run("direct-packed", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			ok, err := direct.Verify(&f.pub, f.msg, f.sig)
+			if err != nil || !ok {
+				b.Fatalf("direct packed verify=(%v,%v)", ok, err)
+			}
+		}
+	})
+	b.Run("pooled-backend", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			ok, err := backend.verifyOne(DalekStrict, &f.pub, f.msg, f.sig)
+			if err != nil || !ok {
+				b.Fatalf("pooled backend verify=(%v,%v)", ok, err)
+			}
+		}
+	})
 }
