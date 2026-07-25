@@ -469,7 +469,7 @@ func BenchmarkR51DecodedACacheHardwareBypass(b *testing.B) {
 				verify func() bool
 			}{
 				{name: "cold", verify: func() bool {
-					return backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
+					return verifyBatch(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok, nil)
 				}},
 				{name: "cache-bypass", verify: func() bool {
 					return cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
