@@ -1,5 +1,14 @@
-// Fixed-base comb evaluation for arbitrary points. This file is part
-// of narya, not the vendored upstream code.
+// Copyright 2026 Overclock Validator
+// Licensed under the Apache License, Version 2.0; see the LICENSE file at
+// the root of this repository.
+//
+// This file is part of narya and is NOT vendored upstream code. The
+// BSD-3-Clause LICENSE in this directory governs the vendored Go /
+// filippo.io edwards25519 files only, and does not apply here.
+//
+// Fixed-base comb evaluation for arbitrary points. Originally developed for
+// Mithril (https://github.com/Overclock-Validator/mithril) as part of
+// pkg/ed25519fast, authored by palmer <palmer.lao@gmail.com>.
 
 package edwards25519
 
