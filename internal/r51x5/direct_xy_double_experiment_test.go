@@ -50,12 +50,10 @@ func ifmaPointDoubleSquareTrickStaticX4(out, q *IFMAPointX4) error {
 	return nil
 }
 
-// ifmaPointDoubleDirectXYStaticX4 is a test-only A/B for the current
-// signature-parallel x4 point layer. The production formula obtains E=2XY as
-// (X+Y)^2-X^2-Y^2. Since the current r51 kernel uses the general multiply for
-// squaring and normalizes every composable Add/Subtract, computing XY
-// directly keeps the multiply count unchanged while removing two normalized
-// field operations from the E sub-DAG.
+// ifmaPointDoubleDirectXYStaticX4 mirrors the current production direct-XY
+// schedule in a test-only helper. Keeping it separate from
+// ifmaPointDoubleSquareTrickStaticX4 above preserves an independently timed
+// historical control for the formula A/B.
 func ifmaPointDoubleDirectXYStaticX4(out, q *IFMAPointX4) error {
 	qq := *q
 	var A, B, C, D, E, F, G, H IFMAElementX4
