@@ -117,3 +117,26 @@ func selectIFMAMicroAoSUncheckedExperimentX4(out *IFMAPointX4, tables *[X4Lanes]
 	conditionalNegateIFMAPointX4(out, negativeMask)
 	return out
 }
+
+// importIFMAMicroAoSTablesExperimentX4 splits one grouped x4 table into four
+// per-key micro-AoS tables. Promoted from micro_aos_selector_experiment_test.go
+// because the warm-comb verifier needs it outside test builds.
+func importIFMAMicroAoSTablesExperimentX4[Storage ifmaFullTableStorageX4](grouped *ifmaFullTableX4[Storage]) [X4Lanes]ifmaMicroAoSPerKeyTableExperiment {
+	var perKey [X4Lanes]ifmaMicroAoSPerKeyTableExperiment
+	for lane := 0; lane < X4Lanes; lane++ {
+		perKey[lane].points = make([]ifmaMicroAoSPointEntryExperiment, grouped.entries)
+	}
+	for entry := 0; entry < grouped.entries; entry++ {
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				perKey[lane].points[entry][limb] = [4]uint64{
+					grouped.points[entry].X.limbs[limb][lane],
+					grouped.points[entry].Y.limbs[limb][lane],
+					grouped.points[entry].Z.limbs[limb][lane],
+					grouped.points[entry].T.limbs[limb][lane],
+				}
+			}
+		}
+	}
+	return perKey
+}

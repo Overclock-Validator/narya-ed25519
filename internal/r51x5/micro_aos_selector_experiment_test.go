@@ -11,26 +11,6 @@ func microAoSSelectorExperimentCanCall() bool {
 	return runtime.GOARCH != "amd64" || ExperimentalIFMAAvailable()
 }
 
-func importIFMAMicroAoSTablesExperimentX4[Storage ifmaFullTableStorageX4](grouped *ifmaFullTableX4[Storage]) [X4Lanes]ifmaMicroAoSPerKeyTableExperiment {
-	var perKey [X4Lanes]ifmaMicroAoSPerKeyTableExperiment
-	for lane := 0; lane < X4Lanes; lane++ {
-		perKey[lane].points = make([]ifmaMicroAoSPointEntryExperiment, grouped.entries)
-	}
-	for entry := 0; entry < grouped.entries; entry++ {
-		for limb := 0; limb < 5; limb++ {
-			for lane := 0; lane < X4Lanes; lane++ {
-				perKey[lane].points[entry][limb] = [4]uint64{
-					grouped.points[entry].X.limbs[limb][lane],
-					grouped.points[entry].Y.limbs[limb][lane],
-					grouped.points[entry].Z.limbs[limb][lane],
-					grouped.points[entry].T.limbs[limb][lane],
-				}
-			}
-		}
-	}
-	return perKey
-}
-
 func TestIFMAMicroAoSSelectorExperimentMatchesCheckedAllRadices(t *testing.T) {
 	if !microAoSSelectorExperimentCanCall() {
 		t.Skip("requires AVX-512 IFMA target on amd64")
