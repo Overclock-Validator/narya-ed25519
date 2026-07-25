@@ -5,6 +5,7 @@ import (
 	"testing"
 	"unsafe"
 
+	"github.com/Overclock-Validator/narya/internal/cpufeat"
 	"github.com/Overclock-Validator/narya/internal/r51x5"
 )
 
@@ -110,6 +111,29 @@ func TestR51WarmPrecomputedGroupZeroAllocations(t *testing.T) {
 	})
 	if allocations != 0 {
 		t.Fatalf("r51 warm group allocations=%v want=0", allocations)
+	}
+}
+
+func TestR51WarmDispatchPreservesNativeWidth(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeBatchFixture(t, 8, 200)
+	first := buildR51WarmGroupForTest(t, backend, fixture.pubs[:4])
+	second := buildR51WarmGroupForTest(t, backend, fixture.pubs[4:])
+	var pre [8]*PrecomputedKey
+	copy(pre[:4], first[:])
+	if got := r51WarmDispatchWidth(fixture.pubs, pre[:], 0, 8); cpufeat.PreferWideIFMA() && got != 0 {
+		t.Fatalf("native-wide half-warm dispatch width=%d want=0", got)
+	} else if !cpufeat.PreferWideIFMA() && got != r51x5.X4Lanes {
+		t.Fatalf("x4 half-warm dispatch width=%d want=%d", got, r51x5.X4Lanes)
+	}
+	copy(pre[4:], second[:])
+	if got := r51WarmDispatchWidth(fixture.pubs, pre[:], 0, 8); cpufeat.PreferWideIFMA() && got != r51x5.X8Lanes {
+		t.Fatalf("native-wide full-warm dispatch width=%d want=%d", got, r51x5.X8Lanes)
+	} else if !cpufeat.PreferWideIFMA() && got != r51x5.X4Lanes {
+		t.Fatalf("x4 full-warm dispatch width=%d want=%d", got, r51x5.X4Lanes)
+	}
+	if got := r51WarmDispatchWidth(fixture.pubs[:4], pre[:4], 0, 4); got != r51x5.X4Lanes {
+		t.Fatalf("final warm tail dispatch width=%d want=%d", got, r51x5.X4Lanes)
 	}
 }
 
