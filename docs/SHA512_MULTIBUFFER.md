@@ -52,6 +52,17 @@ tail-jump into the same 80-round body, so there is only one production round
 schedule. The first fused block also initializes the transposed SHA state,
 avoiding a scalar 64-word initialization followed by vector reloads.
 
+The fixed-three-segment entry has an additional full-x8 specialization for
+the exact verifier layouts `R[32] || A[32] || message` at message sizes 64,
+200, and 1232. It ingests the first block directly from separate R, A, and
+message pointer vectors, without materializing eight concatenated 128-byte
+buffers. The corresponding final blocks have only zero, one, or two variable
+64-bit words; those words are loaded directly into the transposed schedule,
+while the padding and length words are constructed in vector registers. Other
+lengths, segment shapes, and partial x8 groups retain the general segmented
+path. The general path is also the end-to-end differential oracle for every
+specialized shape.
+
 Correctness tests compare both the raw compression state and complete
 segmented hashing against independent Go/`crypto/sha512` references. Coverage
 includes batch sizes 0 through 17, every physical lane and tail position,
@@ -71,18 +82,32 @@ hash kernels pass their correctness and complete-verifier performance gates.
 
 On the Ryzen 7 PRO 8700GE, a pinned `GOMAXPROCS=1` development measurement of
 the fixed `R || A || message` entry point after the rolling schedule, native
-transpose/compression fusion, first-block state initialization, and
-direct-block ingestion gave:
+transpose/compression fusion, direct middle-block ingestion, and exact
+first/final-block specialization gave:
 
 | message bytes | scalar Go | native x8 | speedup |
 |---:|---:|---:|---:|
-| 200 | about 402 ns/message | 139.6--139.7 ns/message | about 2.88x |
-| 1232 | about 1,348 ns/message | 428.5--429.6 ns/message | about 3.14x |
+| 64 | not recorded in the same run | 75.45 ns/message | -- |
+| 200 | about 402 ns/message | 110.5 ns/message | about 3.64x |
+| 1232 | about 1,348 ns/message | 390.3 ns/message | about 3.45x |
 
 These are hash-only figures, not complete signature-verification numbers. The
 long-message result is especially relevant to Solana's 1232-byte transaction
 ceiling. Automatic SHA or verifier dispatch remains unchanged while B1 is an
 experimental branch.
+
+For these three exact layouts the measurements fit the simple block-count
+model `T(B) ~= 5.5 ns + 35.0 ns * B` per message, where `B` is 2, 3, or 11.
+The corresponding scalar 200/1232-byte measurements fit approximately
+`47.3 ns + 118.3 ns * B`. This is empirical decomposition, not an instruction
+lower bound, but it records why input-layout specialization was prioritized
+over another round-loop rewrite.
+
+Two round-constant delivery alternatives were rejected on the same Ryzen:
+a pre-expanded 5 KiB vector table slightly regressed the complete path, while
+an EVEX embedded scalar-memory broadcast was statistically identical to the
+retained `VPBROADCASTQ` plus `VPADDQ` sequence (`+0.01%` geomean in the quick
+A/B). The retained scalar constant table is therefore deliberate.
 
 `BenchmarkNativeTails` compares the scalar dispatcher, native x4, and native
 x8 for every naturally available count from 1 through 17. The scalar row is

@@ -149,6 +149,13 @@ operator intent and must not silently fall back.
 scalar implementation. Its AVX2 and AVX-512 kernels are hardware-gated behind
 the `Experimental*` entry points; the forced `r51` backend calls the x4 native
 entry point internally. Automatic backend selection never reaches it.
+The experimental x8 fixed-three-segment entry additionally recognizes full
+groups of the exact `R[32] || A[32] || message` shapes at message sizes
+64/200/1232, ingesting their first and final blocks without generic segmented
+staging. On the Zen 4 release machine this hash-only path measured about
+110.5 ns/message at 200 bytes and 390.3 ns/message at 1232 bytes. It is not yet
+wired into the registered r51 verifier; see
+[`docs/SHA512_MULTIBUFFER.md`](docs/SHA512_MULTIBUFFER.md).
 
 ## Performance
 
