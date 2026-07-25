@@ -22,11 +22,13 @@ import (
 // the native partial-group path for two and three items because the packed
 // verifier intentionally implements only DalekStrict.
 type r51Backend struct {
-	activateOnce sync.Once
-	activateErr  error
-	batchPool    sync.Pool
-	singlePool   sync.Pool
-	faults       atomic.Uint64
+	activateOnce  sync.Once
+	activateErr   error
+	batchPool     sync.Pool
+	singlePool    sync.Pool
+	warmPool      sync.Pool
+	warmBuildPool sync.Pool
+	faults        atomic.Uint64
 }
 
 type r51BatchWorker struct {
@@ -40,6 +42,15 @@ type r51SingleWorker struct {
 	err      error
 }
 
+type r51WarmWorker struct {
+	verifier *r51x5.WarmCombStrictVerifierX4
+	err      error
+}
+
+type r51WarmBuildWorker struct {
+	workspace r51x5.WarmCombBuildWorkspaceX4
+}
+
 var registeredR51Backend = new(r51Backend)
 
 // r51DecodedATable is the broad, batch-oriented warm tier. Its immutable entry
@@ -51,6 +62,16 @@ type r51DecodedATable struct {
 }
 
 const r51DecodedATableBytes = 32 + 4*5*8
+
+// r51WarmTable is the promoted immutable entry. It retains the broad decoded-A
+// representation so a group that cannot use the homogeneous comb can still
+// take the decoded tier without rebuilding or mutating cache state.
+type r51WarmTable struct {
+	decoded r51DecodedAEntry
+	warm    r51x5.WarmCombKeyA6R9
+}
+
+const r51WarmTableBytes = r51DecodedATableBytes + r51x5.WarmCombKeyA6R9Bytes
 
 func init() { register("r51", registeredR51Backend) }
 
@@ -84,6 +105,11 @@ func (b *r51Backend) activate() error {
 		}
 		b.batchPool.New = func() any { return b.newBatchWorker() }
 		b.singlePool.New = func() any { return b.newSingleWorker() }
+		b.warmPool.New = func() any {
+			verifier, err := r51x5.NewWarmCombStrictVerifierX4()
+			return &r51WarmWorker{verifier: verifier, err: err}
+		}
+		b.warmBuildPool.New = func() any { return new(r51WarmBuildWorker) }
 		b.batchPool.Put(firstBatch)
 		b.singlePool.Put(firstSingle)
 	})
@@ -205,33 +231,47 @@ func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]b
 		}
 	}
 
-	if full != 0 {
-		for offset := 0; offset < full; offset += r51BatchQMaxChunk {
-			count := minR51(full-offset, r51BatchQMaxChunk)
-			if pre == nil {
-				if _, err := worker.pipeline.VerifyBatch(
-					profile,
-					pubs[offset:offset+count],
-					msgs[offset:offset+count],
-					sigs[offset:offset+count],
-					ok[offset:offset+count],
-				); err != nil {
-					return false, err
-				}
-				continue
+	for offset := 0; offset < full; {
+		if pre != nil && profile == DalekStrict && r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
+			if _, err := b.verifyWarmGroup(
+				pubs[offset:offset+r51x5.X4Lanes],
+				msgs[offset:offset+r51x5.X4Lanes],
+				sigs[offset:offset+r51x5.X4Lanes],
+				ok[offset:offset+r51x5.X4Lanes],
+				pre[offset:offset+r51x5.X4Lanes],
+			); err != nil {
+				return false, err
 			}
-			decoded := worker.resolveDecodedA(pubs[offset:offset+count], pre[offset:offset+count])
+			offset += r51x5.X4Lanes
+			continue
+		}
+
+		coldStart := offset
+		coldEnd := minR51(full, coldStart+r51BatchQMaxChunk)
+		for candidate := coldStart + r51x5.X4Lanes; candidate < coldEnd; candidate += r51x5.X4Lanes {
+			if pre != nil && profile == DalekStrict && r51WarmGroupAvailable(pubs[candidate:candidate+r51x5.X4Lanes], pre[candidate:candidate+r51x5.X4Lanes]) {
+				coldEnd = candidate
+				break
+			}
+		}
+		if pre == nil {
+			if _, err := worker.pipeline.VerifyBatch(profile, pubs[coldStart:coldEnd], msgs[coldStart:coldEnd], sigs[coldStart:coldEnd], ok[coldStart:coldEnd]); err != nil {
+				return false, err
+			}
+		} else {
+			decoded := worker.resolveDecodedA(pubs[coldStart:coldEnd], pre[coldStart:coldEnd])
 			if _, err := worker.pipeline.verifyBatchWithDecodedA(
 				profile,
-				pubs[offset:offset+count],
-				msgs[offset:offset+count],
-				sigs[offset:offset+count],
-				ok[offset:offset+count],
+				pubs[coldStart:coldEnd],
+				msgs[coldStart:coldEnd],
+				sigs[coldStart:coldEnd],
+				ok[coldStart:coldEnd],
 				decoded,
 			); err != nil {
 				return false, err
 			}
 		}
+		offset = coldEnd
 	}
 
 	switch tail {
@@ -283,16 +323,105 @@ func (worker *r51BatchWorker) resolveDecodedA(pubs []*[32]byte, pre []*Precomput
 		if prepared == nil || pubs[index] == nil || prepared.raw != *pubs[index] {
 			continue
 		}
-		table, ok := prepared.table.(*r51DecodedATable)
-		if !ok || table == nil {
-			continue
+		switch table := prepared.table.(type) {
+		case *r51DecodedATable:
+			if table != nil && table.entry.raw == prepared.raw {
+				worker.decoded[index] = &table.entry
+			}
+		case *r51WarmTable:
+			if table != nil && table.decoded.raw == prepared.raw {
+				worker.decoded[index] = &table.decoded
+			}
 		}
-		if table.entry.raw != prepared.raw {
-			continue
-		}
-		worker.decoded[index] = &table.entry
 	}
 	return worker.decoded[:len(pubs)]
+}
+
+func r51WarmGroupAvailable(pubs []*[32]byte, pre []*PrecomputedKey) bool {
+	if len(pubs) != r51x5.X4Lanes || len(pre) != r51x5.X4Lanes {
+		return false
+	}
+	for lane := 0; lane < r51x5.X4Lanes; lane++ {
+		prepared := pre[lane]
+		if prepared == nil || pubs[lane] == nil || prepared.raw != *pubs[lane] {
+			return false
+		}
+		table, ok := prepared.table.(*r51WarmTable)
+		if !ok || table == nil || table.decoded.raw != prepared.raw {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *r51Backend) verifyWarmGroup(
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	ok []bool,
+	pre []*PrecomputedKey,
+) (bool, error) {
+	if !r51WarmGroupAvailable(pubs, pre) || len(msgs) != r51x5.X4Lanes || len(sigs) != r51x5.X4Lanes || len(ok) != r51x5.X4Lanes {
+		return false, fmt.Errorf("ed25519: invalid r51 warm group")
+	}
+	worker := b.warmPool.Get().(*r51WarmWorker)
+	if worker.err != nil {
+		return false, fmt.Errorf("ed25519: construct r51 warm worker: %w", worker.err)
+	}
+	if worker.verifier == nil {
+		return false, fmt.Errorf("ed25519: construct r51 warm worker: nil verifier")
+	}
+	var keys [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9
+	var encoded [r51x5.X4Lanes][32]byte
+	var messages, signatures [r51x5.X4Lanes][]byte
+	var verdicts [r51x5.X4Lanes]bool
+	for lane := 0; lane < r51x5.X4Lanes; lane++ {
+		table := pre[lane].table.(*r51WarmTable)
+		keys[lane] = &table.warm
+		encoded[lane] = *pubs[lane]
+		messages[lane] = msgs[lane]
+		signatures[lane] = sigs[lane]
+	}
+	all, err := worker.verifier.Verify(&keys, &encoded, &messages, &signatures, &verdicts)
+	if err != nil {
+		return false, err
+	}
+	copy(ok, verdicts[:])
+	b.warmPool.Put(worker)
+	return all, nil
+}
+
+func (b *r51Backend) buildWarmPrecompGroup(
+	pubs *[r51x5.X4Lanes]*[32]byte,
+	current *[r51x5.X4Lanes]*PrecomputedKey,
+) ([r51x5.X4Lanes]*PrecomputedKey, error) {
+	var out [r51x5.X4Lanes]*PrecomputedKey
+	if err := b.activate(); err != nil {
+		return out, err
+	}
+	var encoded [r51x5.X4Lanes][32]byte
+	var tables [r51x5.X4Lanes]*r51WarmTable
+	var warm [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9
+	for lane := 0; lane < r51x5.X4Lanes; lane++ {
+		if pubs[lane] == nil || current[lane] == nil || current[lane].raw != *pubs[lane] {
+			return out, fmt.Errorf("ed25519: invalid r51 warm-build lane %d", lane)
+		}
+		decoded, ok := current[lane].table.(*r51DecodedATable)
+		if !ok || decoded == nil || decoded.entry.raw != current[lane].raw {
+			return out, fmt.Errorf("ed25519: r51 warm-build lane %d is not a decoded entry", lane)
+		}
+		encoded[lane] = *pubs[lane]
+		tables[lane] = &r51WarmTable{decoded: decoded.entry}
+		warm[lane] = &tables[lane].warm
+	}
+	worker := b.warmBuildPool.Get().(*r51WarmBuildWorker)
+	if err := worker.workspace.BuildWarmCombKeysA6R9X4(&warm, &encoded); err != nil {
+		return out, err
+	}
+	b.warmBuildPool.Put(worker)
+	for lane := 0; lane < r51x5.X4Lanes; lane++ {
+		out[lane] = &PrecomputedKey{raw: encoded[lane], table: tables[lane], size: r51WarmTableBytes}
+	}
+	return out, nil
 }
 
 // r51UseDecodedAPrecomputed reports whether the measured decode saving is
