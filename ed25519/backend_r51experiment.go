@@ -11,11 +11,10 @@ import (
 	"github.com/Overclock-Validator/narya/sha512mb"
 )
 
-// This file is the promotion boundary for the complete ordinary r51 verifier
-// experiment. The implementation is compiled as ordinary package code so the
-// benchmarked kernel is exactly the artifact a future backend could register.
-// It deliberately has no init function, backend adapter, or exported entry
-// point: backend selection and all production verification remain unchanged.
+// This file contains the complete ordinary r51 verifier core. The explicitly
+// selected r51 backend owns and pools instances through backend_r51.go;
+// automatic selection remains generic until the release gate changes in a
+// separate reviewed commit.
 
 // r51IFMAPipelineKind names three genuinely different forced experiments. The
 // two-x4 path executes two YMM decode/DSM groups and the x4 SHA kernel; it is
@@ -48,11 +47,11 @@ func (kind r51IFMAPipelineKind) shaWidth() int {
 	return sha512mb.ExperimentalWidthX8
 }
 
-// r51IFMAPipeline is a dormant, private complete verifier artifact. Its
-// mutable DSM workspaces make each instance deliberately non-concurrent.
-// Fixed-base B tables are prepared once by newR51IFMAPipeline; each
-// verification group pays only for cold A table generation plus evaluation.
-// Nothing in backend registration, selection, or Lanes reaches this type.
+// r51IFMAPipeline is the private complete-verifier core. Its mutable DSM
+// workspaces make each instance deliberately non-concurrent. The r51 backend
+// therefore checks one instance out of its worker pool per call. Fixed-base B
+// tables are prepared once per worker; each verification group pays only for
+// cold A table generation plus evaluation.
 type r51IFMAPipeline struct {
 	kind              r51IFMAPipelineKind
 	radixBits         uint

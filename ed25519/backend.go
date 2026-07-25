@@ -99,7 +99,7 @@ type backendBox struct{ b backend }
 
 func register(name string, b backend) { registry[name] = b }
 
-// ActiveBackend returns the name of the backend in use ("ifma",
+// ActiveBackend returns the name of the backend in use ("r51", "ifma",
 // "generic", "stdlib"), selecting one if none is active yet.
 func ActiveBackend() string { return active().name() }
 
@@ -117,8 +117,8 @@ func SetBackend(name string) error {
 	if _, ok := registry[name]; !ok {
 		return fmt.Errorf("ed25519: unknown backend %q", name)
 	}
-	if name == "ifma" && !cpufeat.IFMA() {
-		return fmt.Errorf("ed25519: ifma backend requires AVX512-IFMA (Ice Lake / Zen 4 or newer)")
+	if (name == "ifma" || name == "r51") && !cpufeat.IFMA() {
+		return fmt.Errorf("ed25519: %s backend requires AVX512-IFMA (Ice Lake / Zen 4 or newer)", name)
 	}
 	requested = name
 	return nil
@@ -156,8 +156,8 @@ func pick(name string) backend {
 	if !ok {
 		panic(fmt.Sprintf("ed25519: unknown backend %q", name))
 	}
-	if name == "ifma" && !cpufeat.IFMA() {
-		panic("ed25519: ifma backend requested but CPU lacks AVX512-IFMA")
+	if (name == "ifma" || name == "r51") && !cpufeat.IFMA() {
+		panic(fmt.Sprintf("ed25519: %s backend requested but CPU lacks AVX512-IFMA", name))
 	}
 	if a, ok := b.(activatingBackend); ok {
 		if err := a.activate(); err != nil {

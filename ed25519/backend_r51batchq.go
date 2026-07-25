@@ -8,14 +8,13 @@ import (
 	"github.com/Overclock-Validator/narya/sha512mb"
 )
 
-// r51IFMABatchQPipeline is a dormant complete-verifier experiment for the
-// two-x4, radix-64 r51 path. It decodes A only, retains ready DSM outputs, and
+// r51IFMABatchQPipeline is the complete two-x4, radix-64 r51 path selected by
+// the forced r51 backend. It decodes A only, retains ready DSM outputs, and
 // canonical-encodes up to 64 Q points with one cross-group x4 inversion.
 //
 // The ordinary r51IFMAPipeline remains the paired A/R-decode baseline, and
 // newR51IFMAEncodedQReferencePipeline remains the literal per-group encoding
-// oracle. Nothing in production backend registration or selection reaches
-// this type.
+// oracle. Automatic backend selection does not reach this type.
 type r51IFMABatchQPipeline struct {
 	core      *r51IFMAPipeline
 	finalizer r51IFMABatchQFinalizer
@@ -46,7 +45,7 @@ type r51IFMABatchQPipeline struct {
 // string to the same point. A lookup hit is therefore usable only for the exact
 // raw encoding that produced point.
 //
-// This remains private to the dormant r51 experiment. It is not a cache policy
+// This remains private to the r51 implementation. It is not a cache policy
 // and carries no admission, eviction, synchronization, or profile state.
 type r51DecodedAEntry struct {
 	raw   [32]byte

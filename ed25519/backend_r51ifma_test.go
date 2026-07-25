@@ -139,18 +139,20 @@ func everyR51IFMACombPipelineConfig(t *testing.T, run func(t *testing.T, pipelin
 func TestR51IFMAPipelineForcedOnlyAndHardwareGated(t *testing.T) {
 	productionBackend := pick("").name()
 	productionHashLanes := sha512mb.Lanes()
-	// SetBackend resolves names only through registry. Keeping every r51
-	// artifact out of this map proves that compiling the promoted kernel does
-	// not make it selectable, even explicitly.
-	if len(registry) != 3 {
-		t.Fatalf("backend registry has %d entries, want only generic/ifma/stdlib", len(registry))
+	// The reviewed adapter is explicitly selectable, while empty/automatic
+	// dispatch remains generic until the release gate changes separately.
+	if len(registry) != 4 {
+		t.Fatalf("backend registry has %d entries, want generic/ifma/r51/stdlib", len(registry))
 	}
-	for _, name := range []string{"generic", "ifma", "stdlib"} {
+	for _, name := range []string{"generic", "ifma", "r51", "stdlib"} {
 		if _, registered := registry[name]; !registered {
 			t.Fatalf("expected production backend %q is not registered", name)
 		}
 	}
-	for _, name := range []string{"r51", "r51-ifma", "forced-r51-benchmark"} {
+	if _, ok := registry["r51"].(*r51Backend); !ok {
+		t.Fatalf("registered r51 backend has type %T", registry["r51"])
+	}
+	for _, name := range []string{"r51-ifma", "forced-r51-benchmark"} {
 		if _, registered := registry[name]; registered {
 			t.Fatalf("dormant r51 artifact unexpectedly registered as %q", name)
 		}
