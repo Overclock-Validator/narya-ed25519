@@ -24,6 +24,15 @@ func requireR51Backend(t testing.TB) *r51Backend {
 	return b
 }
 
+func requireR51DecodedACache(t testing.TB) *r51Backend {
+	t.Helper()
+	backend := requireR51Backend(t)
+	if !backend.supportsPrecomp() {
+		t.Skip("r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs")
+	}
+	return backend
+}
+
 func TestR51BackendUnsupportedGate(t *testing.T) {
 	if r51IFMAPipelineAvailable(r51IFMATwoX4) {
 		t.Skip("r51 x4 IFMA pipeline is available; hardware tests cover activation")
@@ -49,6 +58,13 @@ func TestR51BackendBatchWidthSelection(t *testing.T) {
 		t.Fatalf("wide=%v want=%v pipeline=%s", gotWide, cpufeat.PreferWideIFMA(), worker.pipeline)
 	}
 	t.Logf("prefer-wide=%v pipeline=%s", gotWide, worker.pipeline)
+}
+
+func TestR51BackendDecodedACacheHardwareGate(t *testing.T) {
+	backend := requireR51Backend(t)
+	if got, want := backend.supportsPrecomp(), cpufeat.PreferWideIFMA(); got != want {
+		t.Fatalf("decoded-A Cache enabled=%v want=%v", got, want)
+	}
 }
 
 func admitR51DecodedATestEntry(t testing.TB, cache *Cache, backend *r51Backend, pub *[32]byte) {
@@ -98,7 +114,7 @@ func TestR51BackendDecodedAPrecomputeShape(t *testing.T) {
 }
 
 func TestR51BackendDecodedACacheDifferential(t *testing.T) {
-	backend := requireR51Backend(t)
+	backend := requireR51DecodedACache(t)
 	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
 		for _, count := range []int{1, 3, 4, 8, 9, 17, 64, 65} {
 			fixture := makeBatchFixture(t, count, 1232)
@@ -126,7 +142,7 @@ func TestR51BackendDecodedACacheDifferential(t *testing.T) {
 }
 
 func TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit(t *testing.T) {
-	backend := requireR51Backend(t)
+	backend := requireR51DecodedACache(t)
 	fixture := makeBatchFixture(t, 8, 200)
 	for lane := range fixture.msgs {
 		fixture.msgs[lane] = append([]byte(nil), fixture.msgs[lane]...)
@@ -147,7 +163,7 @@ func TestR51BackendDecodedACacheInvalidEquationsDoNotAdmit(t *testing.T) {
 }
 
 func TestR51BackendDecodedACacheNarrowTrafficAdmitsWithoutLookup(t *testing.T) {
-	backend := requireR51Backend(t)
+	backend := requireR51DecodedACache(t)
 	fixture := makeBatchFixture(t, 3, 200)
 	cache := &Cache{MaxTableBytes: 3 * r51DecodedATableBytes}
 
@@ -200,7 +216,7 @@ func TestR51DecodedAPrecomputedDispatch(t *testing.T) {
 }
 
 func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
-	backend := requireR51Backend(t)
+	backend := requireR51DecodedACache(t)
 	for _, count := range []int{4, 8, 64} {
 		fixture := makeBatchFixture(t, count, 1232)
 		cache := &Cache{MaxTableBytes: int64(count) * r51DecodedATableBytes}
@@ -372,7 +388,7 @@ func BenchmarkR51BackendDispatch(b *testing.B) {
 // this isolates a stable hit-rate workload instead of letting a benchmark
 // silently warm from 0% to 100% during b.N.
 func BenchmarkR51DecodedACacheTier(b *testing.B) {
-	backend := requireR51Backend(b)
+	backend := requireR51DecodedACache(b)
 	for _, messageSize := range []int{64, 200, 1232} {
 		for _, count := range []int{1, 4, 8, 17, 64} {
 			fixture := makeBatchFixture(b, count, messageSize)

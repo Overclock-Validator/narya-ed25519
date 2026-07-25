@@ -62,9 +62,11 @@ func (b *r51Backend) backendStats() BackendStats {
 
 // The registered warm tier retains only decoded A. It bypasses decompression
 // in useful-width batches while leaving scalar multiplication, original-byte
-// hashing, strict prechecks, and final equality unchanged. Per-key partial
-// comb tables remain behind their separate complete-verifier/cache-policy gate.
-func (*r51Backend) supportsPrecomp() bool { return true }
+// hashing, strict prechecks, and final equality unchanged. The complete Cache
+// path wins on native-wide Zen 5 but is about 1% slower on Zen 4 even at 100%
+// hits, so Zen 4 bypasses cache bookkeeping entirely. Per-key partial comb
+// tables remain behind their separate complete-verifier/cache-policy gate.
+func (*r51Backend) supportsPrecomp() bool { return cpufeat.PreferWideIFMA() }
 
 func (*r51Backend) batchOnlyPrecomp() {}
 
