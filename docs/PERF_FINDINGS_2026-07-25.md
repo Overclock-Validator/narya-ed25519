@@ -4,10 +4,11 @@ Written alongside branch `claude/narya-perf`. Measurements are in
 `docs/ZEN5_9700X_2026-07-25.md`; this document is the reasoning, the structural
 constraints found while integrating, and what is worth doing next.
 
-Everything below was measured on Zen 5 (Ryzen 7 9700X). **No conclusion here has
-been checked on Zen 4.** Zen 4 double-pumps 512-bit operations as 2x256, which is
-very likely why the current two-x4 default was chosen, so treat every ranking as
-Zen-5-specific until the 8700GE confirms it.
+The original warm-comb measurements below were taken on Zen 5 (Ryzen 7 9700X).
+Subsequent convergence gates also measured the promoted cold path, decoded-A
+tier, occupancy crossover, and HEEA screen on Zen 4 (Ryzen 7 PRO 8700GE).
+Architecture-specific conclusions are labeled rather than transferred between
+the two CPUs.
 
 ---
 
@@ -167,6 +168,16 @@ batch admissions four at a time.
 ---
 
 ## 5. Open questions worth research rather than coding
+
+### 5.0 HEEA performance — closed
+
+The exact W132/radix-32 HEEA verifier is allocation-free and passed its semantic
+gates, but it is substantially slower than even the older same-shape ordinary
+radix-32 diagnostic at 1232 bytes: about +59% on Zen 5 x8 and +46% on Zen 4
+two-x4 at both n=8 and n=64. The registered ordinary comb path is faster still.
+Do not spend more implementation time on the current HEEA/QSM construction;
+retain it as proof and differential-test evidence. Exact commands and medians
+are recorded in `docs/HEEA.md`.
 
 ### 5.1 Mixed warm/cold lanes in one SIMD group
 

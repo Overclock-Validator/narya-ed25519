@@ -415,6 +415,13 @@ fallback lane and an all-fallback group for both SIMD shapes and every release
 message size. Promotion is fail-closed if any case is more than 5% slower than
 the exact selected ordinary n=8 configuration, or increases B/op or allocs/op.
 
+The 2026-07-25 pinned Ryzen screen closes the present HEEA construction as a
+performance candidate: W132/radix-32 was roughly 59% slower than the older x8
+ordinary diagnostic on Zen 5 and 46% slower than the older two-x4 ordinary
+diagnostic on Zen 4 at 1232-byte n=8/64 workloads, with zero fallbacks and zero
+allocations. The exact signed-group implementation remains test-only evidence;
+no full release matrix is warranted unless its QSM cost changes materially.
+
 The standalone x4 path remains a diagnostic/tail benchmark. For batches of at
 most four, two-x4 already runs only its first x4 half, so adding x4 to the
 release matrix would duplicate that measured kernel while inventing a third

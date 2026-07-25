@@ -327,6 +327,27 @@ API make the basepoint's prime order explicit.
 
 ## Admission gate
 
+### 2026-07-25 target-hardware result
+
+The complete W132/radix-32 experiment fails the performance gate decisively on
+both production targets. A compact pinned-core screen used 1232-byte messages,
+zero selector fallbacks, zero allocations, and the ordinary same-shape
+radix-32 diagnostic as the baseline:
+
+| CPU / shape | n | ordinary (us/sig) | HEEA (us/sig) | HEEA change |
+|---|---:|---:|---:|---:|
+| Ryzen 7 9700X / x8 | 8 | 9.973 | 15.89 | +59.3% |
+| Ryzen 7 9700X / x8 | 64 | 10.05 | 15.94 | +58.6% |
+| Ryzen 7 PRO 8700GE / two-x4 | 8 | 16.43 | 23.97 | +45.9% |
+| Ryzen 7 PRO 8700GE / two-x4 | 64 | 16.53 | 24.14 | +46.0% |
+
+Each value is the median of three 750 ms samples with `GOMAXPROCS=1` and
+`taskset -c 2`, using Go 1.26.4 at implementation commit `778005e`. The current
+registered ordinary path is faster than this diagnostic baseline, so expanding
+the HEEA matrix cannot reverse the decision. HEEA remains useful proof and
+differential-test evidence, but it is closed as a Zen 4/Zen 5 performance track
+unless a materially different QSM construction changes the cost model.
+
 HEEA stays experimental unless all of the following hold:
 
 - the modulo-`8L` congruence and odd/nonzero-`tau` checks are local to the
