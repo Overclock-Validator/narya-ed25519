@@ -167,6 +167,23 @@ func TestExperimentalPackedStrictVerifierX4APIGate(t *testing.T) {
 	}
 }
 
+func TestExperimentalPackedStrictVerifierX4SharesGeneratorTable(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("AVX-512 IFMA unavailable")
+	}
+	first, err := NewExperimentalPackedStrictVerifierX4()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := NewExperimentalPackedStrictVerifierX4()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.bTable == nil || first.bTable != second.bTable {
+		t.Fatal("packed strict verifiers do not share the immutable generator table")
+	}
+}
+
 func TestExperimentalCoordinateParallelPairedRStrictEdgesX4(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skip("AVX-512 IFMA is unavailable")
@@ -494,7 +511,7 @@ func BenchmarkExperimentalCoordinateParallelPairedRComponentsX4(b *testing.B) {
 	var s [32]byte
 	copy(s[:], fixture.signature[32:])
 	var q quadPackedPointX4
-	if usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops); err != nil || !usable {
+	if usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, verifier.bTable, &s, &reduced[0], verifier.ops); err != nil || !usable {
 		b.Fatalf("prepare DSM=(%v,%v)", usable, err)
 	}
 

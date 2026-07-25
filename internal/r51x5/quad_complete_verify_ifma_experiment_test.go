@@ -77,7 +77,7 @@ func (verifier *quadStrictVerifierX4) verify(pub *[32]byte, message, signature [
 	}
 
 	var q quadPackedPointX4
-	usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops)
+	usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, verifier.bTable, &s, &reduced[0], verifier.ops)
 	if err != nil || !usable {
 		return false, err
 	}

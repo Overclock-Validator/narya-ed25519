@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 	"errors"
 	"hash"
+	"sync"
 )
 
 var errExperimentalPackedStrictVerifierUninitialized = errors.New("r51x5: experimental packed strict verifier is uninitialized")
@@ -26,9 +27,18 @@ var errExperimentalPackedStrictVerifierUninitialized = errors.New("r51x5: experi
 // NewExperimentalPackedStrictVerifierX4.
 type ExperimentalPackedStrictVerifierX4 struct {
 	ops    quadDSMOperationsX4
-	bTable quadNAFTable8X4
+	bTable *quadNAFTable8X4
 	hash   hash.Hash
 	digest [sha512.Size]byte
+}
+
+// The generator table is immutable after construction. Sharing it keeps every
+// verifier worker on the same 10 KiB read-only working set instead of building
+// and retaining an allocator-dependent copy per worker.
+var packedStrictGeneratorTableX4 struct {
+	once  sync.Once
+	table quadNAFTable8X4
+	err   error
 }
 
 // NewExperimentalPackedStrictVerifierX4 prepares the process-wide generator
@@ -40,24 +50,29 @@ func NewExperimentalPackedStrictVerifierX4() (*ExperimentalPackedStrictVerifierX
 		return nil, ErrIFMAUnavailable
 	}
 
-	var generatorEncoding [32]byte
-	generatorEncoding[0] = 0x58
-	for index := 1; index < len(generatorEncoding); index++ {
-		generatorEncoding[index] = 0x66
-	}
-	var generator Point
-	if _, err := generator.SetBytes(generatorEncoding[:]); err != nil {
-		return nil, err
+	ops := quadDSMOperationsX4{hardware: true}
+	packedStrictGeneratorTableX4.once.Do(func() {
+		var generatorEncoding [32]byte
+		generatorEncoding[0] = 0x58
+		for index := 1; index < len(generatorEncoding); index++ {
+			generatorEncoding[index] = 0x66
+		}
+		var generator Point
+		if _, err := generator.SetBytes(generatorEncoding[:]); err != nil {
+			packedStrictGeneratorTableX4.err = err
+			return
+		}
+		packedStrictGeneratorTableX4.err = buildQuadNAFTable8X4(&packedStrictGeneratorTableX4.table, &generator, ops)
+	})
+	if packedStrictGeneratorTableX4.err != nil {
+		return nil, packedStrictGeneratorTableX4.err
 	}
 
-	verifier := &ExperimentalPackedStrictVerifierX4{
-		ops:  quadDSMOperationsX4{hardware: true},
-		hash: sha512.New(),
-	}
-	if err := buildQuadNAFTable8X4(&verifier.bTable, &generator, verifier.ops); err != nil {
-		return nil, err
-	}
-	return verifier, nil
+	return &ExperimentalPackedStrictVerifierX4{
+		ops:    ops,
+		bTable: &packedStrictGeneratorTableX4.table,
+		hash:   sha512.New(),
+	}, nil
 }
 
 // Verify reports whether signature is valid for message and pub under the
@@ -111,7 +126,7 @@ func (verifier *ExperimentalPackedStrictVerifierX4) Verify(pub *[32]byte, messag
 	}
 
 	var q quadPackedPointX4
-	usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops)
+	usable, err := evaluateQuadNAFVerifyX4(&q, &aTable, verifier.bTable, &s, &reduced[0], verifier.ops)
 	if err != nil || !usable {
 		return false, err
 	}

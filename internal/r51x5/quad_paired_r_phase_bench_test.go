@@ -150,7 +150,7 @@ func BenchmarkExperimentalCoordinateParallelPairedRPhaseBreakdownX4(b *testing.B
 		b.ReportAllocs()
 		b.ResetTimer()
 		for iteration := 0; iteration < b.N; iteration++ {
-			usable, err = evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops)
+			usable, err = evaluateQuadNAFVerifyX4(&q, &aTable, verifier.bTable, &s, &reduced[0], verifier.ops)
 			if err != nil || !usable {
 				b.Fatalf("prepared DSM=(%v,%v)", usable, err)
 			}
@@ -161,7 +161,7 @@ func BenchmarkExperimentalCoordinateParallelPairedRPhaseBreakdownX4(b *testing.B
 	})
 
 	var q quadPackedPointX4
-	if usable, dsmErr := evaluateQuadNAFVerifyX4(&q, &aTable, &verifier.bTable, &s, &reduced[0], verifier.ops); dsmErr != nil || !usable {
+	if usable, dsmErr := evaluateQuadNAFVerifyX4(&q, &aTable, verifier.bTable, &s, &reduced[0], verifier.ops); dsmErr != nil || !usable {
 		b.Fatalf("prepare DSM=(%v,%v)", usable, dsmErr)
 	}
 	b.Run("finalizer/encoded-Q", func(b *testing.B) {

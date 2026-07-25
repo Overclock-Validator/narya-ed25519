@@ -168,6 +168,13 @@ func BenchmarkR51SingletonDispatchOverhead(b *testing.B) {
 			}
 		}
 	})
+	b.Run("pool-get-put-only", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			worker := backend.singlePool.Get().(*r51SingleWorker)
+			backend.singlePool.Put(worker)
+		}
+	})
 	b.Run("pooled-backend", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
