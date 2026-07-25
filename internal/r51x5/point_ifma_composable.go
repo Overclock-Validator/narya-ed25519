@@ -217,22 +217,23 @@ func ifmaPointAddComposableStaticX8(out, a, b *IFMAPointX8) error {
 }
 
 func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
-	qq := *q
 	var A, B, C, D, E, F, G, H IFMAElementX4
-	if err := ifmaMultiplyComposableUncheckedX4(&A, &qq.X, &qq.X); err != nil {
+	// Every input read completes before result is assigned to out, so exact
+	// out==q aliasing does not require a 640-byte defensive point copy.
+	if err := ifmaMultiplyComposableUncheckedX4(&A, &q.X, &q.X); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&B, &qq.Y, &qq.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&B, &q.Y, &q.Y); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&C, &qq.Z, &qq.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&C, &q.Z, &q.Z); err != nil {
 		return err
 	}
 	C.Add(&C, &C)
 	// E=2XY avoids the normalized (X+Y), E-A, and E-B operations needed
 	// by the classical square trick. Squaring currently uses this same general
 	// IFMA multiply, so the direct form keeps the multiply count unchanged.
-	if err := ifmaMultiplyComposableUncheckedX4(&E, &qq.X, &qq.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&E, &q.X, &q.Y); err != nil {
 		return err
 	}
 	E.Add(&E, &E)
