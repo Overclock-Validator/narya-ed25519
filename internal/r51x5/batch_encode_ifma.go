@@ -3,8 +3,8 @@ package r51x5
 import "errors"
 
 const (
-	// ExperimentalIFMABatchEncodeMaxX4Groups bounds one dormant x4 batch-
-	// encoding experiment to 64 independent points. The encoder batches across
+	// ExperimentalIFMABatchEncodeMaxX4Groups bounds the forced r51 x4 batch-
+	// encoding schedule to 64 independent points. The encoder batches across
 	// x4 groups: each field operation still acts on four independent lanes,
 	// while Montgomery's trick amortizes one inversion across up to 16 group
 	// vectors.
@@ -19,7 +19,8 @@ var (
 
 // ExperimentalIFMABatchEncodeWorkspaceX4 owns the prefix products and staged
 // output used to encode up to 16 ready IFMA point groups. It is deliberately
-// mutable and non-concurrent. No verifier dispatch currently reaches it.
+// mutable and non-concurrent. The explicitly forced r51 batch verifier owns
+// one workspace per pooled worker; automatic dispatch cannot reach it.
 //
 // The workspace consumes IFMAPointX4 directly, so DSM output does not first
 // pay a four-coordinate canonical-reduction boundary. Only the final affine X

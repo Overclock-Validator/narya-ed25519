@@ -14,6 +14,12 @@ PKG ?= ./...
 test:
 	$(GO) test $(PKG)
 
+# The independent curve25519-voi oracle is intentionally absent from the
+# library's main module graph. Its pinned comparison module is opt-in.
+.PHONY: test-oasis
+test-oasis:
+	$(GO) test -modfile=go.oasis.mod -tags oasis_compare ./ed25519
+
 .PHONY: fuzz
 fuzz:
 	$(GO) test -run x -fuzz FuzzVerifyDifferential -fuzztime 60s ./ed25519

@@ -219,10 +219,12 @@ The reproducible standalone C driver is in
 - A cross-library differential against
   [curve25519-voi](https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a)
   version `v0.0.0-20230904125328-1f23a7beb09a`, configured to the equivalent
-  strict option set.
+  strict option set. It is isolated from the library module graph in
+  `go.oasis.mod`; run it with `make test-oasis`.
 - Fuzz targets comparing backends three ways.
 
-CI runs portable tests on `ubuntu-latest` and `macos-latest`, plus a pinned
+CI runs portable tests on `ubuntu-latest` and `macos-latest`, the isolated
+Oasis differential on Linux, plus a pinned
 [Intel SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html)
 10.8 job that emulates Ice Lake Server and executes focused r51x5 IFMA,
 native-SHA, and public forced-r51 differentials. Dedicated `sde_gate` tests
@@ -288,6 +290,10 @@ and performance baseline. Narya does not use voi's shipped cofactored
 ABGLSV–Pornin verification path for `DalekStrict`; multiplying the error point
 by a non-injective cofactor can change that predicate. Narya's separate
 torsion-safe modulo-8L HEEA work remains experimental.
+
+voi is an opt-in test dependency only. The main `go.mod` retains only
+`golang.org/x/sys`; `go.oasis.mod` pins the independent comparator used by
+`make test-oasis` and the separately recorded comparison benchmarks.
 
 voi is itself largely derived from
 [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek), and

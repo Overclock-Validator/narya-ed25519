@@ -1,8 +1,8 @@
 package r51x5
 
 // IFMAPointX4 stores four extended-coordinate points whose coordinates obey
-// the composable u52 limb contract. It is an experimental arithmetic type;
-// no verifier dispatch selects it.
+// the composable u52 limb contract. The explicitly forced r51 verifier uses
+// this type; automatic backend selection does not.
 type IFMAPointX4 struct {
 	X IFMAElementX4
 	Y IFMAElementX4

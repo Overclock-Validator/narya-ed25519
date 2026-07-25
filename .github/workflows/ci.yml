@@ -40,6 +40,17 @@ jobs:
       - run: go test -tags purego ./...
       - run: GOARCH=amd64 GOAMD64=v1 go build ./...
 
+  oasis-compare:
+    # Independent predicate oracle only. Keep curve25519-voi outside the
+    # library's main module graph and opt into its pinned modfile explicitly.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go test -modfile=go.oasis.mod -tags oasis_compare ./ed25519
+
   sde-ifma:
     # Functional coverage only: SDE timings are not performance evidence.
     # Intel SDE 10.8 is downloaded from Intel's official mirror and checked

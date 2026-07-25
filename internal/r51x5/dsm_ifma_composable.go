@@ -4,9 +4,11 @@ package r51x5
 // scalar schedules for one four-lane, two-term DSM. The workspace is
 // caller-owned and reusable, but is not safe for concurrent evaluation.
 //
-// It is deliberately unreachable from production dispatch. Its preparation
+// The explicitly forced r51 backend uses the radix-64 x4 specialization; the
+// other widths remain independently tested candidates. Its preparation
 // methods and Evaluate execute the AVX-512 IFMA point path and return
-// ErrIFMAUnavailable on CPUs without the complete feature set.
+// ErrIFMAUnavailable on CPUs without the complete feature set. Automatic
+// dispatch cannot reach any specialization.
 type experimentalIFMAFixedDSMWorkspaceX4[Storage ifmaFullTableStorageX4] struct {
 	tables               [DSMTerms]ifmaFullTableX4[Storage]
 	digits               [DSMTerms]FixedRadixDigitsX4

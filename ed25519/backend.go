@@ -42,15 +42,15 @@ type backend interface {
 // results can be attached before execution.
 //
 // Keeping this interface private preserves the public API while allowing a
-// future SIMD backend to avoid allocating and copying one batchItem per
+// native SIMD backend to avoid allocating and copying one batchItem per
 // signature merely to unpack it again into lane-native storage.
 type rawBatchBackend interface {
 	verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool
 }
 
-// activatingBackend is implemented only by explicitly gated experimental
-// backends. Activation happens after a backend name has been selected, never
-// as part of registration or automatic CPU dispatch.
+// activatingBackend is implemented only by explicitly gated native backends.
+// Activation happens after a backend name has been selected, never as part of
+// registration or automatic CPU dispatch.
 type activatingBackend interface {
 	activate() error
 }

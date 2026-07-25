@@ -304,8 +304,9 @@ Foundation, BSD-3-Clause,
 https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a) is used as a
 cross-library differential oracle for the acceptance predicate and as a
 performance baseline. It is a test-only dependency behind the
-oasis_compare build tag and a separate module file; no curve25519-voi code
-is redistributed with Narya. Narya does not use voi's shipped cofactored
+oasis_compare build tag and the separate go.oasis.mod module file; it is not
+present in the main module graph, and no curve25519-voi code is redistributed
+with Narya. Narya does not use voi's shipped cofactored
 ABGLSV-Pornin verification path for DalekStrict: multiplying the error point
 by a non-injective cofactor can change that predicate. Narya's independently
 implemented torsion-safe modulo-8L HEEA research remains test-only.

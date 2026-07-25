@@ -25,10 +25,10 @@ type r51IFMABatchQPipeline struct {
 	encoded [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups][r51x5.X4Lanes][32]byte
 	final   [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
 
-	// decodedA* is fixed scratch for the experimental warm-key path. Misses
-	// are packed across the entire <=64-signature encoder chunk so every x4
-	// decode group is full except the tail, then scattered back to the
-	// original signature lanes before hashing and DSM.
+	// decodedA* is fixed scratch for cold A preparation and the private decoded-
+	// point measurement seam. Misses are packed across the entire <=64-signature
+	// encoder chunk so every x4 decode group is full except the tail, then
+	// scattered back to the original signature lanes before hashing and DSM.
 	decodedAPoints    [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.PointX4
 	decodedAScalars   [r51BatchQMaxChunk][32]byte
 	decodedAMissBytes [r51x5.X4Lanes][32]byte
