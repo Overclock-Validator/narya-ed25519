@@ -230,3 +230,13 @@ Copyright Google LLC.
 Protocol, BSD-3-Clause) serves as a cross-library differential oracle and
 performance baseline. Narya does **not** implement its ABGLSV–Pornin cofactored
 algorithm, which is incompatible with the strict predicate.
+
+voi is itself largely derived from
+[curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek), and
+the vectorized Edwards backend that produces its uncached single-signature
+timings is a Go port of dalek's AVX2 backend (Copyright isis agora lovecruft,
+Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. Narya's
+own coordinate-parallel work reaches the same intra-signature orientation
+independently, from Firedancer's `r43x6` and at radix 2^51 on AVX-512 IFMA. See
+[NOTICE](NOTICE): credit for that architectural idea belongs to the dalek
+authors, not to voi.

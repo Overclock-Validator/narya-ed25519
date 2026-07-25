@@ -224,6 +224,30 @@ oasis_compare build tag and a separate module file; no curve25519-voi code
 is redistributed with Narya. Narya does not implement its ABGLSV-Pornin
 cofactored algorithm, which is incompatible with the strict predicate.
 
+curve25519-voi is itself, by its own account, "mostly derived from
+curve25519-dalek" (https://github.com/dalek-cryptography/curve25519-dalek).
+That lineage is worth recording explicitly here, because the specific part
+of voi that Narya measures against is not voi's own work:
+
+    curve/edwards_vector_amd64.{go,s}
+    Copyright (c) 2016-2019 isis agora lovecruft
+    Copyright (c) 2016-2019 Henry de Valence
+    Copyright (c) 2021 Oasis Labs Inc.
+    BSD-3-Clause
+
+is a Go port of curve25519-dalek's AVX2 vectorized Edwards backend, using
+that backend's radix-25.5 four-way field representation. It is selected
+whenever cpu.X86.HasAVX2 holds, so voi's uncached single-signature timings
+are vectorized results rather than scalar ones.
+
+Narya's own coordinate-parallel packed-x4 work reaches the same
+intra-signature orientation independently, from Firedancer's r43x6 rather
+than from dalek, and at radix 2^51 on AVX-512 IFMA rather than radix 25.5
+on AVX2. No dalek or voi code was consulted or copied in its development.
+The parallel is recorded because a reader comparing the two benchmark
+columns should know they are comparing the same architectural idea, and
+because credit for that idea belongs to the curve25519-dalek authors.
+
 
 =======================================================================
 DEPENDENCIES
