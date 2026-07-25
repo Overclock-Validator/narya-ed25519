@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
+	"runtime"
+	"sync/atomic"
 	"testing"
 	"unsafe"
 
@@ -1092,8 +1094,9 @@ func newHeterogeneousPartialCombBenchmarkFixtureExperiment(tb testing.TB) (heter
 }
 
 var (
-	benchmarkHeterogeneousPartialCombPointSink IFMAPointX4
-	benchmarkHeterogeneousPartialCombMaskSink  uint8
+	benchmarkHeterogeneousPartialCombPointSink    IFMAPointX4
+	benchmarkHeterogeneousPartialCombMaskSink     uint8
+	benchmarkHeterogeneousPartialCombParallelSink uint64
 )
 
 const heterogeneousPartialCombBenchmarkCorpusSizeExperiment = 64
@@ -1332,6 +1335,144 @@ func BenchmarkHeterogeneousPartialCombPreSignedCorpusDSMX4Experiment(b *testing.
 						b.ReportMetric(float64(bTableBytes), "B-table-bytes")
 						b.ReportMetric(heterogeneousPartialCombBenchmarkCorpusSizeExperiment, "corpus-groups")
 						b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X4Lanes), "ns/signature")
+					})
+				}
+				if order.preSignedFirst {
+					run(true)
+					run(false)
+				} else {
+					run(false)
+					run(true)
+				}
+			}
+		})
+	}
+}
+
+const heterogeneousPartialCombPressureCorpusSizeExperiment = 256
+
+func heterogeneousPartialCombSharedBPressureCorpusExperiment() [heterogeneousPartialCombPressureCorpusSizeExperiment]FixedDSMScalarsX4 {
+	rng := rand.New(rand.NewSource(0xc0b6_5b1e))
+	var corpus [heterogeneousPartialCombPressureCorpusSizeExperiment]FixedDSMScalarsX4
+	for sample := range corpus {
+		for lane := range corpus[sample][0] {
+			for index := range corpus[sample][0][lane] {
+				corpus[sample][0][lane][index] = byte(rng.Uint32())
+			}
+			corpus[sample][0][lane][31] &= 0x0f
+		}
+	}
+	return corpus
+}
+
+// BenchmarkHeterogeneousPartialCombSharedBPressureX4Experiment isolates the
+// cache/concurrency consequence of doubling the process-wide immutable B
+// table. A is the zero scalar and its spec-only tables are never indexed, but
+// its A6/r9 shape keeps the real 48-doubling merged timeline and B injection
+// spacing. Every parallel worker shares exactly one selected B layout.
+//
+// This is a necessary shared-table pressure gate, not a complete-verifier or
+// random-A working-set result. A production pre-signed builder should transfer
+// ownership of the positive slice instead of retaining the temporary 3x peak
+// used by the comparison builder.
+func BenchmarkHeterogeneousPartialCombSharedBPressureX4Experiment(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA target")
+	}
+	baseEncoding := newGeneratorEncodingForTest(b)
+	var base Point
+	if _, err := base.SetBytes(baseEncoding[:]); err != nil {
+		b.Fatal(err)
+	}
+	corpus := heterogeneousPartialCombSharedBPressureCorpusExperiment()
+	signs := [DSMTerms]uint8{0, 0x0f}
+	aSpecOnly := &heterogeneousPartialCombTableExperiment{spec: heterogeneousPartialCombA6R9Experiment}
+	aTables := [X4Lanes]*heterogeneousPartialCombTableExperiment{aSpecOnly, aSpecOnly, aSpecOnly, aSpecOnly}
+
+	for _, order := range []struct {
+		name           string
+		preSignedFirst bool
+	}{
+		{name: "runtime-first"},
+		{name: "pre-signed-first", preSignedFirst: true},
+	} {
+		b.Run("order="+order.name, func(b *testing.B) {
+			for _, spec := range []heterogeneousPartialCombSpecExperiment{
+				heterogeneousPartialCombB8R3Experiment,
+				heterogeneousPartialCombB10R5Experiment,
+			} {
+				run := func(preSigned bool) {
+					implementation := "runtime-sign"
+					if preSigned {
+						implementation = "pre-signed"
+					}
+					name := fmt.Sprintf("B=%dr%d/layout=%s", spec.width, spec.passes, implementation)
+					b.Run(name, func(b *testing.B) {
+						var positive *heterogeneousPartialCombTableExperiment
+						var signed *heterogeneousPartialCombPreSignedSharedTableExperiment
+						if preSigned {
+							source := buildHeterogeneousPartialCombTableExperiment(&base, spec)
+							signed = buildHeterogeneousPartialCombPreSignedSharedTableExperiment(source)
+							source = nil
+						} else {
+							positive = buildHeterogeneousPartialCombTableExperiment(&base, spec)
+						}
+						// Drop unreachable tables from preceding subbenchmarks before this
+						// arm establishes its own steady-state working set.
+						runtime.GC()
+
+						var preflight IFMAPointX4
+						var mask uint8
+						var err error
+						if preSigned {
+							mask, err = evaluateHeterogeneousPartialCombPreSignedBDSMX4Experiment(&preflight, &aTables, signed, &corpus[0], &signs, 0x0f)
+						} else {
+							mask, err = evaluateHeterogeneousPartialCombDSMX4Experiment(&preflight, &aTables, positive, &corpus[0], &signs, 0x0f)
+						}
+						if err != nil || mask != 0x0f {
+							b.Fatalf("preflight=(%02x,%v)", mask, err)
+						}
+
+						var workerSequence uint64
+						b.ReportAllocs()
+						b.SetParallelism(1)
+						b.ResetTimer()
+						b.RunParallel(func(pb *testing.PB) {
+							worker := atomic.AddUint64(&workerSequence, 1) - 1
+							cursor := int(worker*131) & (heterogeneousPartialCombPressureCorpusSizeExperiment - 1)
+							var out IFMAPointX4
+							var localMask uint8
+							for pb.Next() {
+								scalars := &corpus[cursor]
+								cursor = (cursor + 1) & (heterogeneousPartialCombPressureCorpusSizeExperiment - 1)
+								var localErr error
+								if preSigned {
+									localMask, localErr = evaluateHeterogeneousPartialCombPreSignedBDSMX4Experiment(&out, &aTables, signed, scalars, &signs, 0x0f)
+								} else {
+									localMask, localErr = evaluateHeterogeneousPartialCombDSMX4Experiment(&out, &aTables, positive, scalars, &signs, 0x0f)
+								}
+								if localErr != nil {
+									panic(localErr)
+								}
+							}
+							atomic.AddUint64(
+								&benchmarkHeterogeneousPartialCombParallelSink,
+								uint64(localMask)+out.X.limbs[0][0],
+							)
+						})
+						b.StopTimer()
+
+						var bTableBytes int
+						if preSigned {
+							bTableBytes = signed.nominalPayloadBytes()
+						} else {
+							bTableBytes = positive.nominalPayloadBytes()
+						}
+						b.ReportMetric(float64(bTableBytes), "B-table-bytes")
+						b.ReportMetric(heterogeneousPartialCombPressureCorpusSizeExperiment, "corpus-groups")
+						b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X4Lanes), "ns/signature")
+						b.ReportMetric(float64(b.N*X4Lanes)/b.Elapsed().Seconds(), "sig/s")
+						b.ReportMetric(float64(runtime.GOMAXPROCS(0)), "workers")
 					})
 				}
 				if order.preSignedFirst {
