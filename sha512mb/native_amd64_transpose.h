@@ -1,3 +1,7 @@
+// TRANSPOSE8 was adapted from the data flow in Firedancer's fd_avx512_wwv.h
+// (Apache-2.0, Copyright 2022 Firedancer Contributors); see the repository
+// NOTICE for the pinned source and terms.
+
 // TRANSPOSE8 converts eight ZMM rows into eight ZMM columns. Inputs R0..R7
 // are destroyed; outputs O0..O7 must not alias scratch T0..T7.
 #define TRANSPOSE8(R0, R1, R2, R3, R4, R5, R6, R7, O0, O1, O2, O3, O4, O5, O6, O7, T0, T1, T2, T3, T4, T5, T6, T7) \

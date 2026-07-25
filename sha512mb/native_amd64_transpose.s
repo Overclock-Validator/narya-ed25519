@@ -1,3 +1,8 @@
+// The sixteen-register rolling message schedule and the 8x8 input transpose
+// here were adapted from the data flow in Firedancer's fd_sha512_batch_avx512.c
+// and fd_avx512_wwv.h (Apache-2.0, Copyright 2022 Firedancer Contributors); see
+// the repository NOTICE for the pinned sources and terms.
+
 //go:build amd64
 
 #include "textflag.h"
