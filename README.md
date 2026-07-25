@@ -176,9 +176,16 @@ about 66 us/group with zero allocations, versus about 15.95 ms for four scalar
 builders. Against the measured B10 online saving, that moves the arithmetic
 break-even to roughly three uses per key. The remaining gates are complete
 verification under mixed warm/cold traffic, cache admission and churn, and
-production-safe ownership of the reusable workspace. The packed singleton row
-includes the strict paired-A/R decode and projective finalizer, but remains
-test-only.
+production-safe ownership of the reusable workspace. A further test-only
+variant stores both signs of the process-wide fixed-B table. On a rotating
+64-group scalar corpus it reduces the prepared B8 and B10 loops by about 7.4%
+and 6.7%; an isolated shared-B pressure gate preserves roughly 10--12% lower
+wall time from one through eight physical Zen 4 cores without degrading
+scaling. That result costs twice the shared-B payload (330 KiB for B8 or
+720 KiB for B10) and still excludes simultaneous random-A table pressure and
+the rest of verification, so it remains out of dispatch and the headline
+table. The packed singleton row includes the strict paired-A/R decode and
+projective finalizer, but remains test-only.
 
 Detailed commands, statistical samples, and caveats are recorded in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
