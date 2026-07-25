@@ -1,0 +1,17 @@
+=== RUN   TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero
+--- PASS: TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero (0.08s)
+=== RUN   TestIFMADecode2HardwareMatchesReference
+--- PASS: TestIFMADecode2HardwareMatchesReference (0.23s)
+=== RUN   TestIFMADecodeHardwareEveryMaskMatchesReference
+--- PASS: TestIFMADecodeHardwareEveryMaskMatchesReference (0.05s)
+=== RUN   TestExperimentalIFMAFixedDSMHardware
+--- PASS: TestExperimentalIFMAFixedDSMHardware (0.75s)
+=== RUN   TestExperimentalIFMAComposableHardware
+--- PASS: TestExperimentalIFMAComposableHardware (0.03s)
+=== RUN   TestExperimentalIFMAMultiplyX8X4
+--- PASS: TestExperimentalIFMAMultiplyX8X4 (0.09s)
+=== RUN   TestExperimentalIFMAPointOperations
+--- PASS: TestExperimentalIFMAPointOperations (0.13s)
+=== RUN   TestSDEIFMARequired
+--- PASS: TestSDEIFMARequired (0.00s)
+PASS

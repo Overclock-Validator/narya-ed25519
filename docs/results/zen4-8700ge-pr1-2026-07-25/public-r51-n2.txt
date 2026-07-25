@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69201	     51982 ns/op	   2.46 MB/s	     38475 signatures/s	        25.99 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69222	     51983 ns/op	   2.46 MB/s	     38474 signatures/s	        25.99 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69249	     51994 ns/op	   2.46 MB/s	     38466 signatures/s	        26.00 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69256	     51989 ns/op	   2.46 MB/s	     38469 signatures/s	        25.99 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69241	     51985 ns/op	   2.46 MB/s	     38473 signatures/s	        25.99 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69272	     51981 ns/op	   2.46 MB/s	     38476 signatures/s	        25.99 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69253	     52026 ns/op	   2.46 MB/s	     38443 signatures/s	        26.01 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69225	     51997 ns/op	   2.46 MB/s	     38464 signatures/s	        26.00 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69212	     52008 ns/op	   2.46 MB/s	     38455 signatures/s	        26.00 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=64/n=2         	   69230	     51992 ns/op	   2.46 MB/s	     38468 signatures/s	        26.00 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69108	     52087 ns/op	   7.68 MB/s	     38397 signatures/s	        26.04 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69146	     52093 ns/op	   7.68 MB/s	     38393 signatures/s	        26.05 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   68980	     52142 ns/op	   7.67 MB/s	     38357 signatures/s	        26.07 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69062	     52132 ns/op	   7.67 MB/s	     38364 signatures/s	        26.07 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69013	     52130 ns/op	   7.67 MB/s	     38366 signatures/s	        26.06 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   68984	     52148 ns/op	   7.67 MB/s	     38352 signatures/s	        26.07 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   68998	     52143 ns/op	   7.67 MB/s	     38356 signatures/s	        26.07 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   68992	     52203 ns/op	   7.66 MB/s	     38312 signatures/s	        26.10 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69009	     52176 ns/op	   7.67 MB/s	     38332 signatures/s	        26.09 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2        	   69020	     52175 ns/op	   7.67 MB/s	     38333 signatures/s	        26.09 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65949	     54588 ns/op	  45.14 MB/s	     36638 signatures/s	        27.29 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65934	     54607 ns/op	  45.12 MB/s	     36626 signatures/s	        27.30 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65862	     54596 ns/op	  45.13 MB/s	     36633 signatures/s	        27.30 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65916	     54600 ns/op	  45.13 MB/s	     36630 signatures/s	        27.30 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65902	     54595 ns/op	  45.13 MB/s	     36633 signatures/s	        27.30 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65942	     54636 ns/op	  45.10 MB/s	     36606 signatures/s	        27.32 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65895	     54611 ns/op	  45.12 MB/s	     36623 signatures/s	        27.31 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65925	     54607 ns/op	  45.12 MB/s	     36625 signatures/s	        27.30 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65910	     54618 ns/op	  45.11 MB/s	     36618 signatures/s	        27.31 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2       	   65700	     54619 ns/op	  45.11 MB/s	     36617 signatures/s	        27.31 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	124.045s

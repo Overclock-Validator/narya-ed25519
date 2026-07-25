@@ -1,0 +1,9 @@
+=== RUN   TestNativeX4Differential
+--- PASS: TestNativeX4Differential (0.03s)
+=== RUN   TestNativeX8Differential
+--- PASS: TestNativeX8Differential (0.01s)
+=== RUN   TestExperimentalSum512Batch3Differential
+--- PASS: TestExperimentalSum512Batch3Differential (0.01s)
+=== RUN   TestSDENativeSHARequired
+--- PASS: TestSDENativeSHARequired (0.00s)
+PASS

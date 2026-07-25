@@ -9,51 +9,57 @@
 ## Current registered r51 dispatcher
 
 Final pinned-core valid-signature medians for the registered, explicitly
-forced r51 dispatcher core are compared with an independent native Firedancer
-C harness.
+forced public r51 dispatcher are compared with an independent native
+Firedancer C harness.
 Firedancer was built from commit
-`3ed37488372b7e50bb03ca30477be48508ee7022` using `-O3 -march=znver4`; each
-entry is the median of five approximately 20,000-signature runs (the harness
-records the exact integer count). Narya values call the registered dispatcher's
-private core with `GOMAXPROCS=1`; PR 1's separate exported-API release gate
-must remain within 2%. Values are microseconds per signature. The harnesses are
+`3ed37488372b7e50bb03ca30477be48508ee7022` using `-O3 -march=znver4` and
+linked directly into a standalone C executable, without cgo. Each Firedancer
+entry below is one approximately 20,000-signature run (the harness records the
+exact integer count); each Narya entry is the median of ten three-second
+samples through exported `SetBackend("r51")` and `VerifyBatchStrict`, with
+`GOMAXPROCS=1`. Values are microseconds per signature. The harnesses are
 independent, so these are engineering comparisons rather than paired
-`benchstat` samples.
+`benchstat` samples. The Firedancer values below use its ordinary
+distinct-message loop; its shared-message native batch API measured nearly the
+same speed.
 
 | message bytes | batch | Narya r51 | Firedancer |
 | ---: | ---: | ---: | ---: |
-| 64 | 1 | 25.80 | 20.913 |
-| 64 | 4 | 15.24 | 20.980 |
-| 64 | 8 | 14.75 | 20.922 |
-| 64 | 64 | 14.55 | 20.900 |
-| 200 | 1 | 26.26 | 20.961 |
-| 200 | 4 | 15.32 | 20.957 |
-| 200 | 8 | 14.99 | 20.977 |
-| 200 | 64 | 14.66 | 20.983 |
-| 1232 | 1 | 27.20 | 21.847 |
-| 1232 | 4 | 16.05 | 21.971 |
-| 1232 | 8 | 15.71 | 21.951 |
-| 1232 | 64 | 15.40 | 21.928 |
+| 64 | 1 | 26.14 | 20.958 |
+| 64 | 4 | 15.05 | 21.000 |
+| 64 | 8 | 14.68 | 20.956 |
+| 64 | 64 | 14.38 | 20.947 |
+| 200 | 1 | 26.28 | 21.005 |
+| 200 | 4 | 15.24 | 20.961 |
+| 200 | 8 | 14.81 | 20.968 |
+| 200 | 64 | 14.51 | 20.973 |
+| 1232 | 1 | 27.12 | 21.856 |
+| 1232 | 4 | 16.02 | 21.953 |
+| 1232 | 8 | 15.58 | 21.965 |
+| 1232 | 64 | 15.30 | 21.891 |
 
-The same 200-byte Go benchmark binary compared the Narya dispatcher core, the
-standard-library loop, and curve25519-voi. Each entry below is the median of
-six two-second samples, in microseconds per signature. The voi expanded row
-uses a public key expanded before the timed loop, so it is a warm-key result;
-the cold row performs that work for every verification.
+The same 200-byte Go benchmark binary compared the Narya public dispatcher,
+the standard-library loop, and curve25519-voi. Each entry below is the median
+of six two-second samples, in microseconds per signature. This Oasis-tagged
+binary has a different code layout from the lean release benchmark above, so
+only rows within this table are compared. The voi expanded row uses a public
+key expanded before the timed loop, so it is a warm-key result; the cold row
+performs that work for every verification.
 
 | batch | Narya r51 cold | Go stdlib | voi cold strict | voi expanded strict |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 26.260 | 36.815 | 25.550 | 21.360 |
-| 2 | 29.510 | 36.460 | 25.265 | 21.175 |
-| 3 | 20.140 | 36.570 | 25.420 | 21.195 |
-| 4 | 15.320 | 36.720 | 25.610 | 21.400 |
-| 5 | 17.560 | 36.765 | 25.605 | 21.390 |
-| 8 | 14.990 | 36.690 | 25.470 | 21.370 |
-| 12 | 14.835 | 36.650 | 25.450 | 21.350 |
-| 16 | 14.820 | 36.700 | 25.590 | 21.380 |
-| 17 | 15.395 | 36.725 | 25.590 | 21.390 |
-| 32 | 14.690 | 36.710 | 25.560 | 21.360 |
-| 64 | 14.660 | 36.725 | 25.600 | 21.400 |
+| 1 | 27.350 | 36.480 | 25.495 | 21.410 |
+| 2 | 27.440 | 36.830 | 25.420 | 21.290 |
+| 3 | 20.415 | 36.445 | 25.250 | 21.300 |
+| 4 | 15.775 | 36.600 | 25.340 | 21.440 |
+| 5 | 18.050 | 36.770 | 25.445 | 21.320 |
+| 8 | 15.285 | 36.590 | 25.435 | 21.405 |
+| 9 | 16.680 | 36.670 | 25.460 | 21.350 |
+| 12 | 15.180 | 36.690 | 25.440 | 21.375 |
+| 16 | 15.140 | 36.690 | 25.470 | 21.360 |
+| 17 | 15.820 | 36.730 | 25.410 | 21.340 |
+| 32 | 15.020 | 36.720 | 25.440 | 21.395 |
+| 64 | 15.010 | 36.680 | 25.490 | 21.390 |
 
 The result is deliberately width-specific: Firedancer remains faster for a
 cold singleton, as do both voi modes. Narya overtakes both voi modes at n=3
@@ -62,13 +68,14 @@ at every measured width. Automatic Narya selection remains `generic`; these
 rows require `SetBackend("r51")` or `OVERCLOCK_ED25519_BACKEND=r51`.
 
 At 200 bytes, Narya's strict canonical-S precheck rejects without curve work
-in about 0.035 us at n=1 and 0.041/0.040 us per signature at n=8/64. A
-self-consistent signature that fails only at the final equation costs 27.44,
-15.35, and 15.02 us/signature at n=1, n=8, and n=64. Firedancer's ordinary
-serial loop costs 20.900, 21.007, and 20.991 us/signature for the corresponding
-late failure. Firedancer's native batch API reports only the first error, so
-its early-invalid timing is not an all-lane comparison and is intentionally
-omitted.
+in 0.035/0.046/0.044 us per signature at n=1/8/64. A self-consistent signature
+that fails only at the final equation costs 26.03/15.02/14.75 us/signature.
+The same all-lanes comparison measured Go stdlib at 36.33/36.62/36.68,
+curve25519-voi cold at 24.86/24.89/24.98, and voi expanded at
+21.79/22.16/22.09 us/signature. Firedancer's ordinary serial loop remains
+about 20.8--21.0 us/signature for the corresponding late failure. Its native
+batch API reports only the first error, so its early-invalid timing is not an
+all-lane comparison and is intentionally kept separate in the raw output.
 
 ## Historical comparison at Narya `64851dc`
 

@@ -124,11 +124,11 @@ profile's predicate returns. Enforced by:
 
 The registered r51 dispatcher's core is measured at all batch widths. PR 1's
 external-package release benchmark forces it through `SetBackend("r51")` and
-calls only exported `VerifyBatchStrict`; the public result must remain within
-2% of the core. On the Ryzen 7 PRO 8700GE it uses the packed path at n=1 and x4
-groups plus exact tails for wider batches. Future r43, x8, warm-cache, and HEEA
-changes must beat the final registered public-dispatch baseline rather than an
-older private-pipeline denominator.
+calls only exported `VerifyBatchStrict`; the public result must be no more than
+2% slower than the core. On the Ryzen 7 PRO 8700GE it uses packed verification
+at n=1/2 and x4 groups plus exact tails for wider batches. Future r43, x8,
+warm-cache, and HEEA changes must beat the final registered public-dispatch
+baseline rather than an older private-pipeline denominator.
 
 `scripts/zen4-evaluate.py RESULT_DIR --decision-output decision-v1.json`
 writes a mode-0600, versioned decision artifact inside the result bundle. The

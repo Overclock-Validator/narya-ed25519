@@ -154,11 +154,20 @@ func TestCanonicalREncoding(t *testing.T) {
 
 	// Both x=0 points have noncanonical sign-bit-one aliases. Canonicality must
 	// reject them without relying on the separate small-order classifier.
-	for _, negativeZero := range [][]byte{
+	for _, canonical := range [][]byte{
 		append([]byte{1}, make([]byte, 30)...),
 		append([]byte{0xec}, bytes.Repeat([]byte{0xff}, 30)...),
 	} {
-		negativeZero = append(negativeZero, 0x80)
+		canonical = append(canonical, 0x00)
+		if canonical[0] == 0xec {
+			canonical[31] = 0x7f
+		}
+		if !canonicalREncoding(canonical) || !canonicalRReference(canonical) {
+			t.Fatalf("canonical x=0 encoding rejected: %x", canonical)
+		}
+
+		negativeZero := append([]byte(nil), canonical...)
+		negativeZero[31] |= 0x80
 		if negativeZero[0] == 0xec {
 			negativeZero[31] = 0xff
 		}

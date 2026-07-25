@@ -1,0 +1,903 @@
+=== RUN   TestR51BackendUnsupportedGate
+    backend_r51_test.go:27: r51 x4 IFMA pipeline is available; hardware tests cover activation
+--- SKIP: TestR51BackendUnsupportedGate (0.00s)
+=== RUN   TestR51BackendInternalFaultFallsBackToGeneric
+--- PASS: TestR51BackendInternalFaultFallsBackToGeneric (0.00s)
+=== RUN   TestR51BackendDispatchDifferential
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=0
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=1
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=2
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=3
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=4
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=5
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=7
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=8
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=9
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=15
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=16
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=17
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=32
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=64
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=65
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=0
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=1
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=2
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=3
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=4
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=5
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=7
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=8
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=9
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=15
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=16
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=17
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=32
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=64
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=65
+--- PASS: TestR51BackendDispatchDifferential (1.19s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=0 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=1 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=2 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=3 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=4 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=5 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=7 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=8 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=9 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=15 (0.02s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=16 (0.02s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=17 (0.02s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=32 (0.06s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=64 (0.24s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=65 (0.25s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=0 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=1 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=2 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=3 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=4 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=5 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=7 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=8 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=9 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=15 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=16 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=17 (0.02s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=32 (0.06s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=64 (0.22s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=65 (0.22s)
+=== RUN   TestR51BackendBatchItemPathMatchesRaw
+--- PASS: TestR51BackendBatchItemPathMatchesRaw (0.03s)
+=== RUN   TestR51BackendConcurrentWorkers
+--- PASS: TestR51BackendConcurrentWorkers (0.02s)
+=== RUN   TestR51BackendSteadyStateZeroAllocations
+--- PASS: TestR51BackendSteadyStateZeroAllocations (0.10s)
+=== RUN   TestR51IFMABatchQPipelineDifferential
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/cctv
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/wycheproof
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=1
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=2
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=3
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=4
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=5
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=7
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=8
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=9
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=15
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=16
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=17
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=32
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=63
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=64
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=65
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=67
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/cctv
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/wycheproof
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=1
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=2
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=3
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=4
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=5
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=7
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=8
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=9
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=15
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=16
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=17
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=32
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=63
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=64
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=65
+=== RUN   TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=67
+--- PASS: TestR51IFMABatchQPipelineDifferential (0.32s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/cctv (0.06s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/wycheproof (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=63 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=64 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=65 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=0/mixture/n=67 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/cctv (0.13s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/wycheproof (0.02s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=63 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=64 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=65 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineDifferential/profile=1/mixture/n=67 (0.01s)
+=== RUN   TestR51IFMABatchQDecodedADifferential
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=1
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=2
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=3
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=4
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=5
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=7
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=8
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=9
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=15
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=16
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=17
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=32
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=63
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=64
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=65
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=67
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=0/raw-mismatch-falls-back
+=== RUN   TestR51IFMABatchQDecodedADifferential/profile=1/raw-mismatch-falls-back
+--- PASS: TestR51IFMABatchQDecodedADifferential (0.24s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=63 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-cold/n=67 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=63 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=alternating/n=67 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=63 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=clustered/n=67 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=63 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=64 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=65 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/pattern=all-decoded/n=67 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=63 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-cold/n=67 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=63 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=alternating/n=67 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=63 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=64 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=65 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=clustered/n=67 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=1 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=2 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=5 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=9 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=17 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=32 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=63 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=64 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=65 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/pattern=all-decoded/n=67 (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=0/raw-mismatch-falls-back (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedADifferential/profile=1/raw-mismatch-falls-back (0.00s)
+=== RUN   TestR51IFMABatchQDecodedACorpora
+=== RUN   TestR51IFMABatchQDecodedACorpora/profile=0/cctv
+=== RUN   TestR51IFMABatchQDecodedACorpora/profile=0/wycheproof
+=== RUN   TestR51IFMABatchQDecodedACorpora/profile=1/cctv
+=== RUN   TestR51IFMABatchQDecodedACorpora/profile=1/wycheproof
+--- PASS: TestR51IFMABatchQDecodedACorpora (0.16s)
+    --- PASS: TestR51IFMABatchQDecodedACorpora/profile=0/cctv (0.06s)
+    --- PASS: TestR51IFMABatchQDecodedACorpora/profile=0/wycheproof (0.01s)
+    --- PASS: TestR51IFMABatchQDecodedACorpora/profile=1/cctv (0.08s)
+    --- PASS: TestR51IFMABatchQDecodedACorpora/profile=1/wycheproof (0.01s)
+=== RUN   TestR51IFMABatchQDecodedAEveryX8HitMask
+--- PASS: TestR51IFMABatchQDecodedAEveryX8HitMask (0.12s)
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=0
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=0
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=3
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=3
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=4
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=4
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=7
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=7
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=8
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=8
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=15
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=15
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=16
+=== RUN   TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=16
+--- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter (0.02s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=15 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=0/lane=16 (0.00s)
+    --- PASS: TestR51IFMABatchQDecodedAInvalidMissScatter/profile=1/lane=16 (0.00s)
+=== RUN   TestR51IFMABatchQPipelineFiredancerFuzzRegressions
+--- PASS: TestR51IFMABatchQPipelineFiredancerFuzzRegressions (0.01s)
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=1/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=8
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=8
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=9
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=10
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=11
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=12
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=13
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=14
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=15
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=8
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=9
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=10
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=11
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=12
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=13
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=14
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=15
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=16
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=8
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=9
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=10
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=11
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=12
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=13
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=14
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=15
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=16
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=17
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=18
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=19
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=20
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=21
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=22
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=23
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=24
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=25
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=26
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=27
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=28
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=29
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=30
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=31
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=0
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=1
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=2
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=3
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=4
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=5
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=6
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=7
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=8
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=9
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=10
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=11
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=12
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=13
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=14
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=15
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=16
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=17
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=18
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=19
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=20
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=21
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=22
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=23
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=24
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=25
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=26
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=27
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=28
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=29
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=30
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=31
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=32
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=33
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=34
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=35
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=36
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=37
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=38
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=39
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=40
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=41
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=42
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=43
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=44
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=45
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=46
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=47
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=48
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=49
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=50
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=51
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=52
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=53
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=54
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=55
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=56
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=57
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=58
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=59
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=60
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=61
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=62
+=== RUN   TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=63
+--- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping (0.74s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=1/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=4/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=6 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=8/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=6 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=9/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=6 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=9 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=10 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=11 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=12 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=13 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=14 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=16/lane=15 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=6 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=9 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=10 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=11 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=12 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=13 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=14 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=15 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=17/lane=16 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=0 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=1 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=2 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=3 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=4 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=5 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=6 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=7 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=8 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=9 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=10 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=11 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=12 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=13 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=14 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=15 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=16 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=17 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=18 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=19 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=20 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=21 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=22 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=23 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=24 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=25 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=26 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=27 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=28 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=29 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=30 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=32/lane=31 (0.00s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=0 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=1 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=2 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=3 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=4 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=5 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=6 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=7 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=8 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=9 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=10 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=11 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=12 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=13 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=14 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=15 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=16 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=17 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=18 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=19 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=20 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=21 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=22 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=23 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=24 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=25 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=26 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=27 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=28 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=29 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=30 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=31 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=32 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=33 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=34 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=35 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=36 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=37 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=38 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=39 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=40 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=41 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=42 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=43 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=44 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=45 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=46 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=47 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=48 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=49 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=50 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=51 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=52 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=53 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=54 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=55 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=56 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=57 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=58 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=59 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=60 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=61 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=62 (0.01s)
+    --- PASS: TestR51IFMABatchQPipelineEveryLaneAndTailMapping/n=64/lane=63 (0.01s)
+=== RUN   TestR51IFMABatchQPipelineKernelErrorClearsPriorChunkVerdicts
+--- PASS: TestR51IFMABatchQPipelineKernelErrorClearsPriorChunkVerdicts (0.00s)
+=== RUN   TestR51IFMABatchQPipelineZeroAllocations
+--- PASS: TestR51IFMABatchQPipelineZeroAllocations (0.05s)
+=== RUN   TestR51IFMABatchQDecodedAZeroAllocations
+--- PASS: TestR51IFMABatchQDecodedAZeroAllocations (0.81s)
+=== RUN   TestR51IFMABatchQDecodedACacheLookupZeroAllocations
+--- PASS: TestR51IFMABatchQDecodedACacheLookupZeroAllocations (0.01s)
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	3.834s
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=3
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=3
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=3
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=3
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=3
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=0
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=1
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=2
+=== RUN   TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=3
+--- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding (0.01s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=1/pattern=3 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=2/pattern=3 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=3/pattern=3 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=4/pattern=3 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=8/pattern=3 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=0 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=1 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=2 (0.00s)
+    --- PASS: TestBatchEncodeIFMAModelMatchesScalarEncoding/groups=16/pattern=3 (0.00s)
+=== RUN   TestBatchEncodeIFMAExactScheduleCount
+--- PASS: TestBatchEncodeIFMAExactScheduleCount (0.00s)
+=== RUN   TestBatchEncodeIFMASparseScheduleCount
+=== RUN   TestBatchEncodeIFMASparseScheduleCount/empty
+=== RUN   TestBatchEncodeIFMASparseScheduleCount/one-leading-empty
+=== RUN   TestBatchEncodeIFMASparseScheduleCount/interleaved
+=== RUN   TestBatchEncodeIFMASparseScheduleCount/live-first-and-gaps
+--- PASS: TestBatchEncodeIFMASparseScheduleCount (0.00s)
+    --- PASS: TestBatchEncodeIFMASparseScheduleCount/empty (0.00s)
+    --- PASS: TestBatchEncodeIFMASparseScheduleCount/one-leading-empty (0.00s)
+    --- PASS: TestBatchEncodeIFMASparseScheduleCount/interleaved (0.00s)
+    --- PASS: TestBatchEncodeIFMASparseScheduleCount/live-first-and-gaps (0.00s)
+=== RUN   TestBatchEncodeIFMAInactiveLanesCannotContaminateActive
+--- PASS: TestBatchEncodeIFMAInactiveLanesCannotContaminateActive (0.00s)
+=== RUN   TestBatchEncodeIFMAReady52AliasesMatchReducedPoints
+--- PASS: TestBatchEncodeIFMAReady52AliasesMatchReducedPoints (0.00s)
+=== RUN   TestBatchEncodeIFMATorsionAndSignBoundaries
+--- PASS: TestBatchEncodeIFMATorsionAndSignBoundaries (0.00s)
+=== RUN   TestBatchEncodeIFMAAtomicFailures
+--- PASS: TestBatchEncodeIFMAAtomicFailures (0.03s)
+=== RUN   TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero
+--- PASS: TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero (0.00s)
+=== RUN   TestIFMADecode2ModelX8EveryTailAndLane
+--- PASS: TestIFMADecode2ModelX8EveryTailAndLane (0.25s)
+=== RUN   TestIFMADecode2ModelX4EveryTailAndLane
+--- PASS: TestIFMADecode2ModelX4EveryTailAndLane (0.01s)
+=== RUN   TestIFMADecode2ModelPermissiveAliases
+--- PASS: TestIFMADecode2ModelPermissiveAliases (0.01s)
+=== RUN   TestIFMADecode2ModelX8MatchesTwoX4AndSequentialChains
+--- PASS: TestIFMADecode2ModelX8MatchesTwoX4AndSequentialChains (0.21s)
+=== RUN   TestIFMADecode2ErrorLeavesOutputsUnchanged
+--- PASS: TestIFMADecode2ErrorLeavesOutputsUnchanged (0.00s)
+=== RUN   TestIFMADecode2UncheckedBoundaryRejectsOutOfRange
+--- PASS: TestIFMADecode2UncheckedBoundaryRejectsOutOfRange (0.00s)
+=== RUN   TestIFMADecode2UnavailableLeavesOutputsUnchanged
+    decode2_ifma_test.go:199: requires a target without the complete IFMA feature set
+--- SKIP: TestIFMADecode2UnavailableLeavesOutputsUnchanged (0.00s)
+=== RUN   TestIFMADecode2ZeroAlloc
+--- PASS: TestIFMADecode2ZeroAlloc (0.04s)
+=== RUN   TestIFMADecode2HardwareMatchesReference
+--- PASS: TestIFMADecode2HardwareMatchesReference (0.16s)
+=== RUN   TestIFMADecodeModelEveryMaskAndPermissiveAlias
+--- PASS: TestIFMADecodeModelEveryMaskAndPermissiveAlias (0.11s)
+=== RUN   TestIFMADecodeErrorLeavesOutputUnchanged
+--- PASS: TestIFMADecodeErrorLeavesOutputUnchanged (0.00s)
+=== RUN   TestIFMADecodeUnavailableLeavesOutputUnchanged
+    decode_ifma_test.go:87: requires a target without the complete IFMA feature set
+--- SKIP: TestIFMADecodeUnavailableLeavesOutputUnchanged (0.00s)
+=== RUN   TestIFMADecodeZeroAlloc
+--- PASS: TestIFMADecodeZeroAlloc (0.01s)
+=== RUN   TestIFMADecodeHardwareEveryMaskMatchesReference
+--- PASS: TestIFMADecodeHardwareEveryMaskMatchesReference (0.02s)
+=== RUN   TestExperimentalIFMAMultiplyX8X4
+--- PASS: TestExperimentalIFMAMultiplyX8X4 (0.05s)
+=== RUN   TestExperimentalIFMAPointOperations
+--- PASS: TestExperimentalIFMAPointOperations (0.09s)
+=== RUN   TestExperimentalCoordinateParallelPairedRPhaseFixtureX4
+--- PASS: TestExperimentalCoordinateParallelPairedRPhaseFixtureX4 (0.00s)
+=== RUN   TestExperimentalCoordinateParallelPairedRProjectiveEqualityX4
+--- PASS: TestExperimentalCoordinateParallelPairedRProjectiveEqualityX4 (0.00s)
+=== RUN   TestExperimentalCoordinateParallelPairedRCompleteStrictX4
+--- PASS: TestExperimentalCoordinateParallelPairedRCompleteStrictX4 (0.00s)
+=== RUN   TestExperimentalPackedStrictVerifierX4APIGate
+--- PASS: TestExperimentalPackedStrictVerifierX4APIGate (0.00s)
+=== RUN   TestExperimentalPackedStrictVerifierX4SharesGeneratorTable
+--- PASS: TestExperimentalPackedStrictVerifierX4SharesGeneratorTable (0.00s)
+=== RUN   TestExperimentalCoordinateParallelPairedRStrictEdgesX4
+--- PASS: TestExperimentalCoordinateParallelPairedRStrictEdgesX4 (0.00s)
+=== RUN   TestExperimentalCoordinateParallelPairedRDecodeEveryMaskX4
+--- PASS: TestExperimentalCoordinateParallelPairedRDecodeEveryMaskX4 (0.00s)
+=== RUN   TestExperimentalCoordinateParallelPairedRCompleteStrictX4ZeroAllocations
+--- PASS: TestExperimentalCoordinateParallelPairedRCompleteStrictX4ZeroAllocations (0.00s)
+PASS
+ok  	github.com/Overclock-Validator/narya/internal/r51x5	1.022s
+=== RUN   TestNativeX4Differential
+--- PASS: TestNativeX4Differential (0.00s)
+=== RUN   TestNativeX8Differential
+--- PASS: TestNativeX8Differential (0.00s)
+=== RUN   TestNativeX4RandomizedDifferential
+--- PASS: TestNativeX4RandomizedDifferential (0.03s)
+=== RUN   TestNativeX4NoAllocations
+--- PASS: TestNativeX4NoAllocations (0.00s)
+=== RUN   TestNativeX8NoAllocations
+--- PASS: TestNativeX8NoAllocations (0.00s)
+PASS
+ok  	github.com/Overclock-Validator/narya/sha512mb	0.037s

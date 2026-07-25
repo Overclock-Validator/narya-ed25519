@@ -136,7 +136,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. The only backend supporting precomputation. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | Zen 4 lane-per-signature r51 backend. Strict singletons use paired A/R decode and a packed projective finalizer; batches use x4 groups, native AVX2 multi-buffer SHA-512, A-only decode, and cross-group batch encoding of Q. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
+| `r51` | **registered, forced-only** | Zen 4 lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer; wider batches use x4 groups, native AVX2 multi-buffer SHA-512, A-only decode, and cross-group batch encoding of Q. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend has no per-key cache table yet and is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -152,31 +152,35 @@ entry point internally. Automatic backend selection never reaches it.
 
 ## Performance
 
-The following preliminary results are from the registered `r51` dispatcher's
-private core on an AMD Ryzen 7 PRO 8700GE (Zen 4), one pinned core,
-`GOMAXPROCS=1`, valid signatures, and zero allocations in the timed verification
-path. Values are microseconds per signature; the backend was forced explicitly
-and is not the automatic default. PR 1's dated evidence replaces these rows
-with the exported `SetBackend("r51")` plus `VerifyBatchStrict` release benchmark
-and requires it to stay within 2% of this core measurement.
+The following results are from the exported `SetBackend("r51")` plus
+`VerifyBatchStrict` API at implementation commit `2302d40`, on an AMD Ryzen 7
+PRO 8700GE (Zen 4), one pinned core, `GOMAXPROCS=1`, valid signatures, and zero
+allocations in the timed verification path. Each value is the median of ten
+three-second samples in microseconds per signature. The backend was forced
+explicitly and is not the automatic default. A paired diagnostic in the same
+binary confirmed that the public wrapper was no more than 2% slower than the
+private dispatcher core; code layout made some public rows slightly faster.
 
 | message bytes | n=1 | n=4 | n=8 | n=64 |
 | ---: | ---: | ---: | ---: | ---: |
-| 64 | 25.80 | 15.24 | 14.75 | 14.55 |
-| 200 | 26.26 | 15.32 | 14.99 | 14.66 |
-| 1232 | 27.20 | 16.05 | 15.71 | 15.40 |
+| 64 | 26.14 | 15.05 | 14.68 | 14.38 |
+| 200 | 26.28 | 15.24 | 14.81 | 14.51 |
+| 1232 | 27.12 | 16.02 | 15.58 | 15.30 |
 
 The same 200-byte Go benchmark binary also measured the comparison libraries;
 each value below is the median of six two-second samples.
 
 | implementation | n=1 | n=4 | n=8 | n=64 |
 | --- | ---: | ---: | ---: | ---: |
-| Narya r51 dispatcher core, cold strict | 26.26 | 15.32 | 14.99 | 14.66 |
-| Go `crypto/ed25519` loop | 36.82 | 36.72 | 36.69 | 36.73 |
-| curve25519-voi, cold strict | 25.55 | 25.61 | 25.47 | 25.60 |
-| curve25519-voi, pre-expanded key | 21.36 | 21.40 | 21.37 | 21.40 |
+| Narya r51 public dispatcher, cold strict | 27.35 | 15.78 | 15.29 | 15.01 |
+| Go `crypto/ed25519` loop | 36.48 | 36.60 | 36.59 | 36.68 |
+| curve25519-voi, cold strict | 25.50 | 25.34 | 25.44 | 25.49 |
+| curve25519-voi, pre-expanded key | 21.41 | 21.44 | 21.41 | 21.39 |
 
-The expanded-key row excludes key-expansion cost and is therefore a warm-key
+The comparison rows were measured in one Oasis-tagged binary; its different
+code layout makes the Narya row about 3.5% slower than the lean release
+benchmark above, so comparisons use only rows from that same executable. The
+expanded-key row excludes key-expansion cost and is therefore a warm-key
 comparison. Narya trails both voi rows at a cold singleton, but overtakes both
 by n=3; the exact tail-width sweep is in the cross-library note. For additional
 context, the same machine previously measured generic cold strict verification
@@ -201,7 +205,9 @@ lookup/admission/eviction. It is neither reachable through public `Cache` APIs
 nor a cold-key result. Other point-loop microbenchmarks exclude still more of
 the complete verifier and are likewise not headline results.
 
-Detailed commands, statistical samples, and caveats are recorded in
+Detailed commands, raw statistical samples, checksums, and caveats are recorded
+in [`docs/results/zen4-8700ge-pr1-2026-07-25/`](docs/results/zen4-8700ge-pr1-2026-07-25/)
+and summarized in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
 The reproducible standalone C driver is in
 [`scripts/firedancer-compare`](scripts/firedancer-compare).

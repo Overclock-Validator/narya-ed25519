@@ -113,8 +113,9 @@ taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
 
 Run these in a fresh process: backend selection is process-global. The valid
 benchmark covers messages 64/200/1232 and exact widths
-1--5/8/12/16/17/32/64. Its result must be within 2% of the private core before
-private diagnostic numbers may be described as public performance.
+1--5/8/12/16/17/32/64. Its result must be no more than 2% slower than the
+private core before private diagnostic numbers may be described as public
+performance.
 
 The complete core is compiled from the normal source file
 `ed25519/backend_r51experiment.go`; the benchmark does not use a separate

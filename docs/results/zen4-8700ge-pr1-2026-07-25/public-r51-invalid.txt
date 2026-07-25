@@ -1,0 +1,42 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	63737958	        37.89 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	63281631	        37.40 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	64151508	        37.92 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	63339734	        37.43 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	63997980	        37.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=1         	63344732	        37.45 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   92869	     25838 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   92800	     25833 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   92908	     25819 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   92869	     25826 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   92955	     25815 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=1             	   93057	     25823 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19951	    120392 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19930	    120437 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19922	    120440 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19929	    120453 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19927	    120424 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=8         	   19927	    120431 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19521	    122950 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19520	    122924 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19519	    122938 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19532	    122720 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19557	    122784 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=8             	   19519	    122832 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2527	    950008 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2523	    950752 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2523	    950747 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2521	    950820 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2521	    951242 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=noncanonical-S-first/n=64        	    2521	    951088 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2492	    962134 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2493	    962303 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2491	    962082 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2493	    961951 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2497	    960915 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictInvalid/kind=bad-message-last/n=64            	    2494	    961891 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya/ed25519	104.123s
