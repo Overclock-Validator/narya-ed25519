@@ -5,22 +5,22 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/Overclock-Validator/narya/internal/cpufeat"
 	"github.com/Overclock-Validator/narya/internal/r51x5"
 )
 
-// r51Backend is the forced-only Zen 4 throughput backend. It deliberately
+// r51Backend is the forced-only Zen 4/Zen 5 throughput backend. It deliberately
 // remains outside automatic selection until the hardware, corpus, race, and
 // complete-path review gates are closed. Each pooled worker owns all mutable
 // decoder, DSM, and batch-finalizer scratch; workers share no mutable curve
 // state.
 //
-// The current dispatch keeps full x4 groups together. Strict one- and two-item
-// tails use the lower-latency packed singleton implementation, while a strict
-// three-item tail uses one partial x4 group. StdlibCompat retains the native
-// partial-group path for two and three items because the packed verifier
-// intentionally implements only DalekStrict. In particular, a five-signature
-// batch is one full r51 group plus one singleton rather than two underfilled
-// r51 groups.
+// Zen 4 keeps full x4 groups together. Zen 5 uses native x8 groups when at
+// least eight signatures are available and retains x4 for the tail. Strict
+// one- and two-item tails use the lower-latency packed singleton implementation,
+// while a strict three-item tail uses one partial x4 group. StdlibCompat retains
+// the native partial-group path for two and three items because the packed
+// verifier intentionally implements only DalekStrict.
 type r51Backend struct {
 	activateOnce sync.Once
 	activateErr  error
@@ -76,7 +76,13 @@ func (b *r51Backend) activate() error {
 }
 
 func (*r51Backend) newBatchWorker() *r51BatchWorker {
-	pipeline, err := newR51IFMABatchQPipeline()
+	var pipeline *r51IFMABatchQPipeline
+	var err error
+	if cpufeat.PreferWideIFMA() {
+		pipeline, err = newR51IFMABatchQX8CombPipelineWithFinalizer(r51IFMABatchQFinalizerLiteral)
+	} else {
+		pipeline, err = newR51IFMABatchQPipeline()
+	}
 	return &r51BatchWorker{pipeline: pipeline, err: err}
 }
 

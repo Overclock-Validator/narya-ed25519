@@ -3,3 +3,4 @@
 package cpufeat
 
 var hasIFMA = false
+var preferWideIFMA = false

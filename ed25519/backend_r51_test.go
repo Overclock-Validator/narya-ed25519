@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/Overclock-Validator/narya/internal/cpufeat"
 	"github.com/Overclock-Validator/narya/internal/r51x5"
 )
 
@@ -28,6 +29,23 @@ func TestR51BackendUnsupportedGate(t *testing.T) {
 	}
 	if err := new(r51Backend).activate(); err == nil {
 		t.Fatal("r51 backend activated without the required IFMA and SHA kernels")
+	}
+}
+
+func TestR51BackendBatchWidthSelection(t *testing.T) {
+	if !r51IFMAPipelineAvailable(r51IFMATwoX4) {
+		t.Skipf("r51 x4 IFMA pipeline unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	worker := new(r51Backend).newBatchWorker()
+	if worker.err != nil {
+		t.Fatal(worker.err)
+	}
+	if worker.pipeline == nil {
+		t.Fatal("nil r51 batch pipeline")
+	}
+	gotWide := worker.pipeline.wideCore != nil
+	if gotWide != cpufeat.PreferWideIFMA() {
+		t.Fatalf("wide=%v want=%v pipeline=%s", gotWide, cpufeat.PreferWideIFMA(), worker.pipeline)
 	}
 }
 
