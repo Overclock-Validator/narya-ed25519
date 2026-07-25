@@ -27,7 +27,7 @@ func requireR51Backend(t testing.TB) *r51Backend {
 func requireR51DecodedACache(t testing.TB) *r51Backend {
 	t.Helper()
 	backend := requireR51Backend(t)
-	if !backend.supportsPrecomp() {
+	if !r51DecodedACacheEnabled() {
 		t.Skip("r51 decoded-A Cache tier is enabled only on native-wide IFMA CPUs")
 	}
 	return backend
@@ -62,8 +62,11 @@ func TestR51BackendBatchWidthSelection(t *testing.T) {
 
 func TestR51BackendDecodedACacheHardwareGate(t *testing.T) {
 	backend := requireR51Backend(t)
-	if got, want := backend.supportsPrecomp(), cpufeat.PreferWideIFMA(); got != want {
-		t.Fatalf("decoded-A Cache enabled=%v want=%v", got, want)
+	if !backend.supportsPrecomp() {
+		t.Fatal("r51 warm-cache staging is disabled")
+	}
+	if got, want := r51DecodedACacheEnabled(), cpufeat.PreferWideIFMA(); got != want {
+		t.Fatalf("decoded-A arithmetic enabled=%v want=%v", got, want)
 	}
 }
 
@@ -457,7 +460,7 @@ func BenchmarkR51DecodedACacheTier(b *testing.B) {
 // raw native batch entry point without lookup/admission bookkeeping.
 func BenchmarkR51DecodedACacheHardwareBypass(b *testing.B) {
 	backend := requireR51Backend(b)
-	if backend.supportsPrecomp() {
+	if r51DecodedACacheEnabled() {
 		b.Skip("r51 decoded-A Cache tier is enabled on this CPU")
 	}
 	for _, messageSize := range []int{64, 200, 1232} {

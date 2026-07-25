@@ -17,6 +17,41 @@ type cacheProbeBackend struct {
 	build     func(*[32]byte) (*PrecomputedKey, error)
 }
 
+type promotionProbeBackend struct {
+	cacheProbeBackend
+	promotionBuilds atomic.Int64
+	groupThreshold  int32
+	soloThreshold   int32
+	failPromotion   bool
+}
+
+func (b *promotionProbeBackend) promotionThreshold() int32 { return b.groupThreshold }
+
+func (b *promotionProbeBackend) soloPromotionThreshold() int32 { return b.soloThreshold }
+
+func (*promotionProbeBackend) promotable(pre *PrecomputedKey) bool {
+	if pre == nil || pre.size != 64 {
+		return false
+	}
+	_, ok := pre.table.(*byte)
+	return ok
+}
+
+func (b *promotionProbeBackend) buildPromotedPrecompGroup(
+	_ *[precomputedPromotionWidth]*[32]byte,
+	current *[precomputedPromotionWidth]*PrecomputedKey,
+) ([precomputedPromotionWidth]*PrecomputedKey, error) {
+	b.promotionBuilds.Add(1)
+	var out [precomputedPromotionWidth]*PrecomputedKey
+	if b.failPromotion {
+		return out, errors.New("injected promotion failure")
+	}
+	for lane := range out {
+		out[lane] = &PrecomputedKey{raw: current[lane].raw, table: new(uint64), size: 128}
+	}
+	return out, nil
+}
+
 func (*cacheProbeBackend) name() string { return "cache-probe" }
 
 func (b *cacheProbeBackend) supportsPrecomp() bool { return b.supported }
@@ -358,5 +393,83 @@ func TestCacheSingleBuilderPerKey(t *testing.T) {
 	}
 	if got := c.Stats(); got.Tables != 1 || got.TableBytes != 64 {
 		t.Fatalf("concurrent same-key admission = %+v", got)
+	}
+}
+
+func TestCacheGroupedPromotionAndIncrementalAccounting(t *testing.T) {
+	b := &promotionProbeBackend{
+		cacheProbeBackend: cacheProbeBackend{supported: true, tableSize: 64},
+		groupThreshold:    2,
+		soloThreshold:     8,
+	}
+	c := &Cache{MaxTableBytes: 4 * 128}
+	var pubs [precomputedPromotionWidth][32]byte
+	var pre [precomputedPromotionWidth]*PrecomputedKey
+	for lane := range pubs {
+		pubs[lane][0] = byte(lane + 1)
+		for sighting := 0; sighting < buildThreshold; sighting++ {
+			c.admit(b, &pubs[lane])
+		}
+		value, ok := c.tables.Load(pubs[lane])
+		if !ok {
+			t.Fatalf("lane=%d missing first-tier entry", lane)
+		}
+		pre[lane] = value.(*PrecomputedKey)
+	}
+	for hit := int32(0); hit < b.groupThreshold; hit++ {
+		for lane := range pre {
+			c.promote(b, pre[lane])
+		}
+	}
+	if got := b.promotionBuilds.Load(); got != 1 {
+		t.Fatalf("group promotion builds=%d want=1", got)
+	}
+	stats := c.Stats()
+	if stats.Tables != 4 || stats.PromotedTables != 4 || stats.TableBytes != 4*128 {
+		t.Fatalf("group promotion stats=%+v", stats)
+	}
+	for lane := range pubs {
+		value, _ := c.tables.Load(pubs[lane])
+		promoted := value.(*PrecomputedKey)
+		if promoted == pre[lane] || promoted.size != 128 {
+			t.Fatalf("lane=%d promoted=%p old=%p size=%d", lane, promoted, pre[lane], promoted.size)
+		}
+	}
+}
+
+func TestCacheSoloPromotionFlushAndBudgetFailure(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		max          int64
+		wantPromoted int64
+		wantBytes    int64
+	}{
+		{name: "flush", max: 128, wantPromoted: 1, wantBytes: 128},
+		{name: "budget", max: 96, wantPromoted: 0, wantBytes: 64},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			b := &promotionProbeBackend{
+				cacheProbeBackend: cacheProbeBackend{supported: true, tableSize: 64},
+				groupThreshold:    2,
+				soloThreshold:     4,
+			}
+			c := &Cache{MaxTableBytes: test.max}
+			pub := &[32]byte{0x91}
+			for sighting := 0; sighting < buildThreshold; sighting++ {
+				c.admit(b, pub)
+			}
+			value, _ := c.tables.Load(*pub)
+			pre := value.(*PrecomputedKey)
+			for hit := int32(0); hit < b.soloThreshold; hit++ {
+				c.promote(b, pre)
+			}
+			stats := c.Stats()
+			if stats.PromotedTables != test.wantPromoted || stats.TableBytes != test.wantBytes {
+				t.Fatalf("solo promotion stats=%+v", stats)
+			}
+			if got := b.promotionBuilds.Load(); got != 1 {
+				t.Fatalf("solo promotion builds=%d want=1", got)
+			}
+		})
 	}
 }

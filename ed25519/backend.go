@@ -63,6 +63,24 @@ type precomputedKeyLookup interface {
 type precomputedKeyCache interface {
 	precomputedKeyLookup
 	admit(b backend, pub *[32]byte)
+	promote(b backend, pre *PrecomputedKey)
+}
+
+const precomputedPromotionWidth = 4
+
+// groupedPrecompPromoter is the optional second-tier cache boundary. The
+// current native builder amortizes one inversion across exactly four keys, so
+// Cache groups promotion candidates at that width. Existing entries remain
+// authoritative until all four immutable replacements have been built and
+// their incremental bytes reserved.
+type groupedPrecompPromoter interface {
+	promotionThreshold() int32
+	soloPromotionThreshold() int32
+	promotable(*PrecomputedKey) bool
+	buildPromotedPrecompGroup(
+		pubs *[precomputedPromotionWidth]*[32]byte,
+		current *[precomputedPromotionWidth]*PrecomputedKey,
+	) ([precomputedPromotionWidth]*PrecomputedKey, error)
 }
 
 // cachedRawBatchBackend is the cache-aware counterpart of rawBatchBackend.

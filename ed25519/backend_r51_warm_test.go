@@ -113,6 +113,54 @@ func TestR51WarmPrecomputedGroupZeroAllocations(t *testing.T) {
 	}
 }
 
+func TestR51CachePromotesOnlyValidStrictHits(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeBatchFixture(t, r51x5.X4Lanes, 1232)
+	cache := &Cache{MaxTableBytes: r51x5.X4Lanes * r51WarmTableBytes}
+	for _, pub := range fixture.pubs {
+		admitR51DecodedATestEntry(t, cache, backend, pub)
+	}
+
+	badMessages := append([][]byte(nil), fixture.msgs...)
+	for lane := range badMessages {
+		badMessages[lane] = append([]byte(nil), badMessages[lane]...)
+		badMessages[lane][0] ^= 0x80
+	}
+	for attempt := int32(0); attempt < backend.promotionThreshold(); attempt++ {
+		if cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, badMessages, fixture.sigs, fixture.ok) {
+			t.Fatalf("invalid equations accepted at attempt %d", attempt)
+		}
+	}
+	if got := cache.Stats().PromotedTables; got != 0 {
+		t.Fatalf("invalid equations promoted %d tables", got)
+	}
+
+	for hit := int32(0); hit < backend.promotionThreshold(); hit++ {
+		if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+			t.Fatalf("valid promotion hit %d rejected", hit)
+		}
+	}
+	stats := cache.Stats()
+	if stats.Tables != r51x5.X4Lanes || stats.PromotedTables != r51x5.X4Lanes || stats.TableBytes != r51x5.X4Lanes*r51WarmTableBytes {
+		t.Fatalf("warm promotion stats=%+v", stats)
+	}
+	if faults := backend.backendStats().InternalFaultFallbacks; faults != 0 {
+		t.Fatalf("warm promotion native faults=%d", faults)
+	}
+
+	if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+		t.Fatal("promoted warm group rejected valid batch")
+	}
+	allocations := testing.AllocsPerRun(100, func() {
+		if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+			panic("promoted r51 Cache group rejected valid batch")
+		}
+	})
+	if allocations != 0 {
+		t.Fatalf("promoted r51 Cache allocations=%v want=0", allocations)
+	}
+}
+
 func BenchmarkR51WarmPrecomputedGroup(b *testing.B) {
 	backend := requireR51Backend(b)
 	for _, messageSize := range []int{64, 200, 1232} {
@@ -132,6 +180,35 @@ func BenchmarkR51WarmPrecomputedGroup(b *testing.B) {
 				)
 				if err != nil || !all {
 					b.Fatalf("verify all=%v err=%v", all, err)
+				}
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*r51x5.X4Lanes)/1000, "us/sig")
+		})
+	}
+}
+
+func BenchmarkR51WarmCacheGroup(b *testing.B) {
+	backend := requireR51Backend(b)
+	for _, messageSize := range []int{64, 200, 1232} {
+		fixture := makeBatchFixture(b, r51x5.X4Lanes, messageSize)
+		cache := &Cache{MaxTableBytes: r51x5.X4Lanes * r51WarmTableBytes}
+		for _, pub := range fixture.pubs {
+			admitR51DecodedATestEntry(b, cache, backend, pub)
+		}
+		for hit := int32(0); hit < backend.promotionThreshold(); hit++ {
+			if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+				b.Fatal("promotion warmup rejected valid batch")
+			}
+		}
+		if got := cache.Stats().PromotedTables; got != r51x5.X4Lanes {
+			b.Fatalf("promoted tables=%d want=%d", got, r51x5.X4Lanes)
+		}
+		b.Run(fmt.Sprintf("n=4/msg=%d", messageSize), func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for iteration := 0; iteration < b.N; iteration++ {
+				if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+					b.Fatal("warm Cache verification rejected valid batch")
 				}
 			}
 			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*r51x5.X4Lanes)/1000, "us/sig")

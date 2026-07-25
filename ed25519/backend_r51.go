@@ -86,13 +86,34 @@ func (b *r51Backend) backendStats() BackendStats {
 	return BackendStats{InternalFaultFallbacks: b.faults.Load()}
 }
 
-// The registered warm tier retains only decoded A. It bypasses decompression
-// in useful-width batches while leaving scalar multiplication, original-byte
-// hashing, strict prechecks, and final equality unchanged. The complete Cache
-// path wins on native-wide Zen 5 but is about 1% slower on Zen 4 even at 100%
-// hits, so Zen 4 bypasses cache bookkeeping entirely. Per-key partial comb
-// tables remain behind their separate complete-verifier/cache-policy gate.
-func (*r51Backend) supportsPrecomp() bool { return cpufeat.PreferWideIFMA() }
+// The first tier retains decoded A; native-wide Zen 5 consumes it directly,
+// while Zen 4 retains it only as the bounded staging representation for warm
+// promotion. Four independently hot strict keys can be promoted to immutable
+// A6/r9 tables and evaluated as one homogeneous x4 group on either CPU.
+func (*r51Backend) supportsPrecomp() bool { return true }
+
+func (*r51Backend) promotionThreshold() int32 { return 8 }
+
+func (*r51Backend) soloPromotionThreshold() int32 { return 32 }
+
+func (*r51Backend) promotable(pre *PrecomputedKey) bool {
+	if pre == nil {
+		return false
+	}
+	table, ok := pre.table.(*r51DecodedATable)
+	return ok && table != nil && table.entry.raw == pre.raw
+}
+
+func (b *r51Backend) buildPromotedPrecompGroup(
+	pubs *[precomputedPromotionWidth]*[32]byte,
+	current *[precomputedPromotionWidth]*PrecomputedKey,
+) ([precomputedPromotionWidth]*PrecomputedKey, error) {
+	promoted, err := b.buildWarmPrecompGroup(pubs, current)
+	if err != nil {
+		b.faults.Add(1)
+	}
+	return promoted, err
+}
 
 func (*r51Backend) batchOnlyPrecomp() {}
 
@@ -439,6 +460,18 @@ func r51UseDecodedAPrecomputed(count, hits int) bool {
 	return hits == count || (count == r51BatchQMaxChunk && hits*4 >= count)
 }
 
+func r51DecodedACacheEnabled() bool { return cpufeat.PreferWideIFMA() }
+
+func r51HasWarmGroup(pubs []*[32]byte, pre []*PrecomputedKey) bool {
+	full := minR51(len(pubs), len(pre)) &^ (r51x5.X4Lanes - 1)
+	for offset := 0; offset < full; offset += r51x5.X4Lanes {
+		if r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
+			return true
+		}
+	}
+	return false
+}
+
 func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, cache precomputedKeyCache) bool {
 	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
 		panic("ed25519: r51 cached raw batch slice lengths differ")
@@ -475,7 +508,8 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 			}
 		}
 		var prepared []*PrecomputedKey
-		if r51UseDecodedAPrecomputed(count, hits) {
+		if r51HasWarmGroup(pubs[offset:offset+count], pre[:count]) ||
+			(r51DecodedACacheEnabled() && r51UseDecodedAPrecomputed(count, hits)) {
 			prepared = pre[:count]
 		}
 		chunkAll, err := b.verifyBatchRawPrecomputedErr(
@@ -500,8 +534,12 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 		}
 		for index := 0; index < count; index++ {
 			absolute := offset + index
-			if ok[absolute] && pre[index] == nil {
-				cache.admit(b, pubs[absolute])
+			if ok[absolute] {
+				if pre[index] == nil {
+					cache.admit(b, pubs[absolute])
+				} else if profile == DalekStrict {
+					cache.promote(b, pre[index])
+				}
 			}
 		}
 		all = all && chunkAll
