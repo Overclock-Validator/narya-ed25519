@@ -411,11 +411,7 @@ func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes 
 				lane[i].fill(&raw[i], blockIndex)
 			}
 		}
-		for word := 0; word < 16; word++ {
-			for i := 0; i < nativeX8Width; i++ {
-				block[word][i] = binary.BigEndian.Uint64(raw[i][word*8:])
-			}
-		}
+		nativeTransposeX8(&block, &raw)
 
 		nativeCompressX8Rolling(&state, &block)
 		for i := 0; i < lanes; i++ {

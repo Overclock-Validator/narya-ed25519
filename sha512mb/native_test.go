@@ -167,6 +167,31 @@ func TestNativeCompressX8RollingAlias(t *testing.T) {
 	}
 }
 
+func TestNativeTransposeX8Differential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(0x5127a95))
+	for iteration := 0; iteration < 100; iteration++ {
+		var raw [nativeX8Width][128]byte
+		for lane := range raw {
+			if _, err := rng.Read(raw[lane][:]); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var got, want nativeBlockX8
+		for word := range want {
+			for lane := range want[word] {
+				want[word][lane] = binary.BigEndian.Uint64(raw[lane][word*8:])
+			}
+		}
+		nativeTransposeX8(&got, &raw)
+		if got != want {
+			t.Fatalf("iteration=%d: native transpose differs from scalar reference", iteration)
+		}
+	}
+}
+
 func TestNativeX4Differential(t *testing.T) {
 	if !nativeX4Available() {
 		t.Skip("requires AVX2")

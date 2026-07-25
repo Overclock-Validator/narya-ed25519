@@ -11,9 +11,9 @@ ok := sha512mb.ExperimentalSum512Batch(out, segmentedMessages, width)
 ```
 
 `width` is `ExperimentalWidthX4` or `ExperimentalWidthX8`. x4 requires AVX2;
-x8 requires AVX-512F. An unavailable or unsupported width returns `false`
-without changing `out`. A length mismatch still panics, matching the package's
-ordinary batch contract.
+x8 requires AVX-512F and AVX-512BW. An unavailable or unsupported width
+returns `false` without changing `out`. A length mismatch still panics,
+matching the package's ordinary batch contract.
 
 Each input is a list of byte slices and is hashed as their exact
 concatenation. The verifier can therefore pass the original `R`, original `A`,
@@ -31,7 +31,7 @@ every logical input has exactly one output and tail lanes beyond `len(msgs)`
 are unobservable.
 
 The x4 compression schedule uses AVX2 YMM registers. The x8 schedule is a
-true AVX-512F ZMM implementation, not a wrapper around two x4 calls. Its
+true AVX-512 ZMM implementation, not a wrapper around two x4 calls. Its
 production candidate retains the sixteen message words in ZMM registers and
 updates them as a rolling ring; the original 80-word stack schedule remains an
 independent differential and benchmark control. The rolling organization is

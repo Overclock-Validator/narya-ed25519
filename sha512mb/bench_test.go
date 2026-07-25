@@ -3,6 +3,7 @@ package sha512mb
 import (
 	"crypto/rand"
 	"crypto/sha512"
+	"encoding/binary"
 	"fmt"
 	"testing"
 )
@@ -277,6 +278,40 @@ func BenchmarkNativeCompress(b *testing.B) {
 			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*nativeX8Width), "ns/msg")
 		})
 	}
+}
+
+var benchmarkNativeBlockSink nativeBlockX8
+
+func BenchmarkNativeTransposeX8(b *testing.B) {
+	if !nativeX8Available() {
+		b.Skip("requires AVX-512F and AVX-512BW")
+	}
+	var raw [nativeX8Width][128]byte
+	for lane := range raw {
+		rand.Read(raw[lane][:])
+	}
+	b.Run("scalar", func(b *testing.B) {
+		var block nativeBlockX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for word := range block {
+				for lane := range block[word] {
+					block[word][lane] = binary.BigEndian.Uint64(raw[lane][word*8:])
+				}
+			}
+		}
+		benchmarkNativeBlockSink = block
+	})
+	b.Run("native", func(b *testing.B) {
+		var block nativeBlockX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			nativeTransposeX8(&block, &raw)
+		}
+		benchmarkNativeBlockSink = block
+	})
 }
 
 // BenchmarkNativeTails exposes the utilization crossover for naturally

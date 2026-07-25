@@ -5,7 +5,7 @@ package sha512mb
 import "golang.org/x/sys/cpu"
 
 func nativeX4Available() bool { return cpu.X86.HasAVX2 }
-func nativeX8Available() bool { return cpu.X86.HasAVX512F }
+func nativeX8Available() bool { return cpu.X86.HasAVX512F && cpu.X86.HasAVX512BW }
 
 // nativeCompressX4 applies one SHA-512 compression block to four independent
 // states. block is transposed: block[word][lane].
@@ -22,3 +22,6 @@ func nativeCompressX8(state *nativeStateX8, block *nativeBlockX8)
 //
 //go:noescape
 func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)
+
+//go:noescape
+func nativeTransposeX8(block *nativeBlockX8, raw *[nativeX8Width][128]byte)
