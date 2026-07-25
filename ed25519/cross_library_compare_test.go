@@ -197,7 +197,11 @@ func benchmarkCrossLibraryFixture(b *testing.B, mode string, fixture *batchFixtu
 // intentionally exposes r51 lane underfill rather than hiding it behind a
 // dispatcher. n=17 exposes the first post-16 chunk/tail boundary.
 func BenchmarkEd25519CrossLibrary(b *testing.B) {
-	counts := []int{1, 4, 8, 16, 17, 32, 64}
+	// Keep the dense singleton-to-first-full-group region: the r51 x4
+	// dispatch crossover against serial implementations lies between n=1
+	// and n=4. The later values expose x4 fill, common transaction signature
+	// counts, and the first post-16 tail.
+	counts := []int{1, 2, 3, 4, 5, 8, 9, 12, 16, 17, 32, 64}
 	for _, messageSize := range []int{64, 200, 1232} {
 		for _, count := range counts {
 			fixture := makeBatchFixture(b, count, messageSize)
@@ -355,13 +359,14 @@ func benchmarkCrossLibraryPreparedFixture(b *testing.B, fixture *batchFixture) {
 }
 
 // BenchmarkEd25519CrossLibraryPreparedTiers bounds the warm-key comparison
-// to the transaction-shaped 200-byte message and four representative widths.
+// to the transaction-shaped 200-byte message and representative widths around
+// the singleton-to-full-x4 dispatch crossover plus the n=8/64 throughput cases.
 // Every expansion/table build happens before the sub-benchmark timer starts.
 // table-bytes/key is the complete Narya PrecomputedKey payload size. The metric
 // is omitted for prepared representations whose complete transitive footprint
 // is not exposed by their API, rather than reporting a misleading shallow size.
 func BenchmarkEd25519CrossLibraryPreparedTiers(b *testing.B) {
-	for _, count := range []int{1, 4, 8, 64} {
+	for _, count := range []int{1, 2, 3, 4, 8, 64} {
 		fixture := makeBatchFixture(b, count, 200)
 		benchmarkCrossLibraryPreparedFixture(b, &fixture)
 	}
