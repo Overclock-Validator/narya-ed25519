@@ -12,7 +12,6 @@ import (
 	"bytes"
 	stded25519 "crypto/ed25519"
 	"crypto/sha512"
-	"errors"
 	"fmt"
 	"hash"
 	"sync"
@@ -116,7 +115,7 @@ var heterogeneousPartialCombCompleteFixedTablesExperiment struct {
 
 // errPartialCombUnavailable reports that this host cannot run the warm comb.
 // Callers treat it as "fall back to the cold path", not as a fault.
-var errPartialCombUnavailable = errors.New("r51x5: warm partial comb requires AVX-512 IFMA")
+var errPartialCombUnavailable = ErrWarmCombUnavailable
 
 func newHeterogeneousPartialCombCompleteVerifier(
 	inputs []heterogeneousPartialCombCompleteInputExperiment,
@@ -141,6 +140,11 @@ func newHeterogeneousPartialCombCompleteVerifier(
 		}
 	}
 
+	initializeWarmCombFixedTables()
+	verifier.regularB = heterogeneousPartialCombCompleteFixedTablesExperiment.regular
+	verifier.b8 = heterogeneousPartialCombCompleteFixedTablesExperiment.b8
+	verifier.b10 = heterogeneousPartialCombCompleteFixedTablesExperiment.b10
+
 	var generatorEncoding [32]byte
 	generatorEncoding[0] = 0x58
 	for index := 1; index < len(generatorEncoding); index++ {
@@ -150,17 +154,6 @@ func newHeterogeneousPartialCombCompleteVerifier(
 	if _, err := generator.SetBytes(generatorEncoding[:]); err != nil {
 		return nil, err
 	}
-	heterogeneousPartialCombCompleteFixedTablesExperiment.once.Do(func() {
-		heterogeneousPartialCombCompleteFixedTablesExperiment.regular = buildAsymmetricFixedBTableExperiment(&generator, 10)
-		b8 := buildHeterogeneousPartialCombTableExperiment(&generator, heterogeneousPartialCombB8R3Experiment)
-		b10 := buildHeterogeneousPartialCombTableExperiment(&generator, heterogeneousPartialCombB10R5Experiment)
-		heterogeneousPartialCombCompleteFixedTablesExperiment.b8 = buildHeterogeneousPartialCombPreSignedSharedTableExperiment(b8)
-		heterogeneousPartialCombCompleteFixedTablesExperiment.b10 = buildHeterogeneousPartialCombPreSignedSharedTableExperiment(b10)
-	})
-	verifier.regularB = heterogeneousPartialCombCompleteFixedTablesExperiment.regular
-	verifier.b8 = heterogeneousPartialCombCompleteFixedTablesExperiment.b8
-	verifier.b10 = heterogeneousPartialCombCompleteFixedTablesExperiment.b10
-
 	var generatorLanes [X4Lanes]Point
 	for lane := range generatorLanes {
 		generatorLanes[lane] = generator
