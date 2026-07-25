@@ -366,6 +366,9 @@ Do not prune x8 because two x4 groups win on Zen 4. Zen 5 changes the relevant
 512-bit execution resources, so x8 remains an independently correct candidate
 and every x8 differential stays enabled. The expected direction is not itself
 a dispatch result: complete verification must be measured on Zen 5 silicon.
+The x8 point doubler no longer performs its former 1,280-byte defensive input
+copy, but that primitive cleanup likewise does not substitute for a complete
+Zen 5 measurement.
 
 The eventual bring-up should expose an explicit forced Zen 5 tuning mode before
 automatic selection. The current IFMA feature predicate cannot distinguish
