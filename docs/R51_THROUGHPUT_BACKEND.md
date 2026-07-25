@@ -360,6 +360,33 @@ taskset -c 0-7 env GOMAXPROCS=8 go test -run '^$' \
   -benchtime=3s -count=10 ./ed25519
 ```
 
+### Zen 5 bring-up contract
+
+Do not prune x8 because two x4 groups win on Zen 4. Zen 5 changes the relevant
+512-bit execution resources, so x8 remains an independently correct candidate
+and every x8 differential stays enabled. The expected direction is not itself
+a dispatch result: complete verification must be measured on Zen 5 silicon.
+
+The eventual bring-up should expose an explicit forced Zen 5 tuning mode before
+automatic selection. The current IFMA feature predicate cannot distinguish
+Zen 4 from Zen 5, so automatic x4/x8 choice requires a separately reviewed
+CPUID family/model classifier and must remain non-degrading for an explicitly
+forced operator choice.
+
+Comb parameters are part of the lane-width candidate configuration, not global
+constants. Eight live signatures roughly double the distinct per-key A-table
+working set relative to x4, while cheaper native-width arithmetic can change
+the best doubling/table tradeoff. Zen 5 must therefore re-sweep `(w_A,r_A)`
+and `(w_B,r_B)` rather than inheriting Zen 4's choice.
+
+The per-key storage format remains independent of an x4 batch object. The x4
+four-source transpose is not assumed to widen mechanically to eight sources;
+an x8 selector needs its own measured packing schedule. A second Zen 5-only
+candidate may pack two signatures times four Edwards coordinates into one ZMM
+register, combining coordinate parallelism with two-way signature parallelism.
+That orientation is a prototype question for real hardware, not part of the
+Zen 4 production path.
+
 The optional W132/radix-32 HEEA experiment repeats its x8/two-x4 n=8/64
 release matrix with `BenchmarkR51HEEACompletePipelineParallel`. HEEA promotion
 is evaluated only after the ordinary worker winner is known. The same HEEA
