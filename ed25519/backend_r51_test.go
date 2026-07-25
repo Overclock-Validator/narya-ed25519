@@ -309,6 +309,73 @@ func BenchmarkR51BackendDispatch(b *testing.B) {
 	}
 }
 
+// BenchmarkR51DecodedACacheTier measures the registered backend through the
+// actual Cache lookup, admission-bypass, raw-batch, worker-pool, native-width,
+// and final-verdict path. The fixture uses distinct keys and a striped hit
+// layout. The cache budget is filled before timing so misses remain misses;
+// this isolates a stable hit-rate workload instead of letting a benchmark
+// silently warm from 0% to 100% during b.N.
+func BenchmarkR51DecodedACacheTier(b *testing.B) {
+	backend := requireR51Backend(b)
+	for _, messageSize := range []int{64, 200, 1232} {
+		for _, count := range []int{1, 4, 8, 17, 64} {
+			fixture := makeBatchFixture(b, count, messageSize)
+			b.Run(fmt.Sprintf("path=cold/hits=0/n=%d/msg=%d", count, messageSize), func(b *testing.B) {
+				if !backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+					b.Fatal("cold warmup rejected valid batch")
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for range b.N {
+					if !backend.verifyBatchRaw(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+						b.Fatal("cold verification rejected valid batch")
+					}
+				}
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
+			})
+
+			for _, percent := range []int{0, 25, 50, 75, 100} {
+				hitCount := count * percent / 100
+				b.Run(fmt.Sprintf("path=cache/hits=%d/n=%d/msg=%d", percent, count, messageSize), func(b *testing.B) {
+					budget := int64(hitCount) * r51DecodedATableBytes
+					if budget == 0 {
+						budget = 1 // smaller than one entry: stable all-miss cache
+					}
+					cache := &Cache{MaxTableBytes: budget}
+					for lane, pub := range fixture.pubs {
+						if r51DecodedAHitIndex(count, hitCount, "striped", lane) {
+							admitR51DecodedATestEntry(b, cache, backend, pub)
+						}
+					}
+					if hitCount == 0 {
+						// Mark each key permanently ineligible before timing; otherwise
+						// the eighth benchmark iteration would pay construction and
+						// change the workload it claims to measure.
+						for _, pub := range fixture.pubs {
+							for sighting := 0; sighting < buildThreshold; sighting++ {
+								cache.admit(backend, pub)
+							}
+						}
+					}
+					if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+						b.Fatal("cache warmup rejected valid batch")
+					}
+					b.ReportAllocs()
+					b.ResetTimer()
+					for range b.N {
+						if !cache.verifyBatchWithBackend(backend, DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok) {
+							b.Fatal("cache verification rejected valid batch")
+						}
+					}
+					b.ReportMetric(float64(hitCount), "decoded-hits/op")
+					b.ReportMetric(float64(cache.Stats().TableBytes), "table-bytes")
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
+				})
+			}
+		}
+	}
+}
+
 // BenchmarkR51PublicWrapperGate measures the exported strict-batch wrapper and
 // the registered backend's raw entry point in the same binary, on the same
 // fixtures. Comparing this gate is stronger than comparing unrelated test
