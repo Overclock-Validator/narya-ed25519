@@ -219,9 +219,11 @@ verdict must match. The reserved `ZIP215` profile name is from Zcash's
 square-root-ratio derivation used in `field/fe.go` and `internal/r43x6` follows
 [BoringSSL](https://boringssl.googlesource.com/boringssl/).
 
-**Test corpora** are redistributed from [C2SP/CCTV](https://github.com/C2SP/CCTV)
-and [Project Wycheproof](https://github.com/google/wycheproof) (Apache-2.0)
-under their respective terms.
+**Test corpora.** The CCTV `ed25519vectors` corpus is redistributed under
+BSD-3-Clause, Copyright 2019 Google LLC and Copyright 2022 Filippo Valsorda;
+its license text is reproduced in full in [NOTICE](NOTICE) as that license
+requires. Project Wycheproof vectors are redistributed under Apache-2.0,
+Copyright Google LLC.
 
 **Comparison and prior art.**
 [curve25519-voi](https://github.com/oasisprotocol/curve25519-voi) (Oasis
