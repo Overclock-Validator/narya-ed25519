@@ -24,6 +24,9 @@ func nativeCompressX8(state *nativeStateX8, block *nativeBlockX8)
 func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)
 
 //go:noescape
+func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
+
+//go:noescape
 func nativeTransposeX8(block *nativeBlockX8, raw *[nativeX8Width][128]byte)
 
 //go:noescape

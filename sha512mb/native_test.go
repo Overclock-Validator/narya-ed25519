@@ -223,6 +223,92 @@ func TestNativeTransposePointersX8Differential(t *testing.T) {
 	}
 }
 
+func TestNativeTransposeCompressX8RollingDifferential(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(0x512f053d))
+	for iteration := 0; iteration < 100; iteration++ {
+		var got nativeStateX8
+		var want [8][referenceMaxLanes]uint64
+		var storage [nativeX8Width][129]byte
+		var ptrs [nativeX8Width]*byte
+		var blocks [referenceMaxLanes][128]byte
+		var active [referenceMaxLanes]bool
+		for lane := 0; lane < nativeX8Width; lane++ {
+			active[lane] = true
+			_, _ = rng.Read(storage[lane][:])
+			ptrs[lane] = &storage[lane][1]
+			copy(blocks[lane][:], storage[lane][1:])
+			for word := range nativeInitialState {
+				value := rng.Uint64()
+				got[word][lane] = value
+				want[word][lane] = value
+			}
+		}
+		compressReference(&want, &blocks, &active, nativeX8Width)
+		nativeTransposeCompressX8Rolling(&got, &ptrs, 0)
+		for word := range got {
+			for lane := range got[word] {
+				if got[word][lane] != want[word][lane] {
+					t.Fatalf("iteration=%d word=%d lane=%d: got=%016x want=%016x", iteration, word, lane, got[word][lane], want[word][lane])
+				}
+			}
+		}
+
+		var gotInitial nativeStateX8
+		var wantInitial [8][referenceMaxLanes]uint64
+		for word := range nativeInitialState {
+			for lane := 0; lane < nativeX8Width; lane++ {
+				wantInitial[word][lane] = nativeInitialState[word]
+			}
+		}
+		compressReference(&wantInitial, &blocks, &active, nativeX8Width)
+		nativeTransposeCompressX8Rolling(&gotInitial, &ptrs, 1)
+		for word := range gotInitial {
+			for lane := range gotInitial[word] {
+				if gotInitial[word][lane] != wantInitial[word][lane] {
+					t.Fatalf("initial iteration=%d word=%d lane=%d: got=%016x want=%016x", iteration, word, lane, gotInitial[word][lane], wantInitial[word][lane])
+				}
+			}
+		}
+	}
+}
+
+func TestNativeTransposeCompressX8RollingAlias(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	rng := rand.New(rand.NewSource(0x512f053da11a5))
+	var got nativeStateX8
+	var want [8][referenceMaxLanes]uint64
+	for word := range got {
+		for lane := range got[word] {
+			value := rng.Uint64()
+			got[word][lane] = value
+			want[word][lane] = value
+		}
+	}
+	stateBytes := (*[512]byte)(unsafe.Pointer(&got))
+	var ptrs [nativeX8Width]*byte
+	var blocks [referenceMaxLanes][128]byte
+	var active [referenceMaxLanes]bool
+	for lane := 0; lane < nativeX8Width; lane++ {
+		active[lane] = true
+		ptrs[lane] = &stateBytes[0]
+		copy(blocks[lane][:], stateBytes[:128])
+	}
+	compressReference(&want, &blocks, &active, nativeX8Width)
+	nativeTransposeCompressX8Rolling(&got, &ptrs, 0)
+	for word := range got {
+		for lane := range got[word] {
+			if got[word][lane] != want[word][lane] {
+				t.Fatalf("word=%d lane=%d: got=%016x want=%016x", word, lane, got[word][lane], want[word][lane])
+			}
+		}
+	}
+}
+
 func TestNativeX4Differential(t *testing.T) {
 	if !nativeX4Available() {
 		t.Skip("requires AVX2")

@@ -413,15 +413,9 @@ func sum512NativeGroup3X8(out [][64]byte, msgs [][3][]byte, lanes int) {
 
 func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes int, maxBlocks uint64) {
 	var state nativeStateX8
-	for i := 0; i < nativeX8Width; i++ {
-		for word := range nativeInitialState {
-			state[word][i] = nativeInitialState[word]
-		}
-	}
 	var raw [nativeX8Width][128]byte
 	var zero [128]byte
 	var ptrs [nativeX8Width]*byte
-	var block nativeBlockX8
 	for blockIndex := uint64(0); blockIndex < maxBlocks; blockIndex++ {
 		for i := 0; i < nativeX8Width; i++ {
 			ptrs[i] = &zero[0]
@@ -435,9 +429,11 @@ func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes 
 				ptrs[i] = &raw[i][0]
 			}
 		}
-		nativeTransposePointersX8(&block, &ptrs)
-
-		nativeCompressX8Rolling(&state, &block)
+		initial := uint64(0)
+		if blockIndex == 0 {
+			initial = 1
+		}
+		nativeTransposeCompressX8Rolling(&state, &ptrs, initial)
 		for i := 0; i < lanes; i++ {
 			if blockIndex+1 != lane[i].blocks {
 				continue

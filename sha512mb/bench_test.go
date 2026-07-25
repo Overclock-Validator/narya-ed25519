@@ -329,6 +329,47 @@ func BenchmarkNativeTransposeX8(b *testing.B) {
 	})
 }
 
+func BenchmarkNativeTransposeCompressX8(b *testing.B) {
+	if !nativeX8Available() {
+		b.Skip("requires AVX-512F and AVX-512BW")
+	}
+	var raw [nativeX8Width][128]byte
+	var ptrs [nativeX8Width]*byte
+	for lane := range raw {
+		rand.Read(raw[lane][:])
+		ptrs[lane] = &raw[lane][0]
+	}
+	initialize := func(state *nativeStateX8) {
+		for word := range state {
+			for lane := range state[word] {
+				state[word][lane] = nativeInitialState[word]
+			}
+		}
+	}
+	b.Run("split", func(b *testing.B) {
+		var state nativeStateX8
+		var block nativeBlockX8
+		initialize(&state)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			nativeTransposePointersX8(&block, &ptrs)
+			nativeCompressX8Rolling(&state, &block)
+		}
+		benchmarkNativeStateSink = state
+	})
+	b.Run("fused", func(b *testing.B) {
+		var state nativeStateX8
+		initialize(&state)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			nativeTransposeCompressX8Rolling(&state, &ptrs, 0)
+		}
+		benchmarkNativeStateSink = state
+	})
+}
+
 // BenchmarkNativeX8WrapperPhases isolates the scalar work surrounding x8
 // transposition and compression. Helpers remain out of line so the compiler
 // cannot collapse repeated initialization or serialization to one iteration.

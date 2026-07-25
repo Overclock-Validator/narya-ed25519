@@ -45,6 +45,13 @@ adapted from Firedancer's pinned AVX-512 batch SHA-512 data flow, as recorded
 in [NOTICE](../NOTICE). Zen 4 executes 512-bit operations over 256-bit datapaths,
 so neither width is selected without target measurements.
 
+The x8 complete-hash path fuses direct pointer loads, byte swapping, 8x8
+transposition, and rolling compression into one assembly boundary. The split
+transpose and compression functions remain independent controls. Both entries
+tail-jump into the same 80-round body, so there is only one production round
+schedule. The first fused block also initializes the transposed SHA state,
+avoiding a scalar 64-word initialization followed by vector reloads.
+
 Correctness tests compare both the raw compression state and complete
 segmented hashing against independent Go/`crypto/sha512` references. Coverage
 includes batch sizes 0 through 17, every physical lane and tail position,
@@ -64,12 +71,13 @@ hash kernels pass their correctness and complete-verifier performance gates.
 
 On the Ryzen 7 PRO 8700GE, a pinned `GOMAXPROCS=1` development measurement of
 the fixed `R || A || message` entry point after the rolling schedule, native
-transpose, and direct-block ingestion gave:
+transpose/compression fusion, first-block state initialization, and
+direct-block ingestion gave:
 
 | message bytes | scalar Go | native x8 | speedup |
 |---:|---:|---:|---:|
-| 200 | about 402 ns/message | 143.6--143.9 ns/message | about 2.80x |
-| 1232 | about 1,348 ns/message | 436.6--437.6 ns/message | about 3.08x |
+| 200 | about 402 ns/message | 139.6--139.7 ns/message | about 2.88x |
+| 1232 | about 1,348 ns/message | 428.5--429.6 ns/message | about 3.14x |
 
 These are hash-only figures, not complete signature-verification numbers. The
 long-message result is especially relevant to Solana's 1232-byte transaction
