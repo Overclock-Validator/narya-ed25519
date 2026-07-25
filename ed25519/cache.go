@@ -244,8 +244,7 @@ func (c *Cache) promote(b backend, pre *PrecomputedKey) {
 	if !ok || pre == nil || !promoter.promotable(pre) {
 		return
 	}
-	value, _ := c.promotions.LoadOrStore(pre.raw, new(promotionState))
-	state := value.(*promotionState)
+	state := c.promotionState(pre.raw)
 	hits := state.hits.Add(1)
 	status := state.status.Load()
 	if status == promotionIdle && hits >= promoter.promotionThreshold() {
@@ -258,6 +257,15 @@ func (c *Cache) promote(b backend, pre *PrecomputedKey) {
 	if status == promotionPending && hits >= promoter.soloPromotionThreshold() {
 		c.queuePromotion(promoter, pre, state, true)
 	}
+}
+
+func (c *Cache) promotionState(raw [32]byte) *promotionState {
+	if value, ok := c.promotions.Load(raw); ok {
+		return value.(*promotionState)
+	}
+	candidate := new(promotionState)
+	value, _ := c.promotions.LoadOrStore(raw, candidate)
+	return value.(*promotionState)
 }
 
 func (c *Cache) queuePromotion(promoter groupedPrecompPromoter, pre *PrecomputedKey, state *promotionState, forceSolo bool) {

@@ -258,24 +258,30 @@ func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]b
 	}
 
 	for offset := 0; offset < full; {
-		if pre != nil && profile == DalekStrict && r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
-			if _, err := b.verifyWarmGroup(
-				pubs[offset:offset+r51x5.X4Lanes],
-				msgs[offset:offset+r51x5.X4Lanes],
-				sigs[offset:offset+r51x5.X4Lanes],
-				ok[offset:offset+r51x5.X4Lanes],
-				pre[offset:offset+r51x5.X4Lanes],
-			); err != nil {
-				return false, err
+		warmWidth := 0
+		if pre != nil && profile == DalekStrict {
+			warmWidth = r51WarmDispatchWidth(pubs, pre, offset, full)
+		}
+		if warmWidth != 0 {
+			for warmOffset := offset; warmOffset < offset+warmWidth; warmOffset += r51x5.X4Lanes {
+				if _, err := b.verifyWarmGroup(
+					pubs[warmOffset:warmOffset+r51x5.X4Lanes],
+					msgs[warmOffset:warmOffset+r51x5.X4Lanes],
+					sigs[warmOffset:warmOffset+r51x5.X4Lanes],
+					ok[warmOffset:warmOffset+r51x5.X4Lanes],
+					pre[warmOffset:warmOffset+r51x5.X4Lanes],
+				); err != nil {
+					return false, err
+				}
 			}
-			offset += r51x5.X4Lanes
+			offset += warmWidth
 			continue
 		}
 
 		coldStart := offset
 		coldEnd := minR51(full, coldStart+r51BatchQMaxChunk)
 		for candidate := coldStart + r51x5.X4Lanes; candidate < coldEnd; candidate += r51x5.X4Lanes {
-			if pre != nil && profile == DalekStrict && r51WarmGroupAvailable(pubs[candidate:candidate+r51x5.X4Lanes], pre[candidate:candidate+r51x5.X4Lanes]) {
+			if pre != nil && profile == DalekStrict && r51WarmDispatchWidth(pubs, pre, candidate, full) != 0 {
 				coldEnd = candidate
 				break
 			}
@@ -462,10 +468,34 @@ func r51UseDecodedAPrecomputed(count, hits int) bool {
 
 func r51DecodedACacheEnabled() bool { return cpufeat.PreferWideIFMA() }
 
-func r51HasWarmGroup(pubs []*[32]byte, pre []*PrecomputedKey) bool {
+// r51WarmDispatchWidth preserves Zen 5's native x8 occupancy. A warm x4 group
+// is independently profitable on Zen 4. On Zen 5 it is consumed only as an
+// aligned pair, except for one final four-item tail that has no x8 partner.
+func r51WarmDispatchWidth(pubs []*[32]byte, pre []*PrecomputedKey, offset, full int) int {
+	if offset < 0 || offset+r51x5.X4Lanes > full || full > minR51(len(pubs), len(pre)) ||
+		!r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
+		return 0
+	}
+	if !cpufeat.PreferWideIFMA() {
+		return r51x5.X4Lanes
+	}
+	if offset%r51x5.X8Lanes != 0 {
+		return 0
+	}
+	if offset+r51x5.X4Lanes == full {
+		return r51x5.X4Lanes
+	}
+	if offset+r51x5.X8Lanes <= full &&
+		r51WarmGroupAvailable(pubs[offset+r51x5.X4Lanes:offset+r51x5.X8Lanes], pre[offset+r51x5.X4Lanes:offset+r51x5.X8Lanes]) {
+		return r51x5.X8Lanes
+	}
+	return 0
+}
+
+func r51HasWarmDispatch(pubs []*[32]byte, pre []*PrecomputedKey) bool {
 	full := minR51(len(pubs), len(pre)) &^ (r51x5.X4Lanes - 1)
 	for offset := 0; offset < full; offset += r51x5.X4Lanes {
-		if r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
+		if r51WarmDispatchWidth(pubs, pre, offset, full) != 0 {
 			return true
 		}
 	}
@@ -508,7 +538,7 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 			}
 		}
 		var prepared []*PrecomputedKey
-		if r51HasWarmGroup(pubs[offset:offset+count], pre[:count]) ||
+		if r51HasWarmDispatch(pubs[offset:offset+count], pre[:count]) ||
 			(r51DecodedACacheEnabled() && r51UseDecodedAPrecomputed(count, hits)) {
 			prepared = pre[:count]
 		}
