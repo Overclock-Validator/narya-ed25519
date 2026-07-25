@@ -6,6 +6,50 @@ import (
 	"testing"
 )
 
+// ifmaPointDoubleSquareTrickStaticX4 preserves the previous production
+// formula as an independently timed control. It intentionally mirrors the old
+// static schedule instead of calling the selected production implementation.
+func ifmaPointDoubleSquareTrickStaticX4(out, q *IFMAPointX4) error {
+	qq := *q
+	var A, B, C, D, E, F, G, H, xPlusY IFMAElementX4
+	if err := ifmaMultiplyComposableUncheckedX4(&A, &qq.X, &qq.X); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&B, &qq.Y, &qq.Y); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&C, &qq.Z, &qq.Z); err != nil {
+		return err
+	}
+	C.Add(&C, &C)
+	D.Negate(&A)
+	xPlusY.Add(&qq.X, &qq.Y)
+	if err := ifmaMultiplyComposableUncheckedX4(&E, &xPlusY, &xPlusY); err != nil {
+		return err
+	}
+	E.Subtract(&E, &A)
+	E.Subtract(&E, &B)
+	G.Add(&D, &B)
+	F.Subtract(&G, &C)
+	H.Subtract(&D, &B)
+
+	var result IFMAPointX4
+	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &G, &H); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &E, &H); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &F, &G); err != nil {
+		return err
+	}
+	*out = result
+	return nil
+}
+
 // ifmaPointDoubleDirectXYStaticX4 is a test-only A/B for the current
 // signature-parallel x4 point layer. The production formula obtains E=2XY as
 // (X+Y)^2-X^2-Y^2. Since the current r51 kernel uses the general multiply for
@@ -181,7 +225,7 @@ func BenchmarkExperimentalIFMADirectXYDoubleX4(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if err := ifmaPointDoubleComposableStaticX4(&acc, &acc); err != nil {
+			if err := ifmaPointDoubleSquareTrickStaticX4(&acc, &acc); err != nil {
 				b.Fatal(err)
 			}
 		}

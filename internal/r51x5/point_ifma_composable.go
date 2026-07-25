@@ -218,7 +218,7 @@ func ifmaPointAddComposableStaticX8(out, a, b *IFMAPointX8) error {
 
 func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 	qq := *q
-	var A, B, C, D, E, F, G, H, xPlusY IFMAElementX4
+	var A, B, C, D, E, F, G, H IFMAElementX4
 	if err := ifmaMultiplyComposableUncheckedX4(&A, &qq.X, &qq.X); err != nil {
 		return err
 	}
@@ -229,13 +229,14 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 		return err
 	}
 	C.Add(&C, &C)
-	D.Negate(&A)
-	xPlusY.Add(&qq.X, &qq.Y)
-	if err := ifmaMultiplyComposableUncheckedX4(&E, &xPlusY, &xPlusY); err != nil {
+	// E=2XY avoids the normalized (X+Y), E-A, and E-B operations needed
+	// by the classical square trick. Squaring currently uses this same general
+	// IFMA multiply, so the direct form keeps the multiply count unchanged.
+	if err := ifmaMultiplyComposableUncheckedX4(&E, &qq.X, &qq.Y); err != nil {
 		return err
 	}
-	E.Subtract(&E, &A)
-	E.Subtract(&E, &B)
+	E.Add(&E, &E)
+	D.Negate(&A)
 	G.Add(&D, &B)
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
@@ -259,7 +260,7 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 
 func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
 	qq := *q
-	var A, B, C, D, E, F, G, H, xPlusY IFMAElementX8
+	var A, B, C, D, E, F, G, H IFMAElementX8
 	if err := ifmaMultiplyComposableUncheckedX8(&A, &qq.X, &qq.X); err != nil {
 		return err
 	}
@@ -270,13 +271,12 @@ func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
 		return err
 	}
 	C.Add(&C, &C)
-	D.Negate(&A)
-	xPlusY.Add(&qq.X, &qq.Y)
-	if err := ifmaMultiplyComposableUncheckedX8(&E, &xPlusY, &xPlusY); err != nil {
+	// See the x4 schedule above: direct E=2XY removes two carry boundaries.
+	if err := ifmaMultiplyComposableUncheckedX8(&E, &qq.X, &qq.Y); err != nil {
 		return err
 	}
-	E.Subtract(&E, &A)
-	E.Subtract(&E, &B)
+	E.Add(&E, &E)
+	D.Negate(&A)
 	G.Add(&D, &B)
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
@@ -426,7 +426,7 @@ func ifmaPointAddComposableX8(out, a, b *IFMAPointX8, mul ifmaComposableMulX8) e
 
 func ifmaPointDoubleComposableX4(out, q *IFMAPointX4, mul ifmaComposableMulX4) error {
 	qq := *q
-	var A, B, C, D, E, F, G, H, xPlusY IFMAElementX4
+	var A, B, C, D, E, F, G, H IFMAElementX4
 	if err := mul(&A, &qq.X, &qq.X); err != nil {
 		return err
 	}
@@ -437,13 +437,12 @@ func ifmaPointDoubleComposableX4(out, q *IFMAPointX4, mul ifmaComposableMulX4) e
 		return err
 	}
 	C.Add(&C, &C)
-	D.Negate(&A)
-	xPlusY.Add(&qq.X, &qq.Y)
-	if err := mul(&E, &xPlusY, &xPlusY); err != nil {
+	// Keep the injected model on the same direct-XY formula as the static core.
+	if err := mul(&E, &qq.X, &qq.Y); err != nil {
 		return err
 	}
-	E.Subtract(&E, &A)
-	E.Subtract(&E, &B)
+	E.Add(&E, &E)
+	D.Negate(&A)
 	G.Add(&D, &B)
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
@@ -467,7 +466,7 @@ func ifmaPointDoubleComposableX4(out, q *IFMAPointX4, mul ifmaComposableMulX4) e
 
 func ifmaPointDoubleComposableX8(out, q *IFMAPointX8, mul ifmaComposableMulX8) error {
 	qq := *q
-	var A, B, C, D, E, F, G, H, xPlusY IFMAElementX8
+	var A, B, C, D, E, F, G, H IFMAElementX8
 	if err := mul(&A, &qq.X, &qq.X); err != nil {
 		return err
 	}
@@ -478,13 +477,12 @@ func ifmaPointDoubleComposableX8(out, q *IFMAPointX8, mul ifmaComposableMulX8) e
 		return err
 	}
 	C.Add(&C, &C)
-	D.Negate(&A)
-	xPlusY.Add(&qq.X, &qq.Y)
-	if err := mul(&E, &xPlusY, &xPlusY); err != nil {
+	// Keep the injected model on the same direct-XY formula as the static core.
+	if err := mul(&E, &qq.X, &qq.Y); err != nil {
 		return err
 	}
-	E.Subtract(&E, &A)
-	E.Subtract(&E, &B)
+	E.Add(&E, &E)
+	D.Negate(&A)
 	G.Add(&D, &B)
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
