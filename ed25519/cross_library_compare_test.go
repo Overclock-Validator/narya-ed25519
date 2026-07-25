@@ -113,12 +113,22 @@ func benchmarkCrossLibraryFixture(b *testing.B, mode string, fixture *batchFixtu
 	}
 
 	if r51IFMAPipelineAvailable(r51IFMATwoX4) {
+		// This is the current forced r51 backend as callers use it, including
+		// the packed singleton and full-group-plus-tail dispatcher. Keep the raw
+		// x4 pipeline below as a diagnostic row rather than presenting it as the
+		// public candidate at narrow or non-multiple-of-four widths.
+		r51Dispatch := new(r51Backend)
+		run("narya-r51-dispatch", func() (bool, error) {
+			return r51Dispatch.verifyBatchRawErr(
+				DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok,
+			)
+		})
+
 		// Cold arbitrary-key Narya candidate. This is the exact private
-		// pipeline whose complete-path measurements currently establish the
-		// r51 headline; it is intentionally separate from public automatic
-		// backend selection.
+		// x4 pipeline used for complete-path kernel diagnosis. Unlike the
+		// dispatcher row, it intentionally exposes partial-lane costs.
 		r51Cold := requireR51IFMABatchQPipeline(b)
-		run("narya-r51-cold", func() (bool, error) {
+		run("narya-r51-raw-x4", func() (bool, error) {
 			return r51Cold.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
 		})
 
@@ -193,9 +203,9 @@ func benchmarkCrossLibraryFixture(b *testing.B, mode string, fixture *batchFixtu
 // transaction; it is also the only workload shape accepted by Firedancer's
 // specialized batch API, so these rows are the bridge to its C benchmark.
 //
-// All rows are serial and should be run pinned with GOMAXPROCS=1. The n=1 row
-// intentionally exposes r51 lane underfill rather than hiding it behind a
-// dispatcher. n=17 exposes the first post-16 chunk/tail boundary.
+// All rows are serial and should be run pinned with GOMAXPROCS=1. The raw-x4
+// row exposes lane underfill; the dispatcher row is the forced backend callers
+// actually select. n=17 exposes a full-group-plus-singleton tail boundary.
 func BenchmarkEd25519CrossLibrary(b *testing.B) {
 	// Keep the dense singleton-to-first-full-group region: the r51 x4
 	// dispatch crossover against serial implementations lies between n=1
@@ -290,8 +300,15 @@ func benchmarkCrossLibraryPreparedFixture(b *testing.B, fixture *batchFixture) {
 	}
 
 	if r51IFMAPipelineAvailable(r51IFMATwoX4) {
+		r51Dispatch := new(r51Backend)
+		run("narya-r51-dispatch", 0, func() (bool, error) {
+			return r51Dispatch.verifyBatchRawErr(
+				DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok,
+			)
+		})
+
 		r51Cold := requireR51IFMABatchQPipeline(b)
-		run("narya-r51-cold", 0, func() (bool, error) {
+		run("narya-r51-raw-x4", 0, func() (bool, error) {
 			return r51Cold.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
 		})
 
@@ -468,8 +485,15 @@ func benchmarkCrossLibraryInvalidFixture(b *testing.B, invalidKind string, fixtu
 	}
 
 	if r51IFMAPipelineAvailable(r51IFMATwoX4) {
+		r51Dispatch := new(r51Backend)
+		run("narya-r51-dispatch", 0, func() (bool, error) {
+			return r51Dispatch.verifyBatchRawErr(
+				DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok,
+			)
+		})
+
 		r51Cold := requireR51IFMABatchQPipeline(b)
-		run("narya-r51-cold", 0, func() (bool, error) {
+		run("narya-r51-raw-x4", 0, func() (bool, error) {
 			return r51Cold.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
 		})
 
