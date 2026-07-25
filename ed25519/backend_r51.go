@@ -302,19 +302,25 @@ func r51UseDecodedAPrecomputed(count, hits int) bool {
 	return hits == count || (count == r51BatchQMaxChunk && hits*4 >= count)
 }
 
-func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool {
+func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, cache precomputedKeyCache) bool {
 	if len(pubs) != len(msgs) || len(msgs) != len(sigs) || len(sigs) != len(ok) {
 		panic("ed25519: r51 cached raw batch slice lengths differ")
 	}
-	if lookup == nil {
+	if cache == nil {
 		panic("ed25519: nil r51 precomputed-key lookup")
 	}
 	// The packed strict singleton/two-item path cannot consume a decoded point,
 	// and the three-item x4 tail cannot amortize a mixed hit. Cache admission is
-	// still performed by Cache after these verdicts, so bypassing lookup here
-	// does not prevent recurring narrow traffic from warming a later batch.
+	// still requested after each valid verdict, so bypassing lookup here does
+	// not prevent recurring narrow traffic from warming a later batch.
 	if len(pubs) < r51x5.X4Lanes {
-		return b.verifyBatchRaw(profile, pubs, msgs, sigs, ok)
+		all := b.verifyBatchRaw(profile, pubs, msgs, sigs, ok)
+		for index := range ok {
+			if ok[index] {
+				cache.admit(b, pubs[index])
+			}
+		}
+		return all
 	}
 
 	all := true
@@ -325,7 +331,7 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 		for index := 0; index < count; index++ {
 			absolute := offset + index
 			if !rejectedByProfile(profile, pubs[absolute], sigs[absolute]) {
-				pre[index] = lookup.lookup(pubs[absolute])
+				pre[index] = cache.lookup(pubs[absolute])
 				if pre[index] != nil {
 					hits++
 				}
@@ -345,7 +351,21 @@ func (b *r51Backend) verifyBatchRawCached(profile Profile, pubs []*[32]byte, msg
 		)
 		if err != nil {
 			b.faults.Add(1)
-			return fallbackGenericBatch(profile, pubs, msgs, sigs, ok)
+			all = fallbackGenericBatch(profile, pubs, msgs, sigs, ok)
+			for index := range ok {
+				if ok[index] {
+					// Faults are exceptional, so conservatively rechecking the
+					// table here is preferable to retaining per-chunk hit state.
+					cache.admit(b, pubs[index])
+				}
+			}
+			return all
+		}
+		for index := 0; index < count; index++ {
+			absolute := offset + index
+			if ok[absolute] && pre[index] == nil {
+				cache.admit(b, pubs[absolute])
+			}
 		}
 		all = all && chunkAll
 	}

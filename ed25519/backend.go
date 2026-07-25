@@ -56,13 +56,22 @@ type precomputedKeyLookup interface {
 	lookup(pub *[32]byte) *PrecomputedKey
 }
 
+// precomputedKeyCache extends lookup with the shared post-verdict admission
+// policy. A cache-aware native backend uses it only to admit a valid miss; a
+// hit must not be looked up a second time merely to discover that admission is
+// unnecessary.
+type precomputedKeyCache interface {
+	precomputedKeyLookup
+	admit(b backend, pub *[32]byte)
+}
+
 // cachedRawBatchBackend is the cache-aware counterpart of rawBatchBackend.
 // It must perform exactly one lookup for each item the shared profile pre-pass
 // would leave live, preserve per-item verdicts, and fail closed just like the
-// ordinary raw entry point. Cache admission remains outside the backend and
-// occurs only after successful verdicts have been written.
+// ordinary raw entry point. It may request admission only for a valid cache
+// miss after that item's verdict has been written.
 type cachedRawBatchBackend interface {
-	verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, lookup precomputedKeyLookup) bool
+	verifyBatchRawCached(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool, cache precomputedKeyCache) bool
 }
 
 // batchOnlyPrecompBackend marks a backend whose native precomputation is
