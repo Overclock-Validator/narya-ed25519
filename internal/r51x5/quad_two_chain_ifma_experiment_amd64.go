@@ -19,3 +19,17 @@ func ifmaQuadTwoChainDoubleFirstOperandsUncheckedX8(u, v, q *LimbsX8)
 //
 //go:noescape
 func ifmaQuadTwoChainDoubleFinalMultiplyUncheckedX8(out, products *LimbsX8)
+
+// ifmaQuadTwoChainCachedAddFirstOperandUncheckedX8 applies the packed-x4
+// [X,Y,T,Z] -> [Y-X,Y+X,T,Z] transform independently in both ZMM halves.
+// Inputs are u52, output is u52, and in-place aliasing is supported.
+//
+//go:noescape
+func ifmaQuadTwoChainCachedAddFirstOperandUncheckedX8(out, q *LimbsX8)
+
+// ifmaQuadTwoChainCachedAddFinalOperandsUncheckedX8 applies the packed cached-
+// add [A,B,C,D] -> ([E,G,E,F], [F,H,H,G]) transform independently in both
+// halves. Outputs are u52 and products may alias either output.
+//
+//go:noescape
+func ifmaQuadTwoChainCachedAddFinalOperandsUncheckedX8(left, right, products *LimbsX8)

@@ -44,6 +44,27 @@
 	VPMULLQ FOLD19, HI, T0                        \
 	VPADDQ T0, LO, LO
 
+// Apply [X,Y,T,Z] -> [Y-X,Y+X,T,Z] independently in both 256-bit
+// halves. K1 selects X lanes 0/4; K2 selects Y lanes 1/5.
+#define TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Q, P, T0, T1) \
+	VPERMQ $0xe5, Q, T0                                  \
+	VPERMQ $0x00, Q, T1                                  \
+	VPSUBQ T1, T0, K1, T0                                \
+	VPADDQ T1, T0, K2, T0                                \
+	VPADDQ P, T0, Q
+
+// Apply [A,B,C,D] -> [E,G,H,F] independently in both halves. K1 selects
+// E/F (lanes 0/3 and 4/7); K2 selects G/H (lanes 1/2 and 5/6).
+#define TWO_CHAIN_CACHED_ADD_LINEAR(Q, P, T0, T1, T2) \
+	VPERMQ    $0xdd, Q, T0                              \
+	VPERMQ    $0x88, Q, T1                              \
+	VPSUBQ    T1, T0, T2                                \
+	VPADDQ    T1, T0, T0                                \
+	VPXORQ    Q, Q, Q                                   \
+	VMOVDQU64 T2, K1, Q                                 \
+	VMOVDQU64 T0, K2, Q                                 \
+	VPADDQ    P, Q, Q
+
 // func ifmaQuadTwoChainDoubleFirstOperandsUncheckedX8(u, v, q *LimbsX8)
 TEXT ·ifmaQuadTwoChainDoubleFirstOperandsUncheckedX8(SB), NOSPLIT, $0-24
 	MOVQ u+0(FP), DI
@@ -78,6 +99,100 @@ TEXT ·ifmaQuadTwoChainDoubleFirstOperandsUncheckedX8(SB), NOSPLIT, $0-24
 	VPERMQ $0x74, Z4, Z6
 	VMOVDQU64 Z5, 256(DI)
 	VMOVDQU64 Z6, 256(SI)
+	VZEROUPPER
+	RET
+
+// func ifmaQuadTwoChainCachedAddFirstOperandUncheckedX8(out, q *LimbsX8)
+TEXT ·ifmaQuadTwoChainCachedAddFirstOperandUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ q+8(FP), CX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+
+	MOVQ $0x11, AX
+	KMOVB AX, K1
+	MOVQ $0x22, AX
+	KMOVB AX, K2
+	VPXORQ Z6, Z6, Z6
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z5
+	VMOVDQU64 Z5, K1, Z6
+	TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Z0, Z6, Z7, Z8)
+	VPXORQ Z6, Z6, Z6
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z5
+	VMOVDQU64 Z5, K1, Z6
+	TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Z1, Z6, Z7, Z8)
+	TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Z2, Z6, Z7, Z8)
+	TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Z3, Z6, Z7, Z8)
+	TWO_CHAIN_CACHED_ADD_FIRST_LINEAR(Z4, Z6, Z7, Z8)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	TWO_CHAIN_NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaQuadTwoChainCachedAddFinalOperandsUncheckedX8(left, right, products *LimbsX8)
+TEXT ·ifmaQuadTwoChainCachedAddFinalOperandsUncheckedX8(SB), NOSPLIT, $0-24
+	MOVQ left+0(FP), DI
+	MOVQ right+8(FP), SI
+	MOVQ products+16(FP), CX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+
+	MOVQ $0x99, AX
+	KMOVB AX, K1
+	MOVQ $0x66, AX
+	KMOVB AX, K2
+	VPXORQ Z6, Z6, Z6
+	VPBROADCASTQ ·ifmaQuadCachedAddBias8P0(SB), Z5
+	VMOVDQU64 Z5, K1, Z6
+	TWO_CHAIN_CACHED_ADD_LINEAR(Z0, Z6, Z7, Z8, Z9)
+	VPXORQ Z6, Z6, Z6
+	VPBROADCASTQ ·ifmaQuadCachedAddBias8PN(SB), Z5
+	VMOVDQU64 Z5, K1, Z6
+	TWO_CHAIN_CACHED_ADD_LINEAR(Z1, Z6, Z7, Z8, Z9)
+	TWO_CHAIN_CACHED_ADD_LINEAR(Z2, Z6, Z7, Z8, Z9)
+	TWO_CHAIN_CACHED_ADD_LINEAR(Z3, Z6, Z7, Z8, Z9)
+	TWO_CHAIN_CACHED_ADD_LINEAR(Z4, Z6, Z7, Z8, Z9)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	TWO_CHAIN_NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+
+	VPERMQ $0xc4, Z0, Z12
+	VPERMQ $0x6b, Z0, Z13
+	VMOVDQU64 Z12,   0(DI)
+	VMOVDQU64 Z13,   0(SI)
+	VPERMQ $0xc4, Z1, Z12
+	VPERMQ $0x6b, Z1, Z13
+	VMOVDQU64 Z12,  64(DI)
+	VMOVDQU64 Z13,  64(SI)
+	VPERMQ $0xc4, Z2, Z12
+	VPERMQ $0x6b, Z2, Z13
+	VMOVDQU64 Z12, 128(DI)
+	VMOVDQU64 Z13, 128(SI)
+	VPERMQ $0xc4, Z3, Z12
+	VPERMQ $0x6b, Z3, Z13
+	VMOVDQU64 Z12, 192(DI)
+	VMOVDQU64 Z13, 192(SI)
+	VPERMQ $0xc4, Z4, Z12
+	VPERMQ $0x6b, Z4, Z13
+	VMOVDQU64 Z12, 256(DI)
+	VMOVDQU64 Z13, 256(SI)
 	VZEROUPPER
 	RET
 

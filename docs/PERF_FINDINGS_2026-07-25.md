@@ -796,7 +796,36 @@ HEEA only with a fundamentally cheaper exact selector whose measured cost fits
 inside the point-loop saving; do not spend more assembly effort around the
 current selector first.
 
-### 5.19 Fixed-base affine cached-add Stage 2 — retained
+### 5.19 Ordinary two-chain ZMM singleton loop — architecture split
+
+The positive Zen 5 doubling gate was extended into a complete ordinary scalar
+loop without changing the verification equation. The low 256-bit half
+evaluates `-[k]A`, the high half evaluates `[s]B`, zero digits select the
+cached identity in the inactive half, and the completed terms are combined
+with the established packed-x4 cached-add path. The candidate uses the same
+width-5 A NAF and width-8 B NAF as the shared-chain oracle; no HEEA reduction
+or scalar congruence assumption is involved.
+
+Native differentials compare exact final encodings against the existing
+shared-chain evaluator for zero, `L-1`, 256 dense canonical scalar pairs, and
+a mixed-order public key. The cached-add leaf separately matches two x4
+oracles in exact redundant representation over 1,024 mixed-order cases,
+including in-place aliasing. Both layers are zero-allocation and reject a
+noncanonical scalar fail-closed.
+
+On a pinned Ryzen 7 PRO 8700GE (Zen 4), the prepared scalar loop measured
+10.72 µs for the shared packed-x4 chain and 17.83 µs for the two-chain ZMM
+candidate. This approximately 66% regression is the expected cost of using a
+native-width design on a core that executes 512-bit vector arithmetic as two
+256-bit passes. The result excludes the candidate from Zen 4 dispatch.
+
+**Regime tag:** this does not close the design on Zen 5. Zen 5's earlier
+component gate measured two ZMM-packed chains at essentially the cost of one
+packed-x4 chain. The complete-loop benchmark must be rerun unchanged on native
+512-bit hardware; only that result can decide whether selection, identity
+padding, and final term combination preserve the component-level gain.
+
+### 5.20 Fixed-base affine cached-add Stage 2 — retained
 
 A fresh Zen 5 profile at `f80de02` placed approximately 19% of complete
 n=64 strict verification in the fixed-base comb, including about 8% in its
@@ -830,7 +859,7 @@ inside both cold and warm r51 paths. It does not claim that the scalar gather
 is solved; after this arithmetic reduction, fixed-base selection is a larger
 relative share and remains the next independent cold-path candidate.
 
-### 5.20 Fixed-base pre-signed 2dT — retained
+### 5.21 Fixed-base pre-signed 2dT — retained
 
 The post-Stage-2 n=64 profile assigned 9.0% of complete verification to
 `selectFixedBaseIFMACachedX8`. Scalar `Element.Negate` under that selector

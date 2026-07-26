@@ -5,28 +5,6 @@ import (
 	"testing"
 )
 
-func packQuadTwoChainX8(first, second *quadPackedPointX4) IFMAElementX8 {
-	var packed IFMAElementX8
-	for limb := range packed.limbs {
-		for lane := 0; lane < X4Lanes; lane++ {
-			packed.limbs[limb][lane] = first.coordinates.limbs[limb][lane]
-			packed.limbs[limb][lane+X4Lanes] = second.coordinates.limbs[limb][lane]
-		}
-	}
-	return packed
-}
-
-func unpackQuadTwoChainX8(packed *IFMAElementX8) [2]quadPackedPointX4 {
-	var points [2]quadPackedPointX4
-	for limb := range packed.limbs {
-		for lane := 0; lane < X4Lanes; lane++ {
-			points[0].coordinates.limbs[limb][lane] = packed.limbs[limb][lane]
-			points[1].coordinates.limbs[limb][lane] = packed.limbs[limb][lane+X4Lanes]
-		}
-	}
-	return points
-}
-
 func TestExperimentalQuadTwoChainDoubleX8MatchesTwoX4(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return
@@ -52,7 +30,7 @@ func TestExperimentalQuadTwoChainDoubleX8MatchesTwoX4(t *testing.T) {
 			*new(quadPackedPointX4).setReduced(&scalarPoints[0]),
 			*new(quadPackedPointX4).setReduced(&scalarPoints[1]),
 		}
-		x8 := packQuadTwoChainX8(&x4[0], &x4[1])
+		x8 := packQuadTwoChainPointsX8(&x4[0], &x4[1])
 		var x4Workspace [2]quadPointDoubleWorkspaceX4
 		var x8Workspace quadTwoChainDoubleWorkspaceX8
 
@@ -66,7 +44,7 @@ func TestExperimentalQuadTwoChainDoubleX8MatchesTwoX4(t *testing.T) {
 			if err := quadTwoChainDoubleHardwareWorkspaceUncheckedX8(&x8, &x8, &x8Workspace); err != nil {
 				t.Fatalf("round %d step %d x8: %v", round, step, err)
 			}
-			got := unpackQuadTwoChainX8(&x8)
+			got := unpackQuadTwoChainPointsX8(&x8)
 			for half := range got {
 				if got[half].coordinates != x4[half].coordinates {
 					t.Fatalf("round %d step %d half %d: two-chain x8 differs from x4 oracle", round, step, half)
@@ -91,6 +69,79 @@ func TestExperimentalQuadTwoChainDoubleX8ZeroAllocations(t *testing.T) {
 	var workspace quadTwoChainDoubleWorkspaceX8
 	if allocs := testing.AllocsPerRun(100, func() {
 		if err := quadTwoChainDoubleHardwareWorkspaceUncheckedX8(&state, &state, &workspace); err != nil {
+			panic(err)
+		}
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
+func TestExperimentalQuadTwoChainCachedAddX8MatchesTwoX4(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	rng := rand.New(rand.NewSource(0x5142ca44))
+	torsion := referenceTorsionPoints(t)
+	for round := 0; round < 1024; round++ {
+		var points [2]quadPackedPointX4
+		var cached [2]quadPackedCachedPointX4
+		for half := range points {
+			pointRef := randomMixedReferencePoint(t, rng, torsion[(round+half)%len(torsion)])
+			addendRef := randomMixedReferencePoint(t, rng, torsion[(round+half+3)%len(torsion)])
+			var point, addend Point
+			if _, err := point.SetBytes(pointRef.Bytes()); err != nil {
+				t.Fatalf("round %d half %d point: %v", round, half, err)
+			}
+			if _, err := addend.SetBytes(addendRef.Bytes()); err != nil {
+				t.Fatalf("round %d half %d addend: %v", round, half, err)
+			}
+			points[half].setReduced(&point)
+			addendPacked := new(quadPackedPointX4).setReduced(&addend)
+			if err := quadCachePackedPointX4(&cached[half], addendPacked, quadDSMOperationsX4{hardware: true}); err != nil {
+				t.Fatalf("round %d half %d cache: %v", round, half, err)
+			}
+		}
+
+		want := points
+		var x4Workspace [2]quadPointAddCachedWorkspaceX4
+		for half := range want {
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&want[half], &want[half], &cached[half], &x4Workspace[half]); err != nil {
+				t.Fatalf("round %d half %d x4: %v", round, half, err)
+			}
+		}
+
+		got := packQuadTwoChainPointsX8(&points[0], &points[1])
+		packedCached := packQuadTwoChainCachedX8(&cached[0], &cached[1])
+		var x8Workspace quadTwoChainCachedAddWorkspaceX8
+		if err := quadTwoChainCachedAddHardwareWorkspaceUncheckedX8(&got, &got, &packedCached, &x8Workspace); err != nil {
+			t.Fatalf("round %d x8: %v", round, err)
+		}
+		unpacked := unpackQuadTwoChainPointsX8(&got)
+		for half := range unpacked {
+			if unpacked[half].coordinates != want[half].coordinates {
+				t.Fatalf("round %d half %d: two-chain cached add differs from x4 oracle", round, half)
+			}
+			reduced := unpacked[half].reduced()
+			assertScalarPointInvariant(t, "two-chain cached add", &reduced)
+		}
+	}
+}
+
+func TestExperimentalQuadTwoChainCachedAddX8ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var point, cached IFMAElementX8
+	for limb := range point.limbs {
+		for lane := range point.limbs[limb] {
+			point.limbs[limb][lane] = uint64(1 + limb*X8Lanes + lane)
+			cached.limbs[limb][lane] = uint64(17 + limb*X8Lanes + lane)
+		}
+	}
+	var workspace quadTwoChainCachedAddWorkspaceX8
+	if allocs := testing.AllocsPerRun(100, func() {
+		if err := quadTwoChainCachedAddHardwareWorkspaceUncheckedX8(&point, &point, &cached, &workspace); err != nil {
 			panic(err)
 		}
 	}); allocs != 0 {
@@ -138,7 +189,7 @@ func BenchmarkExperimentalQuadTwoChainDoubleX8(b *testing.B) {
 	})
 
 	b.Run("two-chain-zmm", func(b *testing.B) {
-		state := packQuadTwoChainX8(first, &second)
+		state := packQuadTwoChainPointsX8(first, &second)
 		var workspace quadTwoChainDoubleWorkspaceX8
 		b.ReportAllocs()
 		b.ResetTimer()

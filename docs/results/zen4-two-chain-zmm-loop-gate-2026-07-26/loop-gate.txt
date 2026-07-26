@@ -1,0 +1,18 @@
+go version go1.26.4 linux/amd64
+AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=shared-x4         	  111705	     10716 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=shared-x4         	  111891	     10717 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=shared-x4         	  111928	     10715 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=shared-x4         	  111980	     10710 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=shared-x4         	  111868	     10712 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=two-chain-zmm     	   67279	     17828 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=two-chain-zmm     	   67282	     17828 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=two-chain-zmm     	   67268	     17824 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=two-chain-zmm     	   67318	     17827 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainNAFVerifyX8/stage=prepared/path=two-chain-zmm     	   67281	     17823 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	13.438s
