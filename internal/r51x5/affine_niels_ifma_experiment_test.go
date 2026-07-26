@@ -28,8 +28,8 @@ func (workspace *ifmaAffineNielsVariableWorkspaceX8) Prepare(base *PointX8) erro
 		return ErrIFMAUnavailable
 	}
 	workspace.prepared = false
-	var projective ifmaProjectiveNielsGroupedReferenceWorkspaceX8
-	if err := projective.Prepare(base); err != nil {
+	var projective ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
+	if err := projective.Prepare(base, 5); err != nil {
 		return err
 	}
 	workspace.prefix[0] = projective.table.points[0].Z
@@ -248,8 +248,8 @@ func TestIFMAAffineNielsVariableX8Differential(t *testing.T) {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 	_, variable, _, scalars := fixedBaseCombDSMFixtures(t)
-	var projective ifmaProjectiveNielsGroupedReferenceWorkspaceX8
-	if err := projective.Prepare(&variable); err != nil {
+	var projective ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
+	if err := projective.Prepare(&variable, 5); err != nil {
 		t.Fatal(err)
 	}
 	var affine ifmaAffineNielsVariableWorkspaceX8
@@ -290,8 +290,8 @@ func BenchmarkIFMAAffineNielsVariableX8(b *testing.B) {
 		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 	_, variable, _, scalars := fixedBaseCombDSMFixtures(b)
-	var projective ifmaProjectiveNielsGroupedReferenceWorkspaceX8
-	if err := projective.Prepare(&variable); err != nil {
+	var projective ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
+	if err := projective.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
 	var affine ifmaAffineNielsVariableWorkspaceX8
@@ -305,7 +305,7 @@ func BenchmarkIFMAAffineNielsVariableX8(b *testing.B) {
 			b.ReportMetric(float64(unsafe.Sizeof(projective)), "workspace-B")
 			for i := 0; i < b.N; i++ {
 				if path == "cold-table+loop" {
-					if err := projective.Prepare(&variable); err != nil {
+					if err := projective.Prepare(&variable, 5); err != nil {
 						b.Fatal(err)
 					}
 				}

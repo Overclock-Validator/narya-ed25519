@@ -12,15 +12,16 @@ type IFMAProjectiveNielsX8 struct {
 	T2D     IFMAElementX8
 }
 
+type ifmaProjectiveNielsTableX8 struct {
+	points [16]IFMAProjectiveNielsX8
+}
+
 // ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8 owns one radix-32
-// arbitrary-point table in projective Niels form. Its micro-AoS cold storage
-// keeps each key's [Y+X,Y-X,Z,2dT] limb row contiguous, then transposes eight
-// independently selected entries into the x8 SoA arithmetic layout. The
-// forced r51 x8 verifier uses it for cold [k]A evaluation; automatic backend
-// selection cannot reach it. The workspace is caller-owned, reusable, and
-// not concurrent-safe.
+// arbitrary-point table in projective Niels form. The forced r51 x8 verifier
+// uses it for cold [k]A evaluation; automatic backend selection cannot reach
+// it. The workspace is caller-owned, reusable, and not concurrent-safe.
 type ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8 struct {
-	table    ifmaProjectiveNielsMicroAoSTableX8
+	table    ifmaProjectiveNielsTableX8
 	digits   FixedRadixDigitsX8
 	prepared bool
 }
@@ -96,20 +97,17 @@ func (workspace *ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8) Prepare
 	workspace.prepared = false
 	var current IFMAPointX8
 	current.SetReduced(base)
-	var baseCached IFMAProjectiveNielsX8
-	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
+	if err := ifmaProjectiveNielsFromPointX8(&workspace.table.points[0], &current); err != nil {
 		return err
 	}
-	storeIFMAProjectiveNielsMicroAoSEntryX8(&workspace.table, 0, &baseCached)
-	for entry := 1; entry < 16; entry++ {
-		if err := ifmaPointAddProjectiveNielsX8(&current, &current, &baseCached); err != nil {
+	baseCached := &workspace.table.points[0]
+	for entry := 1; entry < len(workspace.table.points); entry++ {
+		if err := ifmaPointAddProjectiveNielsX8(&current, &current, baseCached); err != nil {
 			return err
 		}
-		var cached IFMAProjectiveNielsX8
-		if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
+		if err := ifmaProjectiveNielsFromPointX8(&workspace.table.points[entry], &current); err != nil {
 			return err
 		}
-		storeIFMAProjectiveNielsMicroAoSEntryX8(&workspace.table, entry, &cached)
 	}
 	workspace.prepared = true
 	return nil
@@ -145,11 +143,54 @@ func (workspace *ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8) Evaluat
 			continue
 		}
 		var selected IFMAProjectiveNielsX8
-		selectIFMAProjectiveNielsMicroAoSX8(&selected, &workspace.table, digit, usable)
+		selectIFMAProjectiveNielsX8(&selected, &workspace.table, digit, usable)
 		if err := ifmaPointAddProjectiveNielsX8(&acc, &acc, &selected); err != nil {
 			return 0, err
 		}
 	}
 	*out = acc
 	return usable, nil
+}
+
+// selectIFMAProjectiveNielsX8 is variable-time in the public verification
+// scalar. digit must come from RecodeCanonicalScalarsX8. Negation swaps Y+X
+// and Y-X and negates 2dT; Z is unchanged.
+func selectIFMAProjectiveNielsX8(out *IFMAProjectiveNielsX8, table *ifmaProjectiveNielsTableX8, round *RadixRoundX8, active uint8) {
+	lookupMask := round.NonzeroMask & active
+	negativeMask := round.NegativeMask & lookupMask
+	for lane := 0; lane < X8Lanes; lane++ {
+		laneMask := uint8(1 << lane)
+		if lookupMask&laneMask == 0 {
+			setIdentityIFMAProjectiveNielsLaneX8(out, lane)
+			continue
+		}
+		source := &table.points[int(round.Magnitude[lane])-1]
+		for limb := range modulusLimbs {
+			out.YPlusX.limbs[limb][lane] = source.YPlusX.limbs[limb][lane]
+			out.YMinusX.limbs[limb][lane] = source.YMinusX.limbs[limb][lane]
+			out.Z.limbs[limb][lane] = source.Z.limbs[limb][lane]
+			out.T2D.limbs[limb][lane] = source.T2D.limbs[limb][lane]
+		}
+	}
+	for limb := range modulusLimbs {
+		for lane := 0; lane < X8Lanes; lane++ {
+			if negativeMask&(1<<lane) != 0 {
+				out.YPlusX.limbs[limb][lane], out.YMinusX.limbs[limb][lane] =
+					out.YMinusX.limbs[limb][lane], out.YPlusX.limbs[limb][lane]
+			}
+		}
+	}
+	conditionalNegateIFMAElementX8(&out.T2D, negativeMask)
+}
+
+func setIdentityIFMAProjectiveNielsLaneX8(out *IFMAProjectiveNielsX8, lane int) {
+	for limb := range modulusLimbs {
+		out.YPlusX.limbs[limb][lane] = 0
+		out.YMinusX.limbs[limb][lane] = 0
+		out.Z.limbs[limb][lane] = 0
+		out.T2D.limbs[limb][lane] = 0
+	}
+	out.YPlusX.limbs[0][lane] = 1
+	out.YMinusX.limbs[0][lane] = 1
+	out.Z.limbs[0][lane] = 1
 }
