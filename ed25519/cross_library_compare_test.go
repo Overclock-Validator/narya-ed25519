@@ -198,10 +198,11 @@ func benchmarkCrossLibraryFixture(b *testing.B, mode string, fixture *batchFixtu
 }
 
 // BenchmarkEd25519CrossLibrary compares complete verification using honest,
-// canonical signatures and distinct public keys. "independent" models a
-// queue spanning transactions. "same-message" models multiple signers on one
-// transaction; it is also the only workload shape accepted by Firedancer's
-// specialized batch API, so these rows are the bridge to its C benchmark.
+// canonical signatures and distinct public keys. The release comparison uses
+// one representative 1232-byte message size so repeated samples are spent on
+// the implementation comparison rather than three copies of the same trend.
+// "independent" models a queue spanning requests; "same-message" models
+// multiple signers over one byte string.
 //
 // All rows are serial and should be run pinned with GOMAXPROCS=1. The raw-x4
 // row exposes lane underfill; the dispatcher row is the forced backend callers
@@ -212,15 +213,14 @@ func BenchmarkEd25519CrossLibrary(b *testing.B) {
 	// and n=4. The later values expose x4 fill, common transaction signature
 	// counts, and the first post-16 tail.
 	counts := []int{1, 2, 3, 4, 5, 8, 9, 12, 16, 17, 32, 64}
-	for _, messageSize := range []int{64, 200, 1232} {
-		for _, count := range counts {
-			fixture := makeBatchFixture(b, count, messageSize)
-			benchmarkCrossLibraryFixture(b, "independent", &fixture)
-		}
+	const messageSize = 1232
+	for _, count := range counts {
+		fixture := makeBatchFixture(b, count, messageSize)
+		benchmarkCrossLibraryFixture(b, "independent", &fixture)
 	}
 
 	for _, count := range counts {
-		fixture := makeCrossLibrarySameMessageFixture(b, count, 200)
+		fixture := makeCrossLibrarySameMessageFixture(b, count, messageSize)
 		benchmarkCrossLibraryFixture(b, "same-message", &fixture)
 	}
 }
@@ -291,7 +291,7 @@ func benchmarkCrossLibraryPreparedFixture(b *testing.B, fixture *batchFixture) {
 	}
 
 	run := func(implementation string, tableBytes int64, verify func() (bool, error)) {
-		b.Run(fmt.Sprintf("mode=independent/impl=%s/n=%d/msg=200", implementation, count), func(b *testing.B) {
+		b.Run(fmt.Sprintf("mode=independent/impl=%s/n=%d/msg=%d", implementation, count, len(fixture.msgs[0])), func(b *testing.B) {
 			benchmarkCrossLibraryCandidate(b, count, fixture.ok, verify)
 			if tableBytes >= 0 {
 				b.ReportMetric(float64(tableBytes), "table-bytes/key")
@@ -376,7 +376,7 @@ func benchmarkCrossLibraryPreparedFixture(b *testing.B, fixture *batchFixture) {
 }
 
 // BenchmarkEd25519CrossLibraryPreparedTiers bounds the warm-key comparison
-// to the transaction-shaped 200-byte message and representative widths around
+// to one representative 1232-byte message and widths around
 // the singleton-to-full-x4 dispatch crossover plus the n=8/64 throughput cases.
 // Every expansion/table build happens before the sub-benchmark timer starts.
 // table-bytes/key is the complete Narya PrecomputedKey payload size. The metric
@@ -384,7 +384,7 @@ func benchmarkCrossLibraryPreparedFixture(b *testing.B, fixture *batchFixture) {
 // is not exposed by their API, rather than reporting a misleading shallow size.
 func BenchmarkEd25519CrossLibraryPreparedTiers(b *testing.B) {
 	for _, count := range []int{1, 2, 3, 4, 8, 64} {
-		fixture := makeBatchFixture(b, count, 200)
+		fixture := makeBatchFixture(b, count, 1232)
 		benchmarkCrossLibraryPreparedFixture(b, &fixture)
 	}
 }

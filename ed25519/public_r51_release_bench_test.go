@@ -80,9 +80,9 @@ func assertPublicR51Verdicts(tb testing.TB, ok []bool, invalid int) {
 func BenchmarkPublicR51VerifyBatchStrict(b *testing.B) {
 	forcePublicR51(b)
 
-	for _, messageSize := range []int{64, 200, 1232} {
+	for _, messageSize := range []int{200, 1232, 4096} {
 		fixture := newPublicR51Fixture(b, 64, messageSize)
-		for _, count := range []int{1, 2, 3, 4, 5, 8, 12, 16, 17, 32, 64} {
+		for _, count := range []int{1, 2, 4, 8, 64} {
 			b.Run(fmt.Sprintf("msg=%d/n=%d", messageSize, count), func(b *testing.B) {
 				pubs := fixture.pubs[:count]
 				msgs := fixture.msgs[:count]
@@ -106,6 +106,78 @@ func BenchmarkPublicR51VerifyBatchStrict(b *testing.B) {
 					b.Fatal("valid fixture rejected during timing")
 				}
 				assertPublicR51Verdicts(b, ok, -1)
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1e3, "us/signature")
+				b.ReportMetric(float64(b.N*count)/b.Elapsed().Seconds(), "signatures/s")
+			})
+		}
+	}
+}
+
+func preparePublicR51WarmCache(tb testing.TB, fixture *publicR51Fixture) *narya.Cache {
+	tb.Helper()
+
+	// The release fixture contains 64 distinct keys. Four MiB is comfortably
+	// above their complete promoted-table payload while remaining small enough
+	// to catch an accidental table-size explosion.
+	cache := &narya.Cache{MaxTableBytes: 4 << 20}
+	ok := make([]bool, len(fixture.pubs))
+	for attempt := 0; attempt < 64; attempt++ {
+		if all := cache.VerifyBatchStrict(fixture.pubs, fixture.msgs, fixture.sigs, ok); !all {
+			tb.Fatalf("warm-cache setup rejected a valid fixture at attempt %d", attempt)
+		}
+		assertPublicR51Verdicts(tb, ok, -1)
+		if stats := cache.Stats(); stats.PromotedTables == int64(len(fixture.pubs)) {
+			return cache
+		}
+	}
+	stats := cache.Stats()
+	tb.Fatalf(
+		"warm-cache setup promoted %d/%d tables after 64 attempts (tables=%d bytes=%d)",
+		stats.PromotedTables,
+		len(fixture.pubs),
+		stats.Tables,
+		stats.TableBytes,
+	)
+	return nil
+}
+
+// BenchmarkPublicR51CacheVerifyBatchStrict is the public warm-key companion
+// to BenchmarkPublicR51VerifyBatchStrict. Setup promotes all 64 distinct keys
+// before any sub-benchmark timer starts; each width then measures an honestly
+// populated Cache call rather than a private prepared-table seam.
+func BenchmarkPublicR51CacheVerifyBatchStrict(b *testing.B) {
+	forcePublicR51(b)
+
+	for _, messageSize := range []int{200, 1232, 4096} {
+		fixture := newPublicR51Fixture(b, 64, messageSize)
+		cache := preparePublicR51WarmCache(b, &fixture)
+		for _, count := range []int{1, 2, 4, 8, 64} {
+			b.Run(fmt.Sprintf("msg=%d/n=%d", messageSize, count), func(b *testing.B) {
+				pubs := fixture.pubs[:count]
+				msgs := fixture.msgs[:count]
+				sigs := fixture.sigs[:count]
+				ok := make([]bool, count)
+
+				if all := cache.VerifyBatchStrict(pubs, msgs, sigs, ok); !all {
+					b.Fatal("valid warm fixture rejected before timing")
+				}
+				assertPublicR51Verdicts(b, ok, -1)
+
+				b.ReportAllocs()
+				b.SetBytes(int64(messageSize * count))
+				b.ResetTimer()
+				for range b.N {
+					publicR51ReleaseSink = cache.VerifyBatchStrict(pubs, msgs, sigs, ok)
+				}
+				b.StopTimer()
+
+				if !publicR51ReleaseSink {
+					b.Fatal("valid warm fixture rejected during timing")
+				}
+				assertPublicR51Verdicts(b, ok, -1)
+				stats := cache.Stats()
+				b.ReportMetric(float64(stats.PromotedTables), "warm-tables")
+				b.ReportMetric(float64(stats.TableBytes), "table-bytes")
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1e3, "us/signature")
 				b.ReportMetric(float64(b.N*count)/b.Elapsed().Seconds(), "signatures/s")
 			})

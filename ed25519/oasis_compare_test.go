@@ -461,7 +461,7 @@ var oasisComparisonResult bool
 // aggregate BatchVerifier is intentionally absent: its randomized cofactored
 // equation is incompatible with DalekStrict's cofactorless predicate.
 func BenchmarkOasisVerify(b *testing.B) {
-	for _, messageSize := range benchMsgSizes {
+	for _, messageSize := range []int{1232} {
 		fixture := makeFixture(b, messageSize)
 		expanded, err := oasised25519.NewExpandedPublicKey(fixture.pub[:])
 		if err != nil {
