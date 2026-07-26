@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55368	     21675 ns/op	   9.23 MB/s	     46136 signatures/s	        21.68 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55350	     21679 ns/op	   9.23 MB/s	     46128 signatures/s	        21.68 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55364	     21677 ns/op	   9.23 MB/s	     46133 signatures/s	        21.68 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55359	     21681 ns/op	   9.22 MB/s	     46124 signatures/s	        21.68 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55312	     21677 ns/op	   9.23 MB/s	     46131 signatures/s	        21.68 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55372	     21670 ns/op	   9.23 MB/s	     46147 signatures/s	        21.67 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55356	     21672 ns/op	   9.23 MB/s	     46143 signatures/s	        21.67 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55388	     21673 ns/op	   9.23 MB/s	     46141 signatures/s	        21.67 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55386	     21675 ns/op	   9.23 MB/s	     46137 signatures/s	        21.67 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=1         	   55363	     21674 ns/op	   9.23 MB/s	     46138 signatures/s	        21.67 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27777	     43193 ns/op	   9.26 MB/s	     46304 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27786	     43196 ns/op	   9.26 MB/s	     46301 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27775	     43193 ns/op	   9.26 MB/s	     46304 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27772	     43207 ns/op	   9.26 MB/s	     46289 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27765	     43222 ns/op	   9.25 MB/s	     46273 signatures/s	        21.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27760	     43210 ns/op	   9.26 MB/s	     46285 signatures/s	        21.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27784	     43214 ns/op	   9.26 MB/s	     46282 signatures/s	        21.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27751	     43216 ns/op	   9.26 MB/s	     46279 signatures/s	        21.61 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27763	     43204 ns/op	   9.26 MB/s	     46292 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=2         	   27775	     43203 ns/op	   9.26 MB/s	     46293 signatures/s	        21.60 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	30.599s

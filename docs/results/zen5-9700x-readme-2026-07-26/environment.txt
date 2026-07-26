@@ -1,0 +1,19 @@
+date: 2026-07-26
+source: 1f0bfbfdbf9740729fb974eda85415867e2b4d61
+worktree status: clean
+go: go version go1.26.4 linux/amd64
+os/arch: linux/amd64
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+vendor: AuthenticAMD
+family/model/stepping: 26/68/0
+cores/threads: 8/16
+logical CPU: 2
+frequency boost: enabled
+maximum reported frequency: 5582.3008 MHz
+L1d: 384 KiB (8 instances)
+L2: 8 MiB (8 instances)
+L3: 32 MiB (1 instance)
+governor: performance
+energy performance preference: performance
+required flags present: avx2 avx512f avx512dq avx512ifma avx512bw avx512vl avx512vbmi sha_ni
+

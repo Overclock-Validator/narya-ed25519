@@ -180,28 +180,57 @@ staging. Design details and historical measurements are kept in
 ## Performance
 
 Narya's accelerated path is measured through the exported
-`SetBackend("r51")` and `VerifyBatchStrict` APIs. The latest cold checkpoint
-below is from implementation commit `754e7c9` on an AMD Ryzen 7 9700X (Zen 5),
-one pinned core, `GOMAXPROCS=1`, valid 1232-byte messages, and zero allocations
-in the timed path. Values are rounded microseconds per signature; n=4, n=8,
-and n=64 include the current staged x4/x8 doubling kernels.
+`SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
+The latest snapshot is from implementation commit `1f0bfbf` on an AMD Ryzen 7
+9700X (Zen 5), Go 1.26.4, one pinned core, the performance governor, and
+`GOMAXPROCS=1`. Values are median microseconds per signature from ten repeated
+one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
 
-| batch width | n=1 | n=2 | n=4 | n=8 | n=64 |
+**Cold — arbitrary keys, no retained key state**
+
+| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| cold r51 | 22.50 | 22.49 | 10.07 | 5.63 | 5.32 |
+| 200 | 21.675 | 21.600 | 9.058 | 5.411 | 5.094 |
+| 1232 | 22.420 | 22.400 | 10.090 | 5.646 | 5.305 |
+| 4096 | 24.260 | 24.330 | 12.860 | 6.401 | 6.080 |
 
-These numbers describe the explicitly forced backend, not automatic dispatch.
-The portable `generic` backend remains the default. Batch width matters because
+**Warm — 64 distinct keys promoted before timing**
+
+| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 200 | 21.330 | 21.500 | 4.013 | 3.631 | 3.319 |
+| 1232 | 22.200 | 22.265 | 4.780 | 4.389 | 4.073 |
+| 4096 | 24.285 | 24.230 | 6.818 | 6.424 | 6.133 |
+
+These numbers describe the explicitly forced backend, not automatic dispatch;
+the portable `generic` backend remains the default. Batch width matters because
 r51 maps independent signatures onto SIMD lanes: n=1 and n=2 use dedicated tail
-paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups.
+paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups. The
+cache deliberately bypasses its prepared tables for n<4, so the cold and warm
+singleton/pair rows are effectively the same path.
 
-The next pinned release snapshot will replace this checkpoint with one
-same-commit matrix covering 200-, 1232-, and 4096-byte messages at n=1, 2, 4,
-8, and 64, including the cache and the comparison implementations at 1232
-bytes. Historical measurements and their exact environments remain in
-[`docs/results/`](docs/results/); they are intentionally not stacked into the
-README table because code, CPU generation, and cache population materially
-change the result.
+At 4096 bytes, the current warm x4 schedule is statistically near parity with
+native x8 cold at n=8 and n=64, and is about 0.4--0.9% slower in this run. This
+small crossover is retained rather than presenting cache hits as universally
+faster; the cache remains a clear win at n>=4 for 200- and 1232-byte messages.
+
+The comparison below uses the same 1232-byte fixture shape and executable for
+every row. Values are medians of six one-second samples. Voi's expanded-key row
+excludes expansion cost and is included as a warm-key reference.
+
+| implementation | n=1 | n=2 | n=4 | n=8 | n=64 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Narya r51, cold strict | 22.330 | 22.370 | 10.200 | 5.643 | 5.321 |
+| Go `crypto/ed25519` | 27.435 | 27.490 | 27.285 | 27.350 | 27.340 |
+| curve25519-voi, cold strict | 21.810 | 21.830 | 21.650 | 21.770 | 21.860 |
+| curve25519-voi, expanded key | 18.980 | 19.000 | 18.820 | 18.940 | 19.030 |
+
+Historical measurements and their exact environments remain in
+[`docs/results/`](docs/results/); they are intentionally not stacked into this
+table because code, CPU generation, and cache population materially change the
+result. Raw output, exact commands, environment details, and checksums for the
+current snapshot are in
+[`docs/results/zen5-9700x-readme-2026-07-26/`](docs/results/zen5-9700x-readme-2026-07-26/).
 
 ### Cold and warm verification
 
@@ -225,20 +254,23 @@ automatic backend selection remains `generic`.
 
 ### Running the benchmarks
 
-The public cold benchmark is isolated behind a build tag so it cannot
+The public cold/warm benchmark is isolated behind a build tag so it cannot
 accidentally measure a private implementation seam:
 
 ```sh
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench \
-  -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$' \
-  -benchmem -benchtime=3s -count=10 ./ed25519
+  -run '^$' \
+  -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' \
+  -benchmem -benchtime=1s -count=10 ./ed25519
 ```
 
-For ordinary package-level comparisons and cache diagnostics:
+The 1232-byte comparison table comes from the isolated Voi module:
 
 ```sh
-go test -run '^$' -bench 'BenchmarkVerify|BenchmarkR51CacheTierMatrix' \
-  -benchmem -benchtime=2s ./ed25519
+taskset -c 2 env GOMAXPROCS=1 go test \
+  -modfile=go.oasis.mod -tags oasis_compare -run '^$' \
+  -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' \
+  -benchmem -benchtime=1s -count=6 ./ed25519
 ```
 
 The accelerated backends require AVX512-IFMA and must be selected explicitly
