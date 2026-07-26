@@ -126,6 +126,51 @@ func BenchmarkPublicR51VerifyBatchStrict(b *testing.B) {
 	}
 }
 
+// BenchmarkPublicR51SingletonEntryPoints compares the two exported ways to
+// verify exactly one strict signature. It builds one fixture before either
+// timer starts, avoiding BenchmarkPublicR51VerifyBatchStrict's intentionally
+// wider fixture matrix when diagnosing singleton wrapper overhead.
+func BenchmarkPublicR51SingletonEntryPoints(b *testing.B) {
+	forcePublicR51(b)
+	fixture := newPublicR51Fixture(b, 1, 1232)
+	pub := fixture.pubs[0]
+	msg := fixture.msgs[0]
+	sig := fixture.sigs[0]
+	ok := make([]bool, 1)
+
+	b.Run("VerifyStrict", func(b *testing.B) {
+		if !narya.VerifyStrict(pub[:], msg, sig) {
+			b.Fatal("valid fixture rejected before timing")
+		}
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			publicR51ReleaseSink = narya.VerifyStrict(pub[:], msg, sig)
+		}
+		b.StopTimer()
+		if !publicR51ReleaseSink {
+			b.Fatal("valid fixture rejected during timing")
+		}
+		assertNoPublicR51FaultFallbacks(b)
+	})
+
+	b.Run("VerifyBatchStrict-n=1", func(b *testing.B) {
+		if !narya.VerifyBatchStrict(fixture.pubs, fixture.msgs, fixture.sigs, ok) {
+			b.Fatal("valid fixture rejected before timing")
+		}
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			publicR51ReleaseSink = narya.VerifyBatchStrict(fixture.pubs, fixture.msgs, fixture.sigs, ok)
+		}
+		b.StopTimer()
+		if !publicR51ReleaseSink || !ok[0] {
+			b.Fatal("valid fixture rejected during timing")
+		}
+		assertNoPublicR51FaultFallbacks(b)
+	})
+}
+
 func preparePublicR51WarmCache(tb testing.TB, fixture *publicR51Fixture) *narya.Cache {
 	tb.Helper()
 

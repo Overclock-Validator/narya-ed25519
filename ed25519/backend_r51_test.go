@@ -603,4 +603,20 @@ func BenchmarkR51SingletonDispatchOverhead(b *testing.B) {
 			}
 		}
 	})
+	b.Run("backend-adapter", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if !backend.verify(DalekStrict, &f.pub, f.msg, f.sig, nil) {
+				b.Fatal("backend adapter rejected valid signature")
+			}
+		}
+	})
+	b.Run("shared-single-entry", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if !verifyOne(backend, DalekStrict, &f.pub, f.msg, f.sig, nil) {
+				b.Fatal("shared singleton entry rejected valid signature")
+			}
+		}
+	})
 }
