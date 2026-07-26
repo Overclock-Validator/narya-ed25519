@@ -1,0 +1,10 @@
+implementation_commit=c31522d80c2410fec42e60e300c1750b0c087d6c
+go_version=go1.26.4
+goos=linux
+goarch=amd64
+cpu=AMD Ryzen 7 PRO 8700GE with Radeon 780M Graphics
+microarchitecture=Zen 4
+governor=performance
+serial_cpu=2
+serial_gomaxprocs=1
+parallel_physical_cores=1,2,4,8

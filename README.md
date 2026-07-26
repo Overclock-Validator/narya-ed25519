@@ -205,7 +205,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu`, never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 for the tail; unknown IFMA CPUs retain the reviewed x4 default. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 for the tail; unknown IFMA CPUs retain the reviewed x4 default. The x8 doubler selects a symmetry-aware raw-square schedule on Zen 4 and the faster general-multiply schedule on Zen 5. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -230,7 +230,7 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest complete snapshot is from implementation commit `957212d` on an AMD
+The latest complete snapshot is from implementation commit `c31522d` on an AMD
 Ryzen 7 PRO 8700GE (Zen 4), Go 1.26.4, one pinned core, the performance
 governor, and `GOMAXPROCS=1`. Values are median microseconds per signature from
 six repeated 750-millisecond samples. Every timed Narya row reports 0 B/op,
@@ -244,17 +244,17 @@ not per-batch latencies.
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 16.680 | 16.620 | 9.164 | 7.839 | 7.629 |
-| 1232 | 17.655 | 17.690 | 9.959 | 8.107 | 7.910 |
-| 4096 | 20.290 | 20.210 | 12.070 | 8.949 | 8.763 |
+| 200 | 16.725 | 16.710 | 9.187 | 7.653 | 7.434 |
+| 1232 | 17.640 | 17.560 | 9.949 | 7.927 | 7.710 |
+| 4096 | 20.130 | 20.190 | 12.080 | 8.752 | 8.603 |
 
 **Warm: 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 17.010 | 17.000 | 4.257 | 3.995 | 3.842 |
-| 1232 | 17.870 | 17.850 | 5.215 | 4.959 | 4.813 |
-| 4096 | 20.550 | 20.500 | 7.853 | 7.588 | 7.481 |
+| 200 | 17.140 | 17.060 | 4.123 | 3.860 | 3.705 |
+| 1232 | 17.990 | 17.910 | 5.061 | 4.810 | 4.659 |
+| 4096 | 20.550 | 20.570 | 7.705 | 7.451 | 7.339 |
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
@@ -276,10 +276,10 @@ cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 17.700 | 17.565 | 10.200 | 8.278 | 8.058 |
-| Go `crypto/ed25519` | 37.865 | 37.670 | 37.705 | 37.850 | 37.710 |
-| curve25519-voi, cold strict | 26.550 | 26.350 | 26.460 | 26.470 | 26.435 |
-| curve25519-voi, expanded key | 22.440 | 22.260 | 22.370 | 22.360 | 22.325 |
+| Narya r51, cold strict | 17.660 | 17.620 | 10.200 | 8.049 | 8.075 |
+| Go `crypto/ed25519` | 37.930 | 37.810 | 37.945 | 37.745 | 37.695 |
+| curve25519-voi, cold strict | 26.490 | 26.480 | 26.590 | 26.500 | 26.450 |
+| curve25519-voi, expanded key | 22.350 | 22.330 | 22.440 | 22.350 | 22.310 |
 
 The same current implementation scales across independent callers. These are
 aggregate **signatures per second** over 1232-byte messages, not individual
@@ -287,13 +287,13 @@ request latency:
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 100,434 | 1.00x | 123,950 | 1.00x |
-| 2 | 199,524 | 1.99x | 246,261 | 1.99x |
-| 4 | 364,043 | 3.62x | 452,844 | 3.65x |
-| 8 | 643,326 | 6.41x | 773,475 | 6.24x |
+| 1 | 100,574 | 1.00x | 127,252 | 1.00x |
+| 2 | 199,348 | 1.98x | 252,566 | 1.98x |
+| 4 | 363,497 | 3.61x | 466,892 | 3.67x |
+| 8 | 641,628 | 6.38x | 793,700 | 6.24x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.554 and
-1.293 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.558 and
+1.260 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification.
 
@@ -302,7 +302,7 @@ Historical measurements and their exact environments remain in
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
 current snapshot are in
-[`docs/results/zen4-8700ge-readme-current-2026-07-26/`](docs/results/zen4-8700ge-readme-current-2026-07-26/).
+[`docs/results/zen4-8700ge-raw-square-2026-07-26/`](docs/results/zen4-8700ge-raw-square-2026-07-26/).
 
 ### Cold and warm verification
 

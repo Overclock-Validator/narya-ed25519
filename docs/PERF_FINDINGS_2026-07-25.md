@@ -161,6 +161,22 @@ dependency/register costs in the real loop. Keep the experiment and its tests,
 but do not wire it into the Zen 5 cold path. A future fused Stage-1/Stage-2
 doubling may reuse its algebra without inheriting this normalized-call boundary.
 
+**Regime tag — the raw-u61 x8 square is CPU-dispatched.** The x8 candidate is
+not the normalized x4 schedule above: it feeds exact folded-u61 square products
+directly into the fused linear/carry stage. A same-binary complete-verifier A/B
+at commit `c31522d` on the pinned Zen 4 host retained a 2.6--3.2% improvement
+at n=8 and n=64 across 200, 1232, and 4096-byte messages, with zero
+allocations. The registered worker therefore selects it only on AMD family
+19h with IFMA. Family 1Ah (Zen 5) keeps the general-multiply schedule because
+the earlier complete Zen 5 gate found the dedicated schedule slower. CPU width,
+decoded-A policy, warm width, and square policy remain separate feature bits.
+
+The same Zen 4 checkpoint rechecked the n=4 boundary. Four active x8 lanes
+measured 15.785 and 16.750 us/signature for 200 and 1232-byte messages, versus
+9.913 and 10.680 for one full x4 group. The full-width x8 advantage must not be
+misapplied to a half-empty group; production retains x4 at n=4 on both measured
+AMD generations.
+
 ---
 
 ## 1. What landed on this branch

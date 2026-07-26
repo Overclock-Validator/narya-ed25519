@@ -1,0 +1,30 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22696	     39650 ns/op	         9.912 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22701	     39655 ns/op	         9.914 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22706	     39646 ns/op	         9.912 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22705	     39650 ns/op	         9.913 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22693	     39640 ns/op	         9.910 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=200         	   22698	     39689 ns/op	         9.922 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14240	     63146 ns/op	        15.79 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14252	     63139 ns/op	        15.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14250	     63151 ns/op	        15.79 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14252	     63149 ns/op	        15.79 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14257	     63124 ns/op	        15.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=200             	   14256	     63138 ns/op	        15.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21069	     42733 ns/op	        10.68 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21063	     42727 ns/op	        10.68 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21055	     42756 ns/op	        10.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21066	     42717 ns/op	        10.68 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21068	     42717 ns/op	        10.68 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=two-x4/radixA=32/fixedB=comb256/n=4/msg=1232        	   21069	     42769 ns/op	        10.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13687	     65749 ns/op	        16.44 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13429	     67014 ns/op	        16.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13434	     66981 ns/op	        16.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13434	     66995 ns/op	        16.75 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13435	     66971 ns/op	        16.74 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPipeline/stage=cold-A/path=x8/radixA=32/fixedB=comb256/n=4/msg=1232            	   13434	     66984 ns/op	        16.75 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	34.685s

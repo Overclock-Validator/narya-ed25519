@@ -1,0 +1,8 @@
+taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51CacheVerifyBatchStrict$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 2 env GOMAXPROCS=1 go test -modfile=go.oasis.mod -tags oasis_compare -run '^$' -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 2 env GOMAXPROCS=1 go test -run '^$' -bench '^BenchmarkR51IFMARawSquareCompletePipeline/.*/n=(8|64)/msg=(200|1232|4096)$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 2 env GOMAXPROCS=1 go test -run '^$' -bench '^BenchmarkR51IFMAPipeline/stage=cold-A/path=(two-x4|x8)/radixA=32/fixedB=comb256/n=4/msg=(200|1232)$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 0-(workers-1) env GOMAXPROCS=workers go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=750ms -count=6 ./ed25519
+env GOMAXPROCS=1 go test -count=1 ./...
+env GOMAXPROCS=1 go test ./internal/cpufeat ./internal/r51x5 ./ed25519 -run 'TestRawSquareForAMDVersion|TestR51BackendBatchWidthSelection|TestR51IFMARawSquareCompletePipelineDifferential|TestR51IFMARawSquareCompletePipelineZeroAllocations' -count=1 -v
