@@ -305,20 +305,22 @@ func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
 
-	var result IFMAPointX8
-	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
+	// q is dead after the four formula intermediates are formed. Writing the
+	// result directly is therefore safe even when out==q, and avoids zeroing a
+	// temporary 1,280-byte point followed by a full point copy. The unchecked
+	// field kernels used here have no error path after the boundary gate.
+	if err := ifmaMultiplyComposableUncheckedX8(&out.X, &E, &F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, &G, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.T, &E, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, &F, &G); err != nil {
 		return err
 	}
-	*out = result
 	return nil
 }
 

@@ -19,10 +19,10 @@ func TestIFMAPointDoubleDirectOutputX8Differential(t *testing.T) {
 	for round := 0; round < 4096; round++ {
 		input := randomSquareIFMAPointX8(rng)
 		var got, want IFMAPointX8
-		if err := ifmaPointDoubleDirectOutputExperimentX8(&got, &input); err != nil {
+		if err := ifmaPointDoubleComposableStaticX8(&got, &input); err != nil {
 			t.Fatal(err)
 		}
-		if err := ifmaPointDoubleComposableStaticX8(&want, &input); err != nil {
+		if err := ifmaPointDoubleTemporaryCopyExperimentX8(&want, &input); err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
@@ -30,7 +30,7 @@ func TestIFMAPointDoubleDirectOutputX8Differential(t *testing.T) {
 		}
 
 		alias := input
-		if err := ifmaPointDoubleDirectOutputExperimentX8(&alias, &alias); err != nil {
+		if err := ifmaPointDoubleComposableStaticX8(&alias, &alias); err != nil {
 			t.Fatal(err)
 		}
 		if alias != want {
@@ -46,7 +46,7 @@ func TestIFMAPointDoubleDirectOutputX8ZeroAllocations(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x51_d0_a110))
 	state := randomSquareIFMAPointX8(rng)
 	if allocs := testing.AllocsPerRun(1000, func() {
-		if err := ifmaPointDoubleDirectOutputExperimentX8(&state, &state); err != nil {
+		if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
 			panic(err)
 		}
 	}); allocs != 0 {
@@ -68,7 +68,7 @@ func BenchmarkIFMAPointDoubleDirectOutputX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
+			if err := ifmaPointDoubleTemporaryCopyExperimentX8(&state, &state); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -79,7 +79,7 @@ func BenchmarkIFMAPointDoubleDirectOutputX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if err := ifmaPointDoubleDirectOutputExperimentX8(&state, &state); err != nil {
+			if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -87,7 +87,7 @@ func BenchmarkIFMAPointDoubleDirectOutputX8(b *testing.B) {
 	})
 }
 
-func ifmaPointDoubleDirectOutputExperimentX8(out, q *IFMAPointX8) error {
+func ifmaPointDoubleTemporaryCopyExperimentX8(out, q *IFMAPointX8) error {
 	var A, B, C, D, E, F, G, H IFMAElementX8
 	if err := ifmaMultiplyComposableUncheckedX8(&A, &q.X, &q.X); err != nil {
 		return err
@@ -108,19 +108,19 @@ func ifmaPointDoubleDirectOutputExperimentX8(out, q *IFMAPointX8) error {
 	F.Subtract(&G, &C)
 	H.Subtract(&D, &B)
 
-	// q is dead at this point. Exact out==q aliasing is therefore safe, and
-	// writing through avoids both zeroing a temporary point and copying it.
-	if err := ifmaMultiplyComposableUncheckedX8(&out.X, &E, &F); err != nil {
+	var result IFMAPointX8
+	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
 		return err
 	}
+	*out = result
 	return nil
 }
