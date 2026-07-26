@@ -712,6 +712,36 @@ is a long, genuinely dependent sequence of true squares, so register residency
 and symmetry both apply. Reopen either verdict only within its own arithmetic
 regime.
 
+### 5.16 Packed doubling final-linear/multiply fusion — retained
+
+After the decoder square-chain change, a fresh n=1 profile at msg=1232 put
+53.5% cumulative time in packed doubling. The standalone
+`ifmaQuadDoubleFinalOperandsUncheckedX4` linear/carry stage accounted for
+13.4% flat time because it materialized two five-vector operands that the next
+field multiply immediately reloaded.
+
+Commit `b7d8acb` adds one packed final-stage kernel that preserves the existing
+linear formula and carry schedule, expands `[E,G,H,F]` into both multiplication
+operands in registers, and performs the existing 5x51 normalized multiply
+before the first output store. The former split helper remains as an
+independent native oracle. Direct tests compare exact redundant
+representations for zero, maximum-u52, and 512 deterministic random inputs;
+exercise output/input aliasing; poison prior workspace contents; and assert
+zero allocations. The complete native repository suite passed.
+
+On a pinned Zen 5 core, the reused-workspace doubling median moved from 31.96
+to 30.575 ns/op (-4.3%). At msg=1232, the public cold path moved from 15.440
+to 15.085 µs/signature at n=1 (-2.3%) and from 15.380 to 14.960 at n=2
+(-2.7%). The unaffected n=4 signature-parallel path remained within noise at
+9.538 versus 9.550 µs/signature. All public rows retained zero allocations
+and zero internal-fault fallbacks. Raw output is under
+`docs/results/zen5-packed-singleton-final-fusion-2026-07-26/`.
+
+**Regime tag:** this fusion is specific to the packed/intra-signature x4
+doubling used by singleton and pair tails. It does not change the x8
+lane-per-signature point loop. The split helper is intentionally retained as
+an exact-representation oracle and as a reusable measurement seam.
+
 ---
 
 ## 6. Smaller observations
