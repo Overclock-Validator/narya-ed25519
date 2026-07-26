@@ -141,6 +141,75 @@ func TestExperimentalCoordinateParallelCachedAddX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadCachedAddFinalOperandsX4MatchesPortable(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 1026)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x514ca5ed))
+	for sample := 0; sample < 1024; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		var wantLeft, wantRight IFMAElementX4
+		quadCachedAddFinalOperandsX4(&wantLeft, &wantRight, &input)
+
+		var gotLeft, gotRight IFMAElementX4
+		ifmaQuadCachedAddFinalOperandsUncheckedX4(&gotLeft.limbs, &gotRight.limbs, &input.limbs)
+		if gotLeft != wantLeft || gotRight != wantRight {
+			t.Fatalf("input %d: native packed cached-add Stage 2 differs from portable oracle", index)
+		}
+
+		aliasedLeft := input
+		var aliasRight IFMAElementX4
+		ifmaQuadCachedAddFinalOperandsUncheckedX4(&aliasedLeft.limbs, &aliasRight.limbs, &aliasedLeft.limbs)
+		if aliasedLeft != wantLeft || aliasRight != wantRight {
+			t.Fatalf("input %d: input/left alias differs from portable oracle", index)
+		}
+
+		aliasedRight := input
+		var aliasLeft IFMAElementX4
+		ifmaQuadCachedAddFinalOperandsUncheckedX4(&aliasLeft.limbs, &aliasedRight.limbs, &aliasedRight.limbs)
+		if aliasLeft != wantLeft || aliasedRight != wantRight {
+			t.Fatalf("input %d: input/right alias differs from portable oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadCachedAddFinalOperandsX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, left, right IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadCachedAddFinalOperandsUncheckedX4(&left.limbs, &right.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestExperimentalCoordinateParallelCachedAddWorkspaceX4IgnoresPriorScratch(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return

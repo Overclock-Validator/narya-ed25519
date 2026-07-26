@@ -245,7 +245,7 @@ func quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point *quadPackedPointX
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
 		return err
 	}
-	quadCachedAddFinalOperandsX4(&workspace.left, &workspace.right, &workspace.products)
+	ifmaQuadCachedAddFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
 	// point is no longer live after the first packed permutation, so this
 	// final multiplication may write directly through out when out == point.
 	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)

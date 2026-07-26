@@ -21,6 +21,19 @@
 	VPSUBQ  T1, T0, T0                                    \
 	VPADDQ  P, T0, Q
 
+// Turn one packed [A,B,C,D] limb into [E,G,H,F] for cached addition. M03
+// selects the two subtraction lanes, M12 selects the addition lanes, and P
+// adds 8p only to E/F.
+#define QUAD_CACHED_ADD_LINEAR(Q, P, M03, M12, T0, T1, T2) \
+	VPERMQ  $0xdd, Q, T0                                      \
+	VPERMQ  $0x88, Q, T1                                      \
+	VPSUBQ  T1, T0, T2                                        \
+	VPADDQ  T1, T0, T0                                        \
+	VPANDQ  M03, T2, T2                                       \
+	VPANDQ  M12, T0, T0                                       \
+	VPORQ   T2, T0, Q                                         \
+	VPADDQ  P, Q, Q
+
 // Inputs are below 12*2^51, so each carry is at most eleven and 19*C4 fits
 // wholly in the low 52-bit half consumed by VPMADD52LUQ.
 #define QUAD_DOUBLE_NORMALIZE_5(IN0, IN1, IN2, IN3, IN4, MASK, C0, C1, C2, C3, C4, FOLD19) \
@@ -92,6 +105,56 @@ TEXT ·ifmaQuadDoubleFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
+// func ifmaQuadCachedAddFinalOperandsUncheckedX4(left, right, products *LimbsX4)
+TEXT ·ifmaQuadCachedAddFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
+	MOVQ left+0(FP), DI
+	MOVQ right+8(FP), SI
+	MOVQ products+16(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	VMOVDQU64 ·ifmaQuadLaneMask03(SB), Y5
+	VMOVDQU64 ·ifmaQuadLaneMask12(SB), Y6
+	VMOVDQU64 ·ifmaQuadCachedAddBias8P0(SB), Y7
+	VMOVDQU64 ·ifmaQuadCachedAddBias8PN(SB), Y8
+
+	QUAD_CACHED_ADD_LINEAR(Y0, Y7, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y1, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y2, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y3, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y4, Y8, Y5, Y6, Y9, Y10, Y11)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y6
+	QUAD_DOUBLE_NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y7, Y8, Y9, Y10, Y11, Y6)
+
+	VPERMQ $0xc4, Y0, Y12
+	VPERMQ $0x6b, Y0, Y13
+	VMOVDQU64 Y12,   0(DI)
+	VMOVDQU64 Y13,   0(SI)
+	VPERMQ $0xc4, Y1, Y12
+	VPERMQ $0x6b, Y1, Y13
+	VMOVDQU64 Y12,  32(DI)
+	VMOVDQU64 Y13,  32(SI)
+	VPERMQ $0xc4, Y2, Y12
+	VPERMQ $0x6b, Y2, Y13
+	VMOVDQU64 Y12,  64(DI)
+	VMOVDQU64 Y13,  64(SI)
+	VPERMQ $0xc4, Y3, Y12
+	VPERMQ $0x6b, Y3, Y13
+	VMOVDQU64 Y12,  96(DI)
+	VMOVDQU64 Y13,  96(SI)
+	VPERMQ $0xc4, Y4, Y12
+	VPERMQ $0x6b, Y4, Y13
+	VMOVDQU64 Y12, 128(DI)
+	VMOVDQU64 Y13, 128(SI)
+	VZEROUPPER
+	RET
+
 DATA ·ifmaQuadLaneMask0+0(SB)/8, $0xffffffffffffffff
 DATA ·ifmaQuadLaneMask0+8(SB)/8, $0x0000000000000000
 DATA ·ifmaQuadLaneMask0+16(SB)/8, $0x0000000000000000
@@ -116,6 +179,18 @@ DATA ·ifmaQuadLaneMask123+16(SB)/8, $0xffffffffffffffff
 DATA ·ifmaQuadLaneMask123+24(SB)/8, $0xffffffffffffffff
 GLOBL ·ifmaQuadLaneMask123(SB), RODATA|NOPTR, $32
 
+DATA ·ifmaQuadLaneMask03+0(SB)/8, $0xffffffffffffffff
+DATA ·ifmaQuadLaneMask03+8(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadLaneMask03+16(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadLaneMask03+24(SB)/8, $0xffffffffffffffff
+GLOBL ·ifmaQuadLaneMask03(SB), RODATA|NOPTR, $32
+
+DATA ·ifmaQuadLaneMask12+0(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadLaneMask12+8(SB)/8, $0xffffffffffffffff
+DATA ·ifmaQuadLaneMask12+16(SB)/8, $0xffffffffffffffff
+DATA ·ifmaQuadLaneMask12+24(SB)/8, $0x0000000000000000
+GLOBL ·ifmaQuadLaneMask12(SB), RODATA|NOPTR, $32
+
 DATA ·ifmaQuadDoubleBias8P0+0(SB)/8, $0x0000000000000000
 DATA ·ifmaQuadDoubleBias8P0+8(SB)/8, $0x003fffffffffff68
 DATA ·ifmaQuadDoubleBias8P0+16(SB)/8, $0x003fffffffffff68
@@ -127,3 +202,15 @@ DATA ·ifmaQuadDoubleBias8PN+8(SB)/8, $0x003ffffffffffff8
 DATA ·ifmaQuadDoubleBias8PN+16(SB)/8, $0x003ffffffffffff8
 DATA ·ifmaQuadDoubleBias8PN+24(SB)/8, $0x003ffffffffffff8
 GLOBL ·ifmaQuadDoubleBias8PN(SB), RODATA|NOPTR, $32
+
+DATA ·ifmaQuadCachedAddBias8P0+0(SB)/8, $0x003fffffffffff68
+DATA ·ifmaQuadCachedAddBias8P0+8(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadCachedAddBias8P0+16(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadCachedAddBias8P0+24(SB)/8, $0x003fffffffffff68
+GLOBL ·ifmaQuadCachedAddBias8P0(SB), RODATA|NOPTR, $32
+
+DATA ·ifmaQuadCachedAddBias8PN+0(SB)/8, $0x003ffffffffffff8
+DATA ·ifmaQuadCachedAddBias8PN+8(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadCachedAddBias8PN+16(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadCachedAddBias8PN+24(SB)/8, $0x003ffffffffffff8
+GLOBL ·ifmaQuadCachedAddBias8PN(SB), RODATA|NOPTR, $32
