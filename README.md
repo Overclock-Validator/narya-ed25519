@@ -1,4 +1,4 @@
-# Narya: Ed25519 verification
+# Narya — Ed25519 verification
 
 ```
 go get github.com/Overclock-Validator/narya-ed25519
@@ -230,31 +230,31 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest snapshot is from implementation commit `fd117ae` on an AMD Ryzen 7
-9700X (Zen 5), Go 1.26.4, one pinned core, the performance governor, and
-`GOMAXPROCS=1`. Values are median microseconds per signature from ten repeated
-one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
+The latest complete snapshot is from implementation commit `957212d` on an AMD
+Ryzen 7 PRO 8700GE (Zen 4), Go 1.26.4, one pinned core, the performance
+governor, and `GOMAXPROCS=1`. Values are median microseconds per signature from
+six repeated 750-millisecond samples. Every timed Narya row reports 0 B/op,
+0 allocs/op, and zero internal-fault fallbacks.
 
-**Units:** every numeric timing cell in the next three tables is
-**microseconds per signature (`µs/signature`, lower is better)**. The multicore
-table is labeled separately in **signatures per second (`signatures/s`, higher
-is better)**.
+**Units:** every numeric timing cell in the tables below is **microseconds per
+signature (`µs/signature`, lower is better)**. These are per-signature costs,
+not per-batch latencies.
 
 **Cold: arbitrary keys, no retained key state (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 14.320 | 14.270 | 8.261 | 4.743 | 4.554 |
-| 1232 | 14.890 | 14.880 | 9.274 | 4.995 | 4.794 |
-| 4096 | 16.995 | 17.030 | 12.065 | 5.705 | 5.531 |
+| 200 | 16.680 | 16.620 | 9.164 | 7.839 | 7.629 |
+| 1232 | 17.655 | 17.690 | 9.959 | 8.107 | 7.910 |
+| 4096 | 20.290 | 20.210 | 12.070 | 8.949 | 8.763 |
 
 **Warm: 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 14.300 | 14.230 | 3.418 | 3.182 | 3.020 |
-| 1232 | 14.980 | 14.900 | 4.179 | 3.940 | 3.776 |
-| 4096 | 17.030 | 17.040 | 6.230 | 5.998 | 5.825 |
+| 200 | 17.010 | 17.000 | 4.257 | 3.995 | 3.842 |
+| 1232 | 17.870 | 17.850 | 5.215 | 4.959 | 4.813 |
+| 4096 | 20.550 | 20.500 | 7.853 | 7.588 | 7.481 |
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
@@ -263,49 +263,35 @@ paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups. The
 cache deliberately bypasses its prepared tables for n<4, so the cold and warm
 singleton/pair rows are effectively the same path.
 
-At 4096 bytes, the current warm x4 schedule is slower than native x8 cold at
-n=8 and n=64 in this run. The crossover is retained rather than presenting
-cache hits as universally faster; the cache remains a clear win at n>=4 for
-200- and 1232-byte messages. Dispatch should therefore account for message
-size as well as cache state and batch width.
+The cache lookup makes n=1 and n=2 slightly slower because those widths
+deliberately bypass prepared tables. At n>=4, the fully promoted 64-key fixture
+is faster at all three message sizes on this CPU. This is not a universal hit
+rate claim: table population, recurrence, and memory locality remain part of
+the warm-path result.
 
 The comparison below uses the same 1232-byte fixture shape and executable for
-every row. Values are medians of six one-second samples in `µs/signature`
-(lower is better). Voi's expanded-key row excludes expansion cost and is
-included as a warm-key reference.
+every row. Values are medians of six 750-millisecond samples in
+`µs/signature` (lower is better). Voi's expanded-key row excludes expansion
+cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 15.010 | 14.795 | 9.414 | 5.038 | 4.865 |
-| Go `crypto/ed25519` | 27.605 | 27.140 | 27.310 | 27.385 | 27.445 |
-| curve25519-voi, cold strict | 21.750 | 21.560 | 21.750 | 21.830 | 21.900 |
-| curve25519-voi, expanded key | 18.940 | 18.740 | 18.930 | 19.000 | 19.070 |
+| Narya r51, cold strict | 17.700 | 17.565 | 10.200 | 8.278 | 8.058 |
+| Go `crypto/ed25519` | 37.865 | 37.670 | 37.705 | 37.850 | 37.710 |
+| curve25519-voi, cold strict | 26.550 | 26.350 | 26.460 | 26.470 | 26.435 |
+| curve25519-voi, expanded key | 22.440 | 22.260 | 22.370 | 22.360 | 22.325 |
 
-The public cold path also scales across independent callers. At commit
-`ac8c1ab`, six one-second samples per point over 1232-byte messages produced:
-
-| physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
-| ---: | ---: | ---: | ---: | ---: |
-| 1 | 99,120 | 1.00x | 175,633 | 1.00x |
-| 2 | 196,862 | 1.99x | 352,288 | 2.01x |
-| 4 | 386,848 | 3.90x | 688,638 | 3.92x |
-| 6 | 560,078 | 5.65x | 978,018 | 5.57x |
-| 8 | 705,648 | 7.12x | 1,216,888 | 6.93x |
-
-The eight-core n=4 and n=8 rows correspond to aggregate throughput costs of
-1.417 and 0.822 microseconds per signature; they are not individual-request
-latencies. Every parallel row reports 0 B/op, 0 allocs/op, and zero internal
-fault fallbacks. CPUs 0--7 were verified as eight distinct physical cores;
-their SMT siblings 8--15 were excluded.
+Multicore throughput is deliberately omitted from this snapshot until the
+same current implementation is rerun across physical cores. Older scaling
+evidence remains under `docs/results/`, but it is not mixed into a current
+single-core table.
 
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into this
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
 current snapshot are in
-[`docs/results/zen5-fixed-base-affine-stage2-2026-07-26/`](docs/results/zen5-fixed-base-affine-stage2-2026-07-26/).
-The multicore evidence is in
-[`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
+[`docs/results/zen4-8700ge-readme-current-2026-07-26/`](docs/results/zen4-8700ge-readme-current-2026-07-26/).
 
 ### Cold and warm verification
 
@@ -336,7 +322,7 @@ accidentally measure a private implementation seam:
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench \
   -run '^$' \
   -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' \
-  -benchmem -benchtime=1s -count=10 ./ed25519
+  -benchmem -benchtime=750ms -count=6 ./ed25519
 ```
 
 The 1232-byte comparison table comes from the isolated Voi module:
@@ -345,7 +331,7 @@ The 1232-byte comparison table comes from the isolated Voi module:
 taskset -c 2 env GOMAXPROCS=1 go test \
   -modfile=go.oasis.mod -tags oasis_compare -run '^$' \
   -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' \
-  -benchmem -benchtime=1s -count=6 ./ed25519
+  -benchmem -benchtime=750ms -count=6 ./ed25519
 ```
 
 The accelerated backends require AVX512-IFMA and must be selected explicitly

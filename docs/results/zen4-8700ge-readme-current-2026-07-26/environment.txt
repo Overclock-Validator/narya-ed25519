@@ -1,0 +1,9 @@
+implementation=957212d
+os=linux
+arch=amd64
+cpu=AMD Ryzen 7 PRO 8700GE with Radeon 780M Graphics
+microarchitecture=Zen 4
+go=go1.26.4
+gomaxprocs=1
+cpu_affinity=one physical core
+governor=performance
