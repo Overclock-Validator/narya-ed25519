@@ -240,31 +240,46 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest complete snapshot is from implementation commit `8590b4f` on an AMD
-Ryzen 7 PRO 8700GE (Zen 4), Go 1.26.4, one pinned core, the performance
-governor, and `GOMAXPROCS=1`. Values are median microseconds per signature from
-six repeated 750-millisecond samples. Every timed Narya row reports 0 B/op,
-0 allocs/op, and zero internal-fault fallbacks.
+The release headline uses **cold Zen 5 measurements only**: an AMD Ryzen 7
+9700X, Go 1.26.4, one pinned physical core, the performance governor, and
+`GOMAXPROCS=1`. The singleton/pair rows were measured after packed-tail fusion
+at `b7d8acb`; the n=4/8/64 rows were measured after fixed-base pre-signing at
+`afe5c65`. Both commits are ancestors of the current release branch. The table
+identifies the exact recorded checkpoints rather than implying that current
+`main` was rebenchmarked after every subsequent follow-up commit. Every timed
+Narya row reported 0 B/op, 0 allocs/op, and zero
+internal-fault fallbacks.
 
 **Units:** every numeric timing cell in the tables below is **microseconds per
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
 not per-batch latencies.
 
-**Cold: arbitrary keys, no retained key state (`µs/signature`)**
+**Cold: arbitrary keys, no retained key state, 1232-byte messages**
 
-| message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 16.600 | 16.570 | 8.666 | 7.604 | 7.410 |
-| 1232 | 17.670 | 17.655 | 9.451 | 7.890 | 7.685 |
-| 4096 | 20.235 | 20.240 | 11.565 | 8.745 | 8.570 |
+| batch size | µs/signature | signatures/second/core | speedup over Go stdlib |
+| ---: | ---: | ---: | ---: |
+| 1 | 15.085 | 66,291 | 1.83x |
+| 2 | 14.960 | 66,845 | 1.81x |
+| 4 | 9.139 | 109,421 | 2.99x |
+| 8 | 4.850 | 206,186 | 5.65x |
+| 64 | **4.673** | **213,996** | **5.87x** |
 
-**Warm: 64 distinct keys promoted before timing (`µs/signature`)**
+The stdlib control was measured on the same Zen 5 host at 27.60, 27.14,
+27.31, 27.39, and 27.45 µs/signature for n=1/2/4/8/64 respectively. The
+speedup column uses those width-matched controls rather than one rounded
+baseline.
 
-| message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 17.120 | 17.120 | 4.241 | 3.988 | 3.846 |
-| 1232 | 17.890 | 18.000 | 5.195 | 4.934 | 4.806 |
-| 4096 | 20.440 | 20.555 | 7.839 | 7.586 | 7.482 |
+**Warm reference: 64 distinct keys promoted before timing, 1232-byte
+messages (`µs/signature`)**
+
+| n=1 | n=2 | n=4 | n=8 | n=64 |
+| ---: | ---: | ---: | ---: | ---: |
+| 14.98 | 14.90 | 4.179 | 3.940 | 3.776 |
+
+The warm reference is the complete exported-cache snapshot at `fd117ae8`,
+also on the Ryzen 7 9700X. It is intentionally separate from the cold headline:
+the cache bypasses prepared tables below n=4, and its wider-batch result depends
+on key population and locality.
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
@@ -274,56 +289,60 @@ n=8 or larger can use native x8 groups. The
 cache deliberately bypasses its prepared tables for n<4, so the cold and warm
 singleton/pair rows are effectively the same path.
 
-The cache lookup makes n=1 and n=2 slightly slower because those widths
-deliberately bypass prepared tables. At n>=4, the fully promoted 64-key fixture
-is faster at all three message sizes on this CPU. This is not a universal hit
-rate claim: table population, recurrence, and memory locality remain part of
-the warm-path result.
+At n>=4, the fully promoted 64-key fixture is faster on this CPU. This is not a
+universal hit-rate claim: table population, recurrence, and memory locality
+remain part of the warm-path result.
 
-The comparison below uses the same 1232-byte fixture shape and executable for
-every row. Values are medians of six 750-millisecond samples in
-`µs/signature` (lower is better). Voi's expanded-key row excludes expansion
-cost and is included as a warm-key reference.
+The comparison below uses the same Zen 5 host and 1232-byte fixture shape.
+The stdlib and Voi controls are medians of six one-second samples at
+`fd117ae8`; the Narya row is the later retained cold result above. Voi's
+expanded-key row excludes expansion cost and is included as a warm-key
+reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 17.530 | 17.570 | 9.479 | 8.117 | 7.855 |
-| Go `crypto/ed25519` | 37.590 | 37.475 | 37.620 | 37.670 | 37.650 |
-| curve25519-voi, cold strict | 26.290 | 26.370 | 26.435 | 26.490 | 26.445 |
-| curve25519-voi, expanded key | 22.180 | 22.250 | 22.320 | 22.380 | 22.345 |
+| Narya r51, cold strict | 15.085 | 14.960 | 9.139 | 4.850 | 4.673 |
+| Go `crypto/ed25519` | 27.600 | 27.140 | 27.310 | 27.390 | 27.450 |
+| curve25519-voi, cold strict | 21.750 | 21.560 | 21.750 | 21.830 | 21.900 |
+| curve25519-voi, expanded key | 18.940 | 18.740 | 18.930 | 19.000 | 19.070 |
 
-The same current implementation scales across independent callers. These are
-aggregate **signatures per second** over 1232-byte messages, not individual
-request latency:
+A separate Zen 5 public-API scaling checkpoint at `ac8c1ab` measured
+independent callers. These are aggregate **signatures per second** over
+1232-byte messages, not individual request latency:
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 103,779 | 1.00x | 127,530 | 1.00x |
-| 2 | 206,120 | 1.99x | 253,525 | 1.99x |
-| 4 | 382,654 | 3.69x | 465,264 | 3.65x |
-| 8 | 661,809 | 6.38x | 796,535 | 6.25x |
+| 1 | 99,120 | 1.00x | 175,633 | 1.00x |
+| 2 | 196,862 | 1.99x | 352,288 | 2.01x |
+| 4 | 386,848 | 3.90x | 688,638 | 3.92x |
+| 6 | 560,078 | 5.65x | 978,018 | 5.57x |
+| 8 | 705,648 | 7.12x | 1,216,888 | 6.93x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.511 and
-1.255 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.417 and
+0.822 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification.
 
-**Hardware scope: AMD only so far.** Every timing above, and every bundle in
-`docs/results/`, was captured on an AMD Ryzen 7 PRO 8700GE (Zen 4) or a Ryzen 7
-9700X (Zen 5). Narya dispatches on the AVX512-IFMA feature set rather than on
+**Hardware scope: AMD only so far.** Every displayed timing above was captured
+on an AMD Ryzen 7 9700X (Zen 5); historical bundles in `docs/results/` also
+include a Ryzen 7 PRO 8700GE (Zen 4). Narya dispatches on the AVX512-IFMA
+feature set rather than on
 vendor, so the same kernels are expected to run on Intel Ice Lake Server and
 newer, and CI exercises them under Intel SDE emulating Ice Lake Server. But
 emulation establishes function, not speed: **no Intel silicon has been
 benchmarked, and no server part of either vendor has.** Treat the numbers as
-characterizing consumer Zen 4 and Zen 5 and nothing else. Intel and EPYC
+characterizing consumer Zen 5 and nothing else. Intel and EPYC
 measurement is outstanding work, not a completed check.
 
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into this
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
-current snapshot are in
-[`docs/results/zen4-8700ge-raw-square-2026-07-26/`](docs/results/zen4-8700ge-raw-square-2026-07-26/).
+displayed snapshots are in
+[`docs/results/zen5-packed-singleton-final-fusion-2026-07-26/`](docs/results/zen5-packed-singleton-final-fusion-2026-07-26/),
+[`docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/`](docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/),
+[`docs/results/zen5-fixed-base-affine-stage2-2026-07-26/`](docs/results/zen5-fixed-base-affine-stage2-2026-07-26/),
+and [`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
 
 ### Cold and warm verification
 
@@ -354,7 +373,7 @@ accidentally measure a private implementation seam:
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench \
   -run '^$' \
   -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' \
-  -benchmem -benchtime=750ms -count=6 ./ed25519
+  -benchmem -benchtime=1s -count=10 ./ed25519
 ```
 
 The 1232-byte comparison table comes from the isolated Voi module:
@@ -363,7 +382,7 @@ The 1232-byte comparison table comes from the isolated Voi module:
 taskset -c 2 env GOMAXPROCS=1 go test \
   -modfile=go.oasis.mod -tags oasis_compare -run '^$' \
   -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' \
-  -benchmem -benchtime=750ms -count=6 ./ed25519
+  -benchmem -benchtime=1s -count=6 ./ed25519
 ```
 
 The accelerated backends require AVX512-IFMA and must be selected explicitly
@@ -417,9 +436,11 @@ Oasis differential on Linux, plus a pinned
 10.8 job that emulates Ice Lake Server and executes focused r51x5 IFMA,
 native-SHA, and public forced-r51 differentials. Dedicated `sde_gate` tests
 fail rather than skip when the emulated feature set is missing. SDE is
-functional coverage only; the Ryzen 7 PRO 8700GE remains the performance and
-zero-allocation release authority. Automatic backend selection remains
-`generic`.
+functional coverage only. Native release gates have run on the Ryzen 7 PRO
+8700GE (Zen 4), while the displayed release-performance snapshots were taken
+on the Ryzen 7 9700X (Zen 5); zero-allocation and differential gates are
+required on the native hardware used for each release measurement. Automatic
+backend selection remains `generic`.
 
 ## Status
 
@@ -448,6 +469,20 @@ These are open, not pending paperwork. Each is described where it belongs above.
 
 Until these close, `generic` remains the automatic choice and `r51` remains
 opt-in. Published `r51` figures describe an explicitly forced backend.
+
+## AI-assisted development
+
+Narya was developed with extensive assistance from OpenAI Codex and ChatGPT
+Pro, together with Anthropic Claude. These systems contributed to code
+exploration, profiling analysis, mathematical review, hypothesis generation,
+test design, documentation, and implementation work, including assembly.
+
+Humans selected the supported design and remain responsible for every change.
+AI output was treated as an untrusted proposal: retained work had to pass
+independent reference vectors, differential tests, range and aliasing checks,
+native-hardware correctness gates, and repeated performance measurements. The
+AI systems are development collaborators, not cryptographic auditors or
+endorsers of the library.
 
 ## License
 
