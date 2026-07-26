@@ -153,6 +153,44 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	return nil
 }
 
+// PrepareComposable is the IFMA-domain input counterpart of Prepare. It is a
+// measurement seam for ExperimentalIFMADecodeComposableX8: a cold pipeline can
+// hand the decoder's u52 point directly to table construction instead of
+// reducing T and re-importing all four coordinates. The table and evaluator
+// contracts are otherwise identical.
+func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8) PrepareComposable(base *IFMAPointX8, radixBits uint) error {
+	fixedScalarRoundCount(radixBits)
+	if radixBits != 5 {
+		panic("r51x5: pre-signed projective Niels micro-AoS x8 workspace requires radix 32")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return ErrIFMAUnavailable
+	}
+	if err := checkIFMAComposablePointsX8(base); err != nil {
+		return err
+	}
+	workspace.prepared = false
+	current := *base
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	var baseCached IFMAProjectiveNielsX8
+	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
+		return err
+	}
+	storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, 0, &baseCached)
+	for entry := 1; entry < 16; entry++ {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&current, &current, &baseCached, &addWorkspace); err != nil {
+			return err
+		}
+		var cached IFMAProjectiveNielsX8
+		if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
+			return err
+		}
+		storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, entry, &cached)
+	}
+	workspace.prepared = true
+	return nil
+}
+
 func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Evaluate(
 	out *IFMAPointX8,
 	scalar *[X8Lanes][32]byte,
