@@ -10,7 +10,6 @@ import (
 	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
 )
 
-
 func TestAsymmetricFixedBThreeByteExtractorAndBoundaryDigits(t *testing.T) {
 	for _, width := range []uint{6, 8, 9, 10} {
 		for offset := 0; offset < 8; offset++ {

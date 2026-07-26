@@ -354,6 +354,7 @@ func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]b
 		panic("ed25519: unreachable r51 tail width")
 	}
 	returnWorker()
+	worker = nil
 
 	all := true
 	for _, verdict := range ok {

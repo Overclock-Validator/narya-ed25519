@@ -12,7 +12,6 @@ import (
 	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
 )
 
-
 type heterogeneousPartialCombCorrectnessFixtureExperiment struct {
 	workspace ExperimentalIFMAFixedDSMWorkspaceRadix64X4
 	regularA  [X4Lanes]ifmaMicroAoSPerKeyTableExperiment

@@ -9,7 +9,6 @@ import (
 	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
 )
 
-
 func assertHeterogeneousPartialCombA6R9VectorTablesMatchScalarExperiment(
 	t testing.TB,
 	got *heterogeneousPartialCombA6R9VectorTableGroupExperiment,
