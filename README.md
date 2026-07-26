@@ -224,14 +224,6 @@ context, the same machine previously measured generic cold strict verification
 at about 36.1 us/signature and the generic hot comb cache at about
 16.3 us/signature. Those generic rows came from an earlier pinned run.
 
-An independent native C harness linked against Firedancer commit
-`3ed37488372b7e50bb03ca30477be48508ee7022` measured roughly
-20.9/21.0/21.9 us per signature for 64/200/1232-byte messages, essentially
-independent of batch width because that API verifies serially. Firedancer is
-therefore still faster for a cold singleton, while forced r51 is faster for
-full x4 groups. Exact rows and invalid-input caveats are recorded in
-[`docs/CROSS_LIBRARY_ZEN4_2026-07-24.md`](docs/CROSS_LIBRARY_ZEN4_2026-07-24.md).
-
 The registered r51 cold path remains arbitrary-key verification: its full SIMD
 groups decode A and build the small variable-base table for every signature.
 The opt-in `Cache.VerifyBatchStrict` path now has two exact-byte-bound tiers.
@@ -270,8 +262,6 @@ Detailed commands, raw statistical samples, checksums, and caveats are recorded
 in [`docs/results/zen4-8700ge-pr1-2026-07-25/`](docs/results/zen4-8700ge-pr1-2026-07-25/)
 and summarized in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
-The reproducible standalone C driver is in
-[`scripts/firedancer-compare`](scripts/firedancer-compare).
 
 ## Verification
 
