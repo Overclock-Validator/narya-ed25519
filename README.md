@@ -98,6 +98,55 @@ separate verdict for every input.
 A future `ZIP215` profile may expose the cofactored predicate explicitly. It
 will not silently change either existing profile.
 
+### "Batch" means two different things
+
+The word is overloaded, and the two meanings have different guarantees. This
+is worth being precise about, because it explains both what `VerifyBatch` does
+here and why Narya's throughput curve has a different shape from other
+libraries'.
+
+|  | **Lane-parallel** (what Narya does) | **Aggregate** (`VerifyBatch` in most libraries) |
+| --- | --- | --- |
+| equations evaluated | N, one per signature | **1**, all signatures combined |
+| verdicts returned | N | **1** |
+| identical to verifying one at a time? | **yes, bit for bit** | no |
+| valid under a cofactorless predicate? | yes | **no** |
+| source of the speedup | filling SIMD lanes | fewer group operations |
+| scaling | flattens at the lane count | keeps improving with N |
+
+Lane-parallel batching is a *hardware* optimization. Eight independent
+signatures occupy eight AVX-512 lanes, so one instruction stream performs
+eight signatures' worth of field arithmetic — but each signature still gets
+its own complete verification equation and its own answer. Nothing about the
+mathematics changes; the machine is merely busier. That is why every verdict
+is bit-for-bit what you would get from a loop, and why the curve flattens once
+the lanes are full.
+
+Aggregate batching is a *mathematical* optimization. It folds N signatures
+into a single equation with random weights, replacing N double-scalar
+multiplications with one multi-scalar multiplication. It is genuinely faster
+where it applies, and it keeps getting faster as N grows. What it returns is
+one answer for the whole set — and it is sound only under a cofactored
+predicate, because individual invalid signatures can cancel within the
+aggregate.
+
+That constraint is not Narya's opinion. `curve25519-voi` implements aggregate
+batch verification and refuses to apply it to cofactorless entries, returning
+false rather than a possibly-unsound accept
+(`primitives/ed25519/batch_verify.go`). Under `DalekStrict` — which is
+cofactorless — aggregate batching is simply not an available technique, for
+Narya or anyone else.
+
+**Choosing between them.** If one answer for the whole set is enough — you
+reject an entire block on any failure, say — aggregate batching under a
+cofactored predicate is likely the better tool, and Narya is not it. If you
+need to know *which* input failed, or you must match a cofactorless predicate
+exactly, aggregate batching cannot give you that at any speed, and
+lane-parallel is what remains. Admission control is the clearest case: an
+aggregate verdict over a batch of user-submitted transactions cannot tell you
+which one to drop, and discarding the whole batch hands an attacker a very
+cheap denial of service.
+
 **Narya has no signing API, deliberately.** The mismatched private/public-key
 signing-oracle failures catalogued by
 [ed25519-unsafe-libs](https://github.com/MystenLabs/ed25519-unsafe-libs)
