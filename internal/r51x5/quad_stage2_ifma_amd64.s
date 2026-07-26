@@ -2,24 +2,22 @@
 
 #include "textflag.h"
 
-// Turn one packed [A,B,C,D] limb into [E,G,H,F]. The lane masks and bias
-// vectors are constants; Q is overwritten only after every source lane has
-// been selected.
-#define QUAD_DOUBLE_LINEAR(Q, P, M0, M2, M3, M123, T0, T1) \
-	VPERMQ  $0x57, Q, T0                                  \
-	VPANDQ  M0, T0, T1                                    \
-	VPADDQ  T1, T0, T0                                    \
-	VPANDQ  M2, T0, T1                                    \
-	VPSLLQ  $1, T1, T1                                    \
-	VPSUBQ  T1, T0, T0                                    \
-	VPERMQ  $0xaa, Q, T1                                  \
-	VPANDQ  M3, T1, T1                                    \
-	VPSLLQ  $1, T1, T1                                    \
-	VPSUBQ  T1, T0, T0                                    \
-	VPERMQ  $0x00, Q, T1                                  \
-	VPANDQ  M123, T1, T1                                  \
-	VPSUBQ  T1, T0, T0                                    \
-	VPADDQ  P, T0, Q
+// Turn one packed [A,B,C,D] limb into [E,G,H,F]. Two permutations form
+// [D,B,B,B] and [D,A,A,A]. Their difference supplies G and the B-A part of
+// F, their sum supplies E, and the negated sum supplies H. K1 selects E, K2
+// selects H, and K3 subtracts 2C only from F.
+#define QUAD_DOUBLE_LINEAR(Q, P, T0, T1, T2, ZERO) \
+	VPERMQ    $0x57, Q, T0                            \
+	VPERMQ    $0x03, Q, T1                            \
+	VPSUBQ    T1, T0, T2                              \
+	VPADDQ    T1, T0, T0                              \
+	VPSUBQ    T0, ZERO, T1                            \
+	VMOVDQU64 T0, K1, T2                              \
+	VMOVDQU64 T1, K2, T2                              \
+	VPERMQ    $0xaa, Q, T0                            \
+	VPSLLQ    $1, T0, T0                              \
+	VPSUBQ    T0, T2, K3, T2                         \
+	VPADDQ    P, T2, Q
 
 // Turn one packed [A,B,C,D] limb into [E,G,H,F] for cached addition. M03
 // selects the two subtraction lanes, M12 selects the addition lanes, and P
@@ -145,18 +143,21 @@ TEXT ·ifmaQuadDoubleFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
 	VMOVDQU64  96(CX), Y3
 	VMOVDQU64 128(CX), Y4
 
-	VMOVDQU64 ·ifmaQuadLaneMask0(SB), Y5
-	VMOVDQU64 ·ifmaQuadLaneMask2(SB), Y6
-	VMOVDQU64 ·ifmaQuadLaneMask3(SB), Y7
-	VMOVDQU64 ·ifmaQuadLaneMask123(SB), Y8
-	VMOVDQU64 ·ifmaQuadDoubleBias8P0(SB), Y9
-	VMOVDQU64 ·ifmaQuadDoubleBias8PN(SB), Y10
+	MOVQ $1, AX
+	KMOVB AX, K1
+	MOVQ $4, AX
+	KMOVB AX, K2
+	MOVQ $8, AX
+	KMOVB AX, K3
+	VMOVDQU64 ·ifmaQuadDoubleBias8P0(SB), Y5
+	VMOVDQU64 ·ifmaQuadDoubleBias8PN(SB), Y6
+	VPXORQ Y7, Y7, Y7
 
-	QUAD_DOUBLE_LINEAR(Y0, Y9,  Y5, Y6, Y7, Y8, Y11, Y12)
-	QUAD_DOUBLE_LINEAR(Y1, Y10, Y5, Y6, Y7, Y8, Y11, Y12)
-	QUAD_DOUBLE_LINEAR(Y2, Y10, Y5, Y6, Y7, Y8, Y11, Y12)
-	QUAD_DOUBLE_LINEAR(Y3, Y10, Y5, Y6, Y7, Y8, Y11, Y12)
-	QUAD_DOUBLE_LINEAR(Y4, Y10, Y5, Y6, Y7, Y8, Y11, Y12)
+	QUAD_DOUBLE_LINEAR(Y0, Y5, Y8, Y9, Y10, Y7)
+	QUAD_DOUBLE_LINEAR(Y1, Y6, Y8, Y9, Y10, Y7)
+	QUAD_DOUBLE_LINEAR(Y2, Y6, Y8, Y9, Y10, Y7)
+	QUAD_DOUBLE_LINEAR(Y3, Y6, Y8, Y9, Y10, Y7)
+	QUAD_DOUBLE_LINEAR(Y4, Y6, Y8, Y9, Y10, Y7)
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
 	VPBROADCASTQ ·ifmaFold19(SB), Y6
