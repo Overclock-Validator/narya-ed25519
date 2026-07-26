@@ -47,12 +47,15 @@ func ifmaPointAddProjectiveNielsX8(out, point *IFMAPointX8, cached *IFMAProjecti
 	return ifmaPointAddProjectiveNielsWorkspaceX8(out, point, cached, &workspace)
 }
 
-// ifmaPointAddProjectiveNielsScratchX8 owns the fully overwritten scratch
-// for one mixed addition. Evaluation loops reuse it so Go does not zero ten
-// 320-byte field elements for every selected digit.
+// ifmaPointAddProjectiveNielsScratchX8 owns the fully overwritten scratch for
+// one mixed addition. Stage 1 keeps only the two normalized point-side linear
+// terms plus four exact raw products. The dedicated Stage-2 transition forms
+// and carries E/F/G/H together, instead of normalizing A/B/C/D separately and
+// then making five more element calls. Evaluation loops reuse the workspace so
+// Go does not zero it for every selected digit.
 type ifmaPointAddProjectiveNielsScratchX8 struct {
-	yMinusX, yPlusX        IFMAElementX8
-	A, B, C, D, E, F, G, H IFMAElementX8
+	yMinusX, yPlusX IFMAElementX8
+	stage2          ifmaNielsStage2WorkspaceX8
 }
 
 func ifmaPointAddProjectiveNielsWorkspaceX8(
@@ -61,43 +64,27 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	workspace *ifmaPointAddProjectiveNielsScratchX8,
 ) error {
 	yMinusX, yPlusX := &workspace.yMinusX, &workspace.yPlusX
-	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
-	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
 	ifmaSubtractComposableUncheckedX8(yMinusX, &point.Y, &point.X)
 	ifmaAddComposableUncheckedX8(yPlusX, &point.Y, &point.X)
 
-	if err := ifmaMultiplyComposableUncheckedX8(A, yMinusX, &cached.YMinusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(B, yPlusX, &cached.YPlusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(C, &point.T, &cached.T2D); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(D, &point.Z, &cached.Z); err != nil {
-		return err
-	}
-	ifmaAddComposableUncheckedX8(D, D, D)
-	ifmaSubtractComposableUncheckedX8(E, B, A)
-	ifmaSubtractComposableUncheckedX8(F, D, C)
-	ifmaAddComposableUncheckedX8(G, D, C)
-	ifmaAddComposableUncheckedX8(H, B, A)
+	stage2 := &workspace.stage2
+	ifmaMulRawX8(&stage2[0], &yMinusX.limbs, &cached.YMinusX.limbs)
+	ifmaMulRawX8(&stage2[1], &yPlusX.limbs, &cached.YPlusX.limbs)
+	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
+	ifmaMulRawX8(&stage2[3], &point.Z.limbs, &cached.Z.limbs)
+	ifmaNielsStage2X8(stage2)
+
+	E := (*LimbsX8)(&stage2[0])
+	F := (*LimbsX8)(&stage2[1])
+	G := (*LimbsX8)(&stage2[2])
+	H := (*LimbsX8)(&stage2[3])
 
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
-	if err := ifmaMultiplyComposableUncheckedX8(&out.X, E, F); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, G, H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.T, E, H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, F, G); err != nil {
-		return err
-	}
+	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
 	return nil
 }
 
