@@ -169,6 +169,37 @@ release decision, never that decision itself.
   x4 work.
 - That `VerifyStrict` can never be weakened by a global profile flip.
 
+## Saved convergence audit — 2026-07-25
+
+Claude's static review of the 20 commits after `89cb0ea` is retained as a
+review checkpoint. It was performed without a Ryzen hardware run. The findings
+remain useful, but their disposition matters because the branch changed while
+the review was being written:
+
+| finding | disposition |
+|---|---|
+| SHA-512 x8 assembly clobbered the Go frame pointer through `BP` | fixed in `c033896` by using `R12`; cross-compiled linux/amd64 `go vet ./...` passes |
+| native x8 SHA gate omitted AVX-512VL despite EVEX.256 loads | fixed in `c033896`; the gate now requires F, VL, and BW |
+| an r51 `StdlibCompat` singleton/tail could pass a nil public key directly to the generic backend | fixed fail-closed in `c033896`, with direct tests for both profiles before hardware activation |
+| `detectAMDZen4OrNewer` also matched family-19h Zen 3 | renamed to describe family 19h-or-newer and kept subordinate to the IFMA capability gate in `c033896` |
+| one wide-IFMA predicate controlled x8 width, decoded-A, and warm-cache policy | split into independent policy predicates in `c033896` |
+| promoted micro-AoS coverage lacked explicit random mixed-order and pure-torsion bases | added in `c033896`, including all eight pure torsion points |
+| predicted micro-AoS out-of-bounds read | refuted: the exact 160-byte record uses five 32-byte loads at offsets 0, 32, 64, 96, and 128 |
+| transpose, direct-output aliasing, formulas, and workspace reuse | independently traced and accepted by the static review |
+
+The review's closing statement that runtime sign handling still consisted of a
+40-iteration swap plus conditional negate became stale before handoff. Commit
+`997d9b9` stores both signed Niels forms, removed that runtime negation, and
+reduced the exported Zen 5 n=64/msg=1232 path from about 6.404 to 6.072
+microseconds per signature. In the post-change profile the whole selector is
+about 1.8% cumulative and its transpose about 1.1% flat. Selector-to-first-
+multiply fusion is therefore preserved as a possible later experiment, not an
+open release requirement; reopen it only if a new profile makes selection
+material again or an exact prototype clears the complete-verifier keep gate.
+
+This section is a regime-tagged record, not a claim that static review replaces
+the required Zen 4/Zen 5 native tests.
+
 ---
 
 # TODO / follow-ups (for reviewers)
