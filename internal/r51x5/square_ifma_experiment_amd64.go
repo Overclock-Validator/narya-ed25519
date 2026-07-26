@@ -11,3 +11,9 @@ package r51x5
 //
 //go:noescape
 func ifmaSquareNormalizedExperimentX4(out, x *LimbsX4)
+
+// ifmaSquareNormalizedExperimentX8 is the native-ZMM counterpart. It retains
+// the exact folded-and-carried representation of the general x8 multiply.
+//
+//go:noescape
+func ifmaSquareNormalizedExperimentX8(out, x *LimbsX8)

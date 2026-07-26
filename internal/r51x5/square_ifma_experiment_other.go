@@ -7,3 +7,7 @@ package r51x5
 func ifmaSquareNormalizedExperimentX4(out, x *LimbsX4) {
 	ifmaMulNormalizedUncheckedX4(out, x, x)
 }
+
+func ifmaSquareNormalizedExperimentX8(out, x *LimbsX8) {
+	ifmaMulNormalizedUncheckedX8(out, x, x)
+}
