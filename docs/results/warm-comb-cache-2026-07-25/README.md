@@ -7,7 +7,7 @@ every signature independently, and writes caller-order verdicts.
 
 ## Source and machines
 
-- implementation commit: `f808b98f3d0abb0b6b7c36e49739fb8ad1a813b5`
+- implementation commit: `2f54a304560e9c2d16f214f2bb600d783fe44df8`
 - Zen 4: AMD Ryzen 7 PRO 8700GE, Linux amd64
 - Zen 5: AMD Ryzen 7 9700X, Linux amd64
 - one pinned core (`taskset -c 2`), `GOMAXPROCS=1`
@@ -35,17 +35,23 @@ Microseconds per signature at message size 1232:
 
 | CPU | n | raw cold | cache, 0% warm | 25% warm | 50% warm | 75% warm | 100% warm |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Zen 5 | 4 | 12.70 | 11.75 | — | — | — | 5.328 |
-| Zen 5 | 8 | 8.536 | 7.959 | — | 7.957 | — | 5.327 |
-| Zen 5 | 64 | 8.253 | 7.651 | 7.078 | 6.522 | 5.979 | 5.376 |
-| Zen 4 | 4 | 14.90 | 16.14 | — | — | — | 6.565 |
-| Zen 4 | 8 | 14.45 | 15.68 | — | 10.82 | — | 6.568 |
-| Zen 4 | 64 | 14.19 | 15.36 | 12.41 | 10.54 | 8.657 | 6.704 |
+| Zen 5 | 8 | 8.525 | 8.040 | — | 8.037 | — | 4.803 |
+| Zen 5 | 64 | 8.242 | 7.756 | 6.974 | 6.166 | 5.360 | 4.492 |
+| Zen 4 | 8 | 14.80 | 15.75 | — | 10.79 | — | 5.998 |
+| Zen 4 | 64 | 14.52 | 15.51 | 12.27 | 10.10 | 7.957 | 5.729 |
 
 At Zen 5 n=8, 50% warm intentionally equals the decoded result: consuming one
 warm x4 would split a faster native x8 group into warm and cold x4 work. Zen 4
 uses that warm x4 independently and benefits. This is the measured reason for
 the width-aware dispatcher rule.
+
+The production warm adapter originally encoded each x4 group separately. Commit
+`2f54a30` restores the experiment's cross-group finalizer: consecutive usable
+warm groups retain their Q points and share one batch inversion across up to 64
+signatures. A separate focused run measured fully warm n=64/msg=200 at
+3.74 us/signature on Zen 5 and 4.76 on Zen 4; n=64/msg=1232 measured 4.50 and
+5.71 respectively. Minor differences from the full matrix above are normal
+between separate short benchmark processes.
 
 ## Interpretation
 
@@ -65,8 +71,8 @@ the width-aware dispatcher rule.
 The complete raw stdout was retained on the measurement hosts during the run:
 
 ```text
-12f18c286e08ecb0aac3945709531e8c556a27f4011f788da71c21ded2875990  narya-warm-f808b98-zen4.txt
-27a49c22e3252e26494f43ab7481dff9d163cc70ac12b3d5809813ce3c85ce13  narya-warm-f808b98-zen5.txt
+501dedbe4796c71af975667dd3db8cb49ec89d6f3ddccb05daa46fe2659115c9  narya-warm-batched-2f54a30-zen4.txt
+68287c05a2a3d5526f422480a15644819d7eb268184cc947eee6d7a33a86fa3c  narya-warm-batched-2f54a30-zen5.txt
 ```
 
 The raw logs are not checked into this compact directory, so the checksums

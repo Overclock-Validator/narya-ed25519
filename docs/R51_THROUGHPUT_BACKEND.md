@@ -328,12 +328,16 @@ x8 group stays cold/decoded because the half-full x8 cliff is smaller than
 fragmenting it into warm and cold x4 calls. Automatic backend selection still
 does not use either raw contract.
 
-At commit `f808b98`, n=64 and 1232-byte messages measured 8.253 us/signature
-raw, 7.651 decoded, and 5.376 fully warm on Zen 5. Zen 4 measured 14.19 raw,
-15.36 staging, and 6.704 fully warm. Thus Zen 5 benefits before promotion;
+At commit `2f54a30`, n=64 and 1232-byte messages measured 8.242 us/signature
+raw, 7.756 decoded, and 4.492 fully warm on Zen 5. Zen 4 measured 14.52 raw,
+15.51 staging, and 5.729 fully warm. Thus Zen 5 benefits before promotion;
 Zen 4 callers accept about 8% staging overhead and should enable Cache only for
 workloads with demonstrated recurrence. At 25% warm density Zen 4 already
-measured 12.41 us/signature, ahead of raw cold. Timed rows allocated zero.
+measured 12.27 us/signature, ahead of raw cold. At n=64/msg=200 the fully warm
+path reaches 3.74 us/signature on Zen 5 and 4.76 on Zen 4. The verifier retains
+up to 16 computed x4 groups and batch-encodes them with one inversion; paying
+one inversion per group was an avoidable adapter regression. Timed rows
+allocated zero.
 
 ### Promotion boundary
 

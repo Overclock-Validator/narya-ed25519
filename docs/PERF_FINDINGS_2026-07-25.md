@@ -47,8 +47,8 @@ builds four keys with one inversion, and reaches it through the opt-in public
 
 The warm comb was worth roughly **3x the then-current cold path** in the private
 experiment. It is now reachable through forced r51's Cache; the complete
-public/private seam, including lookup and width-aware regrouping, measures
-5.3 us/signature on Zen 5 and 6.7 on Zen 4 at n=64/msg=1232 when fully warm.
+public/private seam, including lookup and width-aware dispatch, measures
+4.49 us/signature on Zen 5 and 5.73 on Zen 4 at n=64/msg=1232 when fully warm.
 These are warm-key results, not cold-key headline numbers.
 
 ### Why the cache is justified
@@ -253,9 +253,9 @@ that arithmetic capacity is not the effective default and must not be quoted as
 one.
 
 The decoded tier now composes with the hot comb. At n=64/msg=1232, Zen 5 moves
-from 8.253 us raw to 7.651 decoded and 5.376 fully warm. Zen 4 deliberately
-retains decoded A only as promotion staging: it moves from 14.19 raw to 15.36
-at 0% warm, then 12.41/10.54/8.657/6.704 at 25/50/75/100% warm. Consequently
+from 8.242 us raw to 7.756 decoded and 4.492 fully warm. Zen 4 deliberately
+retains decoded A only as promotion staging: it moves from 14.52 raw to 15.51
+at 0% warm, then 12.27/10.10/7.957/5.729 at 25/50/75/100% warm. Consequently
 the r51 Cache is opt-in on both CPUs, but Zen 4 integration should reserve it
 for recurrence-rich workloads rather than arbitrary TPU ingress.
 

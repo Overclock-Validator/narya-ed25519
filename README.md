@@ -222,15 +222,19 @@ promotion starts after eight valid hits and a stranded single key is flushed
 only after 32 hits. These are conservative library defaults, not a production
 traffic-policy recommendation.
 
-At implementation commit `f808b98`, the complete public/private Cache seam at
+At implementation commit `2f54a30`, the complete public/private Cache seam at
 1232 bytes and n=64 measured, in microseconds per signature:
 
 | CPU | raw cold | decoded/staging, 0% warm | 25% warm | 50% warm | 75% warm | 100% warm |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Ryzen 7 9700X (Zen 5) | 8.253 | 7.651 | 7.078 | 6.522 | 5.979 | 5.376 |
-| Ryzen 7 PRO 8700GE (Zen 4) | 14.19 | 15.36 | 12.41 | 10.54 | 8.657 | 6.704 |
+| Ryzen 7 9700X (Zen 5) | 8.242 | 7.756 | 6.974 | 6.166 | 5.360 | 4.492 |
+| Ryzen 7 PRO 8700GE (Zen 4) | 14.52 | 15.51 | 12.27 | 10.10 | 7.957 | 5.729 |
 
-All timed rows allocated zero. Zen 5 benefits immediately from decoded A.
+All timed rows allocated zero. The warm path accumulates up to 16 x4 groups
+before encoding Q, amortizing one field inversion across as many as 64
+signatures. At 200 bytes and n=64 this reaches 3.74 us/signature on Zen 5 and
+4.76 on Zen 4; the 1232-byte rows above include the additional SHA-512 work.
+Zen 5 benefits immediately from decoded A.
 Zen 4 pays about 8% while admitted keys are only staging entries, then wins by
 25% warm density; callers should therefore enable its Cache only for workloads
 with demonstrated recurrence, such as validator-key repair or shred traffic,
