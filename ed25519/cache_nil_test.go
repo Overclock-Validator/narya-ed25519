@@ -30,6 +30,16 @@ func TestNilCacheFailsClosedForEveryInput(t *testing.T) {
 		t.Error("nil cache accepted a valid signature under VerifyStrict")
 	}
 
+	// A well-formed signature that reaches the final equation check and fails.
+	// This distinguishes a late verification failure from byte-precheck cases.
+	wrongMessage := append(append([]byte(nil), msg...), 0)
+	if cache.Verify(pub, wrongMessage, sig) {
+		t.Error("nil cache accepted an equation-invalid signature")
+	}
+	if cache.VerifyStrict(pub, wrongMessage, sig) {
+		t.Error("nil cache accepted an equation-invalid signature under VerifyStrict")
+	}
+
 	// A signature the strict pre-pass rejects: this case already returned
 	// false, and must keep doing so.
 	smallOrderPub := &[32]byte{1}
@@ -54,28 +64,49 @@ func TestNilCacheFailsClosedForEveryInput(t *testing.T) {
 				pubs[i], msgs[i], sigs[i] = pub, msg, sig
 			}
 
-			all := cache.VerifyBatchStrict(pubs, msgs, sigs, verdicts)
-			if want := n == 0; all != want {
-				t.Errorf("all=%v want %v", all, want)
-			}
-			for i, got := range verdicts {
-				if got {
-					t.Errorf("lane %d accepted under a nil cache", i)
-				}
+			for _, verify := range []struct {
+				name string
+				call func([]*[32]byte, [][]byte, [][]byte, []bool) bool
+			}{
+				{name: "VerifyBatch", call: cache.VerifyBatch},
+				{name: "VerifyBatchStrict", call: cache.VerifyBatchStrict},
+			} {
+				t.Run(verify.name, func(t *testing.T) {
+					for i := range verdicts {
+						verdicts[i] = true
+					}
+					all := verify.call(pubs, msgs, sigs, verdicts)
+					if want := n == 0; all != want {
+						t.Errorf("all=%v want %v", all, want)
+					}
+					for i, got := range verdicts {
+						if got {
+							t.Errorf("lane %d accepted under a nil cache", i)
+						}
+					}
+				})
 			}
 		})
 	}
 
 	// A caller bug in slice lengths must still be loud, and must be loud in the
 	// same way it is for a live cache rather than silently returning false.
-	t.Run("mismatchedLengthsStillPanic", func(t *testing.T) {
-		defer func() {
-			if recover() == nil {
-				t.Error("mismatched slice lengths must panic for a nil cache too")
-			}
-		}()
-		cache.VerifyBatchStrict(make([]*[32]byte, 2), make([][]byte, 1), make([][]byte, 2), make([]bool, 2))
-	})
+	for _, verify := range []struct {
+		name string
+		call func([]*[32]byte, [][]byte, [][]byte, []bool) bool
+	}{
+		{name: "VerifyBatch", call: cache.VerifyBatch},
+		{name: "VerifyBatchStrict", call: cache.VerifyBatchStrict},
+	} {
+		t.Run("mismatchedLengthsStillPanic/"+verify.name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Error("mismatched slice lengths must panic for a nil cache too")
+				}
+			}()
+			verify.call(make([]*[32]byte, 2), make([][]byte, 1), make([][]byte, 2), make([]bool, 2))
+		})
+	}
 }
 
 func freshSignature(t *testing.T) (*[32]byte, []byte, []byte) {
