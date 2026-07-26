@@ -110,6 +110,103 @@ func BenchmarkIFMASquareNormalizedExperimentX8(b *testing.B) {
 	})
 }
 
+func TestIFMADedicatedSquarePointDoubleX8Differential(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	rng := rand.New(rand.NewSource(0x51_8d_d1ff))
+	for round := 0; round < 4096; round++ {
+		input := randomSquareIFMAPointX8(rng)
+		var got, want IFMAPointX8
+		if err := ifmaPointDoubleDedicatedSquareStaticX8(&got, &input); err != nil {
+			t.Fatal(err)
+		}
+		if err := ifmaPointDoubleComposableStaticX8(&want, &input); err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Fatalf("round %d: dedicated/current representation mismatch", round)
+		}
+	}
+}
+
+func BenchmarkIFMADedicatedSquarePointDoubleX8(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	reduced, _, _, _ := benchmarkMixedPointInputs(b)
+	var seed IFMAPointX8
+	seed.SetReduced(&reduced)
+
+	b.Run("kernel=current-general-square", func(b *testing.B) {
+		state := seed
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkComposablePointX8Sink = state
+	})
+	b.Run("kernel=dedicated-square", func(b *testing.B) {
+		state := seed
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleDedicatedSquareStaticX8(&state, &state); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkComposablePointX8Sink = state
+	})
+}
+
+func ifmaPointDoubleDedicatedSquareStaticX8(out, q *IFMAPointX8) error {
+	var A, B, C, D, E, F, G, H IFMAElementX8
+	ifmaSquareNormalizedExperimentX8(&A.limbs, &q.X.limbs)
+	ifmaSquareNormalizedExperimentX8(&B.limbs, &q.Y.limbs)
+	ifmaSquareNormalizedExperimentX8(&C.limbs, &q.Z.limbs)
+	C.Add(&C, &C)
+	if err := ifmaMultiplyComposableUncheckedX8(&E, &q.X, &q.Y); err != nil {
+		return err
+	}
+	E.Add(&E, &E)
+	D.Negate(&A)
+	G.Add(&D, &B)
+	F.Subtract(&G, &C)
+	H.Subtract(&D, &B)
+
+	var result IFMAPointX8
+	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
+		return err
+	}
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
+		return err
+	}
+	*out = result
+	return nil
+}
+
+func randomSquareIFMAPointX8(rng *rand.Rand) IFMAPointX8 {
+	var point IFMAPointX8
+	coordinates := [...]*IFMAElementX8{&point.X, &point.Y, &point.Z, &point.T}
+	for _, coordinate := range coordinates {
+		for limb := range coordinate.limbs {
+			for lane := range coordinate.limbs[limb] {
+				coordinate.limbs[limb][lane] = rng.Uint64() & squareIFMAExperimentU52Mask
+			}
+		}
+	}
+	return point
+}
+
 func squareIFMAX8ExperimentInputs() []LimbsX8 {
 	inputs := squareIFMAX8ExperimentBoundaryInputs()
 	rng := rand.New(rand.NewSource(0x51_8a7e_2026))
