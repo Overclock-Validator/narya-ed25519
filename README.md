@@ -189,6 +189,13 @@ us). That final mechanical change also improved the requested n=4 row from
 about 12.81 to 12.60 us/signature. Removing the x4 point-add input and result
 copies in `c6c27c3` reduced it again to about **12.36 us/signature**. Neither
 change affects the separate packed singleton kernel.
+The next n=4-specific checkpoint replaces the scalar temporary-product path
+used to apply public table-digit signs with a bit-exact masked x4 assembly
+normalizer. A same-core paired A/B at 1232 bytes measured **12.33 to 11.82
+us/signature (-4.1%)**, with every timed row still at 0 B/op and 0 allocs/op.
+The native all-mask/boundary differential and the full r51/Ed25519 suites pass;
+the operation remains public-data-dependent and does not change table contents
+or verification semantics. Full x8 groups do not execute this x4 helper.
 These are cold arbitrary-key results: A is decoded and its table is rebuilt for
 every signature. The complete three-message Zen 4/Zen 5 release matrix still
 needs to be rerun before replacing the pinned PR-1 table above.

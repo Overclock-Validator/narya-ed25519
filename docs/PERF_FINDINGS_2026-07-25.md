@@ -78,6 +78,25 @@ zero-allocation, and n=4 is about 3.5% faster than the 12.81-us pre-wrapper
 baseline. Full x8 groups do not execute this x4 add, so this is intentionally a
 small-batch/tail optimization rather than a new n=64 headline.
 
+The next n=4 profile put `conditionalNegateIFMAElementX4` at about 4.1%
+cumulative. The old implementation built a 320-byte raw product in scalar Go,
+selected `x` or `bias-x` lane by lane, and then called the native normalizer.
+The admitted replacement performs the same public-mask blend and the same
+carry/fold pass entirely in YMM registers. It deliberately normalizes both
+selected and unselected lanes, preserving the portable reference bit for bit;
+all five input limbs are loaded before the first store, preserving in-place
+aliasing.
+
+A paired same-core public-API gate at n=4/msg=1232, six two-second samples per
+side, measured 12.33 us/signature for exact commit `0dfa3d1` and 11.82
+us/signature for the native masked implementation: **-4.1%**, 0 B/op, and 0
+allocs/op. The existing direct oracle exhausts all 16 public masks over zero,
+maximum-u52, and mixed boundary fixtures; it passed on the Zen 5 hardware, as
+did the complete native r51 and Ed25519 suites. The requested follow-up width
+matrix measured 22.41--22.43 (n=1), 22.50--22.51 (n=2), 11.80 (n=4), 6.14
+(n=8), and 5.82 (n=64) us/signature. The n=1/2 packed path and complete x8
+groups are structurally unaffected, so only n=4 is used to attribute the gain.
+
 ---
 
 ## 1. What landed on this branch

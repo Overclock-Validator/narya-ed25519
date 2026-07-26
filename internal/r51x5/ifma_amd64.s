@@ -752,6 +752,52 @@ TEXT ·ifmaNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-16
 	VZEROUPPER
 	RET
 
+// func ifmaConditionalNegateNormalizedUncheckedX4(out, x *LimbsX4, negativeMask uint8)
+//
+// Every input limb is loaded before the first store, so out may alias x. The
+// public mask selects biased subtraction lane by lane. The blended value then
+// takes the same carry/fold path as the portable implementation, including for
+// unselected lanes.
+TEXT ·ifmaConditionalNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-24
+	MOVQ    out+0(FP), DI
+	MOVQ    x+8(FP), CX
+	MOVBQZX negativeMask+16(FP), AX
+	KMOVB   AX, K1
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	VPBROADCASTQ ·ifmaSubBias0(SB), Y12
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Y13
+	VMOVDQA64 Y13, Y14
+	VMOVDQA64 Y13, Y15
+	VMOVDQA64 Y13, Y16
+	VPSUBQ Y0, Y12, Y12
+	VPSUBQ Y1, Y13, Y13
+	VPSUBQ Y2, Y14, Y14
+	VPSUBQ Y3, Y15, Y15
+	VPSUBQ Y4, Y16, Y16
+
+	VMOVDQU64 Y12, K1, Y0
+	VMOVDQU64 Y13, K1, Y1
+	VMOVDQU64 Y14, K1, Y2
+	VMOVDQU64 Y15, K1, Y3
+	VMOVDQU64 Y16, K1, Y4
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y11
+	NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11)
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
+	VZEROUPPER
+	RET
+
 DATA ·ifmaLimbMask51+0(SB)/8, $0x0007ffffffffffff
 GLOBL ·ifmaLimbMask51(SB), RODATA|NOPTR, $8
 

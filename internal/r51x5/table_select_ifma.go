@@ -278,6 +278,15 @@ func conditionalNegateIFMAPointX8(point *IFMAPointX8, negativeMask uint8) {
 // normalization as IFMAElement.Negate. Unselected lanes are normalized copies
 // of themselves. This keeps every output limb below 2^52.
 func conditionalNegateIFMAElementX4(element *IFMAElementX4, negativeMask uint8) {
+	if ExperimentalIFMAAvailable() {
+		ifmaConditionalNegateNormalizedUncheckedX4(&element.limbs, &element.limbs, negativeMask)
+		return
+	}
+	conditionalNegateIFMAElementPortableX4(element, negativeMask)
+}
+
+//go:noinline
+func conditionalNegateIFMAElementPortableX4(element *IFMAElementX4, negativeMask uint8) {
 	var raw IFMAProductX4
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)

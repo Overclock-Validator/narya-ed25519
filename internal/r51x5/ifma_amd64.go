@@ -72,3 +72,10 @@ func ifmaSubtractNormalizedUncheckedX4(out, x, y *LimbsX4)
 
 //go:noescape
 func ifmaNegateNormalizedUncheckedX4(out, x *LimbsX4)
+
+// ifmaConditionalNegateNormalizedUncheckedX4 selects x or -x independently
+// in each public lane according to negativeMask, then applies the same
+// carry/fold normalization as the portable reference. It is safe in place.
+//
+//go:noescape
+func ifmaConditionalNegateNormalizedUncheckedX4(out, x *LimbsX4, negativeMask uint8)
