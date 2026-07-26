@@ -6,6 +6,9 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
+	"runtime"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	narya "github.com/Overclock-Validator/narya-ed25519/ed25519"
@@ -195,6 +198,80 @@ func BenchmarkPublicR51CacheVerifyBatchStrict(b *testing.B) {
 				b.ReportMetric(float64(b.N*count)/b.Elapsed().Seconds(), "signatures/s")
 			})
 		}
+	}
+}
+
+func primePublicR51Parallel(tb testing.TB, fixture *publicR51Fixture, count int) {
+	tb.Helper()
+
+	workers := runtime.GOMAXPROCS(0)
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	var failed atomic.Bool
+	wait.Add(workers)
+	for range workers {
+		go func() {
+			defer wait.Done()
+			var ok [8]bool
+			<-start
+			if !narya.VerifyBatchStrict(
+				fixture.pubs[:count],
+				fixture.msgs[:count],
+				fixture.sigs[:count],
+				ok[:count],
+			) {
+				failed.Store(true)
+			}
+		}()
+	}
+	close(start)
+	wait.Wait()
+	if failed.Load() {
+		tb.Fatal("parallel pool priming rejected a valid fixture")
+	}
+	assertNoPublicR51FaultFallbacks(tb)
+}
+
+// BenchmarkPublicR51VerifyBatchStrictParallel measures concurrent callers of
+// the exported cold API. Each benchmark operation verifies one independent
+// batch; RunParallel distributes those operations across GOMAXPROCS workers.
+// The backend pools are primed concurrently before timing so this measures
+// steady-state scaling rather than worker construction.
+func BenchmarkPublicR51VerifyBatchStrictParallel(b *testing.B) {
+	forcePublicR51(b)
+
+	const messageSize = 1232
+	fixture := newPublicR51Fixture(b, 8, messageSize)
+	for _, count := range []int{4, 8} {
+		b.Run(fmt.Sprintf("msg=%d/n=%d", messageSize, count), func(b *testing.B) {
+			primePublicR51Parallel(b, &fixture, count)
+			pubs := fixture.pubs[:count]
+			msgs := fixture.msgs[:count]
+			sigs := fixture.sigs[:count]
+
+			var failed atomic.Bool
+			b.ReportAllocs()
+			b.SetBytes(int64(messageSize * count))
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				var ok [8]bool
+				for pb.Next() {
+					if !narya.VerifyBatchStrict(pubs, msgs, sigs, ok[:count]) {
+						failed.Store(true)
+					}
+				}
+			})
+			b.StopTimer()
+
+			if failed.Load() {
+				b.Fatal("parallel verification rejected a valid fixture")
+			}
+			assertNoPublicR51FaultFallbacks(b)
+			b.ReportMetric(0, "internal-fault-fallbacks")
+			b.ReportMetric(float64(runtime.GOMAXPROCS(0)), "GOMAXPROCS")
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1e3, "us/signature")
+			b.ReportMetric(float64(b.N*count)/b.Elapsed().Seconds(), "signatures/s")
+		})
 	}
 }
 
