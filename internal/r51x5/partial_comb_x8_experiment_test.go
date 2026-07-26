@@ -285,3 +285,97 @@ func BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment(b *testing.B) {
 		b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
 	})
 }
+
+// BenchmarkWarmCombX8ComponentsExperiment decomposes the x8 warm evaluator into
+// the three operations its loop actually performs, so the gap between their sum
+// and the complete evaluator is measured rather than assumed.
+//
+// The shape is fixed by the specs: A6/r9 contributes 43 digits over an online
+// depth of 48, B10/r5 contributes 26 digits over a depth of 40, so one group is
+// 47 doublings, 43 A selections and adds, and 26 B selections and adds.
+func BenchmarkWarmCombX8ComponentsExperiment(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA target")
+	}
+	t := &testing.T{}
+	rng := rand.New(rand.NewSource(20260726))
+	bases, bPoint := newPartialCombX8BasesExperiment(t, rng)
+	if t.Failed() {
+		b.Fatal("fixture construction failed")
+	}
+	aTables := buildHeterogeneousPartialCombATablesX8Experiment(&bases, heterogeneousPartialCombA6R9Experiment)
+	bTable := buildHeterogeneousPartialCombPreSignedSharedTableExperiment(
+		buildHeterogeneousPartialCombTableExperiment(&bPoint, heterogeneousPartialCombB10R5Experiment),
+	)
+
+	// A round every lane contributes to, with magnitudes spread across the row
+	// so the gather is not a single hot entry.
+	makeRound := func(entries int) asymmetricFixedBRoundX8 {
+		var round asymmetricFixedBRoundX8
+		round.NonzeroMask = 0xff
+		round.NegativeMask = 0b10101010
+		for lane := 0; lane < X8Lanes; lane++ {
+			round.Magnitude[lane] = uint16(1 + (lane*entries)/X8Lanes)
+		}
+		return round
+	}
+	aRound := makeRound(heterogeneousPartialCombA6R9Experiment.entriesPerRow())
+	bRound := makeRound(heterogeneousPartialCombB10R5Experiment.entriesPerRow())
+
+	acc := identityIFMAPointX8Value()
+	var cached fixedBaseIFMACachedX8
+	selectHeterogeneousPartialCombPerKeyX8Experiment(&cached, &aTables, 0, &aRound, 0xff)
+
+	b.Run("double", func(b *testing.B) {
+		point := acc
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleComposableStaticX8(&point, &point); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("cached-add", func(b *testing.B) {
+		point := acc
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := addFixedBaseIFMACachedX8(&point, &point, &cached); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("select-A-perkey", func(b *testing.B) {
+		var out fixedBaseIFMACachedX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			selectHeterogeneousPartialCombPerKeyX8Experiment(&out, &aTables, i%5, &aRound, 0xff)
+		}
+	})
+
+	b.Run("select-B-shared", func(b *testing.B) {
+		var out fixedBaseIFMACachedX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			selectHeterogeneousPartialCombPreSignedSharedX8Experiment(&out, bTable, i%6, &bRound, 0xff)
+		}
+	})
+
+	b.Run("recode-only", func(b *testing.B) {
+		var scalars [X8Lanes][32]byte
+		for lane := range scalars {
+			scalars[lane] = randomPartialCombScalarX8Experiment(rng)
+		}
+		var digits asymmetricFixedBDigitsX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			recodeAsymmetricFixedBScalarsX8(&digits, &scalars, 0xff, 0xff, 6)
+		}
+	})
+}
