@@ -142,6 +142,62 @@ func TestIFMAMicroAoSSelectorExperimentFailClosedMetadata(t *testing.T) {
 	}
 }
 
+func TestIFMAProjectiveNielsMicroAoSSelectorX4AllMasks(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("requires AVX-512 IFMA target")
+	}
+	base4, _, _, _ := scalarWindowBenchmarkFixtures(t)
+	reduced := BuildFullTableX4(&base4, 5)
+	grouped := ImportIFMAFullTableX4(&reduced)
+	var table ifmaMicroAoSTableRadix32X4
+	for entry := 0; entry < 16; entry++ {
+		var cached ifmaProjectiveNielsContainerX4
+		if err := ifmaProjectiveNielsContainerFromPointX4(&cached, &grouped.points[entry]); err != nil {
+			t.Fatal(err)
+		}
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				table[lane][entry][limb] = [4]uint64{
+					cached.X.limbs[limb][lane],
+					cached.Y.limbs[limb][lane],
+					cached.Z.limbs[limb][lane],
+					cached.T.limbs[limb][lane],
+				}
+			}
+		}
+	}
+
+	for magnitude := uint8(1); magnitude <= 16; magnitude++ {
+		for negative := uint8(0); negative < 1<<X4Lanes; negative++ {
+			var round RadixRoundX4
+			for lane := 0; lane < X4Lanes; lane++ {
+				digit := int8(magnitude)
+				if negative&(1<<lane) != 0 {
+					digit = -digit
+				}
+				setRadixRoundDigitX4(&round, lane, digit)
+			}
+			for active := uint8(0); active < 1<<X4Lanes; active++ {
+				var selected IFMAPointX4
+				SelectIFMAFullTableX4Public(&selected, &grouped, &round, active)
+				var want ifmaProjectiveNielsContainerX4
+				if err := ifmaProjectiveNielsContainerFromPointX4(&want, &selected); err != nil {
+					t.Fatal(err)
+				}
+
+				var got ifmaProjectiveNielsContainerX4
+				selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(&got, &table, &round, active)
+				if got.X.Reduced() != want.X.Reduced() ||
+					got.Y.Reduced() != want.Y.Reduced() ||
+					got.Z.Reduced() != want.Z.Reduced() ||
+					got.T.Reduced() != want.T.Reduced() {
+					t.Fatalf("magnitude=%d negative=%02x active=%02x mismatch", magnitude, negative, active)
+				}
+			}
+		}
+	}
+}
+
 func microAoSSelectorExperimentPanics(f func()) (panicked bool) {
 	defer func() {
 		panicked = recover() != nil
