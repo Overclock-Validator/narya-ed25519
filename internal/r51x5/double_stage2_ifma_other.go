@@ -3,15 +3,15 @@
 package r51x5
 
 // ifmaDoubleStage2WorkspaceX4 is the non-amd64 declaration of the private
-// transitional workspace described by the amd64 experiment. Its entry slots
+// state-transition workspace described by the amd64 implementation. Its entry slots
 // are exact folded raw [X^2, Y^2, Z^2, X*Y] products and its exit slots are
 // normalized u52 [E, F, G, H] representatives.
 type ifmaDoubleStage2WorkspaceX4 [4]IFMAProductX4
 
-// ifmaDoubleStage2ExperimentX4 is the scalar non-amd64 oracle for the assembly
-// experiment. It deliberately assumes the same exact raw-product bounds as the
+// ifmaDoubleStage2X4 is the scalar non-amd64 implementation of the assembly
+// schedule. It deliberately assumes the same exact raw-product bounds as the
 // unchecked amd64 leaf.
-func ifmaDoubleStage2ExperimentX4(workspace *ifmaDoubleStage2WorkspaceX4) {
+func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4) {
 	input := *workspace
 	var wide [4]IFMAProductX4
 

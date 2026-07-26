@@ -150,7 +150,7 @@ func doubleStage2TestRunAndCheck(t testing.TB, input ifmaDoubleStage2WorkspaceX4
 	t.Helper()
 	want := doubleStage2TestOracle(t, &input)
 	got := input
-	ifmaDoubleStage2ExperimentX4(&got)
+	ifmaDoubleStage2X4(&got)
 	if got != want {
 		t.Fatalf("in-place Stage 2 mismatch\n got %x\nwant %x", got, want)
 	}
@@ -217,7 +217,7 @@ func doubleStage2TestBoundaryInputs() []struct {
 	}
 }
 
-func TestExperimentalIFMADoubleStage2AnalyticEnvelope(t *testing.T) {
+func TestIFMADoubleStage2AnalyticEnvelope(t *testing.T) {
 	radix := new(big.Int).Lsh(big.NewInt(1), LimbBits)
 	u63 := new(big.Int).Lsh(big.NewInt(1), 63)
 	for limb := 0; limb < 5; limb++ {
@@ -264,7 +264,7 @@ func TestExperimentalIFMADoubleStage2AnalyticEnvelope(t *testing.T) {
 	}
 }
 
-func TestExperimentalIFMADoubleStage2BoundariesAndInPlace(t *testing.T) {
+func TestIFMADoubleStage2BoundariesAndInPlace(t *testing.T) {
 	if !doubleStage2TestCanCall() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -299,7 +299,7 @@ func doubleStage2TestRandomWorkspace(rng *rand.Rand) ifmaDoubleStage2WorkspaceX4
 	return workspace
 }
 
-func TestExperimentalIFMADoubleStage2MultiplicandDerived(t *testing.T) {
+func TestIFMADoubleStage2MultiplicandDerived(t *testing.T) {
 	if !doubleStage2TestCanCall() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -319,7 +319,7 @@ func TestExperimentalIFMADoubleStage2MultiplicandDerived(t *testing.T) {
 	}
 }
 
-func TestExperimentalIFMADoubleStage2ZeroAllocations(t *testing.T) {
+func TestIFMADoubleStage2ZeroAllocations(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -327,7 +327,7 @@ func TestExperimentalIFMADoubleStage2ZeroAllocations(t *testing.T) {
 	var workspace ifmaDoubleStage2WorkspaceX4
 	if allocs := testing.AllocsPerRun(1000, func() {
 		workspace = seed
-		ifmaDoubleStage2ExperimentX4(&workspace)
+		ifmaDoubleStage2X4(&workspace)
 	}); allocs != 0 {
 		t.Fatalf("Stage 2 allocations=%v", allocs)
 	}
@@ -356,7 +356,7 @@ var (
 	benchmarkIFMADoubleStage2ElementsSink  [4]IFMAElementX4
 )
 
-func BenchmarkExperimentalIFMADoubleStage2X4(b *testing.B) {
+func BenchmarkIFMADoubleStage2X4(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {
 		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -390,7 +390,7 @@ func BenchmarkExperimentalIFMADoubleStage2X4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			workspace = seed
-			ifmaDoubleStage2ExperimentX4(&workspace)
+			ifmaDoubleStage2X4(&workspace)
 		}
 		benchmarkIFMADoubleStage2WorkspaceSink = workspace
 	})

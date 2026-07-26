@@ -2,8 +2,8 @@
 
 package r51x5
 
-// ifmaDoubleStage2WorkspaceX4 is a private, transitional workspace for the
-// direct-XY point-doubling experiment. On entry its slots are exact folded raw
+// ifmaDoubleStage2WorkspaceX4 is a private state-transition boundary for the
+// direct-XY point-doubling schedule. On entry its slots are exact folded raw
 // products in this order:
 //
 //	[A = X^2, B = Y^2, C = Z^2, E = X*Y].
@@ -14,11 +14,11 @@ package r51x5
 //
 //	[E = 2*X*Y, F, G, H].
 //
-// The distinct state transition is intentionally confined to this experiment;
-// it does not widen the general IFMAProductX4 contract.
+// The distinct state transition is intentionally confined to this type; it
+// does not widen the general IFMAProductX4 contract.
 type ifmaDoubleStage2WorkspaceX4 [4]IFMAProductX4
 
-// ifmaDoubleStage2ExperimentX4 performs the direct-XY linear middle stage in
+// ifmaDoubleStage2X4 performs the direct-XY linear middle stage in
 // place. For radix R=2^51, the exact raw-product limb bounds are
 //
 //	[267, 213, 159, 105, 51] * 2^52.
@@ -41,4 +41,4 @@ type ifmaDoubleStage2WorkspaceX4 [4]IFMAProductX4
 // output store.
 //
 //go:noescape
-func ifmaDoubleStage2ExperimentX4(workspace *ifmaDoubleStage2WorkspaceX4)
+func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4)

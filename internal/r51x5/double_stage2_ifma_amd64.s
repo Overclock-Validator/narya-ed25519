@@ -39,13 +39,13 @@
 	VPADDQ C3, IN4, IN4                                                                       \
 	VPMADD52LUQ C4, FOLD19, IN0
 
-// func ifmaDoubleStage2ExperimentX4(workspace *ifmaDoubleStage2WorkspaceX4)
+// func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4)
 //
 // Entry slots are exact raw [A=X^2, B=Y^2, C=Z^2, E=XY] products. Exit slots
 // are normalized [E,F,G,H]. The first twenty vector instructions load the
 // complete input workspace; no output address is written before all raw values
 // are resident in Y0..Y19.
-TEXT ·ifmaDoubleStage2ExperimentX4(SB), NOSPLIT, $0-8
+TEXT ·ifmaDoubleStage2X4(SB), NOSPLIT, $0-8
 	MOVQ workspace+0(FP), DI
 
 	// Raw A.

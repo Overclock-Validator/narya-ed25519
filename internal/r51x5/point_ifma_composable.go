@@ -238,45 +238,30 @@ func ifmaPointAddComposableStaticX8(out, a, b *IFMAPointX8) error {
 }
 
 func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
-	var A, B, C, D, E, F, G, H IFMAElementX4
-	// Every input read completes before result is assigned to out, so exact
-	// out==q aliasing does not require a 640-byte defensive point copy.
-	if err := ifmaMultiplyComposableUncheckedX4(&A, &q.X, &q.X); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&B, &q.Y, &q.Y); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&C, &q.Z, &q.Z); err != nil {
-		return err
-	}
-	ifmaAddComposableUncheckedX4(&C, &C, &C)
-	// E=2XY avoids the normalized (X+Y), E-A, and E-B operations needed
-	// by the classical square trick. Squaring currently uses this same general
-	// IFMA multiply, so the direct form keeps the multiply count unchanged.
-	if err := ifmaMultiplyComposableUncheckedX4(&E, &q.X, &q.Y); err != nil {
-		return err
-	}
-	ifmaAddComposableUncheckedX4(&E, &E, &E)
-	ifmaNegateComposableUncheckedX4(&D, &A)
-	ifmaAddComposableUncheckedX4(&G, &D, &B)
-	ifmaSubtractComposableUncheckedX4(&F, &G, &C)
-	ifmaSubtractComposableUncheckedX4(&H, &D, &B)
+	// Stage 1 retains the four exact folded u61 products. Stage 2 performs all
+	// direct-XY linear work with proven whole-modulus biases, then carries E,
+	// F, G, and H once each back into the composable u52 domain. Keeping this
+	// state transition behind the dedicated workspace type prevents a generic
+	// raw product from being mistaken for a composable field element.
+	var workspace ifmaDoubleStage2WorkspaceX4
+	ifmaMulRawX4(&workspace[0], &q.X.limbs, &q.X.limbs)
+	ifmaMulRawX4(&workspace[1], &q.Y.limbs, &q.Y.limbs)
+	ifmaMulRawX4(&workspace[2], &q.Z.limbs, &q.Z.limbs)
+	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
+	ifmaDoubleStage2X4(&workspace)
 
-	var result IFMAPointX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &G, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &E, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &F, &G); err != nil {
-		return err
-	}
-	*out = result
+	E := IFMAElementX4{limbs: LimbsX4(workspace[0])}
+	F := IFMAElementX4{limbs: LimbsX4(workspace[1])}
+	G := IFMAElementX4{limbs: LimbsX4(workspace[2])}
+	H := IFMAElementX4{limbs: LimbsX4(workspace[3])}
+
+	// Stage 1 has consumed every q coordinate, so these stores are safe even
+	// when out==q. The statically gated native leaves cannot fail; writing
+	// through avoids a separate 640-byte result copy.
+	ifmaMulNormalizedUncheckedX4(&out.X.limbs, &E.limbs, &F.limbs)
+	ifmaMulNormalizedUncheckedX4(&out.Y.limbs, &G.limbs, &H.limbs)
+	ifmaMulNormalizedUncheckedX4(&out.T.limbs, &E.limbs, &H.limbs)
+	ifmaMulNormalizedUncheckedX4(&out.Z.limbs, &F.limbs, &G.limbs)
 	return nil
 }
 

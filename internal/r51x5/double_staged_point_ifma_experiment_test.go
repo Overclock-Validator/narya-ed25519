@@ -16,7 +16,7 @@ func ifmaPointDoubleRawStage2ExperimentX4(out, q *IFMAPointX4) error {
 	ifmaMulRawX4(&workspace[1], &q.Y.limbs, &q.Y.limbs)
 	ifmaMulRawX4(&workspace[2], &q.Z.limbs, &q.Z.limbs)
 	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2ExperimentX4(&workspace)
+	ifmaDoubleStage2X4(&workspace)
 
 	e := IFMAElementX4{limbs: LimbsX4(workspace[0])}
 	f := IFMAElementX4{limbs: LimbsX4(workspace[1])}
@@ -49,7 +49,7 @@ func ifmaPointDoubleRawSquareStage2ExperimentX4(out, q *IFMAPointX4) error {
 	ifmaSquareRawExperimentX4(&workspace[1], &q.Y.limbs)
 	ifmaSquareRawExperimentX4(&workspace[2], &q.Z.limbs)
 	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2ExperimentX4(&workspace)
+	ifmaDoubleStage2X4(&workspace)
 
 	e := IFMAElementX4{limbs: LimbsX4(workspace[0])}
 	f := IFMAElementX4{limbs: LimbsX4(workspace[1])}
