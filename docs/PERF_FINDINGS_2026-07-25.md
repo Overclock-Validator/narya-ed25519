@@ -604,6 +604,32 @@ retained zero allocations and zero internal-fault fallbacks, and the complete
 native repository suite passed. Raw output is under
 `docs/results/zen5-packed-singleton-cached-stage2-2026-07-26/`.
 
+### 5.12 Packed-singleton doubling input permutation — retained
+
+After both Stage-2 leaves, the remaining scalar
+`quadDoubleFirstOperandsX4` loop was about 3.3% of the singleton profile. It
+copied each packed `[X,Y,T,Z]` limb into U=`[X,Y,Z,X]` and V=`[X,Y,Z,Y]` in
+Go, then the multiply leaf immediately loaded those ten vectors again. Commit
+`bdaa628` replaces the scalar lane extraction with five input loads, ten YMM
+permutations, and ten output stores. This is deliberately a narrow mechanical
+step rather than the larger multiply fusion.
+
+The native helper loads all five inputs before any output store, so the input
+may alias U or V while U and V remain distinct. A direct oracle compares every
+limb bit over zero, maximum-u52, and 1,024 random inputs, exercises both alias
+directions, and asserts zero allocations. The unchanged full point-operation
+oracles continue to cover random projective, torsion, range, and repeated
+in-place cases.
+
+Ten pinned Zen 5 samples moved the isolated reused-workspace doubling from
+34.94 to 32.75 ns (-6.3%). Incrementally after both Stage-2 changes, exported
+`VerifyBatchStrict` at msg=1232 moved n=1 from 17.72 to 17.23 us/signature
+(-2.8%) and n=2 from 17.83 to 17.17 us/signature (-3.7%). The n=4/8/64
+dispatches remained around 10.13/5.42/5.12 us/signature. Timed rows retained
+zero allocations and zero internal-fault fallbacks, and the complete native
+repository suite passed. Raw output is under
+`docs/results/zen5-packed-singleton-first-permute-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
