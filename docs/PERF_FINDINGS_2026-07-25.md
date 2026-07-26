@@ -97,6 +97,21 @@ matrix measured 22.41--22.43 (n=1), 22.50--22.51 (n=2), 11.80 (n=4), 6.14
 (n=8), and 5.82 (n=64) us/signature. The n=1/2 packed path and complete x8
 groups are structurally unaffected, so only n=4 is used to attribute the gain.
 
+The remaining scalar x4 lane gather measured 34.4--35.5 ns per four-lane
+selection, while the existing exact 160-byte micro-AoS transpose measured 5.94
+ns with one 20 KiB table set and about 9.9 ns while cycling 20 MiB. The cold
+radix-32 workspace now builds four fixed 16-entry micro-AoS tables directly,
+rather than allocating slices or building grouped SoA and converting it. A new
+oracle compares every entry, limb, lane, and coordinate against the original
+grouped builder. Existing all-radix selector differentials, active-mask scalar
+multiplication differentials, alias tests, and zero-allocation gates remain in
+place.
+
+The complete public n=4/msg=1232 gate moved from 11.80--11.83 to
+**11.62--11.63 us/signature (-1.6%)**, with 0 B/op and 0 allocs/op. This is an
+x4-only cold-table layout improvement; it does not change the x8 n>=8 path or
+introduce any per-key persistence.
+
 **Regime tag — half-full x8 on Zen 5 remains closed.** Immediately after the
 masked-negate checkpoint, routing exactly four signatures through the existing
 x8 cold kernel (four active and four inactive lanes) measured 11.97--12.03

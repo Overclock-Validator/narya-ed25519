@@ -196,6 +196,10 @@ us/signature (-4.1%)**, with every timed row still at 0 B/op and 0 allocs/op.
 The native all-mask/boundary differential and the full r51/Ed25519 suites pass;
 the operation remains public-data-dependent and does not change table contents
 or verification semantics. Full x8 groups do not execute this x4 helper.
+Replacing the remaining grouped x4 A-table gather with the already-tested
+fixed 160-byte micro-AoS transpose then reduced n=4 again to **11.62--11.63
+us/signature**. The cold workspace builds those entries directly in
+caller-owned storage: it adds no allocation, cache, or admission policy.
 These are cold arbitrary-key results: A is decoded and its table is rebuilt for
 every signature. The complete three-message Zen 4/Zen 5 release matrix still
 needs to be rerun before replacing the pinned PR-1 table above.

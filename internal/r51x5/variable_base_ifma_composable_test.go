@@ -91,6 +91,36 @@ func TestExperimentalIFMAVariableBaseWorkspaceOwnsOneTable(t *testing.T) {
 	}
 }
 
+func TestExperimentalIFMAVariableBaseWorkspaceX4MicroAoSBuildMatchesGrouped(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("requires AVX-512 IFMA target")
+	}
+	base, _, _, _ := scalarWindowBenchmarkFixtures(t)
+	var got ExperimentalIFMAVariableBaseWorkspaceX4
+	if err := got.Prepare(&base, 5); err != nil {
+		t.Fatal(err)
+	}
+	var want ifmaFullTableX4[ifmaFullTableStorageRadix32X4]
+	if err := buildIFMAFullTableX4Into(&want, &base, 5); err != nil {
+		t.Fatal(err)
+	}
+	for entry := 0; entry < want.entries; entry++ {
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				wantCoordinates := [4]uint64{
+					want.points[entry].X.limbs[limb][lane],
+					want.points[entry].Y.limbs[limb][lane],
+					want.points[entry].Z.limbs[limb][lane],
+					want.points[entry].T.limbs[limb][lane],
+				}
+				if gotCoordinates := got.table[lane][entry][limb]; gotCoordinates != wantCoordinates {
+					t.Fatalf("entry=%d limb=%d lane=%d got=%x want=%x", entry, limb, lane, gotCoordinates, wantCoordinates)
+				}
+			}
+		}
+	}
+}
+
 func TestExperimentalVariableBaseWorkspaceMatchesTwoTermDSM(t *testing.T) {
 	_, variable, _, scalars := fixedBaseCombDSMFixtures(t)
 	identity := identityPointX8Value()

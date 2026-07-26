@@ -21,14 +21,89 @@ type experimentalIFMAVariableBaseWorkspaceX8[Storage ifmaFullTableStorageX8] str
 	prepared  bool
 }
 
+// experimentalIFMAVariableBaseMicroAoSWorkspaceX4 is the cold radix-32 x4
+// workspace. It builds directly into per-key micro-AoS entries, avoiding both
+// the grouped-SoA table and a post-build conversion/allocation.
+type experimentalIFMAVariableBaseMicroAoSWorkspaceX4 struct {
+	table    ifmaMicroAoSTableRadix32X4
+	digits   FixedRadixDigitsX4
+	prepared bool
+}
+
 type ExperimentalIFMAVariableBaseWorkspaceRadix16X4 = experimentalIFMAVariableBaseWorkspaceX4[ifmaFullTableStorageRadix16X4]
 type ExperimentalIFMAVariableBaseWorkspaceRadix16X8 = experimentalIFMAVariableBaseWorkspaceX8[ifmaFullTableStorageRadix16X8]
 
-type ExperimentalIFMAVariableBaseWorkspaceX4 = experimentalIFMAVariableBaseWorkspaceX4[ifmaFullTableStorageRadix32X4]
+type ExperimentalIFMAVariableBaseWorkspaceX4 = experimentalIFMAVariableBaseMicroAoSWorkspaceX4
 type ExperimentalIFMAVariableBaseWorkspaceX8 = experimentalIFMAVariableBaseWorkspaceX8[ifmaFullTableStorageRadix32X8]
 
 type ExperimentalIFMAVariableBaseWorkspaceRadix64X4 = experimentalIFMAVariableBaseWorkspaceX4[ifmaFullTableStorageRadix64X4]
 type ExperimentalIFMAVariableBaseWorkspaceRadix64X8 = experimentalIFMAVariableBaseWorkspaceX8[ifmaFullTableStorageRadix64X8]
+
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Prepare(base *PointX4, radixBits uint) error {
+	validateIFMAFullTableStorage(16, radixBits)
+	if !ExperimentalIFMAAvailable() {
+		return ErrIFMAUnavailable
+	}
+	w.prepared = false
+	var composableBase IFMAPointX4
+	composableBase.SetReduced(base)
+	current := composableBase
+	for entry := 0; entry < 16; entry++ {
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				w.table[lane][entry][limb] = [4]uint64{
+					current.X.limbs[limb][lane],
+					current.Y.limbs[limb][lane],
+					current.Z.limbs[limb][lane],
+					current.T.limbs[limb][lane],
+				}
+			}
+		}
+		if entry != 15 {
+			if err := ifmaPointAddComposableStaticX4(&current, &current, &composableBase); err != nil {
+				return err
+			}
+		}
+	}
+	w.prepared = true
+	return nil
+}
+
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Evaluate(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
+	if !w.prepared {
+		panic("r51x5: experimental IFMA x4 variable-base workspace is not prepared")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	active &= 0x0f
+	usable := RecodeCanonicalScalarsX4(&w.digits, scalar, negativeMask, active, 5)
+	acc := identityIFMAPointX4Value()
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+	for round := w.digits.RoundCount() - 1; round >= 0; round-- {
+		if round != w.digits.RoundCount()-1 {
+			for doubling := uint8(0); doubling < 5; doubling++ {
+				if err := ifmaPointDoubleComposableStaticX4(&acc, &acc); err != nil {
+					return 0, err
+				}
+			}
+		}
+		digit := w.digits.Round(round)
+		if digit.NonzeroMask&usable == 0 {
+			continue
+		}
+		var selected IFMAPointX4
+		selectIFMAMicroAoSRadix32UncheckedX4(&selected, &w.table, digit, usable)
+		if err := ifmaPointAddComposableStaticX4(&acc, &acc, &selected); err != nil {
+			return 0, err
+		}
+	}
+	*out = acc
+	return usable, nil
+}
 
 // Prepare replaces the x4 arbitrary-point table. Radix bits must be four,
 // five, or six. No production verifier dispatch reaches this experiment.

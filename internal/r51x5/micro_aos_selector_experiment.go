@@ -17,6 +17,12 @@ type ifmaMicroAoSPerKeyTableExperiment struct {
 	points []ifmaMicroAoSPointEntryExperiment
 }
 
+// ifmaMicroAoSTableRadix32X4 is the fixed, caller-owned cold-table layout used
+// by the production x4 radix-32 workspace. Unlike the cache experiments above,
+// it has no slices or heap-owned payload: every verification rebuilds these
+// four independent 16-entry tables in place.
+type ifmaMicroAoSTableRadix32X4 [X4Lanes][16]ifmaMicroAoSPointEntryExperiment
+
 var ifmaMicroAoSIdentityEntryExperiment = identityIFMAMicroAoSEntryExperiment()
 
 func identityIFMAMicroAoSEntryExperiment() ifmaMicroAoSPointEntryExperiment {
@@ -115,6 +121,37 @@ func selectIFMAMicroAoSUncheckedExperimentX4(out *IFMAPointX4, tables *[X4Lanes]
 	}
 	ifmaMicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
 	conditionalNegateIFMAPointX4(out, negativeMask)
+	return out
+}
+
+// selectIFMAMicroAoSRadix32UncheckedX4 is the fixed-storage counterpart used
+// by the cold x4 verifier. round comes from the radix-32 recoder. Zero and
+// inactive lanes select identity, and every magnitude is in [1,16].
+func selectIFMAMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table *ifmaMicroAoSTableRadix32X4, round *RadixRoundX4, active uint8) *IFMAPointX4 {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaMicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
+	if lookupMask == 0x0f {
+		p0 = &table[0][int(round.Magnitude[0])-1]
+		p1 = &table[1][int(round.Magnitude[1])-1]
+		p2 = &table[2][int(round.Magnitude[2])-1]
+		p3 = &table[3][int(round.Magnitude[3])-1]
+	} else {
+		if lookupMask&0x01 != 0 {
+			p0 = &table[0][int(round.Magnitude[0])-1]
+		}
+		if lookupMask&0x02 != 0 {
+			p1 = &table[1][int(round.Magnitude[1])-1]
+		}
+		if lookupMask&0x04 != 0 {
+			p2 = &table[2][int(round.Magnitude[2])-1]
+		}
+		if lookupMask&0x08 != 0 {
+			p3 = &table[3][int(round.Magnitude[3])-1]
+		}
+	}
+	ifmaMicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+	conditionalNegateIFMAPointX4(out, round.NegativeMask&lookupMask)
 	return out
 }
 
