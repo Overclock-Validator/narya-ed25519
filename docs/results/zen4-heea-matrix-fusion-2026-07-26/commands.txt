@@ -1,5 +1,5 @@
 go test ./internal/heea8l \
-  -run 'Test(ApplyLehmerMatrixMatchesReference|LehmerCompletePathMatchesFourCombineReference|LehmerMatchesExactSelector|LehmerCandidateSatisfiesCongruence|LehmerIsAllocationFree)$' \
+  -run 'Test(SubMulUint64Signed320MatchesReference|ApplyLehmerMatrixMatchesReference|LehmerCompletePathMatchesFourCombineReference|LehmerMatchesExactSelector|LehmerCandidateSatisfiesCongruence|LehmerIsAllocationFree)$' \
   -count=1
 
 taskset -c 2 env GOMAXPROCS=1 go test ./internal/heea8l \

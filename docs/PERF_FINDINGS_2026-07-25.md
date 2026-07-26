@@ -806,15 +806,17 @@ otherwise-free half-length replacement saves only roughly 3.6 µs before its
 extra tables, additions, and final term combination.
 
 The later exact Lehmer selector advances the same principal Euclidean sequence
-in batches. Fusing its four signed 320-bit matrix combinations into one limb
-pass reduced a same-binary W128 selector from 3.978 to 3.647 us on the Zen 4
-Ryzen 7 PRO 8700GE (-8.3%, zero allocations). The matrix application alone
-improved from 415.4 to 327.35 ns (-21.2%). This supersedes an earlier 8.0--8.3
-us absolute result collected in a slower host-throughput regime; only the
-same-binary comparison is used as the algorithmic delta.
+in batches. Three locally differential-tested passes reduced a same-binary
+W128 selector on the Zen 4 Ryzen 7 PRO 8700GE from 3.978 to 3.647 us (one limb
+pass), then 2.949 us (direct signed-product pairs), and finally 2.698 us (fused
+exact coefficient step). Every row allocated zero bytes. The matrix application
+alone moved from 415.4 to 327.35 and then 156.05 ns. The first result supersedes
+an earlier 8.0--8.3 us absolute measurement collected in a slower
+host-throughput regime; only same-binary or adjacent-checkpoint comparisons are
+used as algorithmic deltas.
 
 The new reducer is materially better but still does not clear the integration
-gate. At 3.647 us it is about 47% of the current 1232-byte, n=64 cold r51 cost
+gate. At 2.698 us it is about 35% of the current 1232-byte, n=64 cold r51 cost
 on that CPU before coefficient preparation, the extra point/table work, the
 transformed equation, or ordinary fallback. Keep the exactness work,
 modulo-8L guards, mixed-torsion vectors, and two-chain ZMM kernel as useful

@@ -268,18 +268,22 @@ go test -run '^$' -fuzz '^FuzzSelectShiftSubtract$' \
 `SelectLehmer` retains principal-Euclid candidate semantics while batching
 multiple quotient steps behind one full-width 2x2 matrix application. Its
 production-shaped matrix helper computes all eight small-coefficient products
-in a single limb pass; the former four-`combine320` path remains a test oracle.
+in a single limb pass and combines each signed pair directly; the former
+four-`combine320` path remains a test oracle. The remaining exact row update
+uses the same fused sign-and-magnitude rule and retains its compositional form
+as a second randomized oracle.
 
-On a Ryzen 7 PRO 8700GE, Go 1.26.4, one pinned core, the same-binary W128
-comparison measured 3.647 us/selection for the fused path and 3.978 us for the
-four-combine reference (-8.3%). The matrix helper itself measured 327.35 ns
-versus 415.4 ns (-21.2%). Every row allocated zero bytes. Complete selector
+On a Ryzen 7 PRO 8700GE, Go 1.26.4, one pinned core, the staged W128 medians
+were 3.978 us for the four-combine selector, 3.647 us after the single limb
+pass, 2.949 us after direct signed-pair combination, and 2.698 us after fusing
+the exact coefficient step. The matrix helper itself moved from 415.4 to
+327.35 and then 156.05 ns. Every row allocated zero bytes. Complete selector
 outputs match the reference and exact principal-Euclid path over 60,000
-deterministic challenges, while the matrix helper has an additional 100,000
-randomized signed/range differential.
+deterministic challenges. Matrix and exact-step helpers each have an additional
+100,000-case randomized signed/range differential.
 
 This improves the reducer but does not promote HEEA: the selector alone costs
-about 47% of the current 1232-byte, n=64 cold r51 verification on that CPU,
+about 35% of the current 1232-byte, n=64 cold r51 verification on that CPU,
 before the transformed curve equation or fallback. The valid gate remains a
 complete exact verifier comparison, not a reducer microbenchmark. Evidence is
 under `docs/results/zen4-heea-matrix-fusion-2026-07-26/`.

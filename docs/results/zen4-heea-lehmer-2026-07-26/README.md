@@ -40,10 +40,10 @@ outputs in one pass is the next isolated experiment. It must beat the complete
 verifier opportunity cost before any point kernel or public HEEA route is
 considered.
 
-That follow-up is complete. The same-binary result at commit `69e8374` is
+That follow-up is complete. The staged result through commit `c964b84` is
 recorded in
 [`../zen4-heea-matrix-fusion-2026-07-26`](../zen4-heea-matrix-fusion-2026-07-26/README.md).
-It reduced complete W128 selection from 3.978 to 3.647 us. The older absolute
+It reduced complete W128 selection from 3.978 to 2.698 us. The older absolute
 8.0--8.3 us band above is retained as provenance, not as the current cost.
 
 ## Reproduction

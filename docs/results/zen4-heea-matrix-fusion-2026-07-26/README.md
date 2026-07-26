@@ -1,6 +1,7 @@
 # Zen 4 HEEA matrix-fusion gate — 2026-07-26
 
-Implementation and benchmark commit: `69e83747b6c38b4c9721403459e79ff2b61ec488`.
+Final implementation and benchmark commit:
+`c964b84f80badb630bdd97c0fc385d9316282176`.
 
 This is research code. It is not imported by signature verification and has no
 backend-dispatch path.
@@ -10,10 +11,15 @@ four-`combine320` reference in the same binary, on the same 512 canonical
 challenges, using a Ryzen 7 PRO 8700GE, Go 1.26.4, one pinned core, the
 performance governor, and `GOMAXPROCS=1`.
 
-| boundary | fused median | reference median | change |
+The work landed in three independently tested steps:
+
+| boundary / checkpoint | median | preceding median | change |
 | --- | ---: | ---: | ---: |
-| one reachable matrix application | 327.35 ns | 415.4 ns | -21.2% |
-| complete W128 selector | 3.647 us | 3.978 us | -8.3% |
+| matrix: one limb pass (`69e8374`) | 327.35 ns | 415.4 ns reference | -21.2% |
+| selector: one limb pass (`69e8374`) | 3.647 us | 3.978 us reference | -8.3% |
+| matrix: direct signed-pair combine (`24c9c17`) | 156.05 ns | 327.35 ns | -52.3% |
+| selector: direct signed-pair combine (`24c9c17`) | 2.949 us | 3.647 us | -19.1% |
+| selector: fused exact coefficient step (`c964b84`) | 2.698 us | 2.949 us | -8.5% |
 
 Every row reports 0 B/op and 0 allocs/op. The complete selector and reference
 also return byte-identical candidates over 60,000 deterministic challenges at
@@ -25,7 +31,7 @@ and must not be used as the before side of this change. The same-binary
 3.978-to-3.647 us comparison is the valid algorithmic delta.
 
 This is a useful reducer improvement, but not an HEEA integration gate. The
-selector alone is still about 47% of the current 1232-byte, n=64 cold r51 cost
+selector alone is still about 35% of the current 1232-byte, n=64 cold r51 cost
 on this CPU, before coefficient preparation, the extra point/table work, the
 transformed point equation, or ordinary-path fallback. HEEA remains
 experimental until a complete exact verifier beats the ordinary path.

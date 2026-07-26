@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/heea8l
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  440052	      2692 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  446132	      2692 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  443992	      2692 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  445382	      2693 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  445338	      2694 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  445400	      2694 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  445347	      2695 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  445501	      2695 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  444066	      2693 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer  	  443700	      2693 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  321582	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  320430	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322197	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  321807	      3721 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322918	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322170	      3721 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322550	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322320	      3723 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322406	      3722 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSelectLehmerComparison/width=128/lehmer-four-combine-reference         	  322172	      3723 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/heea8l	24.615s

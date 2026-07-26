@@ -5,16 +5,16 @@ verification and its `math/big` performance is not representative of a future
 fixed-width implementation.
 
 The fixed-width Lehmer checkpoint is also research-only. Its matrix update now
-applies all eight small-coefficient products in one limb pass. On a Ryzen 7 PRO
-8700GE, a same-binary comparison measured 3.647 microseconds per W128
-selection versus 3.978 microseconds for the retained four-combine reference,
-an 8.3% complete-selector improvement. The matrix application itself improved
-from 415.4 to 327.35 nanoseconds. Both paths are allocation-free and return the
-same exact principal-Euclid row. See
+applies all eight small-coefficient products in one limb pass, combines signed
+product pairs directly, and fuses the remaining exact coefficient step. On a
+Ryzen 7 PRO 8700GE those steps moved W128 selection from 3.978 to 3.647, then
+2.949, and finally 2.698 microseconds. The matrix application itself moved from
+415.4 to 327.35 and then 156.05 nanoseconds. Every path is allocation-free and
+returns the same exact principal-Euclid row. See
 [`../../docs/results/zen4-heea-matrix-fusion-2026-07-26`](../../docs/results/zen4-heea-matrix-fusion-2026-07-26/README.md).
 
 That is still too expensive for verifier integration: the selector alone is
-about 47% of the current 1232-byte, n=64 cold r51 cost on this CPU, before any
+about 35% of the current 1232-byte, n=64 cold r51 cost on this CPU, before any
 transformed point work or fallback. A complete verifier gate remains mandatory.
 
 ## Strict-equation exactness contract
