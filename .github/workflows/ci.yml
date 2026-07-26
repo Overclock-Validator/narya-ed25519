@@ -87,7 +87,7 @@ jobs:
       - name: Require and test native SHA-512 kernels under SDE
         run: |
           "$SDE64" -icx -- /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDENativeSHARequired|TestSDENativeSHASmoke)$'
+            -test.run '^(TestSDENativeSHARequired|TestNativeX4Differential|TestNativeX8Differential|TestExperimentalSum512Batch3Differential)$'
       - name: Test forced public r51 verification under SDE
         run: |
           "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
