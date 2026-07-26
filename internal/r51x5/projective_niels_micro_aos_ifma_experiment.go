@@ -15,12 +15,10 @@ var ifmaProjectiveNielsMicroAoSIdentityX8 = func() ifmaProjectiveNielsMicroAoSEn
 	return identity
 }()
 
-// ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 owns the
-// selected cold x8 variable-base table. It deliberately retains the
-// Experimental prefix because automatic backend selection cannot reach r51.
-// Prepare and Evaluate are allocation-free, and the older grouped-SoA
-// projective-Niels workspace remains an independent differential reference.
-type ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 struct {
+// ifmaProjectiveNielsMicroAoSWorkspaceX8 is a cold-path layout experiment. It
+// deliberately owns fixed storage: Prepare and Evaluate must remain allocation
+// free so the cold A/B includes the complete per-verification table cost.
+type ifmaProjectiveNielsMicroAoSWorkspaceX8 struct {
 	table    ifmaProjectiveNielsMicroAoSTableX8
 	digits   FixedRadixDigitsX8
 	prepared bool
@@ -43,11 +41,7 @@ func storeIFMAProjectiveNielsMicroAoSEntryX8(
 	}
 }
 
-func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Prepare(base *PointX8, radixBits uint) error {
-	fixedScalarRoundCount(radixBits)
-	if radixBits != 5 {
-		panic("r51x5: projective Niels micro-AoS x8 workspace requires radix 32")
-	}
+func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Prepare(base *PointX8) error {
 	if !ExperimentalIFMAAvailable() {
 		return ErrIFMAUnavailable
 	}
@@ -73,7 +67,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8)
 	return nil
 }
 
-func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Evaluate(
+func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Evaluate(
 	out *IFMAPointX8,
 	scalar *[X8Lanes][32]byte,
 	negativeMask, active uint8,
