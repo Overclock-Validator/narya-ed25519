@@ -776,20 +776,34 @@ func repeatedSquareMultiplyPairIFMAX8(az, rz, ax, rx, ay, ry *IFMAElementX8, cou
 }
 
 func repeatedSquareMultiplyIFMAX4(z, x, y *IFMAElementX4, count int, ops *decode2IFMAOpsX4) error {
-	*z = *x
-	for i := 0; i < count; i++ {
-		if err := ops.mul(z, z, z); err != nil {
-			return err
+	// The unchecked hardware decoder has already validated its u52 import
+	// boundary. Keep the dependent square run in registers; the final multiply
+	// remains separate because its second operand changes at each addition-chain
+	// boundary. Checked/fault-injection and portable schedules retain the common
+	// per-operation path below.
+	if ops.hardware && ops.uncheckedInputs {
+		ifmaRepeatedSquareNormalizedX4(&z.limbs, &x.limbs, count)
+	} else {
+		*z = *x
+		for i := 0; i < count; i++ {
+			if err := ops.mul(z, z, z); err != nil {
+				return err
+			}
 		}
 	}
 	return ops.mul(z, z, y)
 }
 
 func repeatedSquareMultiplyIFMAX8(z, x, y *IFMAElementX8, count int, ops *decode2IFMAOpsX8) error {
-	*z = *x
-	for i := 0; i < count; i++ {
-		if err := ops.mul(z, z, z); err != nil {
-			return err
+	// See the x4 counterpart for the range and fault-injection boundary.
+	if ops.hardware && ops.uncheckedInputs {
+		ifmaRepeatedSquareNormalizedX8(&z.limbs, &x.limbs, count)
+	} else {
+		*z = *x
+		for i := 0; i < count; i++ {
+			if err := ops.mul(z, z, z); err != nil {
+				return err
+			}
 		}
 	}
 	return ops.mul(z, z, y)
