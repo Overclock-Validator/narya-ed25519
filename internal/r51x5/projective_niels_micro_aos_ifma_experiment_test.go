@@ -11,11 +11,11 @@ func TestIFMAProjectiveNielsMicroAoSX8Differential(t *testing.T) {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 	_, variable, _, scalars := fixedBaseCombDSMFixtures(t)
-	var current ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
-	if err := current.Prepare(&variable, 5); err != nil {
+	var current ifmaProjectiveNielsGroupedReferenceWorkspaceX8
+	if err := current.Prepare(&variable); err != nil {
 		t.Fatal(err)
 	}
-	var candidate ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	var candidate ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
 	if err := candidate.Prepare(&variable, 5); err != nil {
 		t.Fatal(err)
 	}
@@ -53,11 +53,11 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 	_, variable, _, scalars := fixedBaseCombDSMFixtures(b)
-	var current ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
-	if err := current.Prepare(&variable, 5); err != nil {
+	var current ifmaProjectiveNielsGroupedReferenceWorkspaceX8
+	if err := current.Prepare(&variable); err != nil {
 		b.Fatal(err)
 	}
-	var candidate ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	var candidate ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
 	if err := candidate.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 			b.ReportMetric(float64(unsafe.Sizeof(current)), "workspace-B")
 			for range b.N {
 				if path == "cold-table+loop" {
-					if err := current.Prepare(&variable, 5); err != nil {
+					if err := current.Prepare(&variable); err != nil {
 						b.Fatal(err)
 					}
 				}

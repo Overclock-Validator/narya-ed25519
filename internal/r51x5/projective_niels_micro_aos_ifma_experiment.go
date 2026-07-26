@@ -15,17 +15,6 @@ var ifmaProjectiveNielsMicroAoSIdentityX8 = func() ifmaProjectiveNielsMicroAoSEn
 	return identity
 }()
 
-// ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 owns the
-// selected cold x8 variable-base table. It deliberately retains the
-// Experimental prefix because automatic backend selection cannot reach r51.
-// Prepare and Evaluate are allocation-free, and the older grouped-SoA
-// projective-Niels workspace remains an independent differential reference.
-type ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 struct {
-	table    ifmaProjectiveNielsMicroAoSTableX8
-	digits   FixedRadixDigitsX8
-	prepared bool
-}
-
 func storeIFMAProjectiveNielsMicroAoSEntryX8(
 	table *ifmaProjectiveNielsMicroAoSTableX8,
 	entry int,
@@ -41,75 +30,6 @@ func storeIFMAProjectiveNielsMicroAoSEntryX8(
 			}
 		}
 	}
-}
-
-func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Prepare(base *PointX8, radixBits uint) error {
-	fixedScalarRoundCount(radixBits)
-	if radixBits != 5 {
-		panic("r51x5: projective Niels micro-AoS x8 workspace requires radix 32")
-	}
-	if !ExperimentalIFMAAvailable() {
-		return ErrIFMAUnavailable
-	}
-	workspace.prepared = false
-	var current IFMAPointX8
-	current.SetReduced(base)
-	var baseCached IFMAProjectiveNielsX8
-	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
-		return err
-	}
-	storeIFMAProjectiveNielsMicroAoSEntryX8(&workspace.table, 0, &baseCached)
-	for entry := 1; entry < 16; entry++ {
-		if err := ifmaPointAddProjectiveNielsX8(&current, &current, &baseCached); err != nil {
-			return err
-		}
-		var cached IFMAProjectiveNielsX8
-		if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
-			return err
-		}
-		storeIFMAProjectiveNielsMicroAoSEntryX8(&workspace.table, entry, &cached)
-	}
-	workspace.prepared = true
-	return nil
-}
-
-func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Evaluate(
-	out *IFMAPointX8,
-	scalar *[X8Lanes][32]byte,
-	negativeMask, active uint8,
-) (uint8, error) {
-	if !workspace.prepared {
-		panic("r51x5: projective Niels micro-AoS x8 workspace is not prepared")
-	}
-	if !ExperimentalIFMAAvailable() {
-		return 0, ErrIFMAUnavailable
-	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
-	acc := identityIFMAPointX8Value()
-	if usable == 0 {
-		*out = acc
-		return 0, nil
-	}
-	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
-		if round != workspace.digits.RoundCount()-1 {
-			for doubling := 0; doubling < 5; doubling++ {
-				if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
-					return 0, err
-				}
-			}
-		}
-		digit := workspace.digits.Round(round)
-		if digit.NonzeroMask&usable == 0 {
-			continue
-		}
-		var selected IFMAProjectiveNielsX8
-		selectIFMAProjectiveNielsMicroAoSX8(&selected, &workspace.table, digit, usable)
-		if err := ifmaPointAddProjectiveNielsX8(&acc, &acc, &selected); err != nil {
-			return 0, err
-		}
-	}
-	*out = acc
-	return usable, nil
 }
 
 func selectIFMAProjectiveNielsMicroAoSX8(
