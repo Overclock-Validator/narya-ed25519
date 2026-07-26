@@ -1,0 +1,46 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=ordinary-packed-x4         	   67318	     17818 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=ordinary-packed-x4         	   67354	     17834 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=ordinary-packed-x4         	   67218	     17828 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=ordinary-packed-x4         	   67231	     17831 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=ordinary-packed-x4         	   67290	     17837 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=ordinary-packed-x4         	   63890	     18780 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=ordinary-packed-x4         	   63909	     18780 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=ordinary-packed-x4         	   63898	     18779 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=ordinary-packed-x4         	   63898	     18777 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=ordinary-packed-x4         	   63888	     18781 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W128                   	   51726	     23189 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W128                   	   51745	     23191 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W128                   	   51711	     23191 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W128                   	   51756	     23189 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W128                   	   51754	     23195 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W128    	   48702	     24632 ns/op	        83.20 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W128    	   48672	     24654 ns/op	        83.20 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W128    	   48616	     24653 ns/op	        83.20 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W128    	   48654	     24654 ns/op	        83.20 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W128    	   48688	     24655 ns/op	        83.20 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W132                   	   52347	     22935 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W132                   	   52214	     22939 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W132                   	   52327	     22941 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W132                   	   52317	     22948 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W132                   	   52191	     22993 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W132    	   49513	     24223 ns/op	        99.61 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W132    	   49514	     24255 ns/op	        99.61 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W132    	   49459	     24235 ns/op	        99.61 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W132    	   49498	     24234 ns/op	        99.61 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W132    	   49514	     24237 ns/op	        99.61 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W136                   	   50269	     23881 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W136                   	   50238	     23875 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W136                   	   50250	     23886 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W136                   	   50366	     23818 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/path=heea-two-chain-zmm/W136                   	   50360	     23846 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W136    	   47922	     25033 ns/op	       100.0 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W136    	   47970	     25012 ns/op	       100.0 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W136    	   47977	     25012 ns/op	       100.0 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W136    	   47959	     25018 ns/op	       100.0 HEEA-admit%	       0 B/op	       0 allocs/op
+BenchmarkExperimentalPackedHEEAStrictVerifierX8/mix=corpus-256/path=heea-two-chain-zmm/W136    	   47961	     25016 ns/op	       100.0 HEEA-admit%	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	57.140s

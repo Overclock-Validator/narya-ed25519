@@ -1,0 +1,12 @@
+=== RUN   TestExperimentalPackedHEEAStrictVerifierX8Differential
+--- PASS: TestExperimentalPackedHEEAStrictVerifierX8Differential (0.05s)
+=== RUN   TestExperimentalQuadTwoChainHEEANAFX8MixedOrderDifferential
+--- PASS: TestExperimentalQuadTwoChainHEEANAFX8MixedOrderDifferential (0.36s)
+=== RUN   TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations
+=== RUN   TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations/admitted
+=== RUN   TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations/fallback
+--- PASS: TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations (0.01s)
+    --- PASS: TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations/admitted (0.00s)
+    --- PASS: TestExperimentalPackedHEEAStrictVerifierX8FallbackAndAllocations/fallback (0.00s)
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	0.427s

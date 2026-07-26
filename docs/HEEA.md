@@ -294,6 +294,41 @@ before the transformed curve equation or fallback. The valid gate remains a
 complete exact verifier comparison, not a reducer microbenchmark. Evidence is
 under `docs/results/zen4-heea-matrix-fusion-2026-07-26/`.
 
+### Singleton two-chain ZMM checkpoint
+
+The Lehmer selector reopens one construction that the older complete batch
+result does not measure. A packed singleton normally occupies four YMM lanes
+with one point's `X/Y/T/Z` coordinates. The test-only two-chain construction
+instead places two independent coordinate-parallel chains in the low and high
+halves of one ZMM register and evaluates
+
+```text
+[lambda0]B + [lambda1]([2^128]B) - [tau]R - [epsilon*rho]A.
+```
+
+The low half accumulates the `B/R` terms and the high half accumulates the
+`[2^128]B/A` terms. `R` and `A` width-5 NAF tables are built in those same two
+halves, so the experiment does not charge a serial second table build for work
+the proposed orientation is meant to perform concurrently. Selector or
+coefficient-admission misses reuse the already-decoded ordinary packed path;
+they do not decode or hash twice.
+
+At commit `f92e868`, native differential tests cover valid and equation-
+invalid signatures, exact mixed-order signed coefficients, paired versus
+sequential table construction, ordinary fallback, and zero allocations. On a
+pinned Zen 4 Ryzen 7 PRO 8700GE, however, the construction is decisively
+slower: the best admitted width, W132, measured 22.941 us/signature versus
+17.831 for the ordinary packed x4 singleton (+28.7%). A deterministic
+256-signature corpus measured 24.235 versus 18.780 us/signature (+29.0%) with
+99.61% HEEA admission. Full evidence is in
+[`results/zen4-singleton-heea-two-chain-2026-07-26/`](results/zen4-singleton-heea-two-chain-2026-07-26/).
+
+This closes the implementation on Zen 4, where each ZMM IFMA instruction is
+executed through two 256-bit passes. It does not answer the intended Zen 5
+question: the same source can fill a native 512-bit datapath with two chains.
+The experiment remains test-only until a complete Zen 5 rerun either clears
+the performance gate or records a second negative regime verdict.
+
 ## Current implementation boundary
 
 `internal/heea8l` provides the allocating `math/big` oracle and an exact
