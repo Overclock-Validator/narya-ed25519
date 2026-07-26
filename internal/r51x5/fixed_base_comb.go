@@ -13,11 +13,12 @@ package r51x5
 // Construction allocates and normalizes the table once. Evaluation is
 // allocation-free. This experiment is not reachable from production dispatch.
 type ExperimentalFixedBaseCombTable struct {
-	points    []fixedBaseAffineCached
-	radixBits uint8
-	rounds    uint8
-	positions uint8
-	entries   uint8
+	points      []fixedBaseAffineCached
+	negativeT2D []Element
+	radixBits   uint8
+	rounds      uint8
+	positions   uint8
+	entries     uint8
 }
 
 // A fixed-base affine cached point stores (y+x, y-x, 2*d*x*y). Three scalar
@@ -71,18 +72,21 @@ type fixedBaseDigitsX8 struct {
 func BuildExperimentalFixedBaseCombTable(base *Point, radixBits uint) *ExperimentalFixedBaseCombTable {
 	rounds, positions, entries := fixedBaseCombShape(radixBits)
 	table := &ExperimentalFixedBaseCombTable{
-		points:    make([]fixedBaseAffineCached, positions*entries),
-		radixBits: uint8(radixBits),
-		rounds:    uint8(rounds),
-		positions: uint8(positions),
-		entries:   uint8(entries),
+		points:      make([]fixedBaseAffineCached, positions*entries),
+		negativeT2D: make([]Element, positions*entries),
+		radixBits:   uint8(radixBits),
+		rounds:      uint8(rounds),
+		positions:   uint8(positions),
+		entries:     uint8(entries),
 	}
 
 	positionBase := *base
 	for position := 0; position < positions; position++ {
 		multiple := positionBase
 		for entry := 0; entry < entries; entry++ {
-			fixedBaseCacheAffine(&table.points[position*entries+entry], &multiple)
+			index := position*entries + entry
+			fixedBaseCacheAffine(&table.points[index], &multiple)
+			table.negativeT2D[index].Negate(&table.points[index].T2D)
 			if entry+1 < entries {
 				fixedBasePointAdd(&multiple, &multiple, &positionBase)
 			}
@@ -108,11 +112,13 @@ func (t *ExperimentalFixedBaseCombTable) PositionCount() int { return int(t.posi
 // EntryCount reports the positive multiples stored at each position.
 func (t *ExperimentalFixedBaseCombTable) EntryCount() int { return int(t.entries) }
 
-// NominalPayloadBytes reports the exact coordinate payload, excluding the Go
-// slice header and allocator rounding. Each scalar cached point is 3*5*8=120
-// bytes. The result is independent of whether evaluation uses x4 or x8.
+// NominalPayloadBytes reports the exact coordinate payload, excluding Go slice
+// headers and allocator rounding. Each entry stores the three positive affine
+// cached coordinates plus a precomputed negative 2dT coordinate: 4*5*8=160
+// bytes. The extra coordinate removes public-digit field negation from every
+// x4/x8 selection. The result is independent of evaluation width.
 func (t *ExperimentalFixedBaseCombTable) NominalPayloadBytes() int {
-	return len(t.points) * 3 * len(modulusLimbs) * 8
+	return len(t.points) * 4 * len(modulusLimbs) * 8
 }
 
 // ExperimentalFixedBaseCombScalarMultX4 computes [s]B in four independent
@@ -462,8 +468,8 @@ func selectFixedBaseIFMACachedX4(out *fixedBaseIFMACachedX4, table *Experimental
 		if lookupMask&laneMask == 0 {
 			continue
 		}
-		source := &table.points[position*int(table.entries)+int(magnitude)-1]
-		setFixedBaseIFMACachedLaneX4(out, source, lane, round.NegativeMask&laneMask != 0)
+		index := position*int(table.entries) + int(magnitude) - 1
+		setFixedBaseIFMACachedPreSignedLaneX4(out, &table.points[index], &table.negativeT2D[index], lane, round.NegativeMask&laneMask != 0)
 	}
 }
 
@@ -477,8 +483,34 @@ func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *Experimental
 		if lookupMask&laneMask == 0 {
 			continue
 		}
-		source := &table.points[position*int(table.entries)+int(magnitude)-1]
-		setFixedBaseIFMACachedLaneX8(out, source, lane, round.NegativeMask&laneMask != 0)
+		index := position*int(table.entries) + int(magnitude) - 1
+		setFixedBaseIFMACachedPreSignedLaneX8(out, &table.points[index], &table.negativeT2D[index], lane, round.NegativeMask&laneMask != 0)
+	}
+}
+
+func setFixedBaseIFMACachedPreSignedLaneX4(out *fixedBaseIFMACachedX4, source *fixedBaseAffineCached, negativeT2D *Element, lane int, negative bool) {
+	yPlusX, yMinusX, t2d := &source.YPlusX, &source.YMinusX, &source.T2D
+	if negative {
+		yPlusX, yMinusX = yMinusX, yPlusX
+		t2d = negativeT2D
+	}
+	for limb := range modulusLimbs {
+		out.YPlusX.limbs[limb][lane] = yPlusX.limbs[limb]
+		out.YMinusX.limbs[limb][lane] = yMinusX.limbs[limb]
+		out.T2D.limbs[limb][lane] = t2d.limbs[limb]
+	}
+}
+
+func setFixedBaseIFMACachedPreSignedLaneX8(out *fixedBaseIFMACachedX8, source *fixedBaseAffineCached, negativeT2D *Element, lane int, negative bool) {
+	yPlusX, yMinusX, t2d := &source.YPlusX, &source.YMinusX, &source.T2D
+	if negative {
+		yPlusX, yMinusX = yMinusX, yPlusX
+		t2d = negativeT2D
+	}
+	for limb := range modulusLimbs {
+		out.YPlusX.limbs[limb][lane] = yPlusX.limbs[limb]
+		out.YMinusX.limbs[limb][lane] = yMinusX.limbs[limb]
+		out.T2D.limbs[limb][lane] = t2d.limbs[limb]
 	}
 }
 

@@ -15,9 +15,9 @@ func TestExperimentalFixedBaseCombShapeAndPayload(t *testing.T) {
 	tests := []struct {
 		width, rounds, positions, entries, bytes int
 	}{
-		{4, 64, 32, 8, 30 * 1024},
-		{5, 51, 26, 16, 49_920},
-		{8, 32, 16, 128, 240 * 1024},
+		{4, 64, 32, 8, 40 * 1024},
+		{5, 51, 26, 16, 66_560},
+		{8, 32, 16, 128, 320 * 1024},
 	}
 	base, _ := fixedBaseGenerator(t)
 	for _, test := range tests {
@@ -27,6 +27,23 @@ func TestExperimentalFixedBaseCombShapeAndPayload(t *testing.T) {
 		}
 		if got := table.NominalPayloadBytes(); got != test.bytes {
 			t.Fatalf("width %d payload=%d want=%d", test.width, got, test.bytes)
+		}
+	}
+}
+
+func TestExperimentalFixedBaseCombPrecomputedNegativeT2D(t *testing.T) {
+	base, _ := fixedBaseGenerator(t)
+	for _, width := range []uint{4, 5, 8} {
+		table := BuildExperimentalFixedBaseCombTable(&base, width)
+		if len(table.negativeT2D) != len(table.points) {
+			t.Fatalf("width %d signed coordinates=%d points=%d", width, len(table.negativeT2D), len(table.points))
+		}
+		for index := range table.points {
+			var want Element
+			want.Negate(&table.points[index].T2D)
+			if table.negativeT2D[index].Equal(&want) != 1 {
+				t.Fatalf("width %d entry %d negative 2dT mismatch", width, index)
+			}
 		}
 	}
 }
