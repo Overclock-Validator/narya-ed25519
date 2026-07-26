@@ -96,13 +96,18 @@ cross-library differential against curve25519-voi, and fuzzing rather than
 assumed; the 165 CCTV vectors where the two profiles differ are precisely the
 small-order set, cross-checked against Firedancer's independent verdict.
 
-Narya never uses random-coefficient (cofactored) batch verification:
-its aggregate equation can accept adversarial signatures that
-per-signature verification rejects. "Batch" preserves an independent verdict
-for every signature. The default `generic` backend processes signatures
-independently. The explicitly selected `r51` backend instead hashes and
-decodes several independent signatures in SIMD lanes while retaining a
-separate verdict for every input.
+Narya never uses random-coefficient aggregate verification: an ordinary
+cofactored aggregate can accept adversarial signatures that cofactorless
+per-signature verification rejects. A strict-compatible Monte Carlo hybrid can
+first apply an exact per-item torsion-membership gate; it still returns one
+probabilistic batch assertion rather than N independent, zero-error verdicts.
+The proof boundary and the one justified point-halving experiment are recorded
+in
+[`docs/STRICT_AGGREGATE_BATCHING.md`](docs/STRICT_AGGREGATE_BATCHING.md).
+Narya's public "Batch" APIs instead preserve an independent verdict for every
+signature. The default `generic` backend processes signatures independently.
+The explicitly selected `r51` backend hashes and decodes several independent
+signatures in SIMD lanes while retaining a separate verdict for every input.
 A future `ZIP215` profile may expose the cofactored predicate explicitly. It
 will not silently change either existing profile.
 
@@ -118,7 +123,7 @@ libraries'.
 | equations evaluated | N, one per signature | **1**, all signatures combined |
 | verdicts returned | N | **1** |
 | identical to verifying one at a time? | **yes, bit for bit** | no |
-| valid under a cofactorless predicate? | yes | **no** |
+| valid under a cofactorless predicate? | yes | ordinary form: **no**; gated hybrid: probabilistic |
 | source of the speedup | filling SIMD lanes | fewer group operations |
 | scaling | flattens at the lane count | keeps improving with N |
 
@@ -134,16 +139,19 @@ Aggregate batching is a *mathematical* optimization. It folds N signatures
 into a single equation with random weights, replacing N double-scalar
 multiplications with one multi-scalar multiplication. It is genuinely faster
 where it applies, and it keeps getting faster as N grows. What it returns is
-one answer for the whole set, and it is sound only under a cofactored
-predicate, because individual invalid signatures can cancel within the
-aggregate.
+one probabilistic answer for the whole set. The ordinary construction is sound
+for a cofactored predicate; applying it directly to a cofactorless predicate
+lets individual torsion errors cancel. A hybrid can restore cofactorless
+predicate compatibility by proving each residual torsion-free first, but that
+per-item cost and the aggregate's nonzero soundness error remain.
 
-That constraint is not Narya's opinion. `curve25519-voi` implements aggregate
-batch verification and refuses to apply it to cofactorless entries, returning
-false rather than a possibly-unsound accept
-(`primitives/ed25519/batch_verify.go`). Under `DalekStrict`, which is
-cofactorless, aggregate batching is simply not an available technique, for
-Narya or anyone else.
+That constraint is not Narya's opinion. `curve25519-voi` implements ordinary
+aggregate batch verification and refuses to apply it to cofactorless entries,
+returning false rather than a possibly-unsound accept
+(`primitives/ed25519/batch_verify.go`). Under `DalekStrict`, Narya does not use
+aggregate verification because its contract requires deterministic,
+independent verdicts. The more expensive strict-compatible hybrid is retained
+only as a documented research question.
 
 **Choosing between them.** If one answer for the whole set is enough (you
 reject an entire block on any failure, say), aggregate batching under a

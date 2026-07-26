@@ -6,6 +6,12 @@ verification relative to its ed25519-donna DSM baseline. That result justifies
 an early prototype; it does not predict the gain over Narya's IFMA/SIMD
 baseline or over the corrected full-group construction.
 
+HEEA preserves one individual equation; it does not solve cancellation between
+different signatures in an aggregate. The separate proof for a
+strict-compatible Monte Carlo aggregate, including its mandatory exact
+per-item torsion gate and nonzero soundness error, is in
+[`STRICT_AGGREGATE_BATCHING.md`](STRICT_AGGREGATE_BATCHING.md).
+
 The paper is Muhammad ElSheikh, İrem Keskinkurt Paksoy, Murat Cenk, and
 M. Anwar Hasan, "Accelerating EdDSA Signature Verification with Faster Scalar
 Size Halving," TCHES 2025(3), pp. 493–515,
