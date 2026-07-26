@@ -220,6 +220,16 @@ the `Experimental*` entry points; the forced `r51` backend calls the x8 native
 entry for complete groups on measured AMD family 19h+ IFMA parts and retains
 x4 for tails and unknown IFMA CPUs. Automatic
 backend selection never reaches either kernel.
+
+**Unclaimed AVX2 path.** The x4 kernel gates on AVX2 alone, with no AVX-512
+term. Since the point arithmetic in `r51` needs IFMA and cannot run without it,
+an AVX2-only host falls to `generic`, which hashes through the scalar
+`Sum512Batch` and so never reaches that kernel. Routing the default batch entry
+through the native kernels would therefore speed up `generic` on any host with
+AVX2, bounded by SHA-512's share of one verification. **Not wired, not
+measured, and no AVX2-only machine has been benchmarked** — the size of the win
+is an estimate, not a result.
+
 The x8 fixed-three-segment entry recognizes full
 groups of the exact `R[32] || A[32] || message` shapes at message sizes
 64/200/1232, ingesting their first and final blocks without generic segmented
@@ -435,6 +445,7 @@ These are open, not pending paperwork. Each is described where it belongs above.
 | Intel silicon benchmarks | not run; SDE gives function, not speed |
 | Server-part benchmarks (EPYC, Xeon) | not run; consumer Zen 4/5 only |
 | Independent review of the assembly | not done |
+| Native SHA-512 under the default batch entry (helps AVX2-only hosts) | not wired, not measured |
 | Traffic-specific cache admission and eviction policy | integration work |
 
 Until these close, `generic` remains the automatic choice and `r51` remains
