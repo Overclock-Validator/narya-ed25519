@@ -334,6 +334,141 @@ func TestIFMADoubleStage2ZeroAllocations(t *testing.T) {
 	benchmarkIFMADoubleStage2WorkspaceSink = workspace
 }
 
+// doubleStage2TestOracleX8 deliberately derives the native-wide expectation
+// by splitting it into two independent x4 inputs and invoking the existing
+// arbitrary-precision oracle. It therefore checks every x8 lane without
+// sharing the ZMM implementation or its load/store schedule.
+func doubleStage2TestOracleX8(t testing.TB, input *ifmaDoubleStage2WorkspaceX8) ifmaDoubleStage2WorkspaceX8 {
+	t.Helper()
+	var output ifmaDoubleStage2WorkspaceX8
+	for half := 0; half < 2; half++ {
+		var inputX4 ifmaDoubleStage2WorkspaceX4
+		for slot := range inputX4 {
+			for limb := range inputX4[slot] {
+				for lane := 0; lane < X4Lanes; lane++ {
+					inputX4[slot][limb][lane] = input[slot][limb][half*X4Lanes+lane]
+				}
+			}
+		}
+		outputX4 := doubleStage2TestOracle(t, &inputX4)
+		for slot := range outputX4 {
+			for limb := range outputX4[slot] {
+				for lane := 0; lane < X4Lanes; lane++ {
+					output[slot][limb][half*X4Lanes+lane] = outputX4[slot][limb][lane]
+				}
+			}
+		}
+	}
+	return output
+}
+
+func doubleStage2TestAssertX8U52(t testing.TB, workspace *ifmaDoubleStage2WorkspaceX8) {
+	t.Helper()
+	for slot := range workspace {
+		for limb := range workspace[slot] {
+			for lane, value := range workspace[slot][limb] {
+				if value >= ifmaComposableLimbLimit {
+					t.Fatalf("slot=%d limb=%d lane=%d escaped u52: %x", slot, limb, lane, value)
+				}
+			}
+		}
+	}
+}
+
+func TestIFMADoubleStage2X8BoundariesAgainstIndependentOracle(t *testing.T) {
+	if !doubleStage2TestCanCall() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	for _, fixture := range doubleStage2TestBoundaryInputs() {
+		t.Run(fixture.name, func(t *testing.T) {
+			var input ifmaDoubleStage2WorkspaceX8
+			for slot := range fixture.workspace {
+				for limb := range fixture.workspace[slot] {
+					for lane := 0; lane < X8Lanes; lane++ {
+						input[slot][limb][lane] = fixture.workspace[slot][limb][lane%X4Lanes]
+					}
+				}
+			}
+			want := doubleStage2TestOracleX8(t, &input)
+			got := input
+			ifmaDoubleStage2X8(&got)
+			if got != want {
+				t.Fatalf("x8 Stage 2 mismatch\n got %x\nwant %x", got, want)
+			}
+			doubleStage2TestAssertX8U52(t, &got)
+		})
+	}
+}
+
+func TestIFMADoubleStage2X8MultiplicandDerived(t *testing.T) {
+	if !doubleStage2TestCanCall() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	rng := rand.New(rand.NewSource(0x51_d02_8b1a5))
+	for round := 0; round < 512; round++ {
+		var x, y, z LimbsX8
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X8Lanes; lane++ {
+				x[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+				y[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+				z[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		var input ifmaDoubleStage2WorkspaceX8
+		for lane := 0; lane < X8Lanes; lane++ {
+			var xLane, yLane, zLane Limbs
+			for limb := 0; limb < 5; limb++ {
+				xLane[limb] = x[limb][lane]
+				yLane[limb] = y[limb][lane]
+				zLane[limb] = z[limb][lane]
+			}
+			products := [4]Limbs{
+				ifmaLooseLaneModel(xLane, xLane),
+				ifmaLooseLaneModel(yLane, yLane),
+				ifmaLooseLaneModel(zLane, zLane),
+				ifmaLooseLaneModel(xLane, yLane),
+			}
+			for slot := range products {
+				for limb := range products[slot] {
+					input[slot][limb][lane] = products[slot][limb]
+				}
+			}
+		}
+		want := doubleStage2TestOracleX8(t, &input)
+		got := input
+		ifmaDoubleStage2X8(&got)
+		if got != want {
+			t.Fatalf("round=%d: x8 multiplicand-derived mismatch", round)
+		}
+		doubleStage2TestAssertX8U52(t, &got)
+	}
+}
+
+var benchmarkIFMADoubleStage2WorkspaceX8Sink ifmaDoubleStage2WorkspaceX8
+
+func TestIFMADoubleStage2X8ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	var seed ifmaDoubleStage2WorkspaceX8
+	for slot := range seed {
+		for limb := range seed[slot] {
+			maximum := doubleStage2TestRawMaximum(limb)
+			for lane := range seed[slot][limb] {
+				seed[slot][limb][lane] = maximum - uint64((slot+limb+lane)%17)
+			}
+		}
+	}
+	var workspace ifmaDoubleStage2WorkspaceX8
+	if allocs := testing.AllocsPerRun(1000, func() {
+		workspace = seed
+		ifmaDoubleStage2X8(&workspace)
+	}); allocs != 0 {
+		t.Fatalf("x8 Stage 2 allocations=%v", allocs)
+	}
+	benchmarkIFMADoubleStage2WorkspaceX8Sink = workspace
+}
+
 func doubleStage2TestCurrentSixLinearOps(out *[4]IFMAElementX4, input *[4]IFMAElementX4) {
 	a, b, c, xy := input[0], input[1], input[2], input[3]
 	var d, e, f, g, h IFMAElementX4

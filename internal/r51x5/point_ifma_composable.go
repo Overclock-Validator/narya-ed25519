@@ -250,18 +250,18 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
 	ifmaDoubleStage2X4(&workspace)
 
-	E := IFMAElementX4{limbs: LimbsX4(workspace[0])}
-	F := IFMAElementX4{limbs: LimbsX4(workspace[1])}
-	G := IFMAElementX4{limbs: LimbsX4(workspace[2])}
-	H := IFMAElementX4{limbs: LimbsX4(workspace[3])}
+	E := (*LimbsX4)(&workspace[0])
+	F := (*LimbsX4)(&workspace[1])
+	G := (*LimbsX4)(&workspace[2])
+	H := (*LimbsX4)(&workspace[3])
 
 	// Stage 1 has consumed every q coordinate, so these stores are safe even
 	// when out==q. The statically gated native leaves cannot fail; writing
 	// through avoids a separate 640-byte result copy.
-	ifmaMulNormalizedUncheckedX4(&out.X.limbs, &E.limbs, &F.limbs)
-	ifmaMulNormalizedUncheckedX4(&out.Y.limbs, &G.limbs, &H.limbs)
-	ifmaMulNormalizedUncheckedX4(&out.T.limbs, &E.limbs, &H.limbs)
-	ifmaMulNormalizedUncheckedX4(&out.Z.limbs, &F.limbs, &G.limbs)
+	ifmaMulNormalizedUncheckedX4(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX4(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX4(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX4(&out.Z.limbs, F, G)
 	return nil
 }
 
@@ -270,56 +270,35 @@ func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
 	return ifmaPointDoubleComposableWorkspaceStaticX8(out, q, &workspace)
 }
 
-// ifmaPointDoubleWorkspaceX8 holds the eight formula intermediates whose
-// storage is fully overwritten by every point doubling. Scalar loops keep one
-// workspace for the whole loop so Go does not zero 2.5 KiB of dead scratch on
-// every one of the 252 dependent doublings.
+// ifmaPointDoubleWorkspaceX8 holds the raw Stage-2 state whose storage is fully
+// overwritten by every point doubling. Scalar loops keep one workspace for the
+// whole loop so Go does not zero 1.25 KiB of dead scratch on every one of the
+// 252 dependent doublings.
 type ifmaPointDoubleWorkspaceX8 struct {
-	A, B, C, D, E, F, G, H IFMAElementX8
+	stage2 ifmaDoubleStage2WorkspaceX8
 }
 
 func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
-	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
-	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
-	// As in the x4 counterpart, every input read completes before result is
-	// assigned to out. Exact out==q aliasing therefore does not require a
-	// 1,280-byte defensive point copy.
-	if err := ifmaMultiplyComposableUncheckedX8(A, &q.X, &q.X); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(B, &q.Y, &q.Y); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(C, &q.Z, &q.Z); err != nil {
-		return err
-	}
-	ifmaAddComposableUncheckedX8(C, C, C)
-	// See the x4 schedule above: direct E=2XY removes two carry boundaries.
-	if err := ifmaMultiplyComposableUncheckedX8(E, &q.X, &q.Y); err != nil {
-		return err
-	}
-	ifmaAddComposableUncheckedX8(E, E, E)
-	ifmaNegateComposableUncheckedX8(D, A)
-	ifmaAddComposableUncheckedX8(G, D, B)
-	ifmaSubtractComposableUncheckedX8(F, G, C)
-	ifmaSubtractComposableUncheckedX8(H, D, B)
+	stage2 := &workspace.stage2
+	ifmaMulRawX8(&stage2[0], &q.X.limbs, &q.X.limbs)
+	ifmaMulRawX8(&stage2[1], &q.Y.limbs, &q.Y.limbs)
+	ifmaMulRawX8(&stage2[2], &q.Z.limbs, &q.Z.limbs)
+	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
+	ifmaDoubleStage2X8(stage2)
+
+	E := (*LimbsX8)(&stage2[0])
+	F := (*LimbsX8)(&stage2[1])
+	G := (*LimbsX8)(&stage2[2])
+	H := (*LimbsX8)(&stage2[3])
 
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a
 	// temporary 1,280-byte point followed by a full point copy. The unchecked
 	// field kernels used here have no error path after the boundary gate.
-	if err := ifmaMultiplyComposableUncheckedX8(&out.X, E, F); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, G, H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.T, E, H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, F, G); err != nil {
-		return err
-	}
+	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
 	return nil
 }
 

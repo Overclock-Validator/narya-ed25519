@@ -18,6 +18,10 @@ package r51x5
 // does not widen the general IFMAProductX4 contract.
 type ifmaDoubleStage2WorkspaceX4 [4]IFMAProductX4
 
+// ifmaDoubleStage2WorkspaceX8 is the native-wide counterpart. The slot order,
+// raw-product provenance, and u52 exit contract are identical to x4.
+type ifmaDoubleStage2WorkspaceX8 [4]IFMAProductX8
+
 // ifmaDoubleStage2X4 performs the direct-XY linear middle stage in
 // place. For radix R=2^51, the exact raw-product limb bounds are
 //
@@ -42,3 +46,10 @@ type ifmaDoubleStage2WorkspaceX4 [4]IFMAProductX4
 //
 //go:noescape
 func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4)
+
+// ifmaDoubleStage2X8 widens the exact x4 arithmetic schedule lane-for-lane.
+// It has the same raw-product entry contract and loads all twenty input vectors
+// before its first output store.
+//
+//go:noescape
+func ifmaDoubleStage2X8(workspace *ifmaDoubleStage2WorkspaceX8)
