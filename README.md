@@ -298,6 +298,16 @@ latencies. Every parallel row reports 0 B/op, 0 allocs/op, and zero internal
 fault fallbacks. CPUs 0--7 were verified as eight distinct physical cores;
 their SMT siblings 8--15 were excluded.
 
+**Hardware scope: AMD only so far.** Every timing above, and every bundle in
+`docs/results/`, was captured on an AMD Ryzen 7 PRO 8700GE (Zen 4) or a Ryzen 7
+9700X (Zen 5). Narya dispatches on the AVX512-IFMA feature set rather than on
+vendor, so the same kernels are expected to run on Intel Ice Lake Server and
+newer, and CI exercises them under Intel SDE emulating Ice Lake Server. But
+emulation establishes function, not speed: **no Intel silicon has been
+benchmarked, and no server part of either vendor has.** Treat the numbers as
+characterizing consumer Zen 4 and Zen 5 and nothing else. Intel and EPYC
+measurement is outstanding work, not a completed check.
+
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into this
 table because code, CPU generation, and cache population materially change the
@@ -376,6 +386,23 @@ matter.
   `go.oasis.mod`; run it with `make test-oasis`.
 - Fuzz targets comparing backends three ways.
 
+**Fuzz soak status: short rounds only.** The differential fuzzing run so far is
+smoke-scale — roughly 4.6 million executions across about 25 minutes, split
+between the r51 pipeline, the public verifier, and multi-buffer SHA-512, all
+passing. The bar this project sets for enabling automatic SIMD dispatch is a
+prolonged soak on the order of **10^9 executions**, and that has not been run.
+The two facts are consistent rather than contradictory: automatic selection is
+still `generic`, and `r51` is reachable only by explicit `SetBackend`. But the
+soak is a precondition for changing that, not a formality already satisfied.
+The runner and its evidence format are described in
+[`docs/FUZZ_SOAK.md`](docs/FUZZ_SOAK.md).
+
+**No external review of the assembly.** Everything above is self-consistency:
+the vector kernels are checked against scalar models, the models against the
+vector corpora, and the corpora against `crypto/ed25519`. That is a strong
+structure and it is not the same thing as an independent audit. Roughly 4,500
+lines of assembly have had no third-party review.
+
 CI runs portable tests on `ubuntu-latest` and `macos-latest`, the isolated
 Oasis differential on Linux, plus a pinned
 [Intel SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html)
@@ -397,6 +424,21 @@ and width-aware A6/r9 warm promotion are implemented and hardware-tested; the
 traffic-specific admission and eviction policy remains integration work. The
 `ifma` reference backend and alternate arithmetic experiments remain under
 active development.
+
+### Outstanding before automatic dispatch
+
+These are open, not pending paperwork. Each is described where it belongs above.
+
+| item | state |
+| --- | --- |
+| 10^9-execution differential fuzz soak | not run; ~4.6M executions so far |
+| Intel silicon benchmarks | not run; SDE gives function, not speed |
+| Server-part benchmarks (EPYC, Xeon) | not run; consumer Zen 4/5 only |
+| Independent review of the assembly | not done |
+| Traffic-specific cache admission and eviction policy | integration work |
+
+Until these close, `generic` remains the automatic choice and `r51` remains
+opt-in. Published `r51` figures describe an explicitly forced backend.
 
 ## License
 
