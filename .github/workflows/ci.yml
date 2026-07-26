@@ -93,4 +93,4 @@ jobs:
           "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
           "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping)$'
+            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
