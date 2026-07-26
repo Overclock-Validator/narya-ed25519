@@ -55,8 +55,8 @@ MODIFICATIONS. Narya has changed files in this tree relative to upstream:
   * import paths were rewritten to the Narya module path throughout.
 
 Standalone Narya-authored files inside this tree — including comb.go,
-smallorder.go, equal_affine.go, field/sqrt_ratio_test.go, and their first-party
-tests — carry Apache-2.0 headers. Modified upstream files retain their
+smallorder.go, equal_affine.go, scalar_bytes.go, field/sqrt_ratio_test.go, and
+their first-party tests — carry Apache-2.0 headers. Modified upstream files retain their
 BSD-3-Clause headers, including the Narya changes enumerated above. The
 vendored v1.2.0 field arithmetic and upstream alias tests also remain
 BSD-3-Clause.

@@ -2,10 +2,9 @@ package ed25519
 
 import (
 	"bytes"
-	"crypto/sha512"
 
-	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 	"github.com/Overclock-Validator/narya-ed25519/internal/r43x6"
+	"github.com/Overclock-Validator/narya-ed25519/internal/sigprep"
 )
 
 func init() { register("ifma", ifmaBackend{}) }
@@ -48,7 +47,13 @@ func (ifmaBackend) verify(profile Profile, pub *[32]byte, message, sig []byte, _
 // control flow over r43x6's scalar arithmetic, while the forced backend runs
 // the same code after field dispatch has switched to assembly.
 func verifyR43Pipeline(profile Profile, pub *[32]byte, message, sig []byte) bool {
-	if len(sig) != 64 {
+	// The shared byte-level gates and challenge. This backend compares points
+	// rather than re-encoding, so the canonical-R gate is load-bearing here:
+	// without it a non-canonical R would decode to the same point the equation
+	// produces and be accepted.
+	rules := profile.rules()
+	prepared, ok := sigprep.Prepare(rules, pub, message, sig)
+	if !ok {
 		return false
 	}
 
@@ -57,47 +62,31 @@ func verifyR43Pipeline(profile Profile, pub *[32]byte, message, sig []byte) bool
 		return false
 	}
 	var s r43x6.Scalar
-	if _, err := s.SetCanonicalBytes(sig[32:]); err != nil {
+	if _, err := s.SetCanonicalBytes(prepared.S[:]); err != nil {
 		return false
 	}
 
-	// The standalone byte predicate checks canonical compressed R independently
-	// of the shared small-order pre-pass. Retaining decoded R lets the final
-	// comparison avoid Q.Bytes and its field inversion.
+	// Retaining decoded R lets the final comparison avoid Q.Bytes and its
+	// field inversion. Only the strict profile has a decoded R to compare
+	// against; the permissive one settles R by re-encoding.
 	var strictR r43x6.Point
-	if profile == DalekStrict {
-		if !canonicalREncoding(sig[:32]) {
-			return false
-		}
-		if _, err := strictR.SetBytes(sig[:32]); err != nil {
+	if rules.RequireCanonicalR {
+		if _, err := strictR.SetBytes(prepared.R[:]); err != nil {
 			return false
 		}
 	}
 
-	h := sha512.New()
-	_, _ = h.Write(sig[:32])
-	_, _ = h.Write(pub[:])
-	_, _ = h.Write(message)
-	var digest [sha512.Size]byte
-	h.Sum(digest[:0])
-
-	// Reuse the independently tested canonical reduction from the vendored
-	// Edwards implementation. The group equation itself is entirely r43x6.
-	reducedK, err := edwards25519.NewScalar().SetUniformBytes(digest[:])
-	if err != nil {
-		return false
-	}
 	var k r43x6.Scalar
-	if _, err := k.SetCanonicalBytes(reducedK.Bytes()); err != nil {
+	if _, err := k.SetCanonicalBytes(prepared.K[:]); err != nil {
 		return false
 	}
 
 	q := new(r43x6.Point).VarTimeVerifyMult(&s, &k, &a)
-	if profile == DalekStrict {
+	if rules.RequireCanonicalR {
 		return q.EqualAffine(&strictR) == 1
 	}
 	encodedQ := q.Bytes()
-	return bytes.Equal(encodedQ[:], sig[:32])
+	return bytes.Equal(encodedQ[:], prepared.R[:])
 }
 
 func (b ifmaBackend) verifyBatch(profile Profile, items []batchItem) {

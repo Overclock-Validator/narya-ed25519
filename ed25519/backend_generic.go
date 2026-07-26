@@ -2,9 +2,9 @@ package ed25519
 
 import (
 	"bytes"
-	"crypto/sha512"
 
 	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/sigprep"
 	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
@@ -62,7 +62,7 @@ func (genericBackend) buildCompactPrecomp(pub *[32]byte) (*PrecomputedKey, error
 	}, nil
 }
 
-func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
+func (genericBackend) verify(profile Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
 	var table *edwards25519.PubkeyTable
 	var compact *edwards25519.PubkeyNAFTable
 	if pre != nil {
@@ -74,7 +74,14 @@ func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre 
 		}
 	}
 
-	if len(sig) != 64 || sig[63]&224 != 0 {
+	// The shared byte-level gates. This backend settles R by re-encoding its
+	// computed point and byte-comparing, which already rejects every
+	// non-canonical R: decoding reduces the encoding, so the re-encoded form
+	// cannot equal a non-reduced input. Applying the gate explicitly changes no
+	// verdict, and lets the backend be called directly without depending on the
+	// shared pre-pass having run.
+	prepared, ok := sigprep.Parse(profile.rules(), pub, sig)
+	if !ok {
 		return false
 	}
 
@@ -87,18 +94,16 @@ func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre 
 		minusA = (&edwards25519.Point{}).Negate(A)
 	}
 
-	kh := sha512.New()
-	kh.Write(sig[:32])
-	kh.Write(pub[:])
-	kh.Write(message)
-	var hramDigest [sha512.Size]byte
-	kh.Sum(hramDigest[:0])
-	k, err := edwards25519.NewScalar().SetUniformBytes(hramDigest[:])
+	// Reduce natively rather than through sigprep.Reduce: this backend wants an
+	// edwards25519.Scalar, and routing through canonical bytes would add a
+	// round-trip on the reference path for no gain.
+	digest := sigprep.Challenge(pub, message, sig)
+	k, err := edwards25519.NewScalar().SetUniformBytes(digest[:])
 	if err != nil {
 		return false
 	}
 
-	s, err := edwards25519.NewScalar().SetCanonicalBytes(sig[32:])
+	s, err := edwards25519.NewScalar().SetCanonicalBytes(prepared.S[:])
 	if err != nil {
 		return false
 	}
@@ -113,7 +118,7 @@ func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre 
 	} else {
 		r = (&edwards25519.Point{}).VarTimeDoubleScalarBaseMult(k, minusA, s)
 	}
-	return bytes.Equal(sig[:32], r.Bytes())
+	return bytes.Equal(prepared.R[:], r.Bytes())
 }
 
 // verifyBatch runs the batch pipeline: a scalar precheck-and-decode
@@ -122,7 +127,7 @@ func (genericBackend) verify(_ Profile, pub *[32]byte, message, sig []byte, pre 
 // per-item point math. Verdicts are per-signature and bit-identical
 // to verify — batching only ever amortizes hashing and decoding, it
 // never mixes signatures into one equation.
-func (g genericBackend) verifyBatch(_ Profile, items []batchItem) {
+func (g genericBackend) verifyBatch(profile Profile, items []batchItem) {
 	type work struct {
 		idx     int
 		table   *edwards25519.PubkeyTable
@@ -133,9 +138,14 @@ func (g genericBackend) verifyBatch(_ Profile, items []batchItem) {
 	live := make([]work, 0, len(items))
 	hashIn := make([][][]byte, 0, len(items))
 
+	rules := profile.rules()
 	for i := range items {
 		it := &items[i]
-		if it.skip || len(it.sig) != 64 || it.sig[63]&224 != 0 {
+		if it.skip {
+			continue
+		}
+		prepared, admitted := sigprep.Parse(rules, it.pub, it.sig)
+		if !admitted {
 			continue
 		}
 		w := work{idx: i}
@@ -154,13 +164,14 @@ func (g genericBackend) verifyBatch(_ Profile, items []batchItem) {
 			}
 			w.minusA = (&edwards25519.Point{}).Negate(A)
 		}
-		s, err := edwards25519.NewScalar().SetCanonicalBytes(it.sig[32:])
+		s, err := edwards25519.NewScalar().SetCanonicalBytes(prepared.S[:])
 		if err != nil {
 			continue
 		}
 		w.s = s
 		live = append(live, w)
-		hashIn = append(hashIn, [][]byte{it.sig[:32], it.pub[:], it.msg})
+		segments := sigprep.ChallengeSegments(it.pub, it.msg, it.sig)
+		hashIn = append(hashIn, segments[:])
 	}
 
 	digests := make([][64]byte, len(live))

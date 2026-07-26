@@ -2,6 +2,8 @@ package ed25519
 
 import (
 	"sync/atomic"
+
+	"github.com/Overclock-Validator/narya-ed25519/internal/sigprep"
 )
 
 // Profile selects which acceptance predicate verification enforces.
@@ -53,12 +55,30 @@ func (p Profile) valid() bool {
 	return p == DalekStrict || p == StdlibCompat
 }
 
+// rules maps a Profile onto the byte-level acceptance policy that the shared
+// preparation stage applies. The equation each profile evaluates is chosen by
+// the backend; everything decidable from encodings alone lives in the Rules.
+func (p Profile) rules() sigprep.Rules {
+	switch p {
+	case DalekStrict:
+		return sigprep.DalekStrict
+	case StdlibCompat:
+		return sigprep.StdlibCompat
+	default:
+		panic("ed25519: unknown verification profile")
+	}
+}
+
 // rejectedByStrict reports whether the strict profile rejects this
 // signature for a reason StdlibCompat does not: a small-order public
 // key A, or a small-order signature point R. smallOrderEncoding is an
 // exact classification of the encodings that the permissive decoder maps
 // to one of the eight small-order points. All other encodings, including
 // ones that do not decode, are left for the equation to reject.
+//
+// This is the small-order half of sigprep.DalekStrict only. The canonical-R
+// gate is applied separately by backends that compare points instead of
+// re-encoding, so it is deliberately not folded in here.
 func rejectedByStrict(pub *[32]byte, sig []byte) bool {
 	if smallOrderEncoding(pub[:]) {
 		return true
@@ -69,103 +89,9 @@ func rejectedByStrict(pub *[32]byte, sig []byte) bool {
 	return false
 }
 
-// The permissive Edwards25519 decoder ignores the sign bit and reduces the
-// encoded y-coordinate modulo p. Its small-order points therefore have exactly
-// these seven low-255-bit encodings: 0, 1, p-1, p, p+1, and the two y values
-// of the order-eight points. The sign bit is immaterial for all seven values.
-var (
-	smallOrderAlpha = [32]byte{
-		0xc7, 0x17, 0x6a, 0x70, 0x3d, 0x4d, 0xd8, 0x4f,
-		0xba, 0x3c, 0x0b, 0x76, 0x0d, 0x10, 0x67, 0x0f,
-		0x2a, 0x20, 0x53, 0xfa, 0x2c, 0x39, 0xcc, 0xc6,
-		0x4e, 0xc7, 0xfd, 0x77, 0x92, 0xac, 0x03, 0x7a,
-	}
-	smallOrderNegAlpha = [32]byte{
-		0x26, 0xe8, 0x95, 0x8f, 0xc2, 0xb2, 0x27, 0xb0,
-		0x45, 0xc3, 0xf4, 0x89, 0xf2, 0xef, 0x98, 0xf0,
-		0xd5, 0xdf, 0xac, 0x05, 0xd3, 0xc6, 0x33, 0x39,
-		0xb1, 0x38, 0x02, 0x88, 0x6d, 0x53, 0xfc, 0x05,
-	}
-)
+// The byte-level predicates themselves live in internal/sigprep, which owns the
+// whole scalar front half of verification for every backend and every profile.
+// These are the in-package spellings.
+func smallOrderEncoding(b []byte) bool { return sigprep.SmallOrderEncoding(b) }
 
-func smallOrderEncoding(b []byte) bool {
-	if len(b) != 32 {
-		return false
-	}
-
-	// The seven values have distinct first bytes, so almost every input exits
-	// after this switch without a full 255-bit comparison.
-	switch b[0] {
-	case 0x00, 0x01:
-		return low255TailEqual(b, 0x00, 0x00)
-	case 0x26:
-		return low255Equal(b, &smallOrderNegAlpha)
-	case 0xc7:
-		return low255Equal(b, &smallOrderAlpha)
-	case 0xec, 0xed, 0xee:
-		return low255TailEqual(b, 0xff, 0x7f)
-	default:
-		return false
-	}
-}
-
-func low255TailEqual(b []byte, middle, last byte) bool {
-	diff := (b[31] & 0x7f) ^ last
-	for i := 1; i < 31; i++ {
-		diff |= b[i] ^ middle
-	}
-	return diff == 0
-}
-
-func low255Equal(b []byte, want *[32]byte) bool {
-	diff := (b[31] & 0x7f) ^ want[31]
-	for i := 0; i < 31; i++ {
-		diff |= b[i] ^ want[i]
-	}
-	return diff == 0
-}
-
-// canonicalREncoding reports whether r satisfies the decoder-specific byte
-// canonicality condition used by strict verification. It is independent of
-// small-order rejection: besides requiring low255(r) < p, it rejects the two
-// sign-bit-one encodings whose decoded x coordinate is zero (y=1 and y=-1).
-//
-// Point decoding remains a separate requirement. A reduced byte string that
-// is not on the curve can pass this helper and must still fail decoding.
-func canonicalREncoding(r []byte) bool {
-	if len(r) != 32 {
-		return false
-	}
-	if !low255LessThanP(r) {
-		return false
-	}
-	if r[31]&0x80 == 0 {
-		return true
-	}
-	// On Edwards25519, x=0 iff y=1 or y=-1. Their sign-bit-one forms decode
-	// permissively but are not canonical compressed encodings.
-	if r[0] == 0x01 && low255TailEqual(r, 0x00, 0x00) {
-		return false
-	}
-	if r[0] == 0xec && low255TailEqual(r, 0xff, 0x7f) {
-		return false
-	}
-	return true
-}
-
-// low255LessThanP compares the encoded little-endian y-coordinate with
-// p=2^255-19 while ignoring the compressed x-sign bit.
-func low255LessThanP(encoded []byte) bool {
-	if len(encoded) != 32 {
-		return false
-	}
-	if encoded[31]&0x7f != 0x7f {
-		return true
-	}
-	for index := 30; index > 0; index-- {
-		if encoded[index] != 0xff {
-			return true
-		}
-	}
-	return encoded[0] < 0xed
-}
+func canonicalREncoding(r []byte) bool { return sigprep.CanonicalREncoding(r) }
