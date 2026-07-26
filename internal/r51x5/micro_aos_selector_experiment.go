@@ -170,7 +170,7 @@ func selectIFMAMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table *ifmaMicroAoST
 // entries stored in the existing four-column micro-AoS table. out is a private
 // physical-layout container whose X/Y/Z/T fields mean Y+X/Y-X/Z/2dT. A
 // negative public digit swaps Y+X with Y-X and negates 2dT.
-func selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table *ifmaMicroAoSTableRadix32X4, round *RadixRoundX4, active uint8) *IFMAPointX4 {
+func selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(out *ifmaProjectiveNielsContainerX4, table *ifmaMicroAoSTableRadix32X4, round *RadixRoundX4, active uint8) *ifmaProjectiveNielsContainerX4 {
 	lookupMask := round.NonzeroMask & active & 0x0f
 	p0 := &ifmaProjectiveNielsMicroAoSIdentityEntryX4
 	p1, p2, p3 := p0, p0, p0
@@ -193,12 +193,12 @@ func selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table
 			p3 = &table[3][int(round.Magnitude[3])-1]
 		}
 	}
-	ifmaMicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+	ifmaMicroAoSTransposeSelectExperimentX4((*IFMAPointX4)(out), p0, p1, p2, p3)
 	conditionalNegateIFMAProjectiveNielsContainerX4(out, round.NegativeMask&lookupMask)
 	return out
 }
 
-func conditionalNegateIFMAProjectiveNielsContainerX4(point *IFMAPointX4, negativeMask uint8) {
+func conditionalNegateIFMAProjectiveNielsContainerX4(point *ifmaProjectiveNielsContainerX4, negativeMask uint8) {
 	negativeMask &= 0x0f
 	if negativeMask == 0 {
 		return

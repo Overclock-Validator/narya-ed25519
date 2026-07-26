@@ -69,7 +69,10 @@ func TestR51BackendBatchWidthSelection(t *testing.T) {
 	if got, want := worker.pipeline.experimentalRawSquareX8, cpufeat.PreferRawSquareIFMA(); got != want {
 		t.Fatalf("raw-square=%v want=%v pipeline=%s", got, want, worker.pipeline)
 	}
-	t.Logf("prefer-wide=%v raw-square=%v pipeline=%s", gotWide, worker.pipeline.experimentalRawSquareX8, worker.pipeline)
+	if !worker.pipeline.experimentalProjectiveNielsX4 {
+		t.Fatalf("registered r51 worker did not enable x4 projective-Niels tables")
+	}
+	t.Logf("prefer-wide=%v raw-square=%v x4-niels=%v pipeline=%s", gotWide, worker.pipeline.experimentalRawSquareX8, worker.pipeline.experimentalProjectiveNielsX4, worker.pipeline)
 }
 
 func TestR51BackendDecodedACacheHardwareGate(t *testing.T) {

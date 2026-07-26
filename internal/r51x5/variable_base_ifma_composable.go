@@ -81,13 +81,13 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) PrepareProjectiveNiels
 	w.prepared = false
 	var current IFMAPointX4
 	current.SetReduced(base)
-	var baseCached IFMAPointX4
+	var baseCached ifmaProjectiveNielsContainerX4
 	if err := ifmaProjectiveNielsContainerFromPointX4(&baseCached, &current); err != nil {
 		return err
 	}
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX4
 	for entry := 0; entry < 16; entry++ {
-		var cached IFMAPointX4
+		var cached ifmaProjectiveNielsContainerX4
 		if err := ifmaProjectiveNielsContainerFromPointX4(&cached, &current); err != nil {
 			return err
 		}
@@ -111,11 +111,13 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) PrepareProjectiveNiels
 	return nil
 }
 
-// IFMAPointX4 is used below only as a physical-layout container: X/Y/Z/T
-// carry Y+X/Y-X/Z/2dT. A distinct exported point type would invite accidental
-// use in the generic point formulas; keeping these helpers private makes the
-// representation boundary explicit at every call site.
-func ifmaProjectiveNielsContainerFromPointX4(out, point *IFMAPointX4) error {
+// ifmaProjectiveNielsContainerX4 has IFMAPointX4's exact physical layout so it
+// can reuse the measured micro-AoS transpose, but is a distinct Go type. Its
+// X/Y/Z/T fields carry Y+X/Y-X/Z/2dT and therefore cannot be passed to an
+// ordinary extended-point formula without an explicit, review-visible cast.
+type ifmaProjectiveNielsContainerX4 IFMAPointX4
+
+func ifmaProjectiveNielsContainerFromPointX4(out *ifmaProjectiveNielsContainerX4, point *IFMAPointX4) error {
 	ifmaAddComposableUncheckedX4(&out.X, &point.Y, &point.X)
 	ifmaSubtractComposableUncheckedX4(&out.Y, &point.Y, &point.X)
 	out.Z = point.Z
@@ -128,7 +130,8 @@ type ifmaPointAddProjectiveNielsScratchX4 struct {
 }
 
 func ifmaPointAddProjectiveNielsContainerWorkspaceX4(
-	out, point, cached *IFMAPointX4,
+	out, point *IFMAPointX4,
+	cached *ifmaProjectiveNielsContainerX4,
 	workspace *ifmaPointAddProjectiveNielsScratchX4,
 ) error {
 	ifmaSubtractComposableUncheckedX4(&workspace.yMinusX, &point.Y, &point.X)
@@ -258,7 +261,7 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateProjectiveNiel
 		if digit.NonzeroMask&usable == 0 {
 			continue
 		}
-		var selected IFMAPointX4
+		var selected ifmaProjectiveNielsContainerX4
 		selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(&selected, &w.table, digit, usable)
 		if err := ifmaPointAddProjectiveNielsContainerWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
