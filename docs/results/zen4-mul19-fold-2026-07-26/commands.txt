@@ -1,0 +1,11 @@
+Control worktree:
+  git switch --detach c964b84dfae206ae939784e42e690579b2149324
+
+Candidate worktree:
+  git switch --detach c964b84dfae206ae939784e42e690579b2149324
+  # Apply only the internal/r51x5/ifma_amd64.s diff from:
+  git show d9ddf5305fd163db37edcb31f1cd0e89ffcf7451 -- internal/r51x5/ifma_amd64.s
+
+Benchmark, run once per worktree on the same pinned core:
+  taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$/^msg=1232$/^n=(8|64)$' -benchmem -benchtime=3s -count=8 ./ed25519
+

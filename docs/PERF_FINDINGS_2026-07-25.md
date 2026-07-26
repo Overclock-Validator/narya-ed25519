@@ -171,6 +171,19 @@ allocations. The registered worker therefore selects it only on AMD family
 the earlier complete Zen 5 gate found the dedicated schedule slower. CPU width,
 decoded-A policy, warm width, and square policy remain separate feature bits.
 
+**Regime tag — retain `VPMULLQ` for the normalized x8 multiply on Zen 4.** An
+older port-pressure model proposed replacing the five AVX-512DQ
+multiplication-by-19 folds with shift/add sequences when the IFMA pipes were
+saturated. That model no longer predicts the current fused verifier. A pinned,
+same-source complete public-verifier A/B at control commit `c964b84` applied
+only the assembly diff from `d9ddf53`: at msg=1232 the shift/add candidate
+regressed from median 7.889 to 8.166 us/signature at n=8 (+3.5%) and from
+7.674 to 7.965 at n=64 (+3.8%). Both paths remained allocation-free with zero
+native-fault fallbacks. Keep the experiment as a regime-tagged negative and
+remeasure only after a material multiply/point-loop rewrite or on another
+microarchitecture. Raw samples are under
+`docs/results/zen4-mul19-fold-2026-07-26/`.
+
 The same Zen 4 checkpoint rechecked the n=4 boundary. Four active x8 lanes
 measured 15.785 and 16.750 us/signature for 200 and 1232-byte messages, versus
 9.913 and 10.680 for one full x4 group. The full-width x8 advantage must not be
