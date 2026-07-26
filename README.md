@@ -111,6 +111,15 @@ signatures in SIMD lanes while retaining a separate verdict for every input.
 A future `ZIP215` profile may expose the cofactored predicate explicitly. It
 will not silently change either existing profile.
 
+The security meaning of these checks is subtler than a simple
+"strict-versus-permissive" ordering. Brendel, Cremers, Jackson, and Zhao prove
+strong unforgeability from the canonical-`S` check for their standardized
+Ed25519 variant, while their additional malicious-key and message-binding
+results rely on rejecting small-order elements. Narya's profiles are not
+identical to the paper's named variants, so the precise correspondence and the
+limits of what can be inferred are recorded in
+[`docs/PROVABLE_SECURITY.md`](docs/PROVABLE_SECURITY.md).
+
 ### "Batch" means two different things
 
 The word is overloaded, and the two meanings have different guarantees. This
@@ -552,6 +561,7 @@ experimental idea is part of the supported backend.
 | --- | --- |
 | [*ENG25519: Faster TLS 1.3 Handshake Using Optimized X25519 and Ed25519*](https://www.usenix.org/conference/usenixsecurity24/presentation/zhang-jipeng) (Zhang, Huang, Zhao, Chen, and Koç, USENIX Security 2024) | The strongest academic influence on the shipping r51 backend. It provided independent published evidence that five radix-2^51 limbs are a good fit for AVX-512 IFMA. Narya's lane-per-signature kernels and implementation are its own. |
 | [*Taming the many EdDSAs*](https://eprint.iacr.org/2020/1244) | Shaped the acceptance-predicate analysis: canonical encodings, cofactored versus cofactorless equations, mixed-order behavior, and the edge-case corpus used to prove cross-implementation agreement. |
+| [*The Provable Security of Ed25519: Theory and Practice*](https://eprint.iacr.org/2020/823) (Brendel, Cremers, Jackson, and Zhao, IEEE S&P 2021) | Supplies the formal security rationale for treating canonical scalar encodings, key-prefix hashing, and small-order rejection as distinct protocol choices. Narya does not claim that its profiles are identical to the paper's variants; the exact mapping and proof boundary are documented in [`docs/PROVABLE_SECURITY.md`](docs/PROVABLE_SECURITY.md). |
 | [*Accelerating EdDSA Signature Verification with Faster Scalar Size Halving*](https://doi.org/10.46586/tches.v2025.i3.493-515) (ElSheikh, Keskinkurt Paksoy, Cenk, and Hasan, TCHES 2025) | Basis of Narya's test-only HEEA/scalar-halving track. Narya adds the modulo-8L relation and unit-multiplier requirement needed to preserve its cofactorless full-group equation; the published speedup is not treated as a prediction for Narya. |
 | [*Optimized Lattice Basis Reduction in Dimension 2, and Fast Schnorr and EdDSA Signature Verification*](https://eprint.iacr.org/2020/454) (Pornin, 2020) | Earlier ABGLSV–Pornin lineage behind scalar-size-halving verification and Voi's cofactored fast path. It informed the research comparison, not the production `DalekStrict` backend. |
 | [*Point-Halving and Subgroup Membership in Twisted Edwards Curves*](https://eprint.iacr.org/2022/1164) (Pornin, 2022) | Supplies the nonlinear prime-subgroup-membership method behind Narya's documented strict-compatible aggregate-batching research gate. No aggregate verifier or point-halving kernel is currently shipped. See [`docs/STRICT_AGGREGATE_BATCHING.md`](docs/STRICT_AGGREGATE_BATCHING.md). |
