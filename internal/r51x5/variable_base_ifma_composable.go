@@ -69,11 +69,11 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Prepare(base *PointX4,
 	return nil
 }
 
-// PrepareProjectiveNielsExperiment stores the same [1]A..[16]A table in
+// PrepareProjectiveNiels stores the same [1]A..[16]A table in
 // projective-Niels form [Y+X,Y-X,Z,2dT]. It deliberately reuses the existing
 // micro-AoS payload so the complete-pipeline A/B changes only table contents
 // and the mixed-add evaluator, not allocation or cache footprint.
-func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) PrepareProjectiveNielsExperiment(base *PointX4, radixBits uint) error {
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) PrepareProjectiveNiels(base *PointX4, radixBits uint) error {
 	validateIFMAFullTableStorage(16, radixBits)
 	if !ExperimentalIFMAAvailable() {
 		return ErrIFMAUnavailable
@@ -231,10 +231,10 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateRawSquareExper
 	return usable, nil
 }
 
-// EvaluateProjectiveNielsExperiment is the projective-Niels counterpart of
-// Evaluate. PrepareProjectiveNielsExperiment must have populated the table.
+// EvaluateProjectiveNiels is the projective-Niels counterpart of Evaluate.
+// PrepareProjectiveNiels must have populated the table.
 // The loop is separate so the registered x4 path pays no experiment branch.
-func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateProjectiveNielsExperiment(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateProjectiveNiels(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
 	if !w.prepared {
 		panic("r51x5: experimental IFMA x4 Niels workspace is not prepared")
 	}

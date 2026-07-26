@@ -8,7 +8,7 @@ import (
 func requireR51IFMABatchQX4NielsPipeline(tb testing.TB) *r51IFMABatchQPipeline {
 	tb.Helper()
 	pipeline := requireR51IFMABatchQX8CombPipeline(tb)
-	pipeline.experimentalProjectiveNielsX4 = true
+	pipeline.projectiveNielsX4 = true
 	return pipeline
 }
 
