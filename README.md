@@ -262,7 +262,10 @@ internal-fault fallbacks.
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
 not per-batch latencies.
 
-**Cold: arbitrary keys, no retained key state, 1232-byte messages**
+### Cold verification
+
+**Ryzen 7 9700X · 1232-byte messages · arbitrary keys with no retained key
+state · µs/signature, lower is better**
 
 | batch size | µs/signature | signatures/second/core | speedup over Go stdlib |
 | ---: | ---: | ---: | ---: |
@@ -277,12 +280,18 @@ The stdlib control was measured on the same Zen 5 host at 27.60, 27.14,
 speedup column uses those width-matched controls rather than one rounded
 baseline.
 
-**Warm reference: 64 distinct keys promoted before timing, 1232-byte
-messages (`µs/signature`)**
+### Warm-cache reference
 
-| n=1 | n=2 | n=4 | n=8 | n=64 |
-| ---: | ---: | ---: | ---: | ---: |
-| 14.98 | 14.90 | 4.179 | 3.940 | 3.776 |
+**Ryzen 7 9700X · 1232-byte messages · 64 promoted keys · µs/signature,
+lower is better**
+
+| batch size | cold µs/signature | warm µs/signature | warm speedup |
+| ---: | ---: | ---: | ---: |
+| 1 | 15.085 | 14.980 | 1.01x |
+| 2 | 14.960 | 14.900 | 1.00x |
+| 4 | 9.139 | 4.179 | 2.19x |
+| 8 | 4.850 | 3.940 | 1.23x |
+| 64 | 4.673 | **3.776** | **1.24x** |
 
 The warm reference is the complete exported-cache snapshot at `fd117ae8`,
 also on the Ryzen 7 9700X. It is intentionally separate from the cold headline:
@@ -301,6 +310,10 @@ At n>=4, the fully promoted 64-key fixture is faster on this CPU. This is not a
 universal hit-rate claim: table population, recurrence, and memory locality
 remain part of the warm-path result.
 
+### Cross-library comparison
+
+**Ryzen 7 9700X · 1232-byte messages · µs/signature, lower is better**
+
 The comparison below uses the same Zen 5 host and 1232-byte fixture shape.
 The stdlib and Voi controls are medians of six one-second samples at
 `fd117ae8`; the Narya row is the later retained cold result above. Voi's
@@ -313,6 +326,11 @@ reference.
 | Go `crypto/ed25519` | 27.600 | 27.140 | 27.310 | 27.390 | 27.450 |
 | curve25519-voi, cold strict | 21.750 | 21.560 | 21.750 | 21.830 | 21.900 |
 | curve25519-voi, expanded key | 18.940 | 18.740 | 18.930 | 19.000 | 19.070 |
+
+### Multicore scaling
+
+**Ryzen 7 9700X · 1232-byte messages · aggregate signatures/second, higher is
+better**
 
 A separate Zen 5 public-API scaling checkpoint at `ac8c1ab` measured
 independent callers. These are aggregate **signatures per second** over
