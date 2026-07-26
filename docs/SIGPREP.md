@@ -101,6 +101,16 @@ M-series host (generic backend, the only one that runs there), which is inside
 the noise band: `stdlib`, which this does not touch, moves by up to 2.3% between
 the same two runs.
 
+The native gate was subsequently run on a Ryzen 7 PRO 8700GE with Go 1.26.4.
+The complete repository suite, the race-selected packages, and the forced r51
+path passed. Focused public-API comparisons at 1232 bytes placed the r51 n=8
+and n=64 steady-state bands within 0.1% of the pre-extraction baseline, with
+zero allocations and zero internal-fault fallbacks. A later repeat on the same
+host became bimodal at almost exactly 2x throughput, so those samples are kept
+as a host-state warning rather than interpreted as a source change. The exact
+regime and commands are recorded in
+[`results/zen4-sigprep-2026-07-26`](results/zen4-sigprep-2026-07-26/README.md).
+
 ## Where this points
 
 Two things become cheap that were not:
