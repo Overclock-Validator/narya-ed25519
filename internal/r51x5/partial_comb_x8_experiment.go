@@ -89,8 +89,11 @@ func recodeAsymmetricFixedBScalarsX8(
 		half := radix >> 1
 		for round := 0; round < int(out.count); round++ {
 			digit := int32(asymmetricFixedBScalarBitsExperiment(&scalars[lane], round*int(radixBits), radixBits)) + carry
-			carry = (digit + half) / radix
-			digit -= carry * radix
+			// See the x4 recoder: digit+half is provably non-negative, so over a
+			// power-of-two radix the shift is exactly the division and avoids a
+			// hardware IDIV per digit per lane.
+			carry = (digit + half) >> radixBits
+			digit -= carry << radixBits
 			if negativeMask&laneMask != 0 {
 				digit = -digit
 			}
