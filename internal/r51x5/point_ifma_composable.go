@@ -191,12 +191,11 @@ func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 }
 
 func ifmaPointAddComposableStaticX8(out, a, b *IFMAPointX8) error {
-	aa, bb := *a, *b
 	var yMinusX1, yPlusX1, yMinusX2, yPlusX2 IFMAElementX8
-	yMinusX1.Subtract(&aa.Y, &aa.X)
-	yPlusX1.Add(&aa.Y, &aa.X)
-	yMinusX2.Subtract(&bb.Y, &bb.X)
-	yPlusX2.Add(&bb.Y, &bb.X)
+	ifmaSubtractComposableUncheckedX8(&yMinusX1, &a.Y, &a.X)
+	ifmaAddComposableUncheckedX8(&yPlusX1, &a.Y, &a.X)
+	ifmaSubtractComposableUncheckedX8(&yMinusX2, &b.Y, &b.X)
+	ifmaAddComposableUncheckedX8(&yPlusX2, &b.Y, &b.X)
 
 	var A, B, C, D, E, F, G, H IFMAElementX8
 	if err := ifmaMultiplyComposableUncheckedX8(&A, &yMinusX1, &yMinusX2); err != nil {
@@ -205,35 +204,36 @@ func ifmaPointAddComposableStaticX8(out, a, b *IFMAPointX8) error {
 	if err := ifmaMultiplyComposableUncheckedX8(&B, &yPlusX1, &yPlusX2); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&C, &aa.T, &bb.T); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&C, &a.T, &b.T); err != nil {
 		return err
 	}
 	if err := ifmaMultiplyComposableUncheckedX8(&C, &C, &ifmaCurve2DX8); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&D, &aa.Z, &bb.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&D, &a.Z, &b.Z); err != nil {
 		return err
 	}
-	D.Add(&D, &D)
-	E.Subtract(&B, &A)
-	F.Subtract(&D, &C)
-	G.Add(&D, &C)
-	H.Add(&B, &A)
+	ifmaAddComposableUncheckedX8(&D, &D, &D)
+	ifmaSubtractComposableUncheckedX8(&E, &B, &A)
+	ifmaSubtractComposableUncheckedX8(&F, &D, &C)
+	ifmaAddComposableUncheckedX8(&G, &D, &C)
+	ifmaAddComposableUncheckedX8(&H, &B, &A)
 
-	var result IFMAPointX8
-	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
+	// Both input points are dead after A/B/C/D and E/F/G/H are formed. Write
+	// the result directly so exact out==a or out==b aliasing does not require
+	// two 1,280-byte input copies, a result temporary, or a final point copy.
+	if err := ifmaMultiplyComposableUncheckedX8(&out.X, &E, &F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, &G, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.T, &E, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, &F, &G); err != nil {
 		return err
 	}
-	*out = result
 	return nil
 }
 

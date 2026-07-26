@@ -581,7 +581,19 @@ func TestExperimentalIFMAComposableHardware(t *testing.T) {
 		}
 		alias := a
 		if err := ExperimentalIFMAPointAddComposableX8(&alias, &alias, &b); err != nil || alias != gotAdd {
-			t.Fatalf("round %d: aliased hardware add mismatch: %v", round, err)
+			t.Fatalf("round %d: left-aliased hardware add mismatch: %v", round, err)
+		}
+		alias = b
+		if err := ExperimentalIFMAPointAddComposableX8(&alias, &a, &alias); err != nil || alias != gotAdd {
+			t.Fatalf("round %d: right-aliased hardware add mismatch: %v", round, err)
+		}
+		var wantSelf IFMAPointX8
+		if err := ifmaPointAddComposableX8(&wantSelf, &a, &a, modelMultiplyComposableX8); err != nil {
+			t.Fatal(err)
+		}
+		alias = a
+		if err := ExperimentalIFMAPointAddComposableX8(&alias, &alias, &alias); err != nil || alias != wantSelf {
+			t.Fatalf("round %d: all-aliased hardware add mismatch: %v", round, err)
 		}
 	}
 
