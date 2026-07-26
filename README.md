@@ -186,8 +186,9 @@ admitted steps were an exact 160-byte micro-AoS A-table transpose (6.404 us),
 pre-signing both public-scalar Niels forms (6.072 us), and bypassing the large
 portable element wrappers inside the already-gated x4/x8 point loops (5.782
 us). That final mechanical change also improved the requested n=4 row from
-about 12.81 to 12.60 us/signature; it does not affect the separate packed
-singleton kernel.
+about 12.81 to 12.60 us/signature. Removing the x4 point-add input and result
+copies in `c6c27c3` reduced it again to about **12.36 us/signature**. Neither
+change affects the separate packed singleton kernel.
 These are cold arbitrary-key results: A is decoded and its table is rebuilt for
 every signature. The complete three-message Zen 4/Zen 5 release matrix still
 needs to be rerun before replacing the pinned PR-1 table above.

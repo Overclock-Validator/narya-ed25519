@@ -68,6 +68,16 @@ All rows remained zero-allocation. Widths one and two use the separate packed
 singleton/tail kernel, so their neutral result is expected. The n=4 row is the
 primary small-batch gate; n=8 and n=64 retain the full-width throughput check.
 
+The x4 full-add still copied both 640-byte inputs and then copied a 640-byte
+result even though its inputs are dead before final output. Existing native
+tests already covered both `out==left` and `out==right`. Promoting the proven
+input-copy removal moved n=4 from about 12.60 to 12.46 us/signature; writing the
+four final products directly to `out` moved it again to 12.36--12.37. Commit
+`c6c27c3` contains both changes. Ten two-second public-API samples remained
+zero-allocation, and n=4 is about 3.5% faster than the 12.81-us pre-wrapper
+baseline. Full x8 groups do not execute this x4 add, so this is intentionally a
+small-batch/tail optimization rather than a new n=64 headline.
+
 ---
 
 ## 1. What landed on this branch
