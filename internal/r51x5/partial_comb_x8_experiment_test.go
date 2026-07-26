@@ -379,3 +379,78 @@ func BenchmarkWarmCombX8ComponentsExperiment(b *testing.B) {
 		}
 	})
 }
+
+// BenchmarkWarmCombX8ShapeSweepExperiment measures the speed/memory frontier of
+// the comb shape.
+//
+// The passes count is a uniquely clean lever here. Digit count depends only on
+// the window width, so changing passes leaves the number of additions untouched
+// and moves only the online depth (width*(passes-1)) and the table size. Fewer
+// passes therefore buys doublings with per-key bytes and nothing else, and
+// per-key bytes are cache capacity.
+//
+// B is a single process-wide table, so its rows are far cheaper than A's. Both
+// sides are swept because the loop runs to max(depthA, depthB): shrinking one
+// alone stops helping as soon as the other dominates.
+func BenchmarkWarmCombX8ShapeSweepExperiment(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA target")
+	}
+	t := &testing.T{}
+	rng := rand.New(rand.NewSource(20260726))
+	bases, bPoint := newPartialCombX8BasesExperiment(t, rng)
+	if t.Failed() {
+		b.Fatal("fixture construction failed")
+	}
+
+	var scalars FixedDSMScalarsX8
+	for term := 0; term < DSMTerms; term++ {
+		for lane := 0; lane < X8Lanes; lane++ {
+			scalars[term][lane] = randomPartialCombScalarX8Experiment(rng)
+		}
+	}
+	negative := [DSMTerms]uint8{0, 0xff}
+
+	for _, shape := range []struct {
+		aPasses, bPasses int
+	}{
+		{9, 5}, // current
+		{7, 5},
+		{5, 5},
+		{5, 3},
+		{4, 3},
+		{3, 3},
+		{3, 2},
+		{2, 2},
+		{2, 1},
+		{1, 1},
+	} {
+		aSpec := heterogeneousPartialCombSpecExperiment{width: 6, passes: shape.aPasses}
+		bSpec := heterogeneousPartialCombSpecExperiment{width: 10, passes: shape.bPasses}
+		depth := aSpec.onlineDepth()
+		if bSpec.onlineDepth() > depth {
+			depth = bSpec.onlineDepth()
+		}
+		perKey := aSpec.rowCount() * aSpec.entriesPerRow() * 120
+
+		name := fmt.Sprintf("A6r%d-B10r%d/depth=%d/keyKiB=%d", shape.aPasses, shape.bPasses, depth, perKey>>10)
+		b.Run(name, func(b *testing.B) {
+			aTables := buildHeterogeneousPartialCombATablesX8Experiment(&bases, aSpec)
+			bTable := buildHeterogeneousPartialCombPreSignedSharedTableExperiment(
+				buildHeterogeneousPartialCombTableExperiment(&bPoint, bSpec),
+			)
+			var out IFMAPointX8
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := evaluateHeterogeneousPartialCombPreSignedBDSMX8Experiment(
+					&out, &aTables, bTable, &scalars, &negative, 0xff,
+				); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
+			b.ReportMetric(float64(perKey), "B/key")
+		})
+	}
+}
