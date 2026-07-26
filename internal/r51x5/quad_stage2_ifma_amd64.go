@@ -36,6 +36,16 @@ func ifmaQuadCachedAddFirstOperandUncheckedX4(out, q *LimbsX4)
 //go:noescape
 func ifmaQuadDoubleFinalOperandsUncheckedX4(left, right, products *LimbsX4)
 
+// ifmaQuadDoubleFinalMultiplyUncheckedX4 fuses
+// ifmaQuadDoubleFinalOperandsUncheckedX4 with the normalized packed field
+// multiplication that immediately consumes those two operands. products must
+// satisfy the same u52 [X^2,Y^2,Z^2,XY] contract as the split helper. out may
+// alias products because all five product vectors are consumed before the
+// first output store. The caller owns the IFMA gate.
+//
+//go:noescape
+func ifmaQuadDoubleFinalMultiplyUncheckedX4(out, products *LimbsX4)
+
 // ifmaQuadCachedAddFinalOperandsUncheckedX4 transforms packed normalized
 // [A, B, C, D] coordinate lanes into the two normalized operands for the final
 // packed cached-add multiplication:

@@ -166,10 +166,11 @@ func quadPointDoubleHardwareWorkspaceUncheckedX4(out, q *quadPackedPointX4, work
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
 		return err
 	}
-	ifmaQuadDoubleFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
 	// q is no longer live after the first packed permutation, so this final
-	// multiply may write directly through out even when out == q.
-	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
+	// linear layer and multiply may write directly through out even when
+	// out == q.
+	ifmaQuadDoubleFinalMultiplyUncheckedX4(&out.coordinates.limbs, &workspace.products.limbs)
+	return nil
 }
 
 func quadPointDoubleModelX4(out, q *quadPackedPointX4) error {

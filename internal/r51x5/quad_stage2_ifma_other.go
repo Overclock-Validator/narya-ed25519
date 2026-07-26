@@ -25,6 +25,12 @@ func ifmaQuadDoubleFinalOperandsUncheckedX4(left, right, products *LimbsX4) {
 	*right = rightElement.limbs
 }
 
+func ifmaQuadDoubleFinalMultiplyUncheckedX4(out, products *LimbsX4) {
+	var left, right LimbsX4
+	ifmaQuadDoubleFinalOperandsUncheckedX4(&left, &right, products)
+	ifmaMulNormalizedUncheckedX4(out, &left, &right)
+}
+
 func ifmaQuadCachedAddFinalOperandsUncheckedX4(left, right, products *LimbsX4) {
 	input := IFMAElementX4{limbs: *products}
 	var leftElement, rightElement IFMAElementX4
