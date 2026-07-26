@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkFixedScalarRecodingX8/radix16         	  357482	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  361417	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  362604	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  361944	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  361219	      1658 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  361598	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  362708	      1655 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  362377	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  362250	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix16         	  361638	      1656 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  448356	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  448483	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447980	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447811	      1341 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  446505	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447936	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447486	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447703	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447744	      1340 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32         	  447867	      1339 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  530907	      1132 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  532693	      1132 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  528722	      1132 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  527800	      1133 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  529047	      1134 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  527881	      1135 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  531993	      1131 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  527838	      1134 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  528634	      1134 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix64         	  528277	      1133 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	18.412s

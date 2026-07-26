@@ -479,6 +479,39 @@ Every timed public row remained 0 B/op, 0 allocs/op, and reported zero internal
 fault fallbacks. This is a supported complete-path win, unlike the selector and
 general-add micro-results above.
 
+### 5.7 Round-major x8 scalar recoding
+
+The post-Stage-2 profile put fixed scalar recoding at about 3.5% cumulative.
+Two extraction designs were gated independently on Zen 5. A stateful streaming
+bit reader was rejected immediately: radix-32 recoding regressed from about
+1.19 to 1.34 us per eight scalars because its refill branch and state updates
+cost more than the avoided loads.
+
+The retained design preserves the original two-byte extractor and changes the
+x8 loop orientation to match its output: validate the lanes once, then process
+one round across all eight lanes. Commit `586e764` measured about 27% faster at
+radix 32 (1.188 us to 0.871 us per eight scalars), 27% at radix 16, and 29% at
+radix 64. Ten pinned public-API samples at msg=1232 moved n=8 from 5.442 to
+5.421 us/signature (-0.4%) and n=64 from 5.136 to 5.099 us/signature (-0.7%).
+The n=1/2/4 paths were neutral within run drift, and all rows retained zero
+allocations and zero internal-fault fallbacks. See
+`docs/results/zen5-round-major-recode-2026-07-26/` for raw output.
+
+### 5.8 Packed-singleton doubling scratch — open measurement
+
+Static inspection found a width-specific mechanical lead that must not be
+conflated with the x8 work: `quadPointDoubleHardwareUncheckedX4`, used by the
+packed singleton path, still has a roughly 992-byte frame and six zeroing
+sequences for six `IFMAElementX4` scratch values. Each scratch value appears to
+be fully overwritten before use, while the current fused x8 doubling has a
+small frame and no corresponding zeroing. A singleton verification performs
+roughly 253 doublings, so this deserves a before/after hardware gate.
+
+This is not yet a performance claim. First prove full overwrite and alias
+safety, add boundary and random point differentials, then compare n=1 (and n=2
+where applicable) through the exported API. Keep it only if the complete path
+moves without allocations or predicate changes.
+
 ---
 
 ## 6. Smaller observations
