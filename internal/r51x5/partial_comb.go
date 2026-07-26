@@ -170,6 +170,35 @@ func heterogeneousPartialCombAGroupPayloadBytesExperiment(
 	return bytes
 }
 
+// liveHeterogeneousPartialCombSpec returns the table spec to drive the group,
+// taken from the lowest live lane rather than from lane 0.
+//
+// The per-key A tables are populated only for lanes that survive their
+// caller's pre-checks: a lane carrying a non-canonical scalar, a small-order or
+// non-canonical R, or a wrong-length signature is skipped and keeps its nil
+// zero value. Reading the spec from lane 0 unconditionally therefore
+// dereferences nil whenever lane 0 is the skipped one, which a caller can
+// arrange with a single malformed signature at that position.
+//
+// Taking the spec from any live lane is equivalent because the spec is already
+// required to be uniform across the group: the entries-per-row derived from one
+// lane indexes into every other lane's points. ok is false when no live lane
+// has a table, which every caller must treat as an empty group.
+func liveHeterogeneousPartialCombSpec(
+	tables *[X4Lanes]*heterogeneousPartialCombTableExperiment,
+	active uint8,
+) (heterogeneousPartialCombSpecExperiment, bool) {
+	for lane := 0; lane < X4Lanes; lane++ {
+		if active&(1<<lane) == 0 {
+			continue
+		}
+		if table := tables[lane]; table != nil {
+			return table.spec, true
+		}
+	}
+	return heterogeneousPartialCombSpecExperiment{}, false
+}
+
 func selectHeterogeneousPartialCombPerKeyX4Experiment(
 	out *fixedBaseIFMACachedX4,
 	tables *[X4Lanes]*heterogeneousPartialCombTableExperiment,
@@ -180,7 +209,15 @@ func selectHeterogeneousPartialCombPerKeyX4Experiment(
 	lookupMask := round.NonzeroMask & active & 0x0f
 	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
 	p1, p2, p3 := p0, p0, p0
-	entries := tables[0].spec.entriesPerRow()
+	spec, ok := liveHeterogeneousPartialCombSpec(tables, lookupMask)
+	if !ok {
+		// No lane contributes a point this round, so every operand stays the
+		// identity entry and the transpose below is still the correct result.
+		ifmaAffine3MicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+		conditionalNegateIFMAAffine3MicroAoSX4(out, round.NegativeMask&lookupMask)
+		return
+	}
+	entries := spec.entriesPerRow()
 	if lookupMask&0x01 != 0 {
 		p0 = &tables[0].points[row*entries+int(round.Magnitude[0])-1]
 	}
@@ -277,7 +314,11 @@ func addHeterogeneousPartialCombAPassX4Experiment(
 	pass int,
 	usable uint8,
 ) error {
-	spec := tables[0].spec
+	spec, ok := liveHeterogeneousPartialCombSpec(tables, usable)
+	if !ok {
+		// Nothing live carries a table, so this pass contributes no additions.
+		return nil
+	}
 	for row := 0; row < spec.rowCount(); row++ {
 		digitIndex := row*spec.passes + pass
 		if digitIndex >= spec.digitCount() {
@@ -364,7 +405,15 @@ func evaluateHeterogeneousPartialCombDSMX4Experiment(
 		return 0, ErrIFMAUnavailable
 	}
 	active &= 0x0f
-	aSpec, bSpec := aTables[0].spec, bTable.spec
+	aSpec, ok := liveHeterogeneousPartialCombSpec(aTables, active)
+	if !ok {
+		// Every live lane would have a table; none does, so there is no group
+		// to evaluate. Return the identity and an empty verdict mask rather
+		// than dereferencing a skipped lane's nil entry.
+		*out = identityIFMAPointX4Value()
+		return 0, nil
+	}
+	bSpec := bTable.spec
 	var aDigits, bDigits asymmetricFixedBDigitsX4
 	// Term 1 is A. Applying negativeMasks[1] to every balanced digit preserves
 	// exact -k, rather than replacing it by L-k (which is wrong on torsion).
@@ -423,7 +472,15 @@ func evaluateHeterogeneousPartialCombPreSignedBDSMX4Experiment(
 		return 0, ErrIFMAUnavailable
 	}
 	active &= 0x0f
-	aSpec, bSpec := aTables[0].spec, bTable.spec
+	aSpec, ok := liveHeterogeneousPartialCombSpec(aTables, active)
+	if !ok {
+		// See evaluateHeterogeneousPartialCombDSMX4Experiment: a lane skipped by
+		// the caller's pre-checks leaves a nil table, and lane 0 is a position
+		// an attacker can choose.
+		*out = identityIFMAPointX4Value()
+		return 0, nil
+	}
+	bSpec := bTable.spec
 	var aDigits, bDigits asymmetricFixedBDigitsX4
 	usable := recodeAsymmetricFixedBScalarsX4(&aDigits, &scalars[1], negativeMasks[1], active, aSpec.width)
 	usable &= recodeAsymmetricFixedBScalarsX4(&bDigits, &scalars[0], negativeMasks[0], active, bSpec.width)

@@ -13,10 +13,30 @@ import (
 type Profile uint8
 
 const (
-	// DalekStrict is current Solana mainnet transaction semantics
-	// (ed25519-dalek 2.x verify_strict, reached via solana-signature):
+	// DalekStrict is current Solana mainnet transaction semantics:
 	// StdlibCompat plus rejection of small-order A and small-order R.
 	// This is the default.
+	//
+	// The reference is ed25519-dalek 2.x verify_strict, reached through
+	// solana-signature. Naming the version matters, because the two dalek
+	// majors differ in the final step: 2.x byte-compares the recomputed R
+	// against the signature, which is what this profile does, while 1.x
+	// compares decoded points and so accepts a non-canonically encoded R.
+	// solana-signature took the 2.x dependency at its own 3.0.0.
+	//
+	// Verified against agave v4.2.0-beta.1, whose lockfile resolves
+	// solana-signature 3.4.1 onto ed25519-dalek 2.2.0. Note that lockfile also
+	// contains ed25519-dalek 1.0.1 for other dependents, so reading the version
+	// list alone is not enough to establish which one transaction verification
+	// reaches.
+	//
+	// Releases old enough to pin solana-signature 2.x resolve dalek 1.0.1 and
+	// are therefore marginally more permissive than this profile about
+	// non-canonical R. That divergence is one-directional and is not known to
+	// be constructible: the non-canonical y values that decode are either
+	// small-order, which both sides reject, or of unknown discrete log, so
+	// producing a matching s is not a forgery anyone can perform. Those
+	// releases are out of scope here.
 	DalekStrict Profile = iota
 
 	// StdlibCompat is exactly crypto/ed25519.Verify: canonical s,
