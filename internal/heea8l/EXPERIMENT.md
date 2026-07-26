@@ -4,6 +4,13 @@ This package is research tooling. It is not imported by signature
 verification and its `math/big` performance is not representative of a future
 fixed-width implementation.
 
+The fixed-width Lehmer checkpoint is also research-only. On a Ryzen 7 PRO
+8700GE it was about 2.4x faster than the exact principal-Euclid selector on an
+identical randomized input set, but still required roughly 8.0–8.3
+microseconds per selection. That cost is too large for verifier integration.
+See [`../../docs/results/zen4-heea-lehmer-2026-07-26`](../../docs/results/zen4-heea-lehmer-2026-07-26/README.md)
+for the hardware gate and its host-state caveat.
+
 ## Strict-equation exactness contract
 
 Let `N=8L`, where `L` is the prime subgroup order. If the selector returns
