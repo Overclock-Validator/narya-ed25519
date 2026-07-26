@@ -149,67 +149,95 @@ func (v *WarmCombStrictVerifierX4) Verify(
 	signatures *[X4Lanes][]byte,
 	ok *[X4Lanes]bool,
 ) (bool, error) {
-	*ok = [X4Lanes]bool{}
-	v.points[0] = IFMAPointX4{}
-	v.active[0] = 0
-	v.encoded[0] = [X4Lanes][32]byte{}
+	return v.VerifyBatch(keys[:], pubs[:], messages[:], signatures[:], ok[:])
+}
 
-	var tableValues [X4Lanes]heterogeneousPartialCombTableExperiment
-	var tables [X4Lanes]*heterogeneousPartialCombTableExperiment
-	var scalars FixedDSMScalarsX4
-	var live uint8
-	for lane := 0; lane < X4Lanes; lane++ {
-		key := keys[lane]
-		if key == nil || key.raw != pubs[lane] {
-			continue
-		}
-		signature := signatures[lane]
-		if len(signature) != sted25519.SignatureSize {
-			continue
-		}
-		copy(scalars[0][lane][:], signature[32:])
-		if !canonicalScalarBytes(&scalars[0][lane]) ||
-			packedEncodesSmallOrderPointX4(signature[:32]) ||
-			!packedCanonicalREncodingX4(signature[:32]) {
-			continue
-		}
-
-		tableValues[lane] = key.table()
-		tables[lane] = &tableValues[lane]
-		v.hash.Reset()
-		_, _ = v.hash.Write(signature[:32])
-		_, _ = v.hash.Write(pubs[lane][:])
-		_, _ = v.hash.Write(messages[lane])
-		sum := v.hash.Sum(v.digest[:0])
-		if len(sum) != len(v.digest) {
-			panic("r51x5: SHA-512 returned an invalid digest length")
-		}
-		v.wide[lane] = v.digest
-		live |= 1 << lane
+// VerifyBatch evaluates up to ExperimentalIFMABatchEncodeMaxX4Groups warm x4
+// groups and batch-encodes every computed Q with one inversion. Inputs remain
+// in caller order and the length must be a positive multiple of X4Lanes.
+// Every verdict is cleared before work starts and remains false on error.
+func (v *WarmCombStrictVerifierX4) VerifyBatch(
+	keys []*WarmCombKeyA6R9,
+	pubs [][32]byte,
+	messages, signatures [][]byte,
+	ok []bool,
+) (bool, error) {
+	count := len(keys)
+	if count == 0 || count%X4Lanes != 0 || count > ExperimentalIFMABatchEncodeMaxX4Groups*X4Lanes ||
+		len(pubs) != count || len(messages) != count || len(signatures) != count || len(ok) != count {
+		return false, fmt.Errorf("r51x5: warm-comb batch width=%d", count)
+	}
+	for index := range ok {
+		ok[index] = false
 	}
 
-	var reduced [X4Lanes][32]byte
-	live &= ExperimentalReduceUniformScalarsX4(&reduced, &v.wide, live)
-	scalars[1] = reduced
-	negative := [DSMTerms]uint8{0, live}
-	usable, err := evaluateHeterogeneousPartialCombPreSignedBDSMX4Experiment(
-		&v.points[0], &tables, v.b10, &scalars, &negative, live,
-	)
-	if err != nil {
+	groups := count / X4Lanes
+	for group := 0; group < groups; group++ {
+		v.points[group] = IFMAPointX4{}
+		v.active[group] = 0
+		v.encoded[group] = [X4Lanes][32]byte{}
+
+		var tableValues [X4Lanes]heterogeneousPartialCombTableExperiment
+		var tables [X4Lanes]*heterogeneousPartialCombTableExperiment
+		var scalars FixedDSMScalarsX4
+		var live uint8
+		for lane := 0; lane < X4Lanes; lane++ {
+			index := group*X4Lanes + lane
+			key := keys[index]
+			if key == nil || key.raw != pubs[index] {
+				continue
+			}
+			signature := signatures[index]
+			if len(signature) != sted25519.SignatureSize {
+				continue
+			}
+			copy(scalars[0][lane][:], signature[32:])
+			if !canonicalScalarBytes(&scalars[0][lane]) ||
+				packedEncodesSmallOrderPointX4(signature[:32]) ||
+				!packedCanonicalREncodingX4(signature[:32]) {
+				continue
+			}
+
+			tableValues[lane] = key.table()
+			tables[lane] = &tableValues[lane]
+			v.hash.Reset()
+			_, _ = v.hash.Write(signature[:32])
+			_, _ = v.hash.Write(pubs[index][:])
+			_, _ = v.hash.Write(messages[index])
+			sum := v.hash.Sum(v.digest[:0])
+			if len(sum) != len(v.digest) {
+				panic("r51x5: SHA-512 returned an invalid digest length")
+			}
+			v.wide[lane] = v.digest
+			live |= 1 << lane
+		}
+
+		var reduced [X4Lanes][32]byte
+		live &= ExperimentalReduceUniformScalarsX4(&reduced, &v.wide, live)
+		scalars[1] = reduced
+		negative := [DSMTerms]uint8{0, live}
+		usable, err := evaluateHeterogeneousPartialCombPreSignedBDSMX4Experiment(
+			&v.points[group], &tables, v.b10, &scalars, &negative, live,
+		)
+		if err != nil {
+			return false, err
+		}
+		v.active[group] = usable
+	}
+
+	if err := v.encoder.Encode(&v.encoded, &v.points, &v.active, groups); err != nil {
 		return false, err
 	}
-	v.active[0] = usable
-	if err := v.encoder.Encode(&v.encoded, &v.points, &v.active, 1); err != nil {
-		return false, err
-	}
-
 	all := true
-	for lane := 0; lane < X4Lanes; lane++ {
-		accepted := len(signatures[lane]) == sted25519.SignatureSize &&
-			usable&(1<<lane) != 0 &&
-			bytes.Equal(v.encoded[0][lane][:], signatures[lane][:32])
-		ok[lane] = accepted
-		all = all && accepted
+	for group := 0; group < groups; group++ {
+		for lane := 0; lane < X4Lanes; lane++ {
+			index := group*X4Lanes + lane
+			accepted := len(signatures[index]) == sted25519.SignatureSize &&
+				v.active[group]&(1<<lane) != 0 &&
+				bytes.Equal(v.encoded[group][lane][:], signatures[index][:32])
+			ok[index] = accepted
+			all = all && accepted
+		}
 	}
 	return all, nil
 }

@@ -93,24 +93,59 @@ func TestR51WarmPrecomputeShapeAndStrictDifferential(t *testing.T) {
 
 func TestR51WarmPrecomputedGroupZeroAllocations(t *testing.T) {
 	backend := requireR51Backend(t)
-	fixture := makeBatchFixture(t, r51x5.X4Lanes, 1232)
-	pre := buildR51WarmGroupForTest(t, backend, fixture.pubs)
-	verdicts := make([]bool, r51x5.X4Lanes)
-	if all, err := backend.verifyBatchRawPrecomputedErr(
-		DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, verdicts, pre[:],
-	); err != nil || !all {
-		t.Fatalf("warmup all=%v err=%v verdicts=%v", all, err, verdicts)
-	}
-	allocations := testing.AllocsPerRun(100, func() {
-		all, err := backend.verifyBatchRawPrecomputedErr(
-			DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, verdicts, pre[:],
-		)
-		if err != nil || !all {
-			panic("r51 warm group verification failed")
+	for _, count := range []int{4, 8, 64} {
+		fixture := makeBatchFixture(t, count, 1232)
+		pre := make([]*PrecomputedKey, count)
+		for offset := 0; offset < count; offset += r51x5.X4Lanes {
+			group := buildR51WarmGroupForTest(t, backend, fixture.pubs[offset:offset+r51x5.X4Lanes])
+			copy(pre[offset:offset+r51x5.X4Lanes], group[:])
 		}
-	})
-	if allocations != 0 {
-		t.Fatalf("r51 warm group allocations=%v want=0", allocations)
+		verdicts := make([]bool, count)
+		if all, err := backend.verifyBatchRawPrecomputedErr(
+			DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, verdicts, pre,
+		); err != nil || !all {
+			t.Fatalf("count=%d warmup all=%v err=%v verdicts=%v", count, all, err, verdicts)
+		}
+		allocations := testing.AllocsPerRun(100, func() {
+			all, err := backend.verifyBatchRawPrecomputedErr(
+				DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, verdicts, pre,
+			)
+			if err != nil || !all {
+				panic("r51 warm group verification failed")
+			}
+		})
+		if allocations != 0 {
+			t.Fatalf("count=%d r51 warm allocations=%v want=0", count, allocations)
+		}
+	}
+}
+
+func TestR51WarmPrecomputedBatchDifferential(t *testing.T) {
+	backend := requireR51Backend(t)
+	fixture := makeBatchFixture(t, 8, 1232)
+	pre := make([]*PrecomputedKey, len(fixture.pubs))
+	for offset := 0; offset < len(pre); offset += r51x5.X4Lanes {
+		group := buildR51WarmGroupForTest(t, backend, fixture.pubs[offset:offset+r51x5.X4Lanes])
+		copy(pre[offset:offset+r51x5.X4Lanes], group[:])
+	}
+	mutated := append([][]byte(nil), fixture.sigs...)
+	mutated[5] = append([]byte(nil), mutated[5]...)
+	mutated[5][9] ^= 0x40
+	verdicts := make([]bool, len(fixture.pubs))
+	all, err := backend.verifyBatchRawPrecomputedErr(
+		DalekStrict, fixture.pubs, fixture.msgs, mutated, verdicts, pre,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if all {
+		t.Fatal("warm batch accepted an invalid equation")
+	}
+	for index := range verdicts {
+		want := referenceVerifyProfile(DalekStrict, fixture.pubs[index], fixture.msgs[index], mutated[index])
+		if verdicts[index] != want {
+			t.Fatalf("index=%d got=%v want=%v", index, verdicts[index], want)
+		}
 	}
 }
 

@@ -45,11 +45,11 @@ type r51SingleWorker struct {
 type r51WarmWorker struct {
 	verifier *r51x5.WarmCombStrictVerifierX4
 	err      error
-	keys     [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9
-	pubs     [r51x5.X4Lanes][32]byte
-	msgs     [r51x5.X4Lanes][]byte
-	sigs     [r51x5.X4Lanes][]byte
-	verdicts [r51x5.X4Lanes]bool
+	keys     [r51BatchQMaxChunk]*r51x5.WarmCombKeyA6R9
+	pubs     [r51BatchQMaxChunk][32]byte
+	msgs     [r51BatchQMaxChunk][]byte
+	sigs     [r51BatchQMaxChunk][]byte
+	verdicts [r51BatchQMaxChunk]bool
 }
 
 type r51WarmBuildWorker struct {
@@ -263,18 +263,21 @@ func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]b
 			warmWidth = r51WarmDispatchWidth(pubs, pre, offset, full)
 		}
 		if warmWidth != 0 {
-			for warmOffset := offset; warmOffset < offset+warmWidth; warmOffset += r51x5.X4Lanes {
-				if _, err := b.verifyWarmGroup(
-					pubs[warmOffset:warmOffset+r51x5.X4Lanes],
-					msgs[warmOffset:warmOffset+r51x5.X4Lanes],
-					sigs[warmOffset:warmOffset+r51x5.X4Lanes],
-					ok[warmOffset:warmOffset+r51x5.X4Lanes],
-					pre[warmOffset:warmOffset+r51x5.X4Lanes],
-				); err != nil {
-					return false, err
+			warmEnd := offset + warmWidth
+			for warmEnd < full && warmEnd-offset < r51BatchQMaxChunk {
+				next := r51WarmDispatchWidth(pubs, pre, warmEnd, full)
+				if next == 0 || warmEnd+next-offset > r51BatchQMaxChunk {
+					break
 				}
+				warmEnd += next
 			}
-			offset += warmWidth
+			if _, err := b.verifyWarmGroups(
+				pubs[offset:warmEnd], msgs[offset:warmEnd], sigs[offset:warmEnd],
+				ok[offset:warmEnd], pre[offset:warmEnd],
+			); err != nil {
+				return false, err
+			}
+			offset = warmEnd
 			continue
 		}
 
@@ -392,8 +395,24 @@ func (b *r51Backend) verifyWarmGroup(
 	ok []bool,
 	pre []*PrecomputedKey,
 ) (bool, error) {
-	if !r51WarmGroupAvailable(pubs, pre) || len(msgs) != r51x5.X4Lanes || len(sigs) != r51x5.X4Lanes || len(ok) != r51x5.X4Lanes {
-		return false, fmt.Errorf("ed25519: invalid r51 warm group")
+	return b.verifyWarmGroups(pubs, msgs, sigs, ok, pre)
+}
+
+func (b *r51Backend) verifyWarmGroups(
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	ok []bool,
+	pre []*PrecomputedKey,
+) (bool, error) {
+	count := len(pubs)
+	if count == 0 || count%r51x5.X4Lanes != 0 || count > r51BatchQMaxChunk ||
+		len(msgs) != count || len(sigs) != count || len(ok) != count || len(pre) != count {
+		return false, fmt.Errorf("ed25519: invalid r51 warm width %d", count)
+	}
+	for offset := 0; offset < count; offset += r51x5.X4Lanes {
+		if !r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
+			return false, fmt.Errorf("ed25519: invalid r51 warm group at %d", offset)
+		}
 	}
 	worker := b.warmPool.Get().(*r51WarmWorker)
 	if worker.err != nil {
@@ -402,21 +421,24 @@ func (b *r51Backend) verifyWarmGroup(
 	if worker.verifier == nil {
 		return false, fmt.Errorf("ed25519: construct r51 warm worker: nil verifier")
 	}
-	for lane := 0; lane < r51x5.X4Lanes; lane++ {
-		table := pre[lane].table.(*r51WarmTable)
-		worker.keys[lane] = &table.warm
-		worker.pubs[lane] = *pubs[lane]
-		worker.msgs[lane] = msgs[lane]
-		worker.sigs[lane] = sigs[lane]
+	for index := 0; index < count; index++ {
+		table := pre[index].table.(*r51WarmTable)
+		worker.keys[index] = &table.warm
+		worker.pubs[index] = *pubs[index]
+		worker.msgs[index] = msgs[index]
+		worker.sigs[index] = sigs[index]
 	}
-	all, err := worker.verifier.Verify(&worker.keys, &worker.pubs, &worker.msgs, &worker.sigs, &worker.verdicts)
+	all, err := worker.verifier.VerifyBatch(
+		worker.keys[:count], worker.pubs[:count], worker.msgs[:count],
+		worker.sigs[:count], worker.verdicts[:count],
+	)
 	if err != nil {
 		return false, err
 	}
-	copy(ok, worker.verdicts[:])
-	worker.keys = [r51x5.X4Lanes]*r51x5.WarmCombKeyA6R9{}
-	worker.msgs = [r51x5.X4Lanes][]byte{}
-	worker.sigs = [r51x5.X4Lanes][]byte{}
+	copy(ok, worker.verdicts[:count])
+	clear(worker.keys[:count])
+	clear(worker.msgs[:count])
+	clear(worker.sigs[:count])
 	b.warmPool.Put(worker)
 	return all, nil
 }
