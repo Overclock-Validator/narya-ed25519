@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12812432	        46.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12842902	        46.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12850638	        46.68 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12855462	        46.68 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12849220	        46.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12843915	        46.67 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12858482	        46.68 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12858297	        46.66 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12855043	        46.67 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached         	12855028	        46.66 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13702135	        43.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13697973	        43.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13681930	        43.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13706120	        43.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13704398	        43.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13707008	        43.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13702483	        43.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13697462	        43.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13712139	        43.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	13706616	        43.79 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	12.917s

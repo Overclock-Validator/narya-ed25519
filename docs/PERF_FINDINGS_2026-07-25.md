@@ -523,6 +523,25 @@ zero internal-fault fallbacks; the complete native repository suite passed.
 Raw output is under
 `docs/results/zen5-packed-singleton-scratch-2026-07-26/`.
 
+### 5.9 Packed-singleton cached-add scratch — retained
+
+The packed cached-point addition had the same dead-initialization shape as the
+former singleton doubling. Five fully-overwritten 160-byte element locals were
+created inside every addition. Commit `12941c8` reuses four intermediate
+elements across the scalar multiplication and writes the final multiplication
+directly to the result after the input point and cached addend are no longer
+live.
+
+The proof and gate mirror the doubling: the existing random projective,
+torsion, range-envelope, and in-place alias oracles remain; a new test poisons
+every scratch limb before comparing 32 repeated in-place additions with a clean
+workspace. Ten pinned Zen 5 samples moved the cached add from 48.97 to 43.79 ns
+(-10.6%). Incrementally after the doubling change, the public msg=1232 path
+moved from 20.90 to 20.38 us/signature at n=1 (-2.5%) and 20.81 to 20.45 at
+n=2 (-1.7%). Timed rows retained zero allocations and zero internal-fault
+fallbacks, and the complete native repository suite passed. Raw output is
+under `docs/results/zen5-packed-singleton-add-scratch-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
