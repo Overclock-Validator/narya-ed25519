@@ -196,6 +196,76 @@ func TestExperimentalCoordinateParallelDoubleX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadDoubleFirstOperandsX4MatchesPortable(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 1026)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x514f1a57))
+	for sample := 0; sample < 1024; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		point := quadPackedPointX4{coordinates: input}
+		var wantU, wantV IFMAElementX4
+		quadDoubleFirstOperandsX4(&wantU, &wantV, &point)
+
+		var gotU, gotV IFMAElementX4
+		ifmaQuadDoubleFirstOperandsUncheckedX4(&gotU.limbs, &gotV.limbs, &input.limbs)
+		if gotU != wantU || gotV != wantV {
+			t.Fatalf("input %d: native first operands differ from portable oracle", index)
+		}
+
+		aliasedU := input
+		var aliasV IFMAElementX4
+		ifmaQuadDoubleFirstOperandsUncheckedX4(&aliasedU.limbs, &aliasV.limbs, &aliasedU.limbs)
+		if aliasedU != wantU || aliasV != wantV {
+			t.Fatalf("input %d: input/U alias differs from portable oracle", index)
+		}
+
+		aliasedV := input
+		var aliasU IFMAElementX4
+		ifmaQuadDoubleFirstOperandsUncheckedX4(&aliasU.limbs, &aliasedV.limbs, &aliasedV.limbs)
+		if aliasU != wantU || aliasedV != wantV {
+			t.Fatalf("input %d: input/V alias differs from portable oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadDoubleFirstOperandsX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, u, v IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadDoubleFirstOperandsUncheckedX4(&u.limbs, &v.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestIFMAQuadDoubleFinalOperandsX4MatchesPortable(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return

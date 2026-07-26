@@ -2,6 +2,14 @@
 
 package r51x5
 
+func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4) {
+	point := quadPackedPointX4{coordinates: IFMAElementX4{limbs: *q}}
+	var uElement, vElement IFMAElementX4
+	quadDoubleFirstOperandsX4(&uElement, &vElement, &point)
+	*u = uElement.limbs
+	*v = vElement.limbs
+}
+
 func ifmaQuadDoubleFinalOperandsUncheckedX4(left, right, products *LimbsX4) {
 	input := IFMAElementX4{limbs: *products}
 	var leftElement, rightElement IFMAElementX4

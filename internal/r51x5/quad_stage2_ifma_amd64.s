@@ -53,6 +53,41 @@
 	VPADDQ C3, IN4, IN4                                                                       \
 	VPMADD52LUQ C4, FOLD19, IN0
 
+// func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4)
+TEXT ·ifmaQuadDoubleFirstOperandsUncheckedX4(SB), NOSPLIT, $0-24
+	MOVQ u+0(FP), DI
+	MOVQ v+8(FP), SI
+	MOVQ q+16(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	VPERMQ $0x34, Y0, Y5
+	VPERMQ $0x74, Y0, Y6
+	VMOVDQU64 Y5,   0(DI)
+	VMOVDQU64 Y6,   0(SI)
+	VPERMQ $0x34, Y1, Y5
+	VPERMQ $0x74, Y1, Y6
+	VMOVDQU64 Y5,  32(DI)
+	VMOVDQU64 Y6,  32(SI)
+	VPERMQ $0x34, Y2, Y5
+	VPERMQ $0x74, Y2, Y6
+	VMOVDQU64 Y5,  64(DI)
+	VMOVDQU64 Y6,  64(SI)
+	VPERMQ $0x34, Y3, Y5
+	VPERMQ $0x74, Y3, Y6
+	VMOVDQU64 Y5,  96(DI)
+	VMOVDQU64 Y6,  96(SI)
+	VPERMQ $0x34, Y4, Y5
+	VPERMQ $0x74, Y4, Y6
+	VMOVDQU64 Y5, 128(DI)
+	VMOVDQU64 Y6, 128(SI)
+	VZEROUPPER
+	RET
+
 // func ifmaQuadDoubleFinalOperandsUncheckedX4(left, right, products *LimbsX4)
 TEXT ·ifmaQuadDoubleFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
 	MOVQ left+0(FP), DI

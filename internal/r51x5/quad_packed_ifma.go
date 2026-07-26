@@ -162,7 +162,7 @@ func quadPointDoubleHardwareUncheckedX4(out, q *quadPackedPointX4) error {
 }
 
 func quadPointDoubleHardwareWorkspaceUncheckedX4(out, q *quadPackedPointX4, workspace *quadPointDoubleWorkspaceX4) error {
-	quadDoubleFirstOperandsX4(&workspace.u, &workspace.v, q)
+	ifmaQuadDoubleFirstOperandsUncheckedX4(&workspace.u.limbs, &workspace.v.limbs, &q.coordinates.limbs)
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
 		return err
 	}

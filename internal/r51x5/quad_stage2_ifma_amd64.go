@@ -2,6 +2,14 @@
 
 package r51x5
 
+// ifmaQuadDoubleFirstOperandsUncheckedX4 permutes packed [X,Y,T,Z] lanes into
+// U=[X,Y,Z,X] and V=[X,Y,Z,Y] for the first doubling multiplication. u and v
+// must be distinct; q may alias either output because every input vector is
+// loaded before the first store. The caller owns the IFMA gate.
+//
+//go:noescape
+func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4)
+
 // ifmaQuadDoubleFinalOperandsUncheckedX4 transforms packed normalized
 // [A=X^2, B=Y^2, C=Z^2, D=XY] coordinate lanes into the two normalized
 // operands for the final packed multiplication:
