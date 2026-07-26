@@ -69,6 +69,13 @@ func assertPublicR51Verdicts(tb testing.TB, ok []bool, invalid int) {
 	}
 }
 
+func assertNoPublicR51FaultFallbacks(tb testing.TB) {
+	tb.Helper()
+	if faults := narya.ActiveBackendStats().InternalFaultFallbacks; faults != 0 {
+		tb.Fatalf("r51 internal fault fallbacks = %d, want zero", faults)
+	}
+}
+
 // BenchmarkPublicR51VerifyBatchStrict is the PR 1 release benchmark. Unlike
 // the diagnostic benchmarks in package ed25519, this external-package
 // benchmark can reach the implementation only through the exported API.
@@ -93,6 +100,7 @@ func BenchmarkPublicR51VerifyBatchStrict(b *testing.B) {
 					b.Fatal("valid fixture rejected before timing")
 				}
 				assertPublicR51Verdicts(b, ok, -1)
+				assertNoPublicR51FaultFallbacks(b)
 
 				b.ReportAllocs()
 				b.SetBytes(int64(messageSize * count))
@@ -106,6 +114,8 @@ func BenchmarkPublicR51VerifyBatchStrict(b *testing.B) {
 					b.Fatal("valid fixture rejected during timing")
 				}
 				assertPublicR51Verdicts(b, ok, -1)
+				assertNoPublicR51FaultFallbacks(b)
+				b.ReportMetric(0, "internal-fault-fallbacks")
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1e3, "us/signature")
 				b.ReportMetric(float64(b.N*count)/b.Elapsed().Seconds(), "signatures/s")
 			})
@@ -162,6 +172,7 @@ func BenchmarkPublicR51CacheVerifyBatchStrict(b *testing.B) {
 					b.Fatal("valid warm fixture rejected before timing")
 				}
 				assertPublicR51Verdicts(b, ok, -1)
+				assertNoPublicR51FaultFallbacks(b)
 
 				b.ReportAllocs()
 				b.SetBytes(int64(messageSize * count))
@@ -175,7 +186,9 @@ func BenchmarkPublicR51CacheVerifyBatchStrict(b *testing.B) {
 					b.Fatal("valid warm fixture rejected during timing")
 				}
 				assertPublicR51Verdicts(b, ok, -1)
+				assertNoPublicR51FaultFallbacks(b)
 				stats := cache.Stats()
+				b.ReportMetric(0, "internal-fault-fallbacks")
 				b.ReportMetric(float64(stats.PromotedTables), "warm-tables")
 				b.ReportMetric(float64(stats.TableBytes), "table-bytes")
 				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1e3, "us/signature")
@@ -221,6 +234,8 @@ func BenchmarkPublicR51VerifyBatchStrictInvalid(b *testing.B) {
 				b.Fatal("noncanonical S accepted during timing")
 			}
 			assertPublicR51Verdicts(b, ok, 0)
+			assertNoPublicR51FaultFallbacks(b)
+			b.ReportMetric(0, "internal-fault-fallbacks")
 		})
 
 		b.Run(fmt.Sprintf("kind=bad-message-last/n=%d", count), func(b *testing.B) {
@@ -243,6 +258,8 @@ func BenchmarkPublicR51VerifyBatchStrictInvalid(b *testing.B) {
 				b.Fatal("bad message accepted during timing")
 			}
 			assertPublicR51Verdicts(b, ok, count-1)
+			assertNoPublicR51FaultFallbacks(b)
+			b.ReportMetric(0, "internal-fault-fallbacks")
 		})
 	}
 }
