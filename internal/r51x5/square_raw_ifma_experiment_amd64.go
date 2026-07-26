@@ -9,3 +9,10 @@ package r51x5
 //
 //go:noescape
 func ifmaSquareRawExperimentX4(out *IFMAProductX4, x *LimbsX4)
+
+// ifmaSquareRawExperimentX8 is the native-ZMM counterpart. It preserves the
+// exact folded-u61 representation of ifmaMulRawX8(out, x, x), loads every
+// input before the first store, and therefore supports exact out/x aliasing.
+//
+//go:noescape
+func ifmaSquareRawExperimentX8(out *IFMAProductX8, x *LimbsX8)
