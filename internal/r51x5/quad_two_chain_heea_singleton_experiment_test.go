@@ -736,8 +736,8 @@ func BenchmarkExperimentalPackedHEEAStrictVerifierX8(b *testing.B) {
 		}
 		b.Run(fmt.Sprintf("mix=corpus-256/path=heea-two-chain-zmm/W%d", width), func(b *testing.B) {
 			b.ReportAllocs()
-			b.ReportMetric(100*float64(admitted)/float64(len(corpus)), "HEEA-admit%")
 			b.ResetTimer()
+			b.ReportMetric(100*float64(admitted)/float64(len(corpus)), "HEEA-admit%")
 			for iteration := 0; iteration < b.N; iteration++ {
 				entry := &corpus[iteration%len(corpus)]
 				accepted, _, err := verifier.verify(&public, entry.message, entry.signature)
