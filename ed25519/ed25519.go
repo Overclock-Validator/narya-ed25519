@@ -23,7 +23,14 @@ var ErrInvalidPublicKey = errors.New("ed25519: nil public key")
 // under the default profile (DalekStrict — current Solana mainnet
 // transaction semantics).
 func Verify(pub *[32]byte, message, sig []byte) bool {
-	return verifyOne(active(), DefaultProfile(), pub, message, sig, nil)
+	b := active()
+	profile := DefaultProfile()
+	if profile == DalekStrict {
+		if raw, ok := b.(rawStrictSingleBackend); ok {
+			return raw.verifyStrictRaw(pub, message, sig)
+		}
+	}
+	return verifyOne(b, profile, pub, message, sig, nil)
 }
 
 // VerifyStrict reports whether sig is a valid signature of message by

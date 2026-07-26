@@ -1,0 +1,23 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66446 18045 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66477 18044 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66519 18045 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66436 18047 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66452 18053 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/Verify-default-strict 66470 18050 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68542 17506 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68492 17508 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68535 17506 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68511 17510 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68487 17511 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict 68526 17509 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68655 17469 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68672 17471 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68680 17471 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68680 17474 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68650 17473 ns/op 0 B/op 0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1 68680 17471 ns/op 0 B/op 0 allocs/op
+PASS

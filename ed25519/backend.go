@@ -49,8 +49,9 @@ type rawBatchBackend interface {
 }
 
 // rawStrictSingleBackend is the singleton counterpart of rawBatchBackend for
-// the fixed DalekStrict API. Implementations consume the public input shape
-// directly and must apply the complete strict byte predicate themselves.
+// DalekStrict calls through Verify or the fixed-profile VerifyStrict API.
+// Implementations consume the public input shape directly and must apply the
+// complete strict byte predicate themselves.
 // This avoids sending a native backend through the generic profile/interface
 // stack only to repeat the same prechecks inside its specialized verifier.
 // Backends that do not implement it retain the shared verifyOne path.

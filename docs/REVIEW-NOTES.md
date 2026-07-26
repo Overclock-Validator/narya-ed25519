@@ -197,6 +197,15 @@ multiply fusion is therefore preserved as a possible later experiment, not an
 open release requirement; reopen it only if a new profile makes selection
 material again or an exact prototype clears the complete-verifier keep gate.
 
+Commit `ef7bdc7` added a private raw-singleton seam for the complete packed
+strict verifier. It removed a redundant generic profile/interface traversal
+from exported `VerifyStrict`; the Zen 4 public gate fell from about 19.60 to
+17.46 microseconds at 1232 bytes and remained within 0.6% of batch-of-one at
+200, 1232, and 4096 bytes. The follow-up default-profile route applies the
+same seam only while `DefaultProfile() == DalekStrict`; `StdlibCompat` and all
+non-r51 backends retain the shared predicate path. A deliberately forced
+non-inlined helper was rejected because it recreated the old overhead.
+
 This section is a regime-tagged record, not a claim that static review replaces
 the required Zen 4/Zen 5 native tests.
 

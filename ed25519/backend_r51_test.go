@@ -623,6 +623,12 @@ func BenchmarkR51PublicWrapperGate(b *testing.B) {
 // enough in code layout to obscure sub-microsecond dispatch costs.
 func BenchmarkR51SingletonDispatchOverhead(b *testing.B) {
 	backend := requireR51Backend(b)
+	if err := SetBackend("r51"); err != nil {
+		b.Fatal(err)
+	}
+	previousProfile := DefaultProfile()
+	SetDefaultProfile(DalekStrict)
+	b.Cleanup(func() { SetDefaultProfile(previousProfile) })
 	direct, err := r51x5.NewExperimentalPackedStrictVerifierX4()
 	if err != nil {
 		b.Fatal(err)
@@ -667,6 +673,22 @@ func BenchmarkR51SingletonDispatchOverhead(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			if !verifyOne(backend, DalekStrict, &f.pub, f.msg, f.sig, nil) {
 				b.Fatal("shared singleton entry rejected valid signature")
+			}
+		}
+	})
+	b.Run("package-Verify", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if !Verify(&f.pub, f.msg, f.sig) {
+				b.Fatal("package Verify rejected valid signature")
+			}
+		}
+	})
+	b.Run("package-VerifyStrict", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if !VerifyStrict(f.pub[:], f.msg, f.sig) {
+				b.Fatal("package VerifyStrict rejected valid signature")
 			}
 		}
 	})

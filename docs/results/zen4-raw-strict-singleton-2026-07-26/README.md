@@ -16,6 +16,21 @@ and 4096-byte messages. The immediately preceding 1232-byte gate measured the
 old public path at about 19.60 µs and the direct path at about 17.46 µs, an
 approximately 10.9% reduction.
 
+The follow-up gate also measured package-level `Verify` with the default left
+at `DalekStrict`. Its direct raw route took 18.044-18.053 µs/signature at 1232
+bytes, versus 17.506-17.511 for `VerifyStrict` and 17.469-17.474 for
+`VerifyBatchStrict` at n=1. The remaining default-profile load and branch cost
+about 3.1%; all three paths allocated zero. In the same diagnostic binary, the
+new package route was about 3.4% faster than the old shared `verifyOne` route.
+
+`default-verify.txt` contains the exact six-sample public gate.
+
+`default-verify.txt` SHA-256:
+
+```text
+f4ebec29971eeff9b4726b40df7ce889d8399e37fea5077568d71876f4712627
+```
+
 `entrypoints.txt` SHA-256:
 
 ```text

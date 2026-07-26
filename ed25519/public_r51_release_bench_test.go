@@ -139,6 +139,22 @@ func BenchmarkPublicR51SingletonEntryPoints(b *testing.B) {
 		sig := fixture.sigs[0]
 		ok := make([]bool, 1)
 
+		b.Run(fmt.Sprintf("msg=%d/Verify-default-strict", messageSize), func(b *testing.B) {
+			if !narya.Verify(pub, msg, sig) {
+				b.Fatal("valid fixture rejected before timing")
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for range b.N {
+				publicR51ReleaseSink = narya.Verify(pub, msg, sig)
+			}
+			b.StopTimer()
+			if !publicR51ReleaseSink {
+				b.Fatal("valid fixture rejected during timing")
+			}
+			assertNoPublicR51FaultFallbacks(b)
+		})
+
 		b.Run(fmt.Sprintf("msg=%d/VerifyStrict", messageSize), func(b *testing.B) {
 			if !narya.VerifyStrict(pub[:], msg, sig) {
 				b.Fatal("valid fixture rejected before timing")
