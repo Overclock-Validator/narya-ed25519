@@ -10,9 +10,6 @@ e57b73b725733969c6503b30513eebccb537f64c76b6ab64baf5d657ac80f177  ./crosslib-oas
 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa  ./crosslib-stdlib.status
 fd7c63b7135decb9cb77184cccc6d5124d6ef98769466b0e80c41f4ae0f01367  ./crosslib-stdlib.txt
 7ad65f6efa9da18a79516eb04c371044a0ed1598d56e3e83a3a6e9bfadef9d11  ./environment.txt
-7b2aa1a9dfc16b2ad759b8c2a0905e44fc4bb151f44a8489d1dd617c4736596b  ./firedancer-build.txt
-e976f53ddc8b9f391081ca0575c4d17edac1900e48a5408b26846b87461be854  ./firedancer-native-c.sha256
-028edfb0327956a4a59f9a677e116ea05bf0181f0d47ce9e125a40b528ae36d7  ./firedancer-native-c.txt
 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa  ./fuzz-r51.status
 04bf5a3d8e07550a5954d43e217a1067a6cd0ac8e40c487dada2e0bb5743f691  ./fuzz-r51.txt
 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa  ./fuzz-sha512mb.status
