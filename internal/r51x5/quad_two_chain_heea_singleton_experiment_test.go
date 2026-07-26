@@ -589,6 +589,22 @@ func BenchmarkExperimentalPackedHEEAStrictVerifierX8(b *testing.B) {
 		b.Fatal("failed to find W128-admitted benchmark fixture")
 	}
 
+	type corpusEntry struct {
+		message   []byte
+		signature []byte
+	}
+	corpus := make([]corpusEntry, 256)
+	for entry := range corpus {
+		entryMessage := make([]byte, 1232)
+		for index := range entryMessage {
+			entryMessage[index] = byte(entry*47 + index*19)
+		}
+		corpus[entry] = corpusEntry{
+			message:   entryMessage,
+			signature: stded25519.Sign(private, entryMessage),
+		}
+	}
+
 	baseline, err := NewExperimentalPackedStrictVerifierX4()
 	if err != nil {
 		b.Fatal(err)
@@ -598,6 +614,17 @@ func BenchmarkExperimentalPackedHEEAStrictVerifierX8(b *testing.B) {
 		b.ResetTimer()
 		for iteration := 0; iteration < b.N; iteration++ {
 			accepted, err := baseline.Verify(&public, message, signature)
+			if err != nil || !accepted {
+				b.Fatalf("ordinary=(%v,%v)", accepted, err)
+			}
+		}
+	})
+	b.Run("mix=corpus-256/path=ordinary-packed-x4", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for iteration := 0; iteration < b.N; iteration++ {
+			entry := &corpus[iteration%len(corpus)]
+			accepted, err := baseline.Verify(&public, entry.message, entry.signature)
 			if err != nil || !accepted {
 				b.Fatalf("ordinary=(%v,%v)", accepted, err)
 			}
@@ -616,6 +643,31 @@ func BenchmarkExperimentalPackedHEEAStrictVerifierX8(b *testing.B) {
 				accepted, usedHEEA, err := verifier.verify(&public, message, signature)
 				if err != nil || !accepted || !usedHEEA {
 					b.Fatalf("HEEA=(accepted=%v used=%v err=%v)", accepted, usedHEEA, err)
+				}
+			}
+		})
+
+		admitted := 0
+		for entry := range corpus {
+			challenge, ok := experimentalChallengeScalarX4(
+				&public, corpus[entry].message, corpus[entry].signature,
+			)
+			if !ok {
+				b.Fatal("corpus challenge reduction failed")
+			}
+			if admittedExperimentalHEEACandidate(heea8l.SelectLehmer(challenge, width), width) {
+				admitted++
+			}
+		}
+		b.Run(fmt.Sprintf("mix=corpus-256/path=heea-two-chain-zmm/W%d", width), func(b *testing.B) {
+			b.ReportAllocs()
+			b.ReportMetric(100*float64(admitted)/float64(len(corpus)), "HEEA-admit%")
+			b.ResetTimer()
+			for iteration := 0; iteration < b.N; iteration++ {
+				entry := &corpus[iteration%len(corpus)]
+				accepted, _, err := verifier.verify(&public, entry.message, entry.signature)
+				if err != nil || !accepted {
+					b.Fatalf("HEEA corpus=(accepted=%v err=%v)", accepted, err)
 				}
 			}
 		})
