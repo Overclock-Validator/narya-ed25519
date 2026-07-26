@@ -112,6 +112,33 @@ The complete public n=4/msg=1232 gate moved from 11.80--11.83 to
 x4-only cold-table layout improvement; it does not change the x8 n>=8 path or
 introduce any per-key persistence.
 
+The next x4 doubling checkpoint promotes the previously test-only raw-product
+Stage 2. Stage 1 writes exact folded u61 `[X^2,Y^2,Z^2,XY]` products into a
+private typed workspace. One assembly leaf then computes the direct-XY linear
+stage with the independently checked 535/1068/1069 whole-modulus biases and
+carries E/F/G/H once each into u52. All point inputs have been consumed before
+the four final products, so those native leaves write directly to `out`,
+including the `out==q` case, without a separate 640-byte result copy.
+
+The arbitrary-precision Stage-2 oracle proves non-negative u63 intermediates,
+the exact parallel carry/fold representation, and u52 outputs. Boundary,
+multiplicand-derived, chained point/scalar, alias, and zero-allocation tests run
+on both the scalar fallback and native IFMA schedule. At exact implementation
+commit `d356878`, the full Zen 5 suite passed and an eight-sample public-API A/B
+at n=4/msg=1232 measured 11.61--11.62 us/signature before and 10.82--10.83
+after: **about -6.8%**, 0 B/op, and 0 allocs/op. The shorter four-sample release
+matrix at that commit was:
+
+| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+|---:|---:|---:|---:|---:|---:|
+| 64 | 21.55 | 21.62 | **9.68** | 5.80 | 5.48 |
+| 200 | 21.60 | 21.60 | **9.81** | 5.83 | 5.52 |
+| 1232 | 22.50 | 22.49 | **10.80** | 6.08 | 5.75 |
+
+Only n=4 is used to attribute the Stage-2 gain: singleton/two-item calls use
+the packed tail kernel and full groups use x8. The width matrix is retained to
+guard that dispatch boundary.
+
 **Regime tag — half-full x8 on Zen 5 remains closed.** Immediately after the
 masked-negate checkpoint, routing exactly four signatures through the existing
 x8 cold kernel (four active and four inactive lanes) measured 11.97--12.03

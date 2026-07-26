@@ -200,9 +200,22 @@ Replacing the remaining grouped x4 A-table gather with the already-tested
 fixed 160-byte micro-AoS transpose then reduced n=4 again to **11.62--11.63
 us/signature**. The cold workspace builds those entries directly in
 caller-owned storage: it adds no allocation, cache, or admission policy.
+The promoted raw-product doubling Stage 2 at `d356878` then reduced n=4 from
+11.61--11.62 to **10.82--10.83 us/signature (-6.8%)** at 1232 bytes. It uses
+independently checked whole-modulus biases, one carry layer for E/F/G/H, and
+direct final output after every input coordinate has been consumed. The full
+native suite, arbitrary-precision range oracle, alias/chaining differentials,
+and zero-allocation gates pass. The current pinned Zen 5 release matrix is:
+
+| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 64 | 21.55 | 21.62 | **9.68** | 5.80 | 5.48 |
+| 200 | 21.60 | 21.60 | **9.81** | 5.83 | 5.52 |
+| 1232 | 22.50 | 22.49 | **10.80** | 6.08 | 5.75 |
+
 These are cold arbitrary-key results: A is decoded and its table is rebuilt for
-every signature. The complete three-message Zen 4/Zen 5 release matrix still
-needs to be rerun before replacing the pinned PR-1 table above.
+every signature. The complete three-message Zen 4 matrix still needs to be
+rerun before replacing the pinned PR-1 table above.
 
 The same 200-byte Go benchmark binary also measured the comparison libraries;
 each value below is the median of six two-second samples.
