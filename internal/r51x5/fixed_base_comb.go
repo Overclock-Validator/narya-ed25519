@@ -198,6 +198,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 	var digits fixedBaseDigitsX4
 	usable := recodeFixedBaseScalarsX4(&digits, scalars, active, uint(table.radixBits))
 	acc := identityIFMAPointX4Value()
+	var addWorkspace fixedBaseIFMAAddScratchX4
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -210,7 +211,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 		}
 		var selected fixedBaseIFMACachedX4
 		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
-		if err := addFixedBaseIFMACachedX4(&acc, &acc, &selected); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
@@ -226,7 +227,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 		}
 		var selected fixedBaseIFMACachedX4
 		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
-		if err := addFixedBaseIFMACachedX4(&acc, &acc, &selected); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
@@ -608,38 +609,38 @@ func addFixedBaseCachedX8(out, point *PointX8, cached *fixedBaseCachedX8) {
 }
 
 func addFixedBaseIFMACachedX4(out, point *IFMAPointX4, cached *fixedBaseIFMACachedX4) error {
-	p := *point
-	var yMinusX, yPlusX, A, B, C, D, E, F, G, H IFMAElementX4
-	yMinusX.Subtract(&p.Y, &p.X)
-	yPlusX.Add(&p.Y, &p.X)
-	if err := ifmaMultiplyComposableUncheckedX4(&A, &yMinusX, &cached.YMinusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&B, &yPlusX, &cached.YPlusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&C, &p.T, &cached.T2D); err != nil {
-		return err
-	}
-	D.Add(&p.Z, &p.Z)
-	E.Subtract(&B, &A)
-	F.Subtract(&D, &C)
-	G.Add(&D, &C)
-	H.Add(&B, &A)
-	var result IFMAPointX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &G, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &E, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &F, &G); err != nil {
-		return err
-	}
-	*out = result
+	var workspace fixedBaseIFMAAddScratchX4
+	return addFixedBaseIFMACachedWorkspaceX4(out, point, cached, &workspace)
+}
+
+type fixedBaseIFMAAddScratchX4 struct {
+	yMinusX, yPlusX IFMAElementX4
+	stage2          ifmaNielsStage2WorkspaceX4
+}
+
+func addFixedBaseIFMACachedWorkspaceX4(
+	out, point *IFMAPointX4,
+	cached *fixedBaseIFMACachedX4,
+	workspace *fixedBaseIFMAAddScratchX4,
+) error {
+	ifmaSubtractComposableUncheckedX4(&workspace.yMinusX, &point.Y, &point.X)
+	ifmaAddComposableUncheckedX4(&workspace.yPlusX, &point.Y, &point.X)
+
+	stage2 := &workspace.stage2
+	ifmaMulRawX4(&stage2[0], &workspace.yMinusX.limbs, &cached.YMinusX.limbs)
+	ifmaMulRawX4(&stage2[1], &workspace.yPlusX.limbs, &cached.YPlusX.limbs)
+	ifmaMulRawX4(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
+	stage2[3] = IFMAProductX4(point.Z.limbs)
+	ifmaNielsStage2X4(stage2)
+
+	E := (*LimbsX4)(&stage2[0])
+	F := (*LimbsX4)(&stage2[1])
+	G := (*LimbsX4)(&stage2[2])
+	H := (*LimbsX4)(&stage2[3])
+	ifmaMulNormalizedUncheckedX4(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX4(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX4(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX4(&out.Z.limbs, F, G)
 	return nil
 }
 

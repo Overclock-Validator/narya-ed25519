@@ -427,6 +427,99 @@ func addFixedBaseIFMACachedReferenceX8(out, point *IFMAPointX8, cached *fixedBas
 	*out = result
 }
 
+func addFixedBaseIFMACachedReferenceX4(out, point *IFMAPointX4, cached *fixedBaseIFMACachedX4) {
+	p := *point
+	var yMinusX, yPlusX, A, B, C, D, E, F, G, H IFMAElementX4
+	yMinusX.Subtract(&p.Y, &p.X)
+	yPlusX.Add(&p.Y, &p.X)
+	_ = ifmaMultiplyComposableUncheckedX4(&A, &yMinusX, &cached.YMinusX)
+	_ = ifmaMultiplyComposableUncheckedX4(&B, &yPlusX, &cached.YPlusX)
+	_ = ifmaMultiplyComposableUncheckedX4(&C, &p.T, &cached.T2D)
+	D.Add(&p.Z, &p.Z)
+	E.Subtract(&B, &A)
+	F.Subtract(&D, &C)
+	G.Add(&D, &C)
+	H.Add(&B, &A)
+	var result IFMAPointX4
+	_ = ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F)
+	_ = ifmaMultiplyComposableUncheckedX4(&result.Y, &G, &H)
+	_ = ifmaMultiplyComposableUncheckedX4(&result.T, &E, &H)
+	_ = ifmaMultiplyComposableUncheckedX4(&result.Z, &F, &G)
+	*out = result
+}
+
+func TestFixedBaseIFMACachedAddWorkspaceX4MatchesReference(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	base, _ := fixedBaseGenerator(t)
+	table := BuildExperimentalFixedBaseCombTable(&base, 8)
+	_, points8, _, _ := fixedBaseCombDSMFixtures(t)
+	var points PointX4
+	for lane := 0; lane < X4Lanes; lane++ {
+		point := points8.Lane(lane)
+		points.SetLane(lane, &point)
+	}
+	var point IFMAPointX4
+	point.SetReduced(&points)
+
+	for iteration := 0; iteration < 128; iteration++ {
+		var round RadixRoundX4
+		round.NonzeroMask = 0x0f
+		for lane := 0; lane < X4Lanes; lane++ {
+			round.Magnitude[lane] = uint8(1 + (iteration+17*lane)%int(table.entries))
+			if (iteration+lane)&1 != 0 {
+				round.NegativeMask |= 1 << lane
+			}
+		}
+		var cached fixedBaseIFMACachedX4
+		selectFixedBaseIFMACachedX4(&cached, table, iteration%int(table.positions), &round, 0x0f)
+		var want IFMAPointX4
+		addFixedBaseIFMACachedReferenceX4(&want, &point, &cached)
+		got := point
+		var workspace fixedBaseIFMAAddScratchX4
+		if err := addFixedBaseIFMACachedWorkspaceX4(&got, &got, &cached, &workspace); err != nil {
+			t.Fatal(err)
+		}
+		gotReduced, wantReduced := got.Reduced(), want.Reduced()
+		if mask := gotReduced.Equal(&wantReduced); mask != 0x0f {
+			t.Fatalf("iteration=%d equality=%02x", iteration, mask)
+		}
+		point = got
+	}
+}
+
+func TestFixedBaseIFMACachedAddWorkspaceX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	base, _ := fixedBaseGenerator(t)
+	table := BuildExperimentalFixedBaseCombTable(&base, 8)
+	_, points8, _, _ := fixedBaseCombDSMFixtures(t)
+	var points PointX4
+	for lane := 0; lane < X4Lanes; lane++ {
+		point := points8.Lane(lane)
+		points.SetLane(lane, &point)
+	}
+	var point IFMAPointX4
+	point.SetReduced(&points)
+	var round RadixRoundX4
+	round.NonzeroMask = 0x0f
+	for lane := range round.Magnitude {
+		round.Magnitude[lane] = uint8(lane + 1)
+	}
+	var cached fixedBaseIFMACachedX4
+	selectFixedBaseIFMACachedX4(&cached, table, 0, &round, 0x0f)
+	var workspace fixedBaseIFMAAddScratchX4
+	if allocs := testing.AllocsPerRun(1000, func() {
+		if err := addFixedBaseIFMACachedWorkspaceX4(&point, &point, &cached, &workspace); err != nil {
+			t.Fatal(err)
+		}
+	}); allocs != 0 {
+		t.Fatalf("fixed-base x4 cached add allocations=%v", allocs)
+	}
+}
+
 func TestFixedBaseIFMACachedAddWorkspaceX8MatchesReference(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)

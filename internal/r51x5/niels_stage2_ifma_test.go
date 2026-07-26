@@ -91,6 +91,24 @@ func nielsStage2Oracle(t testing.TB, input *ifmaNielsStage2WorkspaceX8) ifmaNiel
 	return output
 }
 
+func nielsStage2OracleX4(t testing.TB, input *ifmaNielsStage2WorkspaceX4) ifmaNielsStage2WorkspaceX4 {
+	t.Helper()
+	var widened ifmaNielsStage2WorkspaceX8
+	for slot := range input {
+		for limb := range input[slot] {
+			copy(widened[slot][limb][:X4Lanes], input[slot][limb][:])
+		}
+	}
+	want8 := nielsStage2Oracle(t, &widened)
+	var output ifmaNielsStage2WorkspaceX4
+	for slot := range output {
+		for limb := range output[slot] {
+			copy(output[slot][limb][:], want8[slot][limb][:X4Lanes])
+		}
+	}
+	return output
+}
+
 func nielsStage2BoundaryInputs() []struct {
 	name      string
 	workspace ifmaNielsStage2WorkspaceX8
@@ -221,6 +239,48 @@ func TestIFMANielsStage2X8AcceptsComposableD(t *testing.T) {
 		ifmaNielsStage2X8(&got)
 		if got != want {
 			t.Fatalf("round=%d: composable-D mismatch", round)
+		}
+	}
+}
+
+func TestIFMANielsStage2X4AcceptsComposableD(t *testing.T) {
+	if !nielsStage2CanCall() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	rng := rand.New(rand.NewSource(0xaff1_3d4_2026))
+	for round := 0; round < 1024; round++ {
+		var operands [6]LimbsX4
+		for operand := range operands {
+			for limb := range operands[operand] {
+				for lane := range operands[operand][limb] {
+					operands[operand][limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+				}
+			}
+		}
+		var input ifmaNielsStage2WorkspaceX4
+		for slot := 0; slot < 3; slot++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				var left, right Limbs
+				for limb := range left {
+					left[limb] = operands[2*slot][limb][lane]
+					right[limb] = operands[2*slot+1][limb][lane]
+				}
+				product := ifmaLooseLaneModel(left, right)
+				for limb := range product {
+					input[slot][limb][lane] = product[limb]
+				}
+			}
+		}
+		for limb := range input[nielsStage2D] {
+			for lane := range input[nielsStage2D][limb] {
+				input[nielsStage2D][limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		want := nielsStage2OracleX4(t, &input)
+		got := input
+		ifmaNielsStage2X4(&got)
+		if got != want {
+			t.Fatalf("round=%d: x4 composable-D mismatch", round)
 		}
 	}
 }
