@@ -438,6 +438,47 @@ integration boundary so it can respect each caller's latency and failure policy.
 It should use no batching timer: nonblocking drain for replay/repair/backlogs,
 with x4 tails retained for thin traffic at the tip.
 
+### 5.6 Zen 5 x8 selector and projective-Niels Stage 2
+
+Three later x8 changes were measured independently rather than grouped under
+one headline:
+
+1. Removing the two 1,280-byte input copies and final result copy from the
+   general x8 extended-point addition was representation-identical under
+   left-, right-, and all-input alias tests, but performance-neutral in the
+   registered verifier: about +0.06% at n=8 and no significant change at n=64.
+   It is a direct-output simplification, not an attributed speedup.
+2. Replacing the portable x8 conditional-negation loop with a native ZMM leaf
+   moved the old grouped-SoA radix-32 selector from 121.10 to 59.90 ns
+   (-50.54%). The registered cold verifier already uses a pre-signed
+   micro-AoS A table, so it does not execute this operation in its evaluation
+   loop. Complete n=8 moved about -0.5% while n=64 was statistically neutral;
+   retain the leaf for non-pre-signed experiments, but do not present the
+   selector result as a registered cold-path gain.
+3. The registered projective-Niels mixed addition still normalized raw A/B/C/D
+   products separately and made five more linear element calls. Commit
+   `72bdf65` introduces a typed raw-product Stage-2 boundary analogous to the
+   doubling: it forms `E=B-A`, `F=2D-C`, `G=2D+C`, and `H=B+A`, with a proven
+   535-p subtraction bias, then carries all four outputs once.
+
+The Stage-2 gate uses an independent arbitrary-precision oracle over boundary
+and multiplicand-derived inputs. It proves non-negative intermediates below
+2^62, carry-outs at most 1603, and u52 outputs; native tests also cover every
+lane, point aliasing, mixed-order points, the pre-signed selector, and zero
+allocations. The full Zen 5 repository suite passed before timing.
+
+Ten pinned one-second samples at msg=1232 measured:
+
+| measurement | before | `72bdf65` | change |
+|---|---:|---:|---:|
+| projective-Niels mixed add | 78.45 ns | 65.37 ns | -16.67% |
+| public cold n=8 | 5.698 us/signature | 5.604 us/signature | -1.64% |
+| public cold n=64 | 5.374 us/signature | 5.249 us/signature | -2.34% |
+
+Every timed public row remained 0 B/op, 0 allocs/op, and reported zero internal
+fault fallbacks. This is a supported complete-path win, unlike the selector and
+general-add micro-results above.
+
 ---
 
 ## 6. Smaller observations
