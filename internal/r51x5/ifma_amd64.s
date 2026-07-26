@@ -35,6 +35,14 @@
 	VPADDQ HI, T0, T0              \
 	VPADDQ T0, LO, LO
 
+// AVX-512DQ can fold an already combined coefficient with one full-width
+// 64-bit multiply. The proven pre-fold bounds keep 19*HI below 2^64, so the
+// low-64-bit VPMULLQ result is the exact integer product. This is an
+// experimental alternative to the shift/add schedule above.
+#define FOLD_INTO_MUL19(LO, HI, T0, FOLD19) \
+	VPMULLQ FOLD19, HI, T0                    \
+	VPADDQ T0, LO, LO
+
 // Carry a vector of five folded radix-2^51 coefficients. IN0..IN4 are each
 // below 2^61. MASK contains 2^51-1 and FOLD19 contains 19. C0..C4 receive
 // the five independent carry-outs from the original limbs. The result has
@@ -316,6 +324,101 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	FOLD_INTO(Z12, Z17, Z28, Z29)
 	FOLD_INTO(Z13, Z18, Z28, Z29)
 	FOLD_INTO(Z14, Z27, Z28, Z29)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z20
+	NORMALIZE_5(Z10, Z11, Z12, Z13, Z14, Z5, Z15, Z16, Z17, Z18, Z19, Z20)
+
+	VMOVDQU64 Z10,   0(DI)
+	VMOVDQU64 Z11,  64(DI)
+	VMOVDQU64 Z12, 128(DI)
+	VMOVDQU64 Z13, 192(DI)
+	VMOVDQU64 Z14, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaMulNormalizedMul19ExperimentX8(out, x, y *LimbsX8)
+//
+// Exact copy of the fused x8 multiply above except that the five radix folds
+// use AVX-512DQ VPMULLQ by 19. The combined high coefficients are below 2^56,
+// so their products by 19 remain exact unsigned 64-bit integers.
+TEXT ·ifmaMulNormalizedMul19ExperimentX8(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), DI
+	MOVQ x+8(FP), CX
+	MOVQ y+16(FP), BX
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+	VMOVDQU64   0(BX), Z5
+	VMOVDQU64  64(BX), Z6
+	VMOVDQU64 128(BX), Z7
+	VMOVDQU64 192(BX), Z8
+	VMOVDQU64 256(BX), Z9
+
+	CLEAR(Z10)
+	CLEAR(Z11)
+	CLEAR(Z12)
+	CLEAR(Z13)
+	CLEAR(Z14)
+	CLEAR(Z15)
+	CLEAR(Z16)
+	CLEAR(Z17)
+	CLEAR(Z18)
+	CLEAR(Z19)
+	CLEAR(Z20)
+	CLEAR(Z21)
+	CLEAR(Z22)
+	CLEAR(Z23)
+	CLEAR(Z24)
+	CLEAR(Z25)
+	CLEAR(Z26)
+	CLEAR(Z27)
+
+	MUL_PAIR(Z0, Z5, Z10, Z19)
+	MUL_PAIR(Z0, Z6, Z11, Z20)
+	MUL_PAIR(Z0, Z7, Z12, Z21)
+	MUL_PAIR(Z0, Z8, Z13, Z22)
+	MUL_PAIR(Z0, Z9, Z14, Z23)
+	MUL_PAIR(Z1, Z5, Z11, Z20)
+	MUL_PAIR(Z1, Z6, Z12, Z21)
+	MUL_PAIR(Z1, Z7, Z13, Z22)
+	MUL_PAIR(Z1, Z8, Z14, Z23)
+	MUL_PAIR(Z1, Z9, Z15, Z24)
+	MUL_PAIR(Z2, Z5, Z12, Z21)
+	MUL_PAIR(Z2, Z6, Z13, Z22)
+	MUL_PAIR(Z2, Z7, Z14, Z23)
+	MUL_PAIR(Z2, Z8, Z15, Z24)
+	MUL_PAIR(Z2, Z9, Z16, Z25)
+	MUL_PAIR(Z3, Z5, Z13, Z22)
+	MUL_PAIR(Z3, Z6, Z14, Z23)
+	MUL_PAIR(Z3, Z7, Z15, Z24)
+	MUL_PAIR(Z3, Z8, Z16, Z25)
+	MUL_PAIR(Z3, Z9, Z17, Z26)
+	MUL_PAIR(Z4, Z5, Z14, Z23)
+	MUL_PAIR(Z4, Z6, Z15, Z24)
+	MUL_PAIR(Z4, Z7, Z16, Z25)
+	MUL_PAIR(Z4, Z8, Z17, Z26)
+	MUL_PAIR(Z4, Z9, Z18, Z27)
+
+	COMBINE_HIGH(Z19, Z11)
+	COMBINE_HIGH(Z20, Z12)
+	COMBINE_HIGH(Z21, Z13)
+	COMBINE_HIGH(Z22, Z14)
+	COMBINE_HIGH(Z23, Z15)
+	COMBINE_HIGH(Z24, Z16)
+	COMBINE_HIGH(Z25, Z17)
+	COMBINE_HIGH(Z26, Z18)
+	VPSLLQ $1, Z27, Z27
+
+	VPBROADCASTQ ·ifmaFold19(SB), Z30
+	FOLD_INTO_MUL19(Z10, Z15, Z28, Z30)
+	FOLD_INTO_MUL19(Z11, Z16, Z28, Z30)
+	FOLD_INTO_MUL19(Z12, Z17, Z28, Z30)
+	FOLD_INTO_MUL19(Z13, Z18, Z28, Z30)
+	FOLD_INTO_MUL19(Z14, Z27, Z28, Z30)
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
 	VPBROADCASTQ ·ifmaFold19(SB), Z20

@@ -22,6 +22,13 @@ func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //go:noescape
 func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8)
 
+// ifmaMulNormalizedMul19ExperimentX8 replaces each shift/add multiplication
+// by 19 in the x8 pre-carry fold with one AVX-512DQ VPMULLQ. It is kept
+// separate until exact-representation and complete-verifier gates pass.
+//
+//go:noescape
+func ifmaMulNormalizedMul19ExperimentX8(out, x, y *LimbsX8)
+
 // ifmaMulNormalizedUncheckedX4 is the AVX-512VL/YMM counterpart. It is kept
 // separate from the split primitives so benchmarks can measure the avoided
 // IFMAProduct store/reload and call boundary directly.
