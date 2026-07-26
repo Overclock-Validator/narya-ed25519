@@ -1,0 +1,15 @@
+Before:
+  git switch --detach c06dedc
+
+After:
+  git switch --detach 6787cc5
+
+Native correctness (after):
+  /usr/local/go/bin/go test -count=1 ./internal/r51x5 ./ed25519
+
+Primitive (after):
+  taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' -bench '^BenchmarkIFMAPointFinalProductsX8$' -benchmem -benchtime=3s -count=8 ./internal/r51x5
+
+Complete public API (once per worktree):
+  taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$/^msg=1232$/^n=(8|64)$' -benchmem -benchtime=3s -count=8 ./ed25519
+

@@ -760,9 +760,17 @@ func addFixedBaseIFMACachedWorkspaceX8(
 	stage2[3] = IFMAProductX8(point.Z.limbs)
 	ifmaNielsStage2X8(stage2)
 
+	E := (*LimbsX8)(&stage2[0])
+	F := (*LimbsX8)(&stage2[1])
+	G := (*LimbsX8)(&stage2[2])
+	H := (*LimbsX8)(&stage2[3])
+
 	// point and cached are dead after A/B/C and Z have been captured. Direct
 	// output is therefore safe for out==point and avoids a 1,280-byte result
 	// temporary and copy.
-	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
+	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
 	return nil
 }

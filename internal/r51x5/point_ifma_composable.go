@@ -286,12 +286,19 @@ func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *
 	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
 	ifmaDoubleStage2X8(stage2)
 
+	E := (*LimbsX8)(&stage2[0])
+	F := (*LimbsX8)(&stage2[1])
+	G := (*LimbsX8)(&stage2[2])
+	H := (*LimbsX8)(&stage2[3])
+
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a
-	// temporary 1,280-byte point followed by a full point copy. The final leaf
-	// is exactly the same four normalized products with one shared assembly
-	// boundary; it has no error path after the CPU/range gate.
-	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
+	// temporary 1,280-byte point followed by a full point copy. The unchecked
+	// field kernels used here have no error path after the boundary gate.
+	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
 	return nil
 }
 

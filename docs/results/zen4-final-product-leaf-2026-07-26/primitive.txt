@@ -1,0 +1,23 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71287242	        50.37 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71281779	        50.43 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71187750	        50.38 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71541742	        50.44 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71195028	        50.44 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71409824	        50.45 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71417913	        50.45 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/four-calls         	71270785	        50.39 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	72121641	        49.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71792739	        50.06 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71852878	        50.05 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71362192	        50.07 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71657713	        50.08 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71855174	        50.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71844361	        50.07 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAPointFinalProductsX8/one-leaf           	71777640	        50.09 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	58.333s
+

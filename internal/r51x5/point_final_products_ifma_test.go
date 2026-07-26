@@ -33,7 +33,7 @@ func TestIFMAPointFinalProductsX8MatchesFourMultiplies(t *testing.T) {
 		var want IFMAPointX8
 		pointFinalProductsFourCallsX8(&want, &operands)
 		var got IFMAPointX8
-		ifmaPointFinalProductsUncheckedX8(&got, &operands[0])
+		ifmaPointFinalProductsExperimentUncheckedX8(&got, &operands[0])
 
 		if got != want {
 			t.Fatalf("iteration %d: fused final products differ from four-call representation", iteration)
@@ -52,7 +52,7 @@ func TestIFMAPointFinalProductsX8ZeroAllocations(t *testing.T) {
 	operands := benchmarkPointFinalProductOperandsX8()
 	var out IFMAPointX8
 	allocations := testing.AllocsPerRun(1_000, func() {
-		ifmaPointFinalProductsUncheckedX8(&out, &operands[0])
+		ifmaPointFinalProductsExperimentUncheckedX8(&out, &operands[0])
 	})
 	if allocations != 0 {
 		t.Fatalf("allocations = %v, want 0", allocations)
@@ -81,7 +81,7 @@ func BenchmarkIFMAPointFinalProductsX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			ifmaPointFinalProductsUncheckedX8(&out, &operands[0])
+			ifmaPointFinalProductsExperimentUncheckedX8(&out, &operands[0])
 		}
 		benchmarkPointFinalProductsSinkX8 = out
 	})

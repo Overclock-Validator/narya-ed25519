@@ -1,0 +1,8 @@
+goos: linux
+goarch: amd64
+go: go1.26.4
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+execution: one pinned core (CPU 2), GOMAXPROCS=1
+before: c06dedc
+after: 6787cc5
+

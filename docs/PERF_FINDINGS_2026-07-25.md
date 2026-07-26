@@ -184,6 +184,18 @@ remeasure only after a material multiply/point-loop rewrite or on another
 microarchitecture. Raw samples are under
 `docs/results/zen4-mul19-fold-2026-07-26/`.
 
+**Regime tag — the shared x8 final-product leaf is test-only.** Commit
+`6787cc5` expanded the normalized multiply four times in one 3.2 KiB assembly
+leaf, replacing the four separate `E*F`, `G*H`, `E*H`, and `F*G` calls in x8
+doubling and Niels additions. It is exact and allocation-free, but on the
+pinned Zen 4 host the isolated boundary improved only 50.42 -> 50.06 ns
+(-0.7%). Complete msg=1232 verification improved median 7.887 -> 7.853
+us/signature at n=8 (-0.4%) and 7.683 -> 7.661 at n=64 (-0.3%). Production
+therefore retains the smaller four-call path; the exact differential and leaf
+remain as a dead-stripped measurement candidate. Remeasure after a material
+multiply ABI/scheduling change. Evidence is under
+`docs/results/zen4-final-product-leaf-2026-07-26/`.
+
 The same Zen 4 checkpoint rechecked the n=4 boundary. Four active x8 lanes
 measured 15.785 and 16.750 us/signature for 200 and 1232-byte messages, versus
 9.913 and 10.680 for one full x4 group. The full-width x8 advantage must not be

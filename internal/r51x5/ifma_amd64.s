@@ -422,7 +422,7 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
-// func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+// func ifmaPointFinalProductsExperimentUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
 //
 // operands points to four consecutive carried-u52 slots in E,F,G,H order.
 // The leaf computes (E*F, G*H, F*G, E*H) into out.X/Y/Z/T. The current point
@@ -430,7 +430,11 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 // required nor supported. Each multiplication is representation-identical to
 // ifmaMulNormalizedUncheckedX8; the only optimization is sharing the call
 // boundary and final VZEROUPPER across four independent products.
-TEXT ·ifmaPointFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
+//
+// Regime tag: on a Ryzen 7 PRO 8700GE the leaf reduced the isolated four-
+// product boundary by less than 1% and complete verification by less than
+// 0.5%. It remains an exact test/benchmark candidate, not a production path.
+TEXT ·ifmaPointFinalProductsExperimentUncheckedX8(SB), NOSPLIT, $0-16
 	MOVQ out+0(FP), AX
 	MOVQ operands+8(FP), DX
 
