@@ -186,17 +186,22 @@ The latest snapshot is from implementation commit `1f0bfbf` on an AMD Ryzen 7
 `GOMAXPROCS=1`. Values are median microseconds per signature from ten repeated
 one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
 
-**Cold — arbitrary keys, no retained key state**
+**Units:** every numeric timing cell in the next three tables is
+**microseconds per signature (`µs/signature`, lower is better)**. The multicore
+table is labeled separately in **signatures per second (`signatures/s`, higher
+is better)**.
 
-| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+**Cold — arbitrary keys, no retained key state (`µs/signature`)**
+
+| message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 200 | 21.675 | 21.600 | 9.058 | 5.411 | 5.094 |
 | 1232 | 22.420 | 22.400 | 10.090 | 5.646 | 5.305 |
 | 4096 | 24.260 | 24.330 | 12.860 | 6.401 | 6.080 |
 
-**Warm — 64 distinct keys promoted before timing**
+**Warm — 64 distinct keys promoted before timing (`µs/signature`)**
 
-| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+| message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 200 | 21.330 | 21.500 | 4.013 | 3.631 | 3.319 |
 | 1232 | 22.200 | 22.265 | 4.780 | 4.389 | 4.073 |
@@ -215,10 +220,11 @@ small crossover is retained rather than presenting cache hits as universally
 faster; the cache remains a clear win at n>=4 for 200- and 1232-byte messages.
 
 The comparison below uses the same 1232-byte fixture shape and executable for
-every row. Values are medians of six one-second samples. Voi's expanded-key row
-excludes expansion cost and is included as a warm-key reference.
+every row. Values are medians of six one-second samples in `µs/signature`
+(lower is better). Voi's expanded-key row excludes expansion cost and is
+included as a warm-key reference.
 
-| implementation | n=1 | n=2 | n=4 | n=8 | n=64 |
+| implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Narya r51, cold strict | 22.330 | 22.370 | 10.200 | 5.643 | 5.321 |
 | Go `crypto/ed25519` | 27.435 | 27.490 | 27.285 | 27.350 | 27.340 |
