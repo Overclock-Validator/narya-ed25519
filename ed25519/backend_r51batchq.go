@@ -35,6 +35,11 @@ type r51IFMABatchQPipeline struct {
 	// also use this field to compare both schedules in one binary.
 	experimentalRawSquareX8 bool
 
+	// experimentalRawSquareX4 is the four-signature/tail counterpart. It is a
+	// same-binary complete-pipeline measurement seam and remains false in the
+	// registered worker until a CPU-specific public gate admits it.
+	experimentalRawSquareX4 bool
+
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
 	points  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.IFMAPointX4
 	active  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
@@ -995,7 +1000,13 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX4(
 		return 0, err
 	}
 	var aTerm, bTerm r51x5.IFMAPointX4
-	usableA, err := variable.Evaluate(&aTerm, k, active, active)
+	var usableA uint8
+	var err error
+	if pipeline.experimentalRawSquareX4 {
+		usableA, err = variable.EvaluateRawSquareExperiment(&aTerm, k, active, active)
+	} else {
+		usableA, err = variable.Evaluate(&aTerm, k, active, active)
+	}
 	if err != nil {
 		return 0, err
 	}

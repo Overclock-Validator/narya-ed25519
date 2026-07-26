@@ -105,6 +105,47 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Evaluate(out *IFMAPoin
 	return usable, nil
 }
 
+// EvaluateRawSquareExperiment uses the exact-representation raw-square x4
+// candidate for every point doubling while keeping preparation, recoding,
+// selection, addition, and output identical to Evaluate. The loop is separate
+// so the registered evaluator pays no experiment branch in its 250-doubling
+// hot path.
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateRawSquareExperiment(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
+	if !w.prepared {
+		panic("r51x5: experimental IFMA x4 variable-base workspace is not prepared")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	active &= 0x0f
+	usable := RecodeCanonicalScalarsX4(&w.digits, scalar, negativeMask, active, 5)
+	acc := identityIFMAPointX4Value()
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+	for round := w.digits.RoundCount() - 1; round >= 0; round-- {
+		if round != w.digits.RoundCount()-1 {
+			for doubling := uint8(0); doubling < 5; doubling++ {
+				if err := ifmaPointDoubleRawSquareStage2ExperimentX4(&acc, &acc); err != nil {
+					return 0, err
+				}
+			}
+		}
+		digit := w.digits.Round(round)
+		if digit.NonzeroMask&usable == 0 {
+			continue
+		}
+		var selected IFMAPointX4
+		selectIFMAMicroAoSRadix32UncheckedX4(&selected, &w.table, digit, usable)
+		if err := ifmaPointAddComposableStaticX4(&acc, &acc, &selected); err != nil {
+			return 0, err
+		}
+	}
+	*out = acc
+	return usable, nil
+}
+
 // Prepare replaces the x4 arbitrary-point table. Radix bits must be four,
 // five, or six. No production verifier dispatch reaches this experiment.
 func (w *experimentalIFMAVariableBaseWorkspaceX4[Storage]) Prepare(base *PointX4, radixBits uint) error {

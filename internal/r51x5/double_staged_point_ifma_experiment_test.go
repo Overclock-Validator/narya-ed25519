@@ -40,39 +40,6 @@ func ifmaPointDoubleRawStage2ExperimentX4(out, q *IFMAPointX4) error {
 	return nil
 }
 
-// ifmaPointDoubleRawSquareStage2ExperimentX4 adds the symmetry-aware raw
-// square to the staged candidate. It still uses four separate Stage-1 calls;
-// a future fused Stage 1 would additionally remove those boundaries.
-func ifmaPointDoubleRawSquareStage2ExperimentX4(out, q *IFMAPointX4) error {
-	var workspace ifmaDoubleStage2WorkspaceX4
-	ifmaSquareRawExperimentX4(&workspace[0], &q.X.limbs)
-	ifmaSquareRawExperimentX4(&workspace[1], &q.Y.limbs)
-	ifmaSquareRawExperimentX4(&workspace[2], &q.Z.limbs)
-	ifmaMulRawX4(&workspace[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X4(&workspace)
-
-	e := IFMAElementX4{limbs: LimbsX4(workspace[0])}
-	f := IFMAElementX4{limbs: LimbsX4(workspace[1])}
-	g := IFMAElementX4{limbs: LimbsX4(workspace[2])}
-	h := IFMAElementX4{limbs: LimbsX4(workspace[3])}
-
-	var result IFMAPointX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &e, &f); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &g, &h); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &e, &h); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &f, &g); err != nil {
-		return err
-	}
-	*out = result
-	return nil
-}
-
 // ifmaPointDoubleNoCopyExperimentX4 mirrors the current normalized production
 // schedule while reading q directly. The output remains local until every
 // input read is complete, so exact out==q aliasing does not require the

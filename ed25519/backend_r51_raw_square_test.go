@@ -5,16 +5,17 @@ import (
 	"testing"
 )
 
-func requireR51IFMABatchQX8RawSquarePipeline(tb testing.TB) *r51IFMABatchQPipeline {
+func requireR51IFMABatchQRawSquarePipeline(tb testing.TB) *r51IFMABatchQPipeline {
 	tb.Helper()
 	pipeline := requireR51IFMABatchQX8CombPipeline(tb)
+	pipeline.experimentalRawSquareX4 = true
 	pipeline.experimentalRawSquareX8 = true
 	return pipeline
 }
 
 func assertR51IFMARawSquareVectors(t *testing.T, vectors []r51ReferenceVector, profile Profile) {
 	t.Helper()
-	pipeline := requireR51IFMABatchQX8RawSquarePipeline(t)
+	pipeline := requireR51IFMABatchQRawSquarePipeline(t)
 	pubs := make([]*[32]byte, len(vectors))
 	msgs := make([][]byte, len(vectors))
 	sigs := make([][]byte, len(vectors))
@@ -64,7 +65,7 @@ func TestR51IFMARawSquareCompletePipelineDifferential(t *testing.T) {
 		t.Run(fmt.Sprintf("profile=%d/wycheproof", profile), func(t *testing.T) {
 			assertR51IFMARawSquareVectors(t, r51WycheproofVectors(t), profile)
 		})
-		for _, count := range []int{8, 9, 16, 17, 64, 65} {
+		for _, count := range []int{4, 8, 9, 16, 17, 64, 65} {
 			count := count
 			t.Run(fmt.Sprintf("profile=%d/mixture/n=%d", profile, count), func(t *testing.T) {
 				assertR51IFMARawSquareVectors(t, mixture[:count], profile)
@@ -74,8 +75,8 @@ func TestR51IFMARawSquareCompletePipelineDifferential(t *testing.T) {
 }
 
 func TestR51IFMARawSquareCompletePipelineZeroAllocations(t *testing.T) {
-	pipeline := requireR51IFMABatchQX8RawSquarePipeline(t)
-	for _, count := range []int{8, 64, 65} {
+	pipeline := requireR51IFMABatchQRawSquarePipeline(t)
+	for _, count := range []int{4, 8, 64, 65} {
 		fixture := makeBatchFixture(t, count, 1232)
 		if allocs := testing.AllocsPerRun(10, func() {
 			all, err := pipeline.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
@@ -93,14 +94,14 @@ func TestR51IFMARawSquareCompletePipelineZeroAllocations(t *testing.T) {
 // same decoder, tables, recoding, additions, fixed-base term, and finalizer.
 func BenchmarkR51IFMARawSquareCompletePipeline(b *testing.B) {
 	for _, messageSize := range []int{200, 1232, 4096} {
-		for _, count := range []int{8, 64} {
+		for _, count := range []int{4, 8, 64} {
 			fixture := makeBatchFixture(b, count, messageSize)
 			for _, candidate := range []struct {
 				name     string
 				pipeline func(testing.TB) *r51IFMABatchQPipeline
 			}{
 				{name: "general-square", pipeline: requireR51IFMABatchQX8CombPipeline},
-				{name: "dedicated-raw-square", pipeline: requireR51IFMABatchQX8RawSquarePipeline},
+				{name: "dedicated-raw-square", pipeline: requireR51IFMABatchQRawSquarePipeline},
 			} {
 				candidate := candidate
 				b.Run(fmt.Sprintf("path=%s/n=%d/msg=%d", candidate.name, count, messageSize), func(b *testing.B) {
