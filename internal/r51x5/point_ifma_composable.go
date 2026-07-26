@@ -146,10 +146,10 @@ func ExperimentalIFMAPointDoubleComposableX8(out, q *IFMAPointX8) error {
 func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 	aa, bb := *a, *b
 	var yMinusX1, yPlusX1, yMinusX2, yPlusX2 IFMAElementX4
-	yMinusX1.Subtract(&aa.Y, &aa.X)
-	yPlusX1.Add(&aa.Y, &aa.X)
-	yMinusX2.Subtract(&bb.Y, &bb.X)
-	yPlusX2.Add(&bb.Y, &bb.X)
+	ifmaSubtractComposableUncheckedX4(&yMinusX1, &aa.Y, &aa.X)
+	ifmaAddComposableUncheckedX4(&yPlusX1, &aa.Y, &aa.X)
+	ifmaSubtractComposableUncheckedX4(&yMinusX2, &bb.Y, &bb.X)
+	ifmaAddComposableUncheckedX4(&yPlusX2, &bb.Y, &bb.X)
 
 	var A, B, C, D, E, F, G, H IFMAElementX4
 	if err := ifmaMultiplyComposableUncheckedX4(&A, &yMinusX1, &yMinusX2); err != nil {
@@ -167,11 +167,11 @@ func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 	if err := ifmaMultiplyComposableUncheckedX4(&D, &aa.Z, &bb.Z); err != nil {
 		return err
 	}
-	D.Add(&D, &D)
-	E.Subtract(&B, &A)
-	F.Subtract(&D, &C)
-	G.Add(&D, &C)
-	H.Add(&B, &A)
+	ifmaAddComposableUncheckedX4(&D, &D, &D)
+	ifmaSubtractComposableUncheckedX4(&E, &B, &A)
+	ifmaSubtractComposableUncheckedX4(&F, &D, &C)
+	ifmaAddComposableUncheckedX4(&G, &D, &C)
+	ifmaAddComposableUncheckedX4(&H, &B, &A)
 
 	var result IFMAPointX4
 	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
@@ -250,18 +250,18 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 	if err := ifmaMultiplyComposableUncheckedX4(&C, &q.Z, &q.Z); err != nil {
 		return err
 	}
-	C.Add(&C, &C)
+	ifmaAddComposableUncheckedX4(&C, &C, &C)
 	// E=2XY avoids the normalized (X+Y), E-A, and E-B operations needed
 	// by the classical square trick. Squaring currently uses this same general
 	// IFMA multiply, so the direct form keeps the multiply count unchanged.
 	if err := ifmaMultiplyComposableUncheckedX4(&E, &q.X, &q.Y); err != nil {
 		return err
 	}
-	E.Add(&E, &E)
-	D.Negate(&A)
-	G.Add(&D, &B)
-	F.Subtract(&G, &C)
-	H.Subtract(&D, &B)
+	ifmaAddComposableUncheckedX4(&E, &E, &E)
+	ifmaNegateComposableUncheckedX4(&D, &A)
+	ifmaAddComposableUncheckedX4(&G, &D, &B)
+	ifmaSubtractComposableUncheckedX4(&F, &G, &C)
+	ifmaSubtractComposableUncheckedX4(&H, &D, &B)
 
 	var result IFMAPointX4
 	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
@@ -308,16 +308,16 @@ func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *
 	if err := ifmaMultiplyComposableUncheckedX8(C, &q.Z, &q.Z); err != nil {
 		return err
 	}
-	C.Add(C, C)
+	ifmaAddComposableUncheckedX8(C, C, C)
 	// See the x4 schedule above: direct E=2XY removes two carry boundaries.
 	if err := ifmaMultiplyComposableUncheckedX8(E, &q.X, &q.Y); err != nil {
 		return err
 	}
-	E.Add(E, E)
-	D.Negate(A)
-	G.Add(D, B)
-	F.Subtract(G, C)
-	H.Subtract(D, B)
+	ifmaAddComposableUncheckedX8(E, E, E)
+	ifmaNegateComposableUncheckedX8(D, A)
+	ifmaAddComposableUncheckedX8(G, D, B)
+	ifmaSubtractComposableUncheckedX8(F, G, C)
+	ifmaSubtractComposableUncheckedX8(H, D, B)
 
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a

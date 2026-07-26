@@ -86,6 +86,11 @@ func (z *IFMAElementX4) Add(x, y *IFMAElementX4) *IFMAElementX4 {
 		ifmaAddNormalizedUncheckedX4(&z.limbs, &x.limbs, &y.limbs)
 		return z
 	}
+	return z.addPortable(x, y)
+}
+
+//go:noinline
+func (z *IFMAElementX4) addPortable(x, y *IFMAElementX4) *IFMAElementX4 {
 	var raw IFMAProductX4
 	for limb := range raw {
 		for lane := range raw[limb] {
@@ -102,6 +107,11 @@ func (z *IFMAElementX8) Add(x, y *IFMAElementX8) *IFMAElementX8 {
 		ifmaAddNormalizedUncheckedX8(&z.limbs, &x.limbs, &y.limbs)
 		return z
 	}
+	return z.addPortable(x, y)
+}
+
+//go:noinline
+func (z *IFMAElementX8) addPortable(x, y *IFMAElementX8) *IFMAElementX8 {
 	var raw IFMAProductX8
 	for limb := range raw {
 		for lane := range raw[limb] {
@@ -119,6 +129,11 @@ func (z *IFMAElementX4) Subtract(x, y *IFMAElementX4) *IFMAElementX4 {
 		ifmaSubtractNormalizedUncheckedX4(&z.limbs, &x.limbs, &y.limbs)
 		return z
 	}
+	return z.subtractPortable(x, y)
+}
+
+//go:noinline
+func (z *IFMAElementX4) subtractPortable(x, y *IFMAElementX4) *IFMAElementX4 {
 	var raw IFMAProductX4
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -136,6 +151,11 @@ func (z *IFMAElementX8) Subtract(x, y *IFMAElementX8) *IFMAElementX8 {
 		ifmaSubtractNormalizedUncheckedX8(&z.limbs, &x.limbs, &y.limbs)
 		return z
 	}
+	return z.subtractPortable(x, y)
+}
+
+//go:noinline
+func (z *IFMAElementX8) subtractPortable(x, y *IFMAElementX8) *IFMAElementX8 {
 	var raw IFMAProductX8
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -153,6 +173,11 @@ func (z *IFMAElementX4) Negate(x *IFMAElementX4) *IFMAElementX4 {
 		ifmaNegateNormalizedUncheckedX4(&z.limbs, &x.limbs)
 		return z
 	}
+	return z.negatePortable(x)
+}
+
+//go:noinline
+func (z *IFMAElementX4) negatePortable(x *IFMAElementX4) *IFMAElementX4 {
 	var raw IFMAProductX4
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -170,6 +195,11 @@ func (z *IFMAElementX8) Negate(x *IFMAElementX8) *IFMAElementX8 {
 		ifmaNegateNormalizedUncheckedX8(&z.limbs, &x.limbs)
 		return z
 	}
+	return z.negatePortable(x)
+}
+
+//go:noinline
+func (z *IFMAElementX8) negatePortable(x *IFMAElementX8) *IFMAElementX8 {
 	var raw IFMAProductX8
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)
@@ -205,6 +235,18 @@ func ifmaMultiplyComposableUncheckedX4(out, x, y *IFMAElementX4) error {
 	return nil
 }
 
+func ifmaAddComposableUncheckedX4(out, x, y *IFMAElementX4) {
+	ifmaAddNormalizedUncheckedX4(&out.limbs, &x.limbs, &y.limbs)
+}
+
+func ifmaSubtractComposableUncheckedX4(out, x, y *IFMAElementX4) {
+	ifmaSubtractNormalizedUncheckedX4(&out.limbs, &x.limbs, &y.limbs)
+}
+
+func ifmaNegateComposableUncheckedX4(out, x *IFMAElementX4) {
+	ifmaNegateNormalizedUncheckedX4(&out.limbs, &x.limbs)
+}
+
 // ExperimentalIFMAMultiplyComposableX8 is the eight-lane analogue of the
 // four-lane composable multiply.
 func ExperimentalIFMAMultiplyComposableX8(out, x, y *IFMAElementX8) error {
@@ -222,6 +264,24 @@ func ExperimentalIFMAMultiplyComposableX8(out, x, y *IFMAElementX8) error {
 func ifmaMultiplyComposableUncheckedX8(out, x, y *IFMAElementX8) error {
 	ifmaMulNormalizedUncheckedX8(&out.limbs, &x.limbs, &y.limbs)
 	return nil
+}
+
+// The unchecked linear helpers mirror the unchecked multiply seams above.
+// They are for statically bounded point schedules that have already gated
+// IFMA once and preserve the composable u52 contract. Keeping the wrappers
+// tiny lets the compiler pass the workspace addresses directly to assembly
+// instead of routing every linear operation through the portable method's
+// runtime dispatch and stack frame.
+func ifmaAddComposableUncheckedX8(out, x, y *IFMAElementX8) {
+	ifmaAddNormalizedUncheckedX8(&out.limbs, &x.limbs, &y.limbs)
+}
+
+func ifmaSubtractComposableUncheckedX8(out, x, y *IFMAElementX8) {
+	ifmaSubtractNormalizedUncheckedX8(&out.limbs, &x.limbs, &y.limbs)
+}
+
+func ifmaNegateComposableUncheckedX8(out, x *IFMAElementX8) {
+	ifmaNegateNormalizedUncheckedX8(&out.limbs, &x.limbs)
 }
 
 func isIFMAElementX4(x *IFMAElementX4) bool {

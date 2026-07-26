@@ -63,8 +63,8 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	yMinusX, yPlusX := &workspace.yMinusX, &workspace.yPlusX
 	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
 	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
-	yMinusX.Subtract(&point.Y, &point.X)
-	yPlusX.Add(&point.Y, &point.X)
+	ifmaSubtractComposableUncheckedX8(yMinusX, &point.Y, &point.X)
+	ifmaAddComposableUncheckedX8(yPlusX, &point.Y, &point.X)
 
 	if err := ifmaMultiplyComposableUncheckedX8(A, yMinusX, &cached.YMinusX); err != nil {
 		return err
@@ -78,11 +78,11 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	if err := ifmaMultiplyComposableUncheckedX8(D, &point.Z, &cached.Z); err != nil {
 		return err
 	}
-	D.Add(D, D)
-	E.Subtract(B, A)
-	F.Subtract(D, C)
-	G.Add(D, C)
-	H.Add(B, A)
+	ifmaAddComposableUncheckedX8(D, D, D)
+	ifmaSubtractComposableUncheckedX8(E, B, A)
+	ifmaSubtractComposableUncheckedX8(F, D, C)
+	ifmaAddComposableUncheckedX8(G, D, C)
+	ifmaAddComposableUncheckedX8(H, B, A)
 
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
