@@ -2,12 +2,12 @@ package ed25519
 
 import (
 	"bytes"
-	stded25519 "crypto/ed25519"
 	"fmt"
 	"sync"
 
 	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/internal/sigprep"
 	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
@@ -651,55 +651,23 @@ func (pipeline *r51IFMAPipeline) evaluateGroupTwoX4(profile Profile, pubs []*[32
 	return nil
 }
 
+// prepareR51Signature applies the shared byte-level gates and returns the
+// signature's S half. It is the r51 spelling of sigprep.Parse, kept because the
+// native pipelines want only the scalar and do their own vectorized hashing and
+// reduction rather than the per-item Reduce that sigprep.Prepare would run.
 func prepareR51Signature(profile Profile, pub *[32]byte, sig []byte) ([32]byte, bool) {
-	if pub == nil || len(sig) != stded25519.SignatureSize {
+	prepared, ok := sigprep.Parse(profile.rules(), pub, sig)
+	if !ok {
 		return [32]byte{}, false
 	}
-	if profile == DalekStrict {
-		if rejectedByStrict(pub, sig) {
-			return [32]byte{}, false
-		}
-		if !canonicalREncoding(sig[:32]) {
-			return [32]byte{}, false
-		}
-	}
-	if !canonicalScalarEncoding(sig[32:]) {
-		return [32]byte{}, false
-	}
-	var scalar [32]byte
-	copy(scalar[:], sig[32:])
-	return scalar, true
+	return prepared.S, true
 }
 
 // ed25519ScalarOrderEncoding is the little-endian encoding of the prime
-// subgroup order l. Ed25519 signatures require the original S encoding to be
-// strictly less than l; reducing a noncanonical encoding would change the
-// verification predicate.
-var ed25519ScalarOrderEncoding = [32]byte{
-	0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
-	0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
-}
+// subgroup order l.
+var ed25519ScalarOrderEncoding = sigprep.ScalarOrderEncoding
 
-// canonicalScalarEncoding reports whether s is the canonical 32-byte
-// little-endian encoding of an integer in [0,l). Signature inputs are public,
-// so the early exits do not expose secret data. This direct predicate also
-// avoids allocating the error returned by SetCanonicalBytes on invalid input.
-func canonicalScalarEncoding(s []byte) bool {
-	if len(s) != len(ed25519ScalarOrderEncoding) {
-		return false
-	}
-	for index := len(s) - 1; index >= 0; index-- {
-		if s[index] < ed25519ScalarOrderEncoding[index] {
-			return true
-		}
-		if s[index] > ed25519ScalarOrderEncoding[index] {
-			return false
-		}
-	}
-	return false
-}
+func canonicalScalarEncoding(s []byte) bool { return sigprep.CanonicalScalarEncoding(s) }
 
 func reduceR51NativeChallengesX8(out *[r51x5.X8Lanes][32]byte, pubs []*[32]byte, msgs, sigs [][]byte, offset, count int, live uint8, width int) (uint8, error) {
 	// Keep the original R and A byte strings as independent segments. Neither
