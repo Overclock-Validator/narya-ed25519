@@ -649,6 +649,7 @@ func (w *experimentalIFMAHEEABaseSplitWorkspaceX8[Storage]) Evaluate(out *IFMAPo
 	}
 	fallback = active &^ usable
 	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	if usable == 0 {
 		*out = acc
 		return 0, fallback, nil
@@ -662,7 +663,7 @@ func (w *experimentalIFMAHEEABaseSplitWorkspaceX8[Storage]) Evaluate(out *IFMAPo
 	for round := maxRounds - 1; round >= 0; round-- {
 		if round != maxRounds-1 {
 			for doubling := uint8(0); doubling < w.radixBits; doubling++ {
-				if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
+				if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 					return 0, active, err
 				}
 			}

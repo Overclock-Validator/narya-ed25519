@@ -243,6 +243,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 	var digits fixedBaseDigitsX8
 	usable := recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
 	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -260,7 +261,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 		}
 	}
 	for doubling := uint8(0); doubling < table.radixBits; doubling++ {
-		if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
+		if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 			return 0, err
 		}
 	}

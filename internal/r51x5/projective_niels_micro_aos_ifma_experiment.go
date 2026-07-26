@@ -80,6 +80,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Evaluate(
 	}
 	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
 	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -87,7 +88,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Evaluate(
 	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
 		if round != workspace.digits.RoundCount()-1 {
 			for doubling := 0; doubling < 5; doubling++ {
-				if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
+				if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 					return 0, err
 				}
 			}

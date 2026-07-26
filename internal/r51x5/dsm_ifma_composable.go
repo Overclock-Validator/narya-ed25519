@@ -192,6 +192,7 @@ func (w *experimentalIFMAFixedDSMWorkspaceX8[Storage]) Evaluate(out *IFMAPointX8
 		usable &= RecodeCanonicalScalarsX8(&w.digits[term], &scalars[term], negativeMasks[term], active, uint(w.radixBits))
 	}
 	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -200,7 +201,7 @@ func (w *experimentalIFMAFixedDSMWorkspaceX8[Storage]) Evaluate(out *IFMAPointX8
 	for round := rounds - 1; round >= 0; round-- {
 		if round != rounds-1 {
 			for doubling := uint8(0); doubling < w.radixBits; doubling++ {
-				if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
+				if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 					return 0, err
 				}
 			}

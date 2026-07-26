@@ -107,6 +107,7 @@ func ExperimentalIFMAComposableScalarMultLoopX8[Storage ifmaFullTableStorageX8](
 		panic("r51x5: composable x8 table/recoding radix mismatch")
 	}
 	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	if active == 0 {
 		*out = acc
 		return nil
@@ -117,7 +118,7 @@ func ExperimentalIFMAComposableScalarMultLoopX8[Storage ifmaFullTableStorageX8](
 	for round := len(recoded.Rounds) - 1; round >= 0; round-- {
 		if round != len(recoded.Rounds)-1 {
 			for doubling := uint(0); doubling < recoded.RadixBits; doubling++ {
-				if err := ifmaPointDoubleComposableStaticX8(&acc, &acc); err != nil {
+				if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 					return err
 				}
 			}

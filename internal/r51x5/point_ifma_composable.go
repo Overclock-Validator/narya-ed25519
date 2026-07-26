@@ -281,44 +281,58 @@ func ifmaPointDoubleComposableStaticX4(out, q *IFMAPointX4) error {
 }
 
 func ifmaPointDoubleComposableStaticX8(out, q *IFMAPointX8) error {
-	var A, B, C, D, E, F, G, H IFMAElementX8
+	var workspace ifmaPointDoubleWorkspaceX8
+	return ifmaPointDoubleComposableWorkspaceStaticX8(out, q, &workspace)
+}
+
+// ifmaPointDoubleWorkspaceX8 holds the eight formula intermediates whose
+// storage is fully overwritten by every point doubling. Scalar loops keep one
+// workspace for the whole loop so Go does not zero 2.5 KiB of dead scratch on
+// every one of the 252 dependent doublings.
+type ifmaPointDoubleWorkspaceX8 struct {
+	A, B, C, D, E, F, G, H IFMAElementX8
+}
+
+func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
+	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
+	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
 	// As in the x4 counterpart, every input read completes before result is
 	// assigned to out. Exact out==q aliasing therefore does not require a
 	// 1,280-byte defensive point copy.
-	if err := ifmaMultiplyComposableUncheckedX8(&A, &q.X, &q.X); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(A, &q.X, &q.X); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&B, &q.Y, &q.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(B, &q.Y, &q.Y); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&C, &q.Z, &q.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(C, &q.Z, &q.Z); err != nil {
 		return err
 	}
-	C.Add(&C, &C)
+	C.Add(C, C)
 	// See the x4 schedule above: direct E=2XY removes two carry boundaries.
-	if err := ifmaMultiplyComposableUncheckedX8(&E, &q.X, &q.Y); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(E, &q.X, &q.Y); err != nil {
 		return err
 	}
-	E.Add(&E, &E)
-	D.Negate(&A)
-	G.Add(&D, &B)
-	F.Subtract(&G, &C)
-	H.Subtract(&D, &B)
+	E.Add(E, E)
+	D.Negate(A)
+	G.Add(D, B)
+	F.Subtract(G, C)
+	H.Subtract(D, B)
 
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a
 	// temporary 1,280-byte point followed by a full point copy. The unchecked
 	// field kernels used here have no error path after the boundary gate.
-	if err := ifmaMultiplyComposableUncheckedX8(&out.X, &E, &F); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.X, E, F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, G, H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.T, E, H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, F, G); err != nil {
 		return err
 	}
 	return nil

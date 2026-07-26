@@ -16,9 +16,10 @@ func TestIFMAPointDoubleDirectOutputX8Differential(t *testing.T) {
 	}
 
 	rng := rand.New(rand.NewSource(0x51_d0_2026))
+	var workspace ifmaPointDoubleWorkspaceX8
 	for round := 0; round < 4096; round++ {
 		input := randomSquareIFMAPointX8(rng)
-		var got, want IFMAPointX8
+		var got, workspaceGot, want IFMAPointX8
 		if err := ifmaPointDoubleComposableStaticX8(&got, &input); err != nil {
 			t.Fatal(err)
 		}
@@ -28,6 +29,12 @@ func TestIFMAPointDoubleDirectOutputX8Differential(t *testing.T) {
 		if got != want {
 			t.Fatalf("round %d: direct-output/current representation mismatch", round)
 		}
+		if err := ifmaPointDoubleComposableWorkspaceStaticX8(&workspaceGot, &input, &workspace); err != nil {
+			t.Fatal(err)
+		}
+		if workspaceGot != want {
+			t.Fatalf("round %d: reused-workspace/current representation mismatch", round)
+		}
 
 		alias := input
 		if err := ifmaPointDoubleComposableStaticX8(&alias, &alias); err != nil {
@@ -35,6 +42,13 @@ func TestIFMAPointDoubleDirectOutputX8Differential(t *testing.T) {
 		}
 		if alias != want {
 			t.Fatalf("round %d: aliased direct-output/current representation mismatch", round)
+		}
+		workspaceAlias := input
+		if err := ifmaPointDoubleComposableWorkspaceStaticX8(&workspaceAlias, &workspaceAlias, &workspace); err != nil {
+			t.Fatal(err)
+		}
+		if workspaceAlias != want {
+			t.Fatalf("round %d: aliased reused-workspace/current representation mismatch", round)
 		}
 	}
 }
@@ -45,8 +59,9 @@ func TestIFMAPointDoubleDirectOutputX8ZeroAllocations(t *testing.T) {
 	}
 	rng := rand.New(rand.NewSource(0x51_d0_a110))
 	state := randomSquareIFMAPointX8(rng)
+	var workspace ifmaPointDoubleWorkspaceX8
 	if allocs := testing.AllocsPerRun(1000, func() {
-		if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
+		if err := ifmaPointDoubleComposableWorkspaceStaticX8(&state, &state, &workspace); err != nil {
 			panic(err)
 		}
 	}); allocs != 0 {
@@ -80,6 +95,18 @@ func BenchmarkIFMAPointDoubleDirectOutputX8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := ifmaPointDoubleComposableStaticX8(&state, &state); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkComposablePointX8Sink = state
+	})
+	b.Run("scaffold=reused-workspace", func(b *testing.B) {
+		state := seed
+		var workspace ifmaPointDoubleWorkspaceX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleComposableWorkspaceStaticX8(&state, &state, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}
