@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/internal/r43x6"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r43x6"
 )
 
 // verifyR43Reference is a complete verification pipeline over the pure-Go

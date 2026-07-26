@@ -9,10 +9,10 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/internal/heea8l"
-	"github.com/Overclock-Validator/narya/internal/r51x5"
-	"github.com/Overclock-Validator/narya/sha512mb"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/heea8l"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
 // r51HEEAPipeline is a forced, test-only complete DalekStrict experiment.

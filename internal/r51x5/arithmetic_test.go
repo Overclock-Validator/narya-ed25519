@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	edwardsfield "github.com/Overclock-Validator/narya/internal/edwards25519/field"
+	edwardsfield "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 )
 
 func assertBigAndReduced(t *testing.T, label string, got *Element, want *big.Int) {

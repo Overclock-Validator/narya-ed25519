@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/internal/r51x5"
-	"github.com/Overclock-Validator/narya/sha512mb"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
 // verifyR51BatchReference is the complete, forced r51x5 verification

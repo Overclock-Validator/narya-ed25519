@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	narya "github.com/Overclock-Validator/narya/ed25519"
-	"github.com/Overclock-Validator/narya/internal/mithriltracev3"
+	narya "github.com/Overclock-Validator/narya-ed25519/ed25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/mithriltracev3"
 )
 
 const (

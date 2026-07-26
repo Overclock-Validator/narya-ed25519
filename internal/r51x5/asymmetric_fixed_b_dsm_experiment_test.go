@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unsafe"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 func TestAsymmetricFixedBThreeByteExtractorAndBoundaryDigits(t *testing.T) {

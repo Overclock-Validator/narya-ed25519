@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"testing"
 
-	narya "github.com/Overclock-Validator/narya/ed25519"
+	narya "github.com/Overclock-Validator/narya-ed25519/ed25519"
 )
 
 const unaffectedBaselineRevision = "05bf37ca843842f54109581755d587dc552e7aa8"

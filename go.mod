@@ -1,4 +1,4 @@
-module github.com/Overclock-Validator/narya
+module github.com/Overclock-Validator/narya-ed25519
 
 go 1.25
 

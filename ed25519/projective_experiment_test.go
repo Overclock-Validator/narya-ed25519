@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/internal/edwards25519/field"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 )
 
 // verifyGenericStrictProjective is the complete portable experiment for the

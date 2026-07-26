@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto/sha512"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/sha512mb"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
 func init() { register("generic", genericBackend{}) }

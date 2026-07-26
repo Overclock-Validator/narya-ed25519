@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unsafe"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 // This file is a test-only gate for a narrow hot-key hypothesis. For a

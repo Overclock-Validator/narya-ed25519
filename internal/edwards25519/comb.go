@@ -12,7 +12,7 @@
 
 package edwards25519
 
-import "github.com/Overclock-Validator/narya/internal/edwards25519/field"
+import "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 
 // PubkeyTable is a fixed-base comb table for an arbitrary point,
 // mirroring the generator's precomputed table: table i holds multiples

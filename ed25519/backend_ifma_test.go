@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/r43x6"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r43x6"
 )
 
 func requireIFMABackend(t testing.TB) ifmaBackend {

@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	edwardsfield "github.com/Overclock-Validator/narya/internal/edwards25519/field"
+	edwardsfield "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 )
 
 var testModulus = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(19))

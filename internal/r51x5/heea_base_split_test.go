@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"testing"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
-	"github.com/Overclock-Validator/narya/internal/heea8l"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/heea8l"
 )
 
 func TestHEEAReduceSignedProductMatchesBigOracle(t *testing.T) {
