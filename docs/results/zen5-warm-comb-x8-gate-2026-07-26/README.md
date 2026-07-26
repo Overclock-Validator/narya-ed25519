@@ -132,3 +132,53 @@ The first three land near 1,050-1,100 ns/signature without touching the A
 window. Going decisively below 1 microsecond needs the wider window, which is
 per-key memory, and per-key memory is capacity: the choice is therefore gated on
 the same unmeasured fee-payer recurrence distribution as the comb width itself.
+
+## Shape sweep: can the comb reach one microsecond?
+
+`shape-sweep.txt` answers the question directly. The passes count is a uniquely
+clean lever: digit count depends only on the window width, so changing passes
+leaves the number of additions untouched and moves only the online depth
+(`width*(passes-1)`) and the table size. Fewer passes buys doublings with
+per-key bytes and nothing else, and per-key bytes are cache capacity.
+
+Five one-second samples per row, same pinned Zen 5 core. Key counts use
+`r51WarmTableBytes` (comb + the 192-byte decoded entry) against 128 MiB.
+
+| A / B shape | depth | B/key | ns/signature | keys @128 MiB |
+| --- | ---: | ---: | ---: | ---: |
+| A6/r9 + B10/r5 (current) | 48 | 19,200 | 1,524 | 6,909 |
+| A6/r7 + B10/r5 | 40 | 26,880 | 1,459 | 4,951 |
+| A6/r5 + B10/r5 | 40 | 34,560 | 1,463 | 3,858 |
+| A6/r5 + B10/r3 | 24 | 34,560 | 1,329 | 3,858 |
+| A6/r4 + B10/r3 | 20 | 42,240 | 1,297 | 3,160 |
+| A6/r3 + B10/r3 | 20 | 57,600 | 1,300 | 2,321 |
+| A6/r3 + B10/r2 | 12 | 57,600 | 1,234 | 2,321 |
+| A6/r2 + B10/r2 | 10 | 84,480 | 1,217 | 1,584 |
+| A6/r2 + B10/r1 | 6 | 84,480 | 1,179 | 1,584 |
+| A6/r1 + B10/r1 | 0 | 165,120 | 1,133 | 811 |
+
+### Three conclusions
+
+**One microsecond is not reachable by shape.** The last row eliminates the
+doubling chain entirely, at 8.6x the per-key memory and 811 cached keys, and
+still lands at 1,133 ns/signature. Depth is simply not where the time is: 69
+additions, two recodes and 69 selections set a floor near 1,040 ns/signature by
+the cost model above. Reaching one microsecond requires a cheaper addition, not
+a different comb.
+
+**Only depth matters, so always take the largest passes that reaches it.**
+A6/r7 and A6/r5 both measure ~1,460 with B10/r5, because both sit under B's
+depth of 40 and B is then binding. A6/r7 gets that for 26,880 B/key instead of
+34,560. Any A shape whose depth is already below B's is paying per-key memory
+for nothing.
+
+**The current pair is mismatched in the expensive direction.** A6/r9 has depth
+48 against B10/r5's 40, so the loop runs eight extra doublings driven entirely
+by the per-key side. B is one process-wide table, so its rows are far cheaper
+than A's: moving B to r3 (1,105,920 B shared, paid once) and A to r5 reaches
+depth 24 for 34,560 B/key, a 12.8% gain. Rebalancing toward the shared table is
+the better direction whenever warm capacity is not the binding constraint.
+
+Whether any of this is worth its capacity cost still depends on the fee-payer
+recurrence distribution, which remains unmeasured. The sweep prices the trade;
+it does not decide it.
