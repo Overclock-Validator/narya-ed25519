@@ -791,10 +791,10 @@ batch x8 orientation already fills all lanes with signatures, while this
 singleton orientation has a second 256-bit half available only when the scalar
 algorithm exposes a second independent chain.
 
-### 5.18 Current modulo-8L HEEA selector — negative singleton gate
+### 5.18 Current modulo-8L HEEA selector — improved, still below the integration gate
 
 The positive two-chain doubling result does not include coefficient selection.
-The existing exact allocation-free `SelectShiftSubtract` implementation was
+The first exact allocation-free `SelectShiftSubtract` implementation was
 therefore measured before extending the two-chain cached-add/table layer.
 
 On a pinned Zen 5 core, ordinary admitted selection cost approximately 7.12
@@ -805,12 +805,22 @@ size: the profile assigns about 48% of the verifier to doubling, so even an
 otherwise-free half-length replacement saves only roughly 3.6 µs before its
 extra tables, additions, and final term combination.
 
-The current selector is therefore closed as a performance candidate for both
-batch and singleton paths. The exactness work, modulo-8L guards, mixed-torsion
-vectors, and two-chain ZMM kernel remain useful foundations. Reopen complete
-HEEA only with a fundamentally cheaper exact selector whose measured cost fits
-inside the point-loop saving; do not spend more assembly effort around the
-current selector first.
+The later exact Lehmer selector advances the same principal Euclidean sequence
+in batches. Fusing its four signed 320-bit matrix combinations into one limb
+pass reduced a same-binary W128 selector from 3.978 to 3.647 us on the Zen 4
+Ryzen 7 PRO 8700GE (-8.3%, zero allocations). The matrix application alone
+improved from 415.4 to 327.35 ns (-21.2%). This supersedes an earlier 8.0--8.3
+us absolute result collected in a slower host-throughput regime; only the
+same-binary comparison is used as the algorithmic delta.
+
+The new reducer is materially better but still does not clear the integration
+gate. At 3.647 us it is about 47% of the current 1232-byte, n=64 cold r51 cost
+on that CPU before coefficient preparation, the extra point/table work, the
+transformed equation, or ordinary fallback. Keep the exactness work,
+modulo-8L guards, mixed-torsion vectors, and two-chain ZMM kernel as useful
+foundations. Do not wire a production HEEA route until a complete exact path
+beats the ordinary verifier. Raw output is in
+`docs/results/zen4-heea-matrix-fusion-2026-07-26/`.
 
 ### 5.19 Ordinary two-chain ZMM singleton loop — architecture split
 

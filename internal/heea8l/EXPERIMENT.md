@@ -4,12 +4,18 @@ This package is research tooling. It is not imported by signature
 verification and its `math/big` performance is not representative of a future
 fixed-width implementation.
 
-The fixed-width Lehmer checkpoint is also research-only. On a Ryzen 7 PRO
-8700GE it was about 2.4x faster than the exact principal-Euclid selector on an
-identical randomized input set, but still required roughly 8.0–8.3
-microseconds per selection. That cost is too large for verifier integration.
-See [`../../docs/results/zen4-heea-lehmer-2026-07-26`](../../docs/results/zen4-heea-lehmer-2026-07-26/README.md)
-for the hardware gate and its host-state caveat.
+The fixed-width Lehmer checkpoint is also research-only. Its matrix update now
+applies all eight small-coefficient products in one limb pass. On a Ryzen 7 PRO
+8700GE, a same-binary comparison measured 3.647 microseconds per W128
+selection versus 3.978 microseconds for the retained four-combine reference,
+an 8.3% complete-selector improvement. The matrix application itself improved
+from 415.4 to 327.35 nanoseconds. Both paths are allocation-free and return the
+same exact principal-Euclid row. See
+[`../../docs/results/zen4-heea-matrix-fusion-2026-07-26`](../../docs/results/zen4-heea-matrix-fusion-2026-07-26/README.md).
+
+That is still too expensive for verifier integration: the selector alone is
+about 47% of the current 1232-byte, n=64 cold r51 cost on this CPU, before any
+transformed point work or fallback. A complete verifier gate remains mandatory.
 
 ## Strict-equation exactness contract
 

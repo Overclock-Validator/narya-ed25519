@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/heea8l
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkApplyLehmerMatrix/fused         	 3671713	       327.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3668600	       327.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3664425	       327.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3665463	       327.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3666159	       327.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3665695	       327.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3668055	       327.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3665235	       327.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3668588	       327.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/fused         	 3663406	       327.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2888618	       415.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2890884	       415.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2886686	       415.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2888124	       415.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2890413	       415.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2889298	       415.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2886732	       415.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2888133	       415.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2889546	       415.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApplyLehmerMatrix/four-combine-reference         	 2890977	       415.3 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/heea8l	31.514s

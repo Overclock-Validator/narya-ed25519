@@ -263,6 +263,27 @@ go test -run '^$' -fuzz '^FuzzSelectShiftSubtract$' \
   -fuzztime=60s ./internal/heea8l
 ```
 
+### Exact Lehmer follow-up
+
+`SelectLehmer` retains principal-Euclid candidate semantics while batching
+multiple quotient steps behind one full-width 2x2 matrix application. Its
+production-shaped matrix helper computes all eight small-coefficient products
+in a single limb pass; the former four-`combine320` path remains a test oracle.
+
+On a Ryzen 7 PRO 8700GE, Go 1.26.4, one pinned core, the same-binary W128
+comparison measured 3.647 us/selection for the fused path and 3.978 us for the
+four-combine reference (-8.3%). The matrix helper itself measured 327.35 ns
+versus 415.4 ns (-21.2%). Every row allocated zero bytes. Complete selector
+outputs match the reference and exact principal-Euclid path over 60,000
+deterministic challenges, while the matrix helper has an additional 100,000
+randomized signed/range differential.
+
+This improves the reducer but does not promote HEEA: the selector alone costs
+about 47% of the current 1232-byte, n=64 cold r51 verification on that CPU,
+before the transformed curve equation or fallback. The valid gate remains a
+complete exact verifier comparison, not a reducer microbenchmark. Evidence is
+under `docs/results/zen4-heea-matrix-fusion-2026-07-26/`.
+
 ## Current implementation boundary
 
 `internal/heea8l` provides the allocating `math/big` oracle and an exact
