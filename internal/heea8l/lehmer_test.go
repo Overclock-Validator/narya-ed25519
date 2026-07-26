@@ -178,6 +178,29 @@ func TestApplyLehmerMatrixMatchesReference(t *testing.T) {
 	}
 }
 
+func TestSubMulUint64Signed320MatchesReference(t *testing.T) {
+	rng := rand.New(rand.NewSource(0x5355424d554c))
+	for sample := 0; sample < 100000; sample++ {
+		var x, y signed320
+		for limb := range x.mag {
+			x.mag[limb] = rng.Uint64()
+			y.mag[limb] = rng.Uint64()
+		}
+		x.neg = rng.Intn(2) != 0
+		y.neg = rng.Intn(2) != 0
+		multiplier := rng.Uint64()
+		if sample%16 == 0 {
+			multiplier = 0
+		}
+		got, gotOK := subMulUint64Signed320(x, y, multiplier)
+		want, wantOK := subMulUint64Signed320Reference(x, y, multiplier)
+		if gotOK != wantOK || got != want {
+			t.Fatalf("sample=%d multiplier=%x ok=%v/%v\n got=%+v\nwant=%+v",
+				sample, multiplier, gotOK, wantOK, got, want)
+		}
+	}
+}
+
 type lehmerMatrixFixture struct {
 	rows       [2]principalEuclidRow
 	a, b, c, d int64

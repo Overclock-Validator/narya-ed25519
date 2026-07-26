@@ -172,6 +172,49 @@ func subSigned320(x, y signed320) (signed320, bool) {
 }
 
 func subMulUint64Signed320(x, y signed320, multiplier uint64) (signed320, bool) {
+	if multiplier == 0 || y.isZero() {
+		return x, true
+	}
+	var product [5]uint64
+	var carry uint64
+	for i := range y.mag {
+		high, low := bits.Mul64(y.mag[i], multiplier)
+		low, addCarry := bits.Add64(low, carry, 0)
+		product[i] = low
+		carry, addCarry = bits.Add64(high, 0, addCarry)
+		if addCarry != 0 {
+			return signed320{}, false
+		}
+	}
+	if carry != 0 {
+		return signed320{}, false
+	}
+
+	// Compute x-(y*multiplier) directly from the product magnitude. This is
+	// the same sign-and-magnitude rule as subSigned320, but avoids building a
+	// temporary signed320 and rescanning y through the generic multiply path.
+	if x.neg != y.neg {
+		magnitude, overflow := add320(x.mag, product)
+		if overflow {
+			return signed320{}, false
+		}
+		return signed320{mag: magnitude, neg: x.neg}, true
+	}
+	switch cmp320(x.mag, product) {
+	case -1:
+		magnitude, underflow := sub320(product, x.mag)
+		return signed320{mag: magnitude, neg: !x.neg}, !underflow
+	case 0:
+		return signed320{}, true
+	default:
+		magnitude, underflow := sub320(x.mag, product)
+		return signed320{mag: magnitude, neg: x.neg}, !underflow
+	}
+}
+
+// subMulUint64Signed320Reference retains the compositional form as an
+// independent oracle for the fused exact-step helper.
+func subMulUint64Signed320Reference(x, y signed320, multiplier uint64) (signed320, bool) {
 	product, ok := mulSigned320Uint64(y, multiplier)
 	if !ok {
 		return signed320{}, false
