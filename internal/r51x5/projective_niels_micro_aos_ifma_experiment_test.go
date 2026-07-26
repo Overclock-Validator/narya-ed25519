@@ -1,10 +1,87 @@
 package r51x5
 
 import (
+	"math/rand"
 	"runtime"
 	"testing"
 	"unsafe"
 )
+
+func TestIFMAProjectiveNielsPreSignedMicroAoSX8RandomMixedOrder(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	rng := rand.New(rand.NewSource(0x51_a05_2026))
+	torsion := referenceTorsionPoints(t)
+	activeMasks := []uint8{0x01, 0x55, 0xa5, 0xfe, 0xff}
+	for round := 0; round < 64; round++ {
+		_, base := scalarWindowMixedBasesX8(t, rng, &torsion)
+		var scalars [X8Lanes][32]byte
+		for lane := range scalars {
+			scalars[lane] = randomCanonicalFixedBaseScalar(t, rng)
+		}
+		var reference ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
+		if err := reference.Prepare(&base, 5); err != nil {
+			t.Fatal(err)
+		}
+		var candidate ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+		if err := candidate.Prepare(&base, 5); err != nil {
+			t.Fatal(err)
+		}
+		for _, active := range activeMasks {
+			negative := uint8(rng.Uint32()) & active
+			var got, want IFMAPointX8
+			gotMask, gotErr := candidate.Evaluate(&got, &scalars, negative, active)
+			wantMask, wantErr := reference.Evaluate(&want, &scalars, negative, active)
+			if gotErr != nil || wantErr != nil {
+				t.Fatalf("round=%d active=%02x negative=%02x errors=%v/%v", round, active, negative, gotErr, wantErr)
+			}
+			gotReduced, wantReduced := got.Reduced(), want.Reduced()
+			if gotMask != wantMask || gotReduced.Bytes() != wantReduced.Bytes() {
+				t.Fatalf("round=%d active=%02x negative=%02x masks=%02x/%02x", round, active, negative, gotMask, wantMask)
+			}
+		}
+	}
+}
+
+func TestIFMAProjectiveNielsPreSignedMicroAoSX8PureTorsion(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	torsion := referenceTorsionPoints(t)
+	var encoded [X8Lanes][32]byte
+	for lane := range encoded {
+		copy(encoded[lane][:], torsion[lane].Bytes())
+	}
+	var base PointX8
+	if mask := base.SetBytes(&encoded); mask != 0xff {
+		t.Fatalf("torsion decode mask=%02x", mask)
+	}
+	var scalars [X8Lanes][32]byte
+	for lane := range scalars {
+		scalars[lane][0] = byte(lane + 1)
+	}
+	var reference ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
+	if err := reference.Prepare(&base, 5); err != nil {
+		t.Fatal(err)
+	}
+	var candidate ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+	if err := candidate.Prepare(&base, 5); err != nil {
+		t.Fatal(err)
+	}
+	for _, negative := range []uint8{0, 0x55, 0xff} {
+		var got, want IFMAPointX8
+		gotMask, gotErr := candidate.Evaluate(&got, &scalars, negative, 0xff)
+		wantMask, wantErr := reference.Evaluate(&want, &scalars, negative, 0xff)
+		if gotErr != nil || wantErr != nil {
+			t.Fatalf("negative=%02x errors=%v/%v", negative, gotErr, wantErr)
+		}
+		gotReduced, wantReduced := got.Reduced(), want.Reduced()
+		if gotMask != wantMask || gotReduced.Bytes() != wantReduced.Bytes() {
+			t.Fatalf("negative=%02x masks=%02x/%02x", negative, gotMask, wantMask)
+		}
+	}
+}
 
 func TestIFMAProjectiveNielsMicroAoSX8Differential(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {

@@ -42,6 +42,15 @@ func TestR51BackendUnsupportedGate(t *testing.T) {
 	}
 }
 
+func TestR51BackendNilPublicKeyFailsClosedBeforeActivation(t *testing.T) {
+	backend := new(r51Backend)
+	for _, profile := range []Profile{StdlibCompat, DalekStrict} {
+		if ok, err := backend.verifyOne(profile, nil, nil, nil); err != nil || ok {
+			t.Fatalf("profile=%v verifyOne(nil)=(%v,%v), want (false,nil)", profile, ok, err)
+		}
+	}
+}
+
 func TestR51BackendBatchWidthSelection(t *testing.T) {
 	if !r51IFMAPipelineAvailable(r51IFMATwoX4) {
 		t.Skipf("r51 x4 IFMA pipeline unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -65,7 +74,7 @@ func TestR51BackendDecodedACacheHardwareGate(t *testing.T) {
 	if !backend.supportsPrecomp() {
 		t.Fatal("r51 warm-cache staging is disabled")
 	}
-	if got, want := r51DecodedACacheEnabled(), cpufeat.PreferWideIFMA(); got != want {
+	if got, want := r51DecodedACacheEnabled(), cpufeat.PreferDecodedAIFMA(); got != want {
 		t.Fatalf("decoded-A arithmetic enabled=%v want=%v", got, want)
 	}
 }

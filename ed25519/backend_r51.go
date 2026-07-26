@@ -179,6 +179,12 @@ func (b *r51Backend) verify(profile Profile, pub *[32]byte, message, sig []byte,
 }
 
 func (b *r51Backend) verifyOne(profile Profile, pub *[32]byte, message, sig []byte) (bool, error) {
+	// rawBatchBackend bypasses the shared applyProfile wrapper. Keep the nil
+	// guard local so the StdlibCompat singleton/tail fallback cannot pass a nil
+	// public key directly into genericBackend.verify.
+	if pub == nil {
+		return false, nil
+	}
 	if err := b.activate(); err != nil {
 		return false, err
 	}
@@ -487,7 +493,7 @@ func r51UseDecodedAPrecomputed(count, hits int) bool {
 	return hits == count || (count == r51BatchQMaxChunk && hits*4 >= count)
 }
 
-func r51DecodedACacheEnabled() bool { return cpufeat.PreferWideIFMA() }
+func r51DecodedACacheEnabled() bool { return cpufeat.PreferDecodedAIFMA() }
 
 // r51WarmDispatchWidth preserves x8 occupancy on both Zen 4 and Zen 5. A warm
 // x4 group is consumed as an aligned pair, except for one final four-item tail
@@ -497,7 +503,7 @@ func r51WarmDispatchWidth(pubs []*[32]byte, pre []*PrecomputedKey, offset, full 
 		!r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {
 		return 0
 	}
-	if !cpufeat.PreferWideIFMA() {
+	if !cpufeat.PreferWarmX8IFMA() {
 		return r51x5.X4Lanes
 	}
 	if offset%r51x5.X8Lanes != 0 {

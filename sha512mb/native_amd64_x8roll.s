@@ -18,7 +18,7 @@ GLOBL nativePaddingWord<>(SB), RODATA|NOPTR, $8
 	VPTERNLOGQ $0xca, G, F, Z10;                 \
 	VPADDQ H, Z8, Z8;                           \
 	VPADDQ Z10, Z8, Z8;                         \
-	VPBROADCASTQ K(BP), Z15;                    \
+	VPBROADCASTQ K(R12), Z15;                   \
 	VPADDQ Z15, Z8, Z8;                         \
 	VPADDQ W, Z8, Z8;                           \
 	VPRORQ $28, A, Z9;                          \
@@ -83,12 +83,12 @@ TEXT ·nativeCompressX8Rolling(SB), 0, $0-16
 	VMOVDQU64 320(DI), Z5
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
 //
-// Requires AVX-512F and AVX-512BW. Every pointer must address at least 128
+// Requires AVX-512F, AVX-512VL, and AVX-512BW. Every pointer must address at least 128
 // readable bytes. Input rows are byte-swapped and transposed directly into
 // the sixteen-register W ring, avoiding the intermediate 1 KiB nativeBlockX8
 // store and reload. All input vectors are loaded before state is written, so
@@ -174,12 +174,12 @@ fusedLoadState:
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
 fusedStateReady:
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeCompressVerifierFirstX8Rolling(state *nativeStateX8, rPtrs, aPtrs, messagePtrs *[nativeX8Width]*byte)
 //
-// Requires AVX-512F and AVX-512BW. Each R and A pointer must address 32
+// Requires AVX-512F, AVX-512VL, and AVX-512BW. Each R and A pointer must address 32
 // readable bytes and each message pointer must address 64. Loading the two
 // half-block segments independently avoids materializing eight concatenated
 // R || A || message[:64] buffers in Go. All inputs are loaded before the
@@ -291,7 +291,7 @@ TEXT ·nativeCompressVerifierFirstX8Rolling(SB), 0, $0-32
 	VMOVDQU64 Z5, 320(DI)
 	VMOVDQU64 Z6, 384(DI)
 	VMOVDQU64 Z7, 448(DI)
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // func nativeCompressFinalX8Rolling(state *nativeStateX8, tail *nativeTailX8, tailWords, totalBits uint64)
@@ -347,11 +347,11 @@ finalTailReady:
 	VMOVDQU64 320(DI), Z5
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 	JMP nativeCompressX8RollingRounds<>(SB)
 
 // All public assembly entry points arrive here with W[0..15] in Z16..Z31,
-// the current state in Z0..Z7, DI pointing at the original state, and BP
+// the current state in Z0..Z7, DI pointing at the original state, and R12
 // pointing at the scalar round constants. Tail jumps preserve the Go caller's
 // return address, so this shared body returns directly to Go.
 TEXT nativeCompressX8RollingRounds<>(SB), NOSPLIT, $0-0

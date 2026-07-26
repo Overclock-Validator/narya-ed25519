@@ -16,6 +16,17 @@ func IFMA() bool { return hasIFMA }
 // width Zen 5. Unknown IFMA CPUs retain the reviewed x4-safe default.
 func PreferWideIFMA() bool { return preferWideIFMA }
 
+// PreferDecodedAIFMA reports whether the measured microarchitecture should
+// consume decoded-A cache entries. This is deliberately separate from SIMD
+// width selection: changing an x4/x8 result must not silently change cache
+// policy.
+func PreferDecodedAIFMA() bool { return preferDecodedAIFMA }
+
+// PreferWarmX8IFMA reports whether two adjacent warm x4 groups should be kept
+// together as one x8 scheduling unit. It is independent of both cold width
+// and decoded-A policy even when the current measured AMD set is identical.
+func PreferWarmX8IFMA() bool { return preferWarmX8IFMA }
+
 func x86FamilyFromVersion(version uint32) uint32 {
 	base := (version >> 8) & 0x0f
 	if base == 0x0f {
