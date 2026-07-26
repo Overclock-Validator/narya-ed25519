@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   96280	     12578 ns/op	      1572 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   95304	     12592 ns/op	      1574 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   95151	     12605 ns/op	      1576 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   95169	     12608 ns/op	      1576 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   95133	     12619 ns/op	      1577 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   94890	     12653 ns/op	      1582 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   94936	     12642 ns/op	      1580 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   94861	     12648 ns/op	      1581 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   94786	     12649 ns/op	      1581 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/one-x8-group         	   94932	     12641 ns/op	      1580 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65517	     18281 ns/op	      2285 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65560	     18291 ns/op	      2286 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65575	     18294 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65593	     18293 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65614	     18288 ns/op	      2286 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65538	     18292 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65604	     18291 ns/op	      2286 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65574	     18295 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65569	     18293 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkHeterogeneousPartialCombX8VersusTwoX4Experiment/two-x4-groups        	   65548	     18292 ns/op	      2287 ns/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	27.198s

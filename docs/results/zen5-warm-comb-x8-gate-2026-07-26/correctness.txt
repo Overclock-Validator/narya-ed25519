@@ -1,0 +1,22 @@
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=0
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=1
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=2
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=3
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=4
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=5
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=6
+=== RUN   TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=7
+--- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment (0.51s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=0 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=1 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=2 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=3 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=4 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=5 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=6 (0.06s)
+    --- PASS: TestHeterogeneousPartialCombX8MatchesTwoX4Experiment/round=7 (0.06s)
+=== RUN   TestHeterogeneousPartialCombX8SurvivesNilLanesExperiment
+--- PASS: TestHeterogeneousPartialCombX8SurvivesNilLanesExperiment (0.06s)
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	0.578s
