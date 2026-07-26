@@ -7,6 +7,59 @@ import (
 	"unsafe"
 )
 
+func TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8(t *testing.T) {
+	if runtime.GOARCH == "amd64" && !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	var point IFMAProjectiveNielsX8
+	coordinates := [...]*IFMAElementX8{&point.YPlusX, &point.YMinusX, &point.Z, &point.T2D}
+	for coordinate, element := range coordinates {
+		for limb := range modulusLimbs {
+			for lane := 0; lane < X8Lanes; lane++ {
+				element.limbs[limb][lane] = uint64(1 + coordinate*1000 + limb*100 + lane)
+			}
+		}
+	}
+	var negativeT2D IFMAElementX8
+	ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
+
+	const poison = uint64(0xdeadbeef51a05)
+	var got ifmaProjectiveNielsPreSignedMicroAoSTableX8
+	for lane := range got {
+		for sign := range got[lane] {
+			for entry := range got[lane][sign] {
+				for limb := range got[lane][sign][entry] {
+					got[lane][sign][entry][limb] = [4]uint64{poison, poison, poison, poison}
+				}
+			}
+		}
+	}
+	want := got
+	for entry := range 16 {
+		ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(&got, uint64(entry), &point, &negativeT2D)
+		for lane := 0; lane < X8Lanes; lane++ {
+			for limb := range modulusLimbs {
+				want[lane][0][entry][limb] = [4]uint64{
+					point.YPlusX.limbs[limb][lane],
+					point.YMinusX.limbs[limb][lane],
+					point.Z.limbs[limb][lane],
+					point.T2D.limbs[limb][lane],
+				}
+				want[lane][1][entry][limb] = [4]uint64{
+					point.YMinusX.limbs[limb][lane],
+					point.YPlusX.limbs[limb][lane],
+					point.Z.limbs[limb][lane],
+					negativeT2D.limbs[limb][lane],
+				}
+			}
+		}
+		if got != want {
+			t.Fatalf("entry %d transpose mismatch", entry)
+		}
+	}
+}
+
 func TestIFMAProjectiveNielsPreSignedMicroAoSX8RandomMixedOrder(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -142,6 +195,39 @@ func TestIFMAProjectiveNielsMicroAoSX8Differential(t *testing.T) {
 }
 
 var benchmarkIFMAProjectiveNielsMicroAoSX8Sink IFMAPointX8
+var benchmarkIFMAProjectiveNielsMicroAoSStoreX8Sink ifmaProjectiveNielsPreSignedMicroAoSTableX8
+
+func BenchmarkIFMAProjectiveNielsPreSignedMicroAoSStoreX8(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	_, variable, _, _ := fixedBaseCombDSMFixtures(b)
+	var current IFMAPointX8
+	current.SetReduced(&variable)
+	var point IFMAProjectiveNielsX8
+	if err := ifmaProjectiveNielsFromPointX8(&point, &current); err != nil {
+		b.Fatal(err)
+	}
+
+	b.Run("scalar-store", func(b *testing.B) {
+		var table ifmaProjectiveNielsPreSignedMicroAoSTableX8
+		b.ReportAllocs()
+		for i := range b.N {
+			storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&table, i&15, &point)
+		}
+		benchmarkIFMAProjectiveNielsMicroAoSStoreX8Sink = table
+	})
+	b.Run("transpose-store", func(b *testing.B) {
+		var table ifmaProjectiveNielsPreSignedMicroAoSTableX8
+		var negativeT2D IFMAElementX8
+		b.ReportAllocs()
+		for i := range b.N {
+			ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
+			ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(&table, uint64(i&15), &point, &negativeT2D)
+		}
+		benchmarkIFMAProjectiveNielsMicroAoSStoreX8Sink = table
+	})
+}
 
 func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {
