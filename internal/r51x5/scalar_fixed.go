@@ -120,12 +120,39 @@ func canonicalScalarBytes(x *[32]byte) bool {
 	return false
 }
 
+// fixedScalarWindowReader extracts consecutive little-endian windows from one
+// 32-byte scalar. At widths 4..6, fewer than width bits remain after each
+// extraction, so adding the next byte keeps buffer below 14 live bits. The
+// final radix-32/radix-64 window is zero-extended past bit 255, matching the
+// former two-byte random-access extractor without an out-of-bounds load.
+type fixedScalarWindowReader struct {
+	scalar *[32]byte
+	buffer uint16
+	bits   uint8
+	next   uint8
+}
+
+func (reader *fixedScalarWindowReader) window(width uint8) uint16 {
+	for reader.bits < width {
+		if int(reader.next) < len(reader.scalar) {
+			reader.buffer |= uint16(reader.scalar[reader.next]) << reader.bits
+		}
+		reader.next++
+		reader.bits += 8
+	}
+	value := reader.buffer & uint16((1<<width)-1)
+	reader.buffer >>= width
+	reader.bits -= width
+	return value
+}
+
 func recodeFixedScalarX4(out *FixedRadixDigitsX4, lane int, scalar *[32]byte, negative bool) {
 	carry := int16(0)
 	radix := int16(1 << out.radixBits)
 	half := radix >> 1
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		if negative {
@@ -142,8 +169,9 @@ func recodeFixedScalarX8(out *FixedRadixDigitsX8, lane int, scalar *[32]byte, ne
 	carry := int16(0)
 	radix := int16(1 << out.radixBits)
 	half := radix >> 1
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		if negative {
@@ -154,14 +182,4 @@ func recodeFixedScalarX8(out *FixedRadixDigitsX8, lane int, scalar *[32]byte, ne
 	if carry != 0 {
 		panic("r51x5: canonical x8 scalar exceeded fixed recoding width")
 	}
-}
-
-func fixedScalarBits(scalar *[32]byte, bit int, width uint) uint16 {
-	byteIndex := bit >> 3
-	shift := uint(bit & 7)
-	word := uint16(scalar[byteIndex])
-	if byteIndex+1 < len(scalar) {
-		word |= uint16(scalar[byteIndex+1]) << 8
-	}
-	return (word >> shift) & uint16((1<<width)-1)
 }

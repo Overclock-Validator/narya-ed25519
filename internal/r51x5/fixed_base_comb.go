@@ -330,8 +330,9 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
 	carry := int16(0)
 	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
@@ -344,8 +345,9 @@ func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
 func recodeFixedBaseLaneX8(out *fixedBaseDigitsX8, lane int, scalar *[32]byte) {
 	carry := int16(0)
 	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))

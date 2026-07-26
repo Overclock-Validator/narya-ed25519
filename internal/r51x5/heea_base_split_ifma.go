@@ -246,8 +246,9 @@ func recodeHEEAFixedScalarX4(out *heeaFixedRadixDigitsX4, lane int, scalar *[32]
 	carry := int16(0)
 	radix := int16(1 << out.radixBits)
 	half := radix >> 1
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < count; round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		if negative {
@@ -281,8 +282,9 @@ func recodeHEEAFixedScalarX8(out *heeaFixedRadixDigitsX8, lane int, scalar *[32]
 	carry := int16(0)
 	radix := int16(1 << out.radixBits)
 	half := radix >> 1
+	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < count; round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(reader.window(out.radixBits)) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		if negative {
