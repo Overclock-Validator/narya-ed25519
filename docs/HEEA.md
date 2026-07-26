@@ -47,8 +47,11 @@ gcd(tau, 8L) = 1.
 ```
 
 For the configured short widths, nonzero odd `tau` is sufficient because its
-absolute value is much smaller than `L`. Candidate width overflow is an
-explicit baseline fallback, not a truncated or reduced multiplier.
+absolute value is much smaller than `L`. The selector and selector-to-QSM
+handoff nevertheless retain the complete unit check: oddness alone is not the
+theorem, because the odd multiplier `tau=L` annihilates every prime-order
+error. Candidate width overflow is an explicit baseline fallback, not a
+truncated or reduced multiplier.
 
 `internal/r43x6/heea_qsm_experiment_test.go` encodes both sides with exact
 signed-integer double-and-add. It exercises mixed-order points and includes a
@@ -122,13 +125,13 @@ that larger reservation.
 
 Coefficient preparation is deliberately an admission boundary. It accepts
 only canonical `s`, exact magnitudes below `L`, `epsilon` in `{-1,+1}`, and a
-nonzero odd `tau`; rejected active lanes are explicit baseline fallbacks. The
-odd/nonzero check is a local defense against a malformed candidate. It does
-**not** make selector admission atomic: a width-fallback selection can retain
-an odd diagnostic candidate below `L`. The selector-to-QSM adapter must pass
-only `UseCandidate && NoFallback` lanes within the selected width and carry all
-other original lanes to baseline fallback. The trusted selector contract
-feeding that adapter is
+nonzero odd `tau`; below `L`, those checks are equivalent to the complete unit
+condition. Rejected active lanes are explicit baseline fallbacks. This local
+defense against a malformed candidate does **not** make selector admission
+atomic: a width-fallback selection can retain a unit diagnostic candidate.
+The selector-to-QSM adapter must pass only `UseCandidate && NoFallback` lanes
+within the selected width and carry all other original lanes to baseline
+fallback. The trusted selector contract feeding that adapter is
 
 ```text
 rho = epsilon*tau*k (mod 8L).
@@ -213,13 +216,16 @@ Every admitted result is independently checked against `math/big` for
 ```text
 rho = epsilon*tau*k (mod 8L),
 tau != 0,
-tau odd,
+gcd(tau,8L) = 1,
 max(bitlen(abs(rho)), bitlen(abs(tau))) <= gate.
 ```
 
-Because an admitted `tau` is at most 136 bits, odd and nonzero also proves
-`gcd(tau,8L)=1`. A product-group test exercises mixed torsion explicitly and
-checks that the odd multiplier cannot erase any nonzero order-eight error.
+Because an admitted `tau` is at most 136 bits, odd and nonzero also proves the
+unit condition. The code still checks it directly. A product-group test
+exercises mixed torsion explicitly and checks that a unit multiplier cannot
+erase any nonzero order-eight error. A separate deterministic curve vector
+sets `A=[a]B`, `R=[r]B+T2`, and `s=r+k*a`: strict verification rejects its
+order-two error while the transformed equation with even `tau=2` accepts.
 
 On a deterministic 8,192-challenge development corpus, the division-free and
 exact selectors had these fallback counts:
@@ -276,9 +282,10 @@ division-free selector, `tau*s mod L`, compact-affine `R` reconstruction, cold
 
 The selector-to-QSM adapter admits a lane only when `UseCandidate` is true,
 the fallback reason is `NoFallback`, the configured width holds, and `tau` is
-odd and nonzero. Only that admitted mask reaches coefficient preparation and
-is independently retained by the variable-base workspace. Thus a diagnostic
-candidate returned with `WidthExceeded` cannot enter the identity test.
+a unit modulo `8L`. Only that admitted mask reaches coefficient preparation
+and is independently retained by the variable-base workspace. Thus a
+diagnostic candidate returned with `WidthExceeded` cannot enter the identity
+test.
 
 The non-IFMA scalar model executes the same selector and transformed equation
 against complete valid, invalid, noncanonical-A, and mixed-order signatures.
@@ -358,7 +365,7 @@ unless a materially different QSM construction changes the cost model.
 
 HEEA stays experimental unless all of the following hold:
 
-- the modulo-`8L` congruence and odd/nonzero-`tau` checks are local to the
+- the modulo-`8L` congruence and complete unit-`tau` checks are local to the
   selector/QSM handoff;
 - width failure always runs the same-width ordinary r51 strict DSM;
 - exact mixed-order, CCTV, Wycheproof, fuzz, and lane-mask tests have zero
@@ -392,6 +399,17 @@ The minimum gate is an exact two-point-ZMM doubling A/B against
 point layer to x8, and do not transfer an x8 HEEA verdict to this singleton
 experiment in either direction.
 
-Randomized aggregate batch verification is a separate, lower-priority API
-problem because Narya promises a verdict for every input and adversarial batch
-failure would otherwise require localization or individual fallback.
+Randomized aggregate batch verification is a separate API and algorithmic
+regime. A Straus/Pippenger MSM over a very large batch shares one doubling
+chain across all signatures, so it attacks the same work that HEEA halves;
+HEEA has little doubling-chain value inside such an aggregate. It remains
+potentially relevant to small batches, tails, and per-signature paths.
+
+That observation does not make aggregate verification part of Narya's current
+contract. Narya promises an exact deterministic verdict for every input. A
+failed aggregate does not identify its bad members, and recursive localization
+must build and verify fresh random-coefficient sub-batches. An adversary can
+choose and distribute the invalid entries, making that work depend on the
+attacker-controlled failure count. Cofactored aggregate verification also
+belongs to a different acceptance profile. No current HEEA or cold-path gate
+uses aggregate-throughput projections as its baseline.
