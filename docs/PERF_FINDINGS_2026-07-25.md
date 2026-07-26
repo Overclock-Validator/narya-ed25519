@@ -653,6 +653,30 @@ us/signature. Timed rows retained zero allocations and zero internal-fault
 fallbacks, and the complete native repository suite passed. Raw output is
 under `docs/results/zen5-packed-singleton-cached-input-2026-07-26/`.
 
+### 5.14 Packed-singleton doubling Stage-2 reschedule — retained
+
+The native doubling Stage 2 initially selected each algebraic term with vector
+ANDs. Commit `2724c44` instead forms `[D,B,B,B]` and `[D,A,A,A]`, takes their
+sum and difference, selects E/H with public mask registers, and subtracts 2C
+only from the F lane. The carried `[E,G,H,F]` representation remains bit for
+bit identical to the portable oracle.
+
+The first draft incorrectly used the cached-add F=`D-C` expression in the
+doubling schedule. The direct representation oracle rejected maximum-u52 input
+and full verifier tests rejected honest signatures before any benchmark ran.
+That variant was corrected locally and never pushed. This is a useful regime
+note: cached-add and doubling share the same packed output shape but not the F
+formula.
+
+Ten pinned Zen 5 samples moved the isolated doubling from 32.75 to 31.96 ns
+(-2.4%). Through exported `VerifyBatchStrict` at msg=1232, n=1 moved from
+16.75 to 16.61 us/signature (-0.8%) and n=2 from 16.74 to 16.52
+us/signature (-1.3%). The n=4/8/64 dispatches stayed around
+10.18/5.43/5.10 us/signature. The change is retained because it removes
+instructions, introduces no new representation or branch, remains
+zero-allocation, and passed the complete native suite. Raw output is under
+`docs/results/zen5-packed-singleton-stage2-reschedule-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
