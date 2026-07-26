@@ -53,9 +53,18 @@ func VerifyStrict(pub, message, sig []byte) bool {
 }
 
 // verifyOne applies the given profile's shared rejection pre-pass,
-// then asks the backend to evaluate that profile's equation. Every
-// non-cache single-signature entry point funnels through here so the
-// pre-pass cannot be bypassed.
+// then asks the backend to evaluate that profile's equation.
+//
+// It is not the only path to a verdict. A backend implementing
+// rawStrictSingleBackend or rawBatchBackend is called directly, skipping this
+// pre-pass, and must therefore apply the profile's byte-level rules itself.
+// Those interfaces exist so a native verifier is not made to repeat prechecks
+// it already performs internally, which means the shared rules are an
+// obligation on the backend rather than something the wrapper guarantees.
+//
+// TestRawBackendPathsApplyTheProfilePrePass enforces that obligation: it drives
+// every registered backend through the raw entry points with inputs that only
+// the pre-pass rejects.
 func verifyOne(b backend, profile Profile, pub *[32]byte, message, sig []byte, pre *PrecomputedKey) bool {
 	if rejectedByProfile(profile, pub, sig) {
 		return false

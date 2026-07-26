@@ -195,6 +195,19 @@ var (
 	}
 )
 
+// ExperimentalEncodesSmallOrderPoint exposes the packed strict small-order
+// classifier so another package can assert it against the one the generic
+// backend uses.
+//
+// The two are independent copies of the same fourteen byte strings. Nothing in
+// the type system ties them together, so a one-byte edit to either would make
+// the generic and r51 backends disagree about which public keys are acceptable,
+// which is a consensus split rather than a local bug. This export exists so
+// that divergence is caught by a test instead of by a fork.
+func ExperimentalEncodesSmallOrderPoint(encoded []byte) bool {
+	return packedEncodesSmallOrderPointX4(encoded)
+}
+
 func packedEncodesSmallOrderPointX4(encoded []byte) bool {
 	if len(encoded) != 32 {
 		return false
