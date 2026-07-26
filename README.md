@@ -544,6 +544,28 @@ comb cache, and `internal/edwards25519/comb.go` originate in `pkg/ed25519fast`
 in [Mithril](https://github.com/Overclock-Validator/mithril), authored by
 palmer.
 
+**Papers and design influences.** The sources below influenced different
+parts of Narya; inclusion here does not mean their code was copied or that an
+experimental idea is part of the supported backend.
+
+| Source | Influence on Narya |
+| --- | --- |
+| [*ENG25519: Faster TLS 1.3 Handshake Using Optimized X25519 and Ed25519*](https://www.usenix.org/conference/usenixsecurity24/presentation/zhang-jipeng) (Zhang, Huang, Zhao, Chen, and Koç, USENIX Security 2024) | The strongest academic influence on the shipping r51 backend. It provided independent published evidence that five radix-2^51 limbs are a good fit for AVX-512 IFMA. Narya's lane-per-signature kernels and implementation are its own. |
+| [*Taming the many EdDSAs*](https://eprint.iacr.org/2020/1244) | Shaped the acceptance-predicate analysis: canonical encodings, cofactored versus cofactorless equations, mixed-order behavior, and the edge-case corpus used to prove cross-implementation agreement. |
+| [*Accelerating EdDSA Signature Verification with Faster Scalar Size Halving*](https://doi.org/10.46586/tches.v2025.i3.493-515) (ElSheikh, Keskinkurt Paksoy, Cenk, and Hasan, TCHES 2025) | Basis of Narya's test-only HEEA/scalar-halving track. Narya adds the modulo-8L relation and unit-multiplier requirement needed to preserve its cofactorless full-group equation; the published speedup is not treated as a prediction for Narya. |
+| [*Optimized Lattice Basis Reduction in Dimension 2, and Fast Schnorr and EdDSA Signature Verification*](https://eprint.iacr.org/2020/454) (Pornin, 2020) | Earlier ABGLSV–Pornin lineage behind scalar-size-halving verification and Voi's cofactored fast path. It informed the research comparison, not the production `DalekStrict` backend. |
+| [*Point-Halving and Subgroup Membership in Twisted Edwards Curves*](https://eprint.iacr.org/2022/1164) (Pornin, 2022) | Supplies the nonlinear prime-subgroup-membership method behind Narya's documented strict-compatible aggregate-batching research gate. No aggregate verifier or point-halving kernel is currently shipped. See [`docs/STRICT_AGGREGATE_BATCHING.md`](docs/STRICT_AGGREGATE_BATCHING.md). |
+| [*High-speed high-security signatures*](https://ed25519.cr.yp.to/ed25519-20110926.pdf) and [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032) | Foundational Ed25519 scheme, encoding, hashing, and known-answer vectors. Narya deliberately exposes explicit named verification predicates where real implementations resolve edge cases differently. |
+
+The largest non-paper engineering influences are Firedancer's AVX-512
+Ed25519 and SHA-512 work, curve25519-dalek and curve25519-voi's vectorized
+Edwards implementations and predicate behavior, and BoringSSL's
+square-root-ratio derivation. Eclipse Labs'
+[*Breaking 10 Million TPS*](https://www.eclipselabs.io/blogs/breaking-10-million-tps)
+was useful directional confirmation of the x8/radix-51 IFMA design space, but
+is not treated as a formal result or performance claim. Exact code provenance,
+pinned revisions, and license obligations are recorded in [NOTICE](NOTICE).
+
 **Specifications and reference implementations.** The acceptance predicate is
 that of [ed25519-dalek 2.2.0 at `8016d6d`](https://github.com/dalek-cryptography/curve25519-dalek/tree/8016d6d9b9cdbaa681f24147e0b9377cc8cef934/ed25519-dalek)
 `verify_strict`, as reached by
