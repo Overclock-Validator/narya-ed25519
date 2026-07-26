@@ -27,14 +27,16 @@ type ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8 struct {
 }
 
 func ifmaProjectiveNielsFromPointX8(out *IFMAProjectiveNielsX8, point *IFMAPointX8) error {
-	var result IFMAProjectiveNielsX8
-	result.YPlusX.Add(&point.Y, &point.X)
-	result.YMinusX.Subtract(&point.Y, &point.X)
-	result.Z = point.Z
-	if err := ifmaMultiplyComposableUncheckedX8(&result.T2D, &point.T, &ifmaCurve2DX8); err != nil {
+	// Callers have already gated IFMA and keep point in the composable u52
+	// domain. Write every coordinate through to out: a temporary result made
+	// the compiler clear and then copy 1,280 bytes for each of the sixteen
+	// entries built by a cold variable-base table.
+	ifmaAddComposableUncheckedX8(&out.YPlusX, &point.Y, &point.X)
+	ifmaSubtractComposableUncheckedX8(&out.YMinusX, &point.Y, &point.X)
+	out.Z = point.Z
+	if err := ifmaMultiplyComposableUncheckedX8(&out.T2D, &point.T, &ifmaCurve2DX8); err != nil {
 		return err
 	}
-	*out = result
 	return nil
 }
 
