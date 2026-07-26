@@ -830,6 +830,35 @@ inside both cold and warm r51 paths. It does not claim that the scalar gather
 is solved; after this arithmetic reduction, fixed-base selection is a larger
 relative share and remains the next independent cold-path candidate.
 
+### 5.20 Fixed-base pre-signed 2dT — retained
+
+The post-Stage-2 n=64 profile assigned 9.0% of complete verification to
+`selectFixedBaseIFMACachedX8`. Scalar `Element.Negate` under that selector
+accounted for 3.6% of the complete profile because every negative public digit
+recomputed `-2dT` before gathering it into a SIMD lane.
+
+Commit `afe5c65` retains one additional scalar field element per shared
+fixed-base table entry. Selection still indexes the same positive point and
+implements exact affine-cached negation by swapping `Y+X`/`Y-X`; it now chooses
+the retained negative `2dT` rather than performing field arithmetic. The
+radix-256 B table grows from 245,760 to 327,680 bytes, a process-wide 80 KiB
+cost with no per-key or timed-path allocation.
+
+On the pinned Zen 5 core, fixed-base group time improved 4,068 -> 3,576.5 ns
+for x4 (-12.1%) and 6,247.5 -> 5,171.5 ns for x8 (-17.2%). Complete public
+1232-byte cold verification improved 9.274 -> 9.139 µs/signature at n=4,
+4.995 -> 4.850 at n=8, and 4.794 -> 4.673 at n=64. Every row remained
+zero-allocation with zero internal-fault fallbacks, and the complete native
+suite passed.
+
+Raw output is under
+`docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/`.
+
+**Regime tag:** this removes only online `2dT` negation. The per-lane scalar
+gather and SoA stores remain visible and are a separate candidate. Because B
+is shared process-wide, the 80 KiB storage trade does not scale with the public
+key population.
+
 ---
 
 ## 6. Smaller observations

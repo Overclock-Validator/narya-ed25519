@@ -1,0 +1,13 @@
+date: 2026-07-26
+implementation source: afe5c65aed425cd37a89d7ce4af3e2beff5c32b1
+baseline source: fd117ae8c80024931d296d3a8b8298380494dde5
+go: go version go1.26.4 linux/amd64
+os/arch: linux/amd64
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+vendor: AuthenticAMD
+family/model/stepping: 26/68/0
+cores/threads: 8/16
+logical CPU: 2
+governor: performance
+energy performance preference: performance
+required flags present: avx2 avx512f avx512dq avx512ifma avx512bw avx512vl avx512vbmi sha_ni

@@ -1,0 +1,5 @@
+/usr/local/go/bin/go test -count=1 ./...
+
+taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -run '^$' -bench '^BenchmarkExperimentalFixedBaseCombScalarMult$/ifma/(x4|x8)/radix=256$' -benchmem -benchtime=1s -count=10 ./internal/r51x5
+
+taskset -c 2 env GOMAXPROCS=1 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$/msg=1232/n=(4|8|64)$' -benchmem -benchtime=1s -count=10 ./ed25519
