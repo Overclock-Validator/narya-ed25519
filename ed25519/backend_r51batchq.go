@@ -22,6 +22,12 @@ type r51IFMABatchQPipeline struct {
 	wideCore  *r51IFMAPipeline
 	finalizer r51IFMABatchQFinalizer
 
+	// experimentalComposableDecodeX8 keeps decoded cold public keys in the
+	// IFMA u52 domain through x8 variable-base table preparation. It is a
+	// complete-pipeline measurement seam only; registered construction leaves
+	// it false until the representation handoff passes a hardware gate.
+	experimentalComposableDecodeX8 bool
+
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
 	points  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.IFMAPointX4
 	active  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
@@ -378,7 +384,14 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 	}
 
 	var A r51x5.PointX8
-	live, err := r51x5.ExperimentalIFMADecodeX8(&A, &aBytes, candidates)
+	var composableA r51x5.IFMAPointX8
+	var live uint8
+	var err error
+	if pipeline.experimentalComposableDecodeX8 {
+		live, err = r51x5.ExperimentalIFMADecodeComposableX8(&composableA, &aBytes, candidates)
+	} else {
+		live, err = r51x5.ExperimentalIFMADecodeX8(&A, &aBytes, candidates)
+	}
 	if err != nil {
 		return err
 	}
@@ -393,8 +406,14 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 		return err
 	}
 
-	if err := pipeline.wideCore.variableX8.Prepare(&A, pipeline.wideCore.radixBits); err != nil {
-		return err
+	if pipeline.experimentalComposableDecodeX8 {
+		if err := pipeline.wideCore.variableX8.PrepareComposable(&composableA, pipeline.wideCore.radixBits); err != nil {
+			return err
+		}
+	} else {
+		if err := pipeline.wideCore.variableX8.Prepare(&A, pipeline.wideCore.radixBits); err != nil {
+			return err
+		}
 	}
 	var aTerm, bTerm r51x5.IFMAPointX8
 	usableA, err := pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
