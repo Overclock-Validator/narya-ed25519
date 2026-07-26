@@ -677,6 +677,41 @@ instructions, introduces no new representation or branch, remains
 zero-allocation, and passed the complete native suite. Raw output is under
 `docs/results/zen5-packed-singleton-stage2-reschedule-2026-07-26/`.
 
+### 5.15 Register-resident decoder square chains — retained
+
+The strict decoder's exponentiation consisted of short runs of 1--100 true
+field squares separated by fixed addition-chain multiplies. Each square called
+the general 25-product multiply, reloaded five limb vectors, and stored them
+again. That old schedule remained appropriate as the portable and
+fault-injection reference, but it was not a good native dependent-chain ABI.
+
+Commit `1ac9fde` promotes the existing exact x8 chain and adds its x4 analogue.
+The native unchecked decoder now retains the five running limbs in YMM/ZMM
+registers for an entire square run, uses the 15-product symmetry schedule, and
+stores only at the next addition-chain boundary. The final multiply by the
+boundary's distinct operand still uses the common multiply kernel. Checked,
+portable, and injected-fault schedules deliberately retain their former
+per-operation path.
+
+The direct oracle covers counts 0/1/2/5/10/20/50/100/252, random maximum-u52
+inputs, exact output-representation equality against repeated production
+multiplies, in-place aliasing, and zero allocations at both widths. The native
+repository suite and complete verifier differentials passed.
+
+On a pinned Zen 5 core at msg=1232, public cold verification moved from about
+16.61 to 15.33 µs/signature at n=1 (-7.7%), 16.52 to 15.33 at n=2 (-7.2%),
+10.18 to 9.55 at n=4 (-6.2%), 5.43 to 5.10 at n=8 (-6.1%), and 5.12 to
+4.92 at n=64 (-3.9%). Every timed row retained zero allocations and zero
+internal-fault fallbacks.
+
+**Regime tag:** the older dedicated-square rejection remains valid for the
+point loop. Packed doubling includes `[X^2,Y^2,Z^2,XY]`, not four copies of one
+field square, and the signature-parallel point A/B showed the standalone
+square call losing in that schedule. Decoder exponentiation is different: it
+is a long, genuinely dependent sequence of true squares, so register residency
+and symmetry both apply. Reopen either verdict only within its own arithmetic
+regime.
+
 ---
 
 ## 6. Smaller observations

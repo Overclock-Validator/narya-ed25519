@@ -181,7 +181,7 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest snapshot is from implementation commit `1f0bfbf` on an AMD Ryzen 7
+The latest snapshot is from implementation commit `1ac9fde` on an AMD Ryzen 7
 9700X (Zen 5), Go 1.26.4, one pinned core, the performance governor, and
 `GOMAXPROCS=1`. Values are median microseconds per signature from ten repeated
 one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
@@ -195,17 +195,17 @@ is better)**.
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 21.675 | 21.600 | 9.058 | 5.411 | 5.094 |
-| 1232 | 22.420 | 22.400 | 10.090 | 5.646 | 5.305 |
-| 4096 | 24.260 | 24.330 | 12.860 | 6.401 | 6.080 |
+| 200 | 14.470 | 14.520 | 8.530 | 4.873 | 4.687 |
+| 1232 | 15.440 | 15.380 | 9.550 | 5.124 | 4.924 |
+| 4096 | 17.300 | 17.305 | 12.370 | 5.857 | 5.664 |
 
 **Warm — 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 21.330 | 21.500 | 4.013 | 3.631 | 3.319 |
-| 1232 | 22.200 | 22.265 | 4.780 | 4.389 | 4.073 |
-| 4096 | 24.285 | 24.230 | 6.818 | 6.424 | 6.133 |
+| 200 | 14.410 | 14.400 | 3.780 | 3.547 | 3.371 |
+| 1232 | 15.345 | 15.315 | 4.531 | 4.291 | 4.143 |
+| 4096 | 17.460 | 17.470 | 6.574 | 6.341 | 6.188 |
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
@@ -214,10 +214,11 @@ paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups. The
 cache deliberately bypasses its prepared tables for n<4, so the cold and warm
 singleton/pair rows are effectively the same path.
 
-At 4096 bytes, the current warm x4 schedule is statistically near parity with
-native x8 cold at n=8 and n=64, and is about 0.4--0.9% slower in this run. This
-small crossover is retained rather than presenting cache hits as universally
-faster; the cache remains a clear win at n>=4 for 200- and 1232-byte messages.
+At 4096 bytes, the current warm x4 schedule is slower than native x8 cold at
+n=8 and n=64 in this run. The crossover is retained rather than presenting
+cache hits as universally faster; the cache remains a clear win at n>=4 for
+200- and 1232-byte messages. Dispatch should therefore account for message
+size as well as cache state and batch width.
 
 The comparison below uses the same 1232-byte fixture shape and executable for
 every row. Values are medians of six one-second samples in `µs/signature`
@@ -226,10 +227,10 @@ included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 22.330 | 22.370 | 10.200 | 5.643 | 5.321 |
-| Go `crypto/ed25519` | 27.435 | 27.490 | 27.285 | 27.350 | 27.340 |
-| curve25519-voi, cold strict | 21.810 | 21.830 | 21.650 | 21.770 | 21.860 |
-| curve25519-voi, expanded key | 18.980 | 19.000 | 18.820 | 18.940 | 19.030 |
+| Narya r51, cold strict | 15.215 | 15.280 | 9.746 | 5.224 | 5.041 |
+| Go `crypto/ed25519` | 27.230 | 27.280 | 27.360 | 27.405 | 27.370 |
+| curve25519-voi, cold strict | 21.640 | 21.770 | 21.730 | 21.860 | 21.910 |
+| curve25519-voi, expanded key | 18.825 | 18.945 | 18.900 | 19.025 | 19.070 |
 
 The public cold path also scales across independent callers. At commit
 `ac8c1ab`, six one-second samples per point over 1232-byte messages produced:
@@ -253,7 +254,7 @@ Historical measurements and their exact environments remain in
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
 current snapshot are in
-[`docs/results/zen5-9700x-readme-2026-07-26/`](docs/results/zen5-9700x-readme-2026-07-26/).
+[`docs/results/zen5-9700x-squarechain-readme-2026-07-26/`](docs/results/zen5-9700x-squarechain-readme-2026-07-26/).
 The multicore evidence is in
 [`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
 
