@@ -15,8 +15,8 @@ import (
 // decoder, DSM, and batch-finalizer scratch; workers share no mutable curve
 // state.
 //
-// Zen 4 keeps full x4 groups together. Zen 5 uses native x8 groups when at
-// least eight signatures are available and retains x4 for the tail. Strict
+// Zen 4 and Zen 5 use x8 groups when at least eight signatures are available
+// and retain x4 for the tail. Strict
 // one- and two-item tails use the lower-latency packed singleton implementation,
 // while a strict three-item tail uses one partial x4 group. StdlibCompat retains
 // the native partial-group path for two and three items because the packed
@@ -86,10 +86,9 @@ func (b *r51Backend) backendStats() BackendStats {
 	return BackendStats{InternalFaultFallbacks: b.faults.Load()}
 }
 
-// The first tier retains decoded A; native-wide Zen 5 consumes it directly,
-// while Zen 4 retains it only as the bounded staging representation for warm
-// promotion. Four independently hot strict keys can be promoted to immutable
-// A6/r9 tables and evaluated as one homogeneous x4 group on either CPU.
+// The first tier retains decoded A; the x8 cold path on Zen 4 and Zen 5
+// consumes it directly. Four independently hot strict keys can be promoted to
+// immutable A6/r9 tables and evaluated as one homogeneous x4 group.
 func (*r51Backend) supportsPrecomp() bool { return true }
 
 func (*r51Backend) promotionThreshold() int32 { return 8 }
@@ -490,9 +489,9 @@ func r51UseDecodedAPrecomputed(count, hits int) bool {
 
 func r51DecodedACacheEnabled() bool { return cpufeat.PreferWideIFMA() }
 
-// r51WarmDispatchWidth preserves Zen 5's native x8 occupancy. A warm x4 group
-// is independently profitable on Zen 4. On Zen 5 it is consumed only as an
-// aligned pair, except for one final four-item tail that has no x8 partner.
+// r51WarmDispatchWidth preserves x8 occupancy on both Zen 4 and Zen 5. A warm
+// x4 group is consumed as an aligned pair, except for one final four-item tail
+// that has no x8 partner.
 func r51WarmDispatchWidth(pubs []*[32]byte, pre []*PrecomputedKey, offset, full int) int {
 	if offset < 0 || offset+r51x5.X4Lanes > full || full > minR51(len(pubs), len(pre)) ||
 		!r51WarmGroupAvailable(pubs[offset:offset+r51x5.X4Lanes], pre[offset:offset+r51x5.X4Lanes]) {

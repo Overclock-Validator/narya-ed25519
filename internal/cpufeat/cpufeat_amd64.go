@@ -7,9 +7,9 @@ import "golang.org/x/sys/cpu"
 var hasIFMA = cpu.X86.HasAVX512F && cpu.X86.HasAVX512VL && cpu.X86.HasAVX512DQ &&
 	cpu.X86.HasAVX512BW && cpu.X86.HasAVX512IFMA && cpu.X86.HasAVX512VBMI
 
-var preferWideIFMA = detectAMDZen5OrNewer()
+var preferWideIFMA = detectAMDZen4OrNewer()
 
-func detectAMDZen5OrNewer() bool {
+func detectAMDZen4OrNewer() bool {
 	_, ebx, ecx, edx := cpuid(0, 0)
 	const (
 		auth = 0x68747541
@@ -20,7 +20,7 @@ func detectAMDZen5OrNewer() bool {
 		return false
 	}
 	version, _, _, _ := cpuid(1, 0)
-	return x86FamilyFromVersion(version) >= 0x1a
+	return x86FamilyFromVersion(version) >= 0x19
 }
 
 //go:noescape

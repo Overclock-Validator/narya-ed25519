@@ -9,10 +9,11 @@ package cpufeat
 func IFMA() bool { return hasIFMA }
 
 // PreferWideIFMA reports whether the measured microarchitecture should use
-// one native eight-lane ZMM IFMA group instead of two four-lane YMM groups.
-// It is deliberately narrower than IFMA: Zen 4 implements 512-bit arithmetic
-// through two 256-bit passes, while AMD family 1Ah (Zen 5) has a native
-// 512-bit datapath. Unknown IFMA CPUs retain the reviewed x4-safe default.
+// one eight-lane ZMM IFMA group instead of two four-lane YMM groups. It is
+// deliberately narrower than IFMA. Although Zen 4 implements 512-bit
+// arithmetic through two 256-bit passes, the production x8 multiply and
+// projective-Niels schedule is measurably faster there as well as on native-
+// width Zen 5. Unknown IFMA CPUs retain the reviewed x4-safe default.
 func PreferWideIFMA() bool { return preferWideIFMA }
 
 func x86FamilyFromVersion(version uint32) uint32 {
