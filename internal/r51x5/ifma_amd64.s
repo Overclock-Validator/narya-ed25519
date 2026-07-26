@@ -1,4 +1,4 @@
-//go:build amd64
+//go:build amd64 && !purego
 
 #include "textflag.h"
 
@@ -758,7 +758,7 @@ TEXT ·ifmaNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-16
 // public mask selects biased subtraction lane by lane. The blended value then
 // takes the same carry/fold path as the portable implementation, including for
 // unselected lanes.
-TEXT ·ifmaConditionalNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-24
+TEXT ·ifmaConditionalNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-17
 	MOVQ    out+0(FP), DI
 	MOVQ    x+8(FP), CX
 	MOVBQZX negativeMask+16(FP), AX
@@ -804,7 +804,7 @@ TEXT ·ifmaConditionalNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-24
 // before the first store, so exact out==x aliasing is safe. K1 selects the
 // biased subtraction result for each of the eight public lanes; both selected
 // and unselected lanes then take the same one-pass carry/fold normalization.
-TEXT ·ifmaConditionalNegateNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+TEXT ·ifmaConditionalNegateNormalizedUncheckedX8(SB), NOSPLIT, $0-17
 	MOVQ    out+0(FP), DI
 	MOVQ    x+8(FP), CX
 	MOVBQZX negativeMask+16(FP), AX
