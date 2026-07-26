@@ -241,7 +241,7 @@ func quadPointAddCachedHardwareUncheckedX4(out, point *quadPackedPointX4, cached
 }
 
 func quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4, workspace *quadPointAddCachedWorkspaceX4) error {
-	quadCachedAddFirstOperandX4(&workspace.pointOperand, point)
+	ifmaQuadCachedAddFirstOperandUncheckedX4(&workspace.pointOperand.limbs, &point.coordinates.limbs)
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
 		return err
 	}

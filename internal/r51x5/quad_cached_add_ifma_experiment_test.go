@@ -141,6 +141,68 @@ func TestExperimentalCoordinateParallelCachedAddX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadCachedAddFirstOperandX4MatchesPortable(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 1026)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x514ca51f))
+	for sample := 0; sample < 1024; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		point := quadPackedPointX4{coordinates: input}
+		var want IFMAElementX4
+		quadCachedAddFirstOperandX4(&want, &point)
+
+		var got IFMAElementX4
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&got.limbs, &input.limbs)
+		if got != want {
+			t.Fatalf("input %d: native cached-add first operand differs from portable oracle", index)
+		}
+
+		aliased := input
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&aliased.limbs, &aliased.limbs)
+		if aliased != want {
+			t.Fatalf("input %d: in-place result differs from portable oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadCachedAddFirstOperandX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, out IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&out.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestIFMAQuadCachedAddFinalOperandsX4MatchesPortable(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return

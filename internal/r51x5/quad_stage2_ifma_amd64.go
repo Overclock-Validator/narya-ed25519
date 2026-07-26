@@ -10,6 +10,16 @@ package r51x5
 //go:noescape
 func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4)
 
+// ifmaQuadCachedAddFirstOperandUncheckedX4 transforms packed [X,Y,T,Z] lanes
+// into the normalized [Y-X,Y+X,T,Z] operand for cached addition. q must be u52.
+// Adding 4p to Y-X makes every pre-carry limb non-negative and below 6*2^51;
+// one carry/fold pass therefore returns u52. q may alias out because all five
+// input vectors are loaded before the first store. The caller owns the IFMA
+// gate.
+//
+//go:noescape
+func ifmaQuadCachedAddFirstOperandUncheckedX4(out, q *LimbsX4)
+
 // ifmaQuadDoubleFinalOperandsUncheckedX4 transforms packed normalized
 // [A=X^2, B=Y^2, C=Z^2, D=XY] coordinate lanes into the two normalized
 // operands for the final packed multiplication:

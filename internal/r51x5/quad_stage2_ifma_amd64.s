@@ -34,6 +34,16 @@
 	VPORQ   T2, T0, Q                                         \
 	VPADDQ  P, Q, Q
 
+// Turn one packed [X,Y,T,Z] limb into [Y-X,Y+X,T,Z]. P is 4p in lane zero.
+#define QUAD_CACHED_ADD_FIRST_LINEAR(Q, P, M0, M1, T0, T1, T2) \
+	VPERMQ  $0xe5, Q, T0                                        \
+	VPERMQ  $0x00, Q, T1                                        \
+	VPANDQ  M0, T1, T2                                          \
+	VPSUBQ  T2, T0, T0                                          \
+	VPANDQ  M1, T1, T2                                          \
+	VPADDQ  T2, T0, T0                                          \
+	VPADDQ  P, T0, Q
+
 // Inputs are below 12*2^51, so each carry is at most eleven and 19*C4 fits
 // wholly in the low 52-bit half consumed by VPMADD52LUQ.
 #define QUAD_DOUBLE_NORMALIZE_5(IN0, IN1, IN2, IN3, IN4, MASK, C0, C1, C2, C3, C4, FOLD19) \
@@ -85,6 +95,41 @@ TEXT ·ifmaQuadDoubleFirstOperandsUncheckedX4(SB), NOSPLIT, $0-24
 	VPERMQ $0x74, Y4, Y6
 	VMOVDQU64 Y5, 128(DI)
 	VMOVDQU64 Y6, 128(SI)
+	VZEROUPPER
+	RET
+
+// func ifmaQuadCachedAddFirstOperandUncheckedX4(out, q *LimbsX4)
+TEXT ·ifmaQuadCachedAddFirstOperandUncheckedX4(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ q+8(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	VMOVDQU64 ·ifmaQuadLaneMask0(SB), Y5
+	VMOVDQU64 ·ifmaQuadLaneMask1(SB), Y6
+	VPBROADCASTQ ·ifmaSubBias0(SB), Y7
+	VPANDQ Y5, Y7, Y7
+	QUAD_CACHED_ADD_FIRST_LINEAR(Y0, Y7, Y5, Y6, Y8, Y9, Y10)
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Y7
+	VPANDQ Y5, Y7, Y7
+	QUAD_CACHED_ADD_FIRST_LINEAR(Y1, Y7, Y5, Y6, Y8, Y9, Y10)
+	QUAD_CACHED_ADD_FIRST_LINEAR(Y2, Y7, Y5, Y6, Y8, Y9, Y10)
+	QUAD_CACHED_ADD_FIRST_LINEAR(Y3, Y7, Y5, Y6, Y8, Y9, Y10)
+	QUAD_CACHED_ADD_FIRST_LINEAR(Y4, Y7, Y5, Y6, Y8, Y9, Y10)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y6
+	QUAD_DOUBLE_NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y7, Y8, Y9, Y10, Y11, Y6)
+
+	VMOVDQU64 Y0,   0(DI)
+	VMOVDQU64 Y1,  32(DI)
+	VMOVDQU64 Y2,  64(DI)
+	VMOVDQU64 Y3,  96(DI)
+	VMOVDQU64 Y4, 128(DI)
 	VZEROUPPER
 	RET
 
@@ -195,6 +240,12 @@ DATA ·ifmaQuadLaneMask0+8(SB)/8, $0x0000000000000000
 DATA ·ifmaQuadLaneMask0+16(SB)/8, $0x0000000000000000
 DATA ·ifmaQuadLaneMask0+24(SB)/8, $0x0000000000000000
 GLOBL ·ifmaQuadLaneMask0(SB), RODATA|NOPTR, $32
+
+DATA ·ifmaQuadLaneMask1+0(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadLaneMask1+8(SB)/8, $0xffffffffffffffff
+DATA ·ifmaQuadLaneMask1+16(SB)/8, $0x0000000000000000
+DATA ·ifmaQuadLaneMask1+24(SB)/8, $0x0000000000000000
+GLOBL ·ifmaQuadLaneMask1(SB), RODATA|NOPTR, $32
 
 DATA ·ifmaQuadLaneMask2+0(SB)/8, $0x0000000000000000
 DATA ·ifmaQuadLaneMask2+8(SB)/8, $0x0000000000000000
