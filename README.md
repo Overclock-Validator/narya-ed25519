@@ -176,11 +176,15 @@ private dispatcher core; code layout made some public rows slightly faster.
 
 That table is the pinned PR-1 baseline. The current convergence branch promotes
 the radix-32/comb256 cold core after ten-sample A/B gates showed 5.2--5.4% on
-Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. It also selects native x8 on Zen 5:
-a short public-wrapper validation measured 22.50/12.76/8.55/8.27 us per
-signature at n=1/4/8/64, versus 26.62/15.84/15.41/15.12 on Zen 4. These newer
-rows are provisional until the full three-message release matrix is rerun;
-their exact private/public deltas were below 2% and every row allocated zero.
+Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. It also selects native x8 on Zen 5.
+Subsequent x8-only traffic removal and table-layout work improved the exported
+`VerifyBatchStrict` n=64/msg=1232 row from 7.291 to **6.072 us/signature** at
+commit `997d9b9` (median of ten pinned two-second samples, 0 B/op and 0
+allocs/op). The last two admitted steps were an exact 160-byte micro-AoS A-table
+transpose (6.404 us) and pre-signing both public-scalar Niels forms (6.072 us).
+These are cold arbitrary-key results: A is decoded and its table is rebuilt for
+every signature. The complete three-message Zen 4/Zen 5 release matrix still
+needs to be rerun before replacing the pinned PR-1 table above.
 
 The same 200-byte Go benchmark binary also measured the comparison libraries;
 each value below is the median of six two-second samples.

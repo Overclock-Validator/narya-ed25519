@@ -366,6 +366,24 @@ HEEA stays experimental unless all of the following hold:
   B/op or allocs/op increase;
 - the ordinary DSM path remains available as rollback.
 
+### Width-specific closure
+
+The table above closes the present HEEA construction only for batch kernels
+whose SIMD lanes are already occupied by independent signatures. It must not be
+used to reject a different singleton construction on algorithm name alone.
+The packed singleton currently places one point's four Edwards coordinates in
+one YMM register and follows one shared NAF doubling chain. A native-width ZMM
+version is useful only if the equation supplies two independent point chains,
+placing four coordinates from each chain in the eight lanes. HEEA and separate
+`[S]B`/`[k]A` evaluation can create that shape; their extra table/reducer costs
+then occupy lanes that are idle in the current singleton rather than competing
+with eight already-live signatures.
+
+The minimum gate is an exact two-point-ZMM doubling A/B against
+`quadPointDoubleHardwareUncheckedX4`. Do not mechanically retype the packed
+point layer to x8, and do not transfer an x8 HEEA verdict to this singleton
+experiment in either direction.
+
 Randomized aggregate batch verification is a separate, lower-priority API
 problem because Narya promises a verdict for every input and adversarial batch
 failure would otherwise require localization or individual fallback.

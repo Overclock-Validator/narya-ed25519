@@ -10,6 +10,42 @@ tier, occupancy crossover, and HEEA screen on Zen 4 (Ryzen 7 PRO 8700GE).
 Architecture-specific conclusions are labeled rather than transferred between
 the two CPUs.
 
+## Current cold-path convergence checkpoint
+
+The later `7layer/narya-convergence` work changed the cold Zen 5 baseline
+substantially. These rows are the exported forced-r51 path at n=64,
+msg=1232, one pinned 9700X core, `GOMAXPROCS=1`, and zero allocations:
+
+| checkpoint | us/signature | change from preceding row |
+|---|---:|---:|
+| pre-traffic-removal baseline | 7.291 | — |
+| direct outputs plus reusable double/add scratch (`e594ada`) | 6.617 | -9.2% |
+| exact 160-byte micro-AoS A tables (`db2807e`) | 6.404 | -3.2% |
+| pre-signed micro-AoS A tables (`997d9b9`) | 6.072 | -5.2% |
+
+The final two values are medians of ten two-second public-API samples. The
+micro-AoS record is exactly `[5][Y+X,Y-X,Z,2dT]uint64` (160 bytes), and its
+assembly performs five exact 32-byte loads at offsets 0, 32, 64, 96, and 128.
+It does not issue a 64-byte tail load or read beyond the record. Pre-signing
+doubles the per-worker cold A-table workspace from about 20.6 to 40.6 KiB, but
+the complete cold build+loop still improved by about 7.2%; this is why it was
+admitted rather than judged from the prepared loop alone.
+
+After pre-signing, a CPU profile attributes only 1.8% cumulatively to the
+selector and 1.1% flat to the transpose. The runtime Niels-negation symbol is
+gone. `ls_bad_status2.stli_other / ls_dispatch.ld_dispatch` moved only from
+about 5.28% to 5.03%, showing that most remaining store-forwarding failures are
+outside selection. A selector-to-first-multiply fusion is therefore deferred:
+it should be reopened only if a future profile again puts material time in
+selection or an isolated exact prototype improves the complete verifier by at
+least 1%. The larger next target is point doubling, which remains about 45.5%
+cumulative in the post-selector profile.
+
+Experiment regime tags matter. The earlier micro-AoS production A/B regressed
+on the pre-scratch x8 loop and was reverted; the same exact layout wins after
+the double/add workspaces stopped being re-zeroed every operation. Keep both
+records rather than treating either result as timeless.
+
 ---
 
 ## 1. What landed on this branch
@@ -191,6 +227,16 @@ two-x4 at both n=8 and n=64. The registered ordinary comb path is faster still.
 Do not spend more implementation time on the current HEEA/QSM construction;
 retain it as proof and differential-test evidence. Exact commands and medians
 are recorded in `docs/HEEA.md`.
+
+This closure is width-specific. It closes HEEA as a scalar-count trade in the
+already-full lane-per-signature x8/two-x4 batch kernels. It does **not** close a
+future singleton design that packs four coordinates from each of two
+independent point chains into one ZMM register. The current packed singleton is
+one YMM coordinate-parallel chain; mechanically widening it would leave half a
+ZMM idle. A future HEEA or separate-`[S]B`/`[k]A` singleton experiment is
+interesting only if it creates two independent chains and should first A/B one
+two-point ZMM doubling against `quadPointDoubleHardwareUncheckedX4`. Results
+from that experiment must be reported separately from x8 HEEA.
 
 ### 5.1 Mixed warm/cold lanes in one SIMD group — deferred
 
