@@ -144,12 +144,11 @@ func ExperimentalIFMAPointDoubleComposableX8(out, q *IFMAPointX8) error {
 // non-IFMA test oracles; the runtime experiment uses only these allocation-free
 // call sites.
 func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
-	aa, bb := *a, *b
 	var yMinusX1, yPlusX1, yMinusX2, yPlusX2 IFMAElementX4
-	ifmaSubtractComposableUncheckedX4(&yMinusX1, &aa.Y, &aa.X)
-	ifmaAddComposableUncheckedX4(&yPlusX1, &aa.Y, &aa.X)
-	ifmaSubtractComposableUncheckedX4(&yMinusX2, &bb.Y, &bb.X)
-	ifmaAddComposableUncheckedX4(&yPlusX2, &bb.Y, &bb.X)
+	ifmaSubtractComposableUncheckedX4(&yMinusX1, &a.Y, &a.X)
+	ifmaAddComposableUncheckedX4(&yPlusX1, &a.Y, &a.X)
+	ifmaSubtractComposableUncheckedX4(&yMinusX2, &b.Y, &b.X)
+	ifmaAddComposableUncheckedX4(&yPlusX2, &b.Y, &b.X)
 
 	var A, B, C, D, E, F, G, H IFMAElementX4
 	if err := ifmaMultiplyComposableUncheckedX4(&A, &yMinusX1, &yMinusX2); err != nil {
@@ -158,13 +157,13 @@ func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 	if err := ifmaMultiplyComposableUncheckedX4(&B, &yPlusX1, &yPlusX2); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&C, &aa.T, &bb.T); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&C, &a.T, &b.T); err != nil {
 		return err
 	}
 	if err := ifmaMultiplyComposableUncheckedX4(&C, &C, &ifmaCurve2DX4); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&D, &aa.Z, &bb.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&D, &a.Z, &b.Z); err != nil {
 		return err
 	}
 	ifmaAddComposableUncheckedX4(&D, &D, &D)
@@ -173,20 +172,21 @@ func ifmaPointAddComposableStaticX4(out, a, b *IFMAPointX4) error {
 	ifmaAddComposableUncheckedX4(&G, &D, &C)
 	ifmaAddComposableUncheckedX4(&H, &B, &A)
 
-	var result IFMAPointX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result.X, &E, &F); err != nil {
+	// Both input points are dead after A/B/C/D and E/F/G/H are formed. Write
+	// the result directly so exact out==a or out==b aliasing does not require a
+	// 640-byte temporary followed by a point copy.
+	if err := ifmaMultiplyComposableUncheckedX4(&out.X, &E, &F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&out.Y, &G, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&out.T, &E, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX4(&result.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX4(&out.Z, &F, &G); err != nil {
 		return err
 	}
-	*out = result
 	return nil
 }
 
