@@ -798,6 +798,52 @@ TEXT ·ifmaConditionalNegateNormalizedUncheckedX4(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
+// func ifmaConditionalNegateNormalizedUncheckedX8(out, x *LimbsX8, negativeMask uint8)
+//
+// Native-width counterpart of the x4 leaf above. Every input limb is loaded
+// before the first store, so exact out==x aliasing is safe. K1 selects the
+// biased subtraction result for each of the eight public lanes; both selected
+// and unselected lanes then take the same one-pass carry/fold normalization.
+TEXT ·ifmaConditionalNegateNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+	MOVQ    out+0(FP), DI
+	MOVQ    x+8(FP), CX
+	MOVBQZX negativeMask+16(FP), AX
+	KMOVB   AX, K1
+
+	VMOVDQU64   0(CX), Z0
+	VMOVDQU64  64(CX), Z1
+	VMOVDQU64 128(CX), Z2
+	VMOVDQU64 192(CX), Z3
+	VMOVDQU64 256(CX), Z4
+
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z12
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z13
+	VMOVDQA64 Z13, Z14
+	VMOVDQA64 Z13, Z15
+	VMOVDQA64 Z13, Z16
+	VPSUBQ Z0, Z12, Z12
+	VPSUBQ Z1, Z13, Z13
+	VPSUBQ Z2, Z14, Z14
+	VPSUBQ Z3, Z15, Z15
+	VPSUBQ Z4, Z16, Z16
+
+	VMOVDQU64 Z12, K1, Z0
+	VMOVDQU64 Z13, K1, Z1
+	VMOVDQU64 Z14, K1, Z2
+	VMOVDQU64 Z15, K1, Z3
+	VMOVDQU64 Z16, K1, Z4
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+	VZEROUPPER
+	RET
+
 DATA ·ifmaLimbMask51+0(SB)/8, $0x0007ffffffffffff
 GLOBL ·ifmaLimbMask51(SB), RODATA|NOPTR, $8
 

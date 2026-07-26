@@ -302,6 +302,15 @@ func conditionalNegateIFMAElementPortableX4(element *IFMAElementX4, negativeMask
 }
 
 func conditionalNegateIFMAElementX8(element *IFMAElementX8, negativeMask uint8) {
+	if ExperimentalIFMAAvailable() {
+		ifmaConditionalNegateNormalizedUncheckedX8(&element.limbs, &element.limbs, negativeMask)
+		return
+	}
+	conditionalNegateIFMAElementPortableX8(element, negativeMask)
+}
+
+//go:noinline
+func conditionalNegateIFMAElementPortableX8(element *IFMAElementX8, negativeMask uint8) {
 	var raw IFMAProductX8
 	for limb := range raw {
 		bias := ifmaSubtractionBias(limb)

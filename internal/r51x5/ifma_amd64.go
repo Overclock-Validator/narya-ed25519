@@ -79,3 +79,10 @@ func ifmaNegateNormalizedUncheckedX4(out, x *LimbsX4)
 //
 //go:noescape
 func ifmaConditionalNegateNormalizedUncheckedX4(out, x *LimbsX4, negativeMask uint8)
+
+// ifmaConditionalNegateNormalizedUncheckedX8 is the native-width analogue
+// of ifmaConditionalNegateNormalizedUncheckedX4. The public eight-bit mask
+// selects x or -x independently in each lane, and out may alias x.
+//
+//go:noescape
+func ifmaConditionalNegateNormalizedUncheckedX8(out, x *LimbsX8, negativeMask uint8)

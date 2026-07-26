@@ -116,3 +116,18 @@ func ifmaConditionalNegateNormalizedUncheckedX4(out, x *LimbsX4, negativeMask ui
 	}
 	ifmaNormalizeProductUncheckedX4(out, &raw)
 }
+
+func ifmaConditionalNegateNormalizedUncheckedX8(out, x *LimbsX8, negativeMask uint8) {
+	var raw IFMAProductX8
+	for limb := range raw {
+		bias := ifmaSubtractionBias(limb)
+		for lane := range raw[limb] {
+			if negativeMask&(1<<lane) != 0 {
+				raw[limb][lane] = bias - x[limb][lane]
+			} else {
+				raw[limb][lane] = x[limb][lane]
+			}
+		}
+	}
+	ifmaNormalizeProductUncheckedX8(out, &raw)
+}
