@@ -12,6 +12,9 @@ Size Halving," TCHES 2025(3), pp. 493–515,
 [DOI 10.46586/tches.v2025.i3.493-515](https://doi.org/10.46586/tches.v2025.i3.493-515).
 The implementation artifact is available from the
 [IACR artifact archive](https://artifacts.iacr.org/tches/2025/a26/).
+Anza's independently shipped cofactored implementation is recorded as a
+comparison source in `NOTICE`; Narya's approximate-quotient experiment uses
+its loop shape only behind a modulo-`8L` unit-multiplier gate.
 
 ## Full-group correction
 

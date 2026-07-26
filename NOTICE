@@ -295,6 +295,19 @@ The comparison baseline quoted in docs/HEEA.md is that artifact's, measured
 against ed25519-donna (Andrew Moon). This code is a research prototype and
 is not part of any production build.
 
+The control-flow shape of internal/heea8l/approx_quotient.go was
+cross-checked against Anza's published solana-ed25519 0.2.2
+curve25519_heea_vartime implementation at source commit
+1d73a26c483f1b8da4e3b8ed38371d853bc65007 (BSD-3-Clause):
+
+    https://github.com/anza-xyz/cryptography/tree/1d73a26c483f1b8da4e3b8ed38371d853bc65007/curve25519/solana-ed25519/src/scalar/heea.rs
+
+Narya independently supplies checked five-limb arithmetic, the modulo-8L
+relation, and the complete unit-multiplier admission rule required by its
+cofactorless strict predicate. The Anza-shaped selector is retained as a
+negative, test-only performance comparison and is not part of backend
+selection.
+
 
 =======================================================================
 SPECIFICATIONS AND REFERENCE IMPLEMENTATIONS

@@ -255,3 +255,37 @@ some W128 coverage. Keep the code as a regime-tagged exact experiment, but do
 not wire it into the HEEA verifier. A next attempt must amortize multiple exact
 rows per wide update (for example a true half-GCD/Lehmer matrix or a proven
 delayed-subtraction schedule), rather than changing only the row policy.
+
+## Anza/TCHES approximate-quotient checkpoint
+
+`SelectApproxQuotient` reproduces the control-flow shape of Algorithm 4,
+`hEEA_approx_q`, from the TCHES 2025 paper. The implementation was
+cross-checked against Anza's `solana-ed25519` 0.2.2
+`curve25519_heea_vartime` routine. Narya does not copy its cofactored
+admission rule: this experiment runs checked signed arithmetic modulo `8L`
+and admits only a complete unit multiplier modulo `8L`.
+
+The exactness result is positive. Deterministic edges, 4,096 random
+challenges, signed-row determinant checks, and fuzzing preserve
+
+```text
+rho = tau*k (mod 8L),  gcd(tau,8L)=1.
+```
+
+The performance and coverage result is negative. On Apple M4 Pro with Go on
+Darwin/arm64, three one-second samples over three challenges measured roughly:
+
+| Width | Approximate quotient | Existing shift/subtract | Principal Euclid |
+| --- | ---: | ---: | ---: |
+| 128 | 6.52-7.51 us | 4.82-4.99 us | 5.84-6.08 us |
+| 132 | 6.32-6.87 us | 4.75-5.07 us | 5.61-5.84 us |
+| 136 | 6.10-6.14 us | 4.56-4.78 us | 5.42-6.00 us |
+
+All rows allocated zero bytes. Over 8,192 independent challenges, W128
+fallback counts were 1,410 for approximate quotient, 1,246 for the existing
+shift/subtract selector, and 927 for the exhaustive fixed oracle; all three
+admitted every W136 sample. Signed remainders and checked five-limb updates
+cost more than Narya's positive-remainder walk without recovering coverage.
+Keep the source as a regime-tagged exact comparison. Anza's reported verifier
+gain is for a modulo-`L`, cofactor-cleared ZIP-215 equation and cannot promote
+this stricter modulo-`8L` reducer.
