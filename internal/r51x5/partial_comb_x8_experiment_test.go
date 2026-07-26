@@ -454,3 +454,77 @@ func BenchmarkWarmCombX8ShapeSweepExperiment(b *testing.B) {
 		})
 	}
 }
+
+// BenchmarkWarmCombX8WorkingSetExperiment measures what a larger cache budget
+// costs the hits it already had.
+//
+// Raising MaxTableBytes is usually discussed as buying hit rate. It also
+// changes the cost of every hit, because the per-key tables stop fitting in
+// cache. This sweeps the number of distinct promoted keys, cycling groups
+// through the whole pool so each group touches tables the previous ones evicted,
+// and reports nanoseconds per signature against the resident table bytes.
+//
+// The relevant boundaries on the measured host are 48 KiB of L1d and 1 MiB of
+// L2 per core, and 32 MiB of shared L3. One group of eight A6/r9 tables is
+// 150 KiB on its own.
+func BenchmarkWarmCombX8WorkingSetExperiment(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA target")
+	}
+	t := &testing.T{}
+	rng := rand.New(rand.NewSource(20260726))
+	_, bPoint := newPartialCombX8BasesExperiment(t, rng)
+	if t.Failed() {
+		b.Fatal("fixture construction failed")
+	}
+	bTable := buildHeterogeneousPartialCombPreSignedSharedTableExperiment(
+		buildHeterogeneousPartialCombTableExperiment(&bPoint, heterogeneousPartialCombB10R5Experiment),
+	)
+
+	var scalars FixedDSMScalarsX8
+	for term := 0; term < DSMTerms; term++ {
+		for lane := 0; lane < X8Lanes; lane++ {
+			scalars[term][lane] = randomPartialCombScalarX8Experiment(rng)
+		}
+	}
+	negative := [DSMTerms]uint8{0, 0xff}
+	spec := heterogeneousPartialCombA6R9Experiment
+	perKey := spec.rowCount() * spec.entriesPerRow() * 120
+
+	for _, keys := range []int{8, 64, 256, 1024, 2048, 4096} {
+		resident := keys * perKey
+		name := fmt.Sprintf("keys=%d/MiB=%d", keys, resident>>20)
+		b.Run(name, func(b *testing.B) {
+			// Distinct bases so every key owns a genuinely different table
+			// rather than a shared allocation the cache would keep hot.
+			pool := make([]*heterogeneousPartialCombTableExperiment, keys)
+			base := bPoint
+			for i := range pool {
+				pool[i] = buildHeterogeneousPartialCombTableExperiment(&base, spec)
+				fixedBasePointAdd(&base, &base, &bPoint)
+			}
+
+			var group [X8Lanes]*heterogeneousPartialCombTableExperiment
+			var out IFMAPointX8
+			cursor := 0
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				for lane := 0; lane < X8Lanes; lane++ {
+					group[lane] = pool[cursor]
+					cursor++
+					if cursor == len(pool) {
+						cursor = 0
+					}
+				}
+				if _, err := evaluateHeterogeneousPartialCombPreSignedBDSMX8Experiment(
+					&out, &group, bTable, &scalars, &negative, 0xff,
+				); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
+			b.ReportMetric(float64(resident)/(1<<20), "MiB-resident")
+		})
+	}
+}
