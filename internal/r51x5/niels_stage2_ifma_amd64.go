@@ -8,8 +8,11 @@ package r51x5
 //
 //	[A, B, C, D].
 //
-// Each input must be the output of ifmaMulRawX8 on u52 operands. On return the
-// same storage contains carried u52 representatives in this order:
+// A, B, and C must be the output of ifmaMulRawX8 on u52 operands. D may be
+// either another raw product or an already-composable u52 representative. The
+// latter is the affine-cached specialization D=Z used by the fixed-base comb;
+// its tighter bound is a strict subset of the raw-product range below. On
+// return the same storage contains carried u52 representatives in this order:
 //
 //	[E = B-A, F = 2D-C, G = 2D+C, H = B+A].
 //

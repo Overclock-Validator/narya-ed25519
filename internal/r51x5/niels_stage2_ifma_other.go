@@ -5,7 +5,8 @@ package r51x5
 type ifmaNielsStage2WorkspaceX8 [4]IFMAProductX8
 
 // ifmaNielsStage2X8 is the scalar reference-shaped implementation of the
-// amd64 stage. It assumes the same exact raw-product entry contract.
+// amd64 stage. It assumes the same exact A/B/C raw-product and D raw-product
+// or composable-u52 entry contract.
 func ifmaNielsStage2X8(workspace *ifmaNielsStage2WorkspaceX8) {
 	input := *workspace
 	var wide [4]IFMAProductX8

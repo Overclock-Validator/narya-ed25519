@@ -37,7 +37,8 @@
 
 // func ifmaNielsStage2X8(workspace *ifmaNielsStage2WorkspaceX8)
 //
-// Entry slots are exact raw [A,B,C,D] products. Exit slots are normalized
+// Entry slots are exact raw [A,B,C] products followed by either a raw D
+// product or a composable-u52 D representative. Exit slots are normalized
 // [E,F,G,H]. All twenty inputs are resident before any store, which makes the
 // in-place state transition explicit and auditable.
 TEXT ·ifmaNielsStage2X8(SB), NOSPLIT, $0-8

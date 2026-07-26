@@ -182,6 +182,49 @@ func TestIFMANielsStage2X8MultiplicandDerived(t *testing.T) {
 	}
 }
 
+func TestIFMANielsStage2X8AcceptsComposableD(t *testing.T) {
+	if !nielsStage2CanCall() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	rng := rand.New(rand.NewSource(0xaff1_3d_2026))
+	for round := 0; round < 1024; round++ {
+		var operands [6]LimbsX8
+		for operand := range operands {
+			for limb := range operands[operand] {
+				for lane := range operands[operand][limb] {
+					operands[operand][limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+				}
+			}
+		}
+		var input ifmaNielsStage2WorkspaceX8
+		for slot := 0; slot < 3; slot++ {
+			for lane := 0; lane < X8Lanes; lane++ {
+				var left, right Limbs
+				for limb := range left {
+					left[limb] = operands[2*slot][limb][lane]
+					right[limb] = operands[2*slot+1][limb][lane]
+				}
+				product := ifmaLooseLaneModel(left, right)
+				for limb := range product {
+					input[slot][limb][lane] = product[limb]
+				}
+			}
+		}
+		for limb := range input[nielsStage2D] {
+			for lane := range input[nielsStage2D][limb] {
+				input[nielsStage2D][limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+
+		want := nielsStage2Oracle(t, &input)
+		got := input
+		ifmaNielsStage2X8(&got)
+		if got != want {
+			t.Fatalf("round=%d: composable-D mismatch", round)
+		}
+	}
+}
+
 var benchmarkIFMANielsStage2X8Sink ifmaNielsStage2WorkspaceX8
 
 func TestIFMANielsStage2X8ZeroAllocations(t *testing.T) {

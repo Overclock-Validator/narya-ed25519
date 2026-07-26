@@ -244,6 +244,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 	usable := recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var addWorkspace fixedBaseIFMAAddScratchX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -256,7 +257,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 		}
 		var selected fixedBaseIFMACachedX8
 		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
-		if err := addFixedBaseIFMACachedX8(&acc, &acc, &selected); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
@@ -272,7 +273,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 		}
 		var selected fixedBaseIFMACachedX8
 		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
-		if err := addFixedBaseIFMACachedX8(&acc, &acc, &selected); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
@@ -643,37 +644,45 @@ func addFixedBaseIFMACachedX4(out, point *IFMAPointX4, cached *fixedBaseIFMACach
 }
 
 func addFixedBaseIFMACachedX8(out, point *IFMAPointX8, cached *fixedBaseIFMACachedX8) error {
-	p := *point
-	var yMinusX, yPlusX, A, B, C, D, E, F, G, H IFMAElementX8
-	yMinusX.Subtract(&p.Y, &p.X)
-	yPlusX.Add(&p.Y, &p.X)
-	if err := ifmaMultiplyComposableUncheckedX8(&A, &yMinusX, &cached.YMinusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&B, &yPlusX, &cached.YPlusX); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&C, &p.T, &cached.T2D); err != nil {
-		return err
-	}
-	D.Add(&p.Z, &p.Z)
-	E.Subtract(&B, &A)
-	F.Subtract(&D, &C)
-	G.Add(&D, &C)
-	H.Add(&B, &A)
-	var result IFMAPointX8
-	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
-		return err
-	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
-		return err
-	}
-	*out = result
+	var workspace fixedBaseIFMAAddScratchX8
+	return addFixedBaseIFMACachedWorkspaceX8(out, point, cached, &workspace)
+}
+
+// fixedBaseIFMAAddScratchX8 owns the fully overwritten affine-cached mixed-add
+// scratch. A/B/C are exact raw products while slot D carries the already-u52
+// point Z coordinate. The common Niels Stage-2 leaf accepts both forms and
+// produces E/F/G/H with one parallel carry layer.
+type fixedBaseIFMAAddScratchX8 struct {
+	yMinusX, yPlusX IFMAElementX8
+	stage2          ifmaNielsStage2WorkspaceX8
+}
+
+func addFixedBaseIFMACachedWorkspaceX8(
+	out, point *IFMAPointX8,
+	cached *fixedBaseIFMACachedX8,
+	workspace *fixedBaseIFMAAddScratchX8,
+) error {
+	ifmaSubtractComposableUncheckedX8(&workspace.yMinusX, &point.Y, &point.X)
+	ifmaAddComposableUncheckedX8(&workspace.yPlusX, &point.Y, &point.X)
+
+	stage2 := &workspace.stage2
+	ifmaMulRawX8(&stage2[0], &workspace.yMinusX.limbs, &cached.YMinusX.limbs)
+	ifmaMulRawX8(&stage2[1], &workspace.yPlusX.limbs, &cached.YPlusX.limbs)
+	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
+	stage2[3] = IFMAProductX8(point.Z.limbs)
+	ifmaNielsStage2X8(stage2)
+
+	E := (*LimbsX8)(&stage2[0])
+	F := (*LimbsX8)(&stage2[1])
+	G := (*LimbsX8)(&stage2[2])
+	H := (*LimbsX8)(&stage2[3])
+
+	// point and cached are dead after A/B/C and Z have been captured. Direct
+	// output is therefore safe for out==point and avoids a 1,280-byte result
+	// temporary and copy.
+	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
 	return nil
 }
