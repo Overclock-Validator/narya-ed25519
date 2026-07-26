@@ -38,7 +38,10 @@ automatic backend selection remains conservative.
 > authors and contributors accept no liability for its use. See
 > [LICENSE](LICENSE) for the governing terms.
 
-The name comes from Narya, the Ring of Fire.
+Narya was one of the Three Elven Rings in Tolkien's legendarium. Known as the
+Ring of Fire and carried by Gandalf, it had the power to inspire hope,
+withstand the weariness of time, and kindle resistance against tyranny and
+despair.
 
 ## Why this exists
 
