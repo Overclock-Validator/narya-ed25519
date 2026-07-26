@@ -1,3 +1,7 @@
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$' -benchmem -benchtime=750ms -count=6 ./ed25519
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51CacheVerifyBatchStrict$' -benchmem -benchtime=750ms -count=6 ./ed25519
 taskset -c 2 env GOMAXPROCS=1 go test -modfile=go.oasis.mod -tags oasis_compare -run '^$' -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 0 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 0-1 env GOMAXPROCS=2 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 0-3 env GOMAXPROCS=4 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=750ms -count=6 ./ed25519
+taskset -c 0-7 env GOMAXPROCS=8 go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=750ms -count=6 ./ed25519

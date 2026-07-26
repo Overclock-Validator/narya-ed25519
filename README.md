@@ -281,10 +281,21 @@ cost and is included as a warm-key reference.
 | curve25519-voi, cold strict | 26.550 | 26.350 | 26.460 | 26.470 | 26.435 |
 | curve25519-voi, expanded key | 22.440 | 22.260 | 22.370 | 22.360 | 22.325 |
 
-Multicore throughput is deliberately omitted from this snapshot until the
-same current implementation is rerun across physical cores. Older scaling
-evidence remains under `docs/results/`, but it is not mixed into a current
-single-core table.
+The same current implementation scales across independent callers. These are
+aggregate **signatures per second** over 1232-byte messages, not individual
+request latency:
+
+| physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 100,434 | 1.00x | 123,950 | 1.00x |
+| 2 | 199,524 | 1.99x | 246,261 | 1.99x |
+| 4 | 364,043 | 3.62x | 452,844 | 3.65x |
+| 8 | 643,326 | 6.41x | 773,475 | 6.24x |
+
+The eight-core rows correspond to aggregate throughput costs of 1.554 and
+1.293 microseconds per signature. Each worker still verifies complete,
+independent equations; this table measures concurrent callers, not aggregate
+cryptographic batch verification.
 
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into this

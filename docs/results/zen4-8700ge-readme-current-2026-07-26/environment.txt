@@ -6,4 +6,5 @@ microarchitecture=Zen 4
 go=go1.26.4
 gomaxprocs=1
 cpu_affinity=one physical core
+parallel_cpu_affinity=logical CPUs 0-7, one per physical core; SMT siblings 8-15 excluded
 governor=performance

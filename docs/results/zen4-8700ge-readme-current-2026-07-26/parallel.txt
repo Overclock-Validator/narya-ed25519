@@ -1,0 +1,72 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22590	     39825 ns/op	 123.74 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100440 signatures/s	         9.956 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22585	     39826 ns/op	 123.74 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100438 signatures/s	         9.956 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22596	     39829 ns/op	 123.73 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100429 signatures/s	         9.957 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22588	     39843 ns/op	 123.68 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100393 signatures/s	         9.961 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22575	     39837 ns/op	 123.70 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100408 signatures/s	         9.959 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4         	   22591	     39825 ns/op	 123.74 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    100439 signatures/s	         9.956 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13947	     64519 ns/op	 152.76 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    123994 signatures/s	         8.065 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13860	     64921 ns/op	 151.81 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    123226 signatures/s	         8.115 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13941	     64544 ns/op	 152.70 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    123947 signatures/s	         8.068 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13624	     66065 ns/op	 149.19 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    121093 signatures/s	         8.258 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13951	     64502 ns/op	 152.80 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    124027 signatures/s	         8.063 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8         	   13941	     64541 ns/op	 152.71 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    123953 signatures/s	         8.068 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	17.203s
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44914	     20028 ns/op	 246.05 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199717 signatures/s	         5.007 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44896	     20046 ns/op	 245.83 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199536 signatures/s	         5.012 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44878	     20043 ns/op	 245.88 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199575 signatures/s	         5.011 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44878	     20049 ns/op	 245.80 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199511 signatures/s	         5.012 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44858	     20060 ns/op	 245.66 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199400 signatures/s	         5.015 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   44857	     20058 ns/op	 245.68 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    199418 signatures/s	         5.015 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27712	     32424 ns/op	 303.97 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    246728 signatures/s	         4.053 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27744	     32411 ns/op	 304.10 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    246831 signatures/s	         4.051 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27742	     32612 ns/op	 302.22 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    245307 signatures/s	         4.077 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27565	     32612 ns/op	 302.22 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    245312 signatures/s	         4.076 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27642	     32543 ns/op	 302.86 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    245826 signatures/s	         4.068 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   27759	     32429 ns/op	 303.93 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    246696 signatures/s	         4.054 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	14.048s
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81828	     10988 ns/op	 448.50 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    364046 signatures/s	         2.747 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81877	     10986 ns/op	 448.59 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    364112 signatures/s	         2.746 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81883	     10985 ns/op	 448.61 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    364129 signatures/s	         2.746 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81836	     10988 ns/op	 448.50 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    364039 signatures/s	         2.747 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81489	     10988 ns/op	 448.47 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    364021 signatures/s	         2.747 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-4         	   81850	     10989 ns/op	 448.44 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    363997 signatures/s	         2.747 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   50650	     17680 ns/op	 557.48 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    452497 signatures/s	         2.210 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   50743	     17675 ns/op	 557.63 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    452623 signatures/s	         2.209 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   50988	     17658 ns/op	 558.18 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    453065 signatures/s	         2.207 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   50330	     17854 ns/op	 552.03 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    448076 signatures/s	         2.232 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   50960	     17644 ns/op	 558.59 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    453400 signatures/s	         2.206 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-4         	   51007	     17617 ns/op	 559.45 MB/s	         4.000 GOMAXPROCS	         0 internal-fault-fallbacks	    454102 signatures/s	         2.202 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	12.589s
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  143179	      6217 ns/op	 792.64 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    643374 signatures/s	         1.554 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  144129	      6215 ns/op	 792.87 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    643562 signatures/s	         1.554 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  143972	      6220 ns/op	 792.24 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    643055 signatures/s	         1.555 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  144055	      6217 ns/op	 792.65 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    643388 signatures/s	         1.554 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  144075	      6218 ns/op	 792.52 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    643277 signatures/s	         1.555 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-8         	  144166	      6224 ns/op	 791.73 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    642638 signatures/s	         1.556 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   87957	     10339 ns/op	 953.31 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    773794 signatures/s	         1.292 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   86761	     10346 ns/op	 952.65 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    773251 signatures/s	         1.293 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   87057	     10344 ns/op	 952.86 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    773429 signatures/s	         1.293 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   86973	     10353 ns/op	 951.95 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    772689 signatures/s	         1.294 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   86722	     10338 ns/op	 953.40 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    773867 signatures/s	         1.292 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-8         	   86062	     10342 ns/op	 952.98 MB/s	         8.000 GOMAXPROCS	         0 internal-fault-fallbacks	    773520 signatures/s	         1.293 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	11.845s

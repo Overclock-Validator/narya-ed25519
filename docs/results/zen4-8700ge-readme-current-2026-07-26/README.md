@@ -29,9 +29,17 @@ three files. A simultaneous sustained-run sample placed the pinned core near
 - `public-warm.txt`: exported 64-key promoted 200/1232/4096 matrix
 - `compare-1232.txt`: same-binary Narya, Go standard library, and
   curve25519-voi comparison at 1232 bytes
+- `parallel.txt`: n=4 and n=8 exported cold verification at 1, 2, 4, and 8
+  physical cores
 - `commands.txt`: exact benchmark commands
 - `environment.txt`: benchmark environment without machine access details
 - `SHA256SUMS`: checksums for every evidence file except itself
 
 Timing cells in the README are medians in microseconds per signature, not
 per-batch latency.
+
+The parallel rows use signatures per second instead. They scale from 100,434
+to 643,326 signatures/s for n=4 and from 123,950 to 773,475 signatures/s for
+n=8 across one to eight physical cores. The top-end 6.24–6.41x scaling is a
+property of this 35 W CPU and must not be generalized to another power or
+microarchitecture regime.
