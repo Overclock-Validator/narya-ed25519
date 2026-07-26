@@ -1,4 +1,4 @@
-# Narya — Ed25519 verification with an explicit acceptance predicate
+# Narya — Ed25519 verification
 
 Narya verifies Ed25519 signatures under an explicit, versioned acceptance
 profile. It is built for workloads that verify at consensus scale: Solana block
