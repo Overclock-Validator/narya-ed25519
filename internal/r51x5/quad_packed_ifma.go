@@ -63,6 +63,14 @@ type quadDSMOperationsX4 struct {
 	hardware bool
 }
 
+// quadPointDoubleWorkspaceX4 keeps the five fully-overwritten packed
+// temporaries outside the dependent doubling loop. The hardware operation
+// writes every limb of every field before reading it; callers may therefore
+// reuse one workspace without clearing it between doublings.
+type quadPointDoubleWorkspaceX4 struct {
+	u, v, products, left, right IFMAElementX4
+}
+
 func (ops quadDSMOperationsX4) multiply(out, a, b *IFMAElementX4) error {
 	if ops.hardware {
 		return ifmaMultiplyComposableUncheckedX4(out, a, b)
@@ -78,8 +86,13 @@ func (ops quadDSMOperationsX4) addCached(out, point *quadPackedPointX4, cached *
 }
 
 func (ops quadDSMOperationsX4) double(out, point *quadPackedPointX4) error {
+	var workspace quadPointDoubleWorkspaceX4
+	return ops.doubleWorkspace(out, point, &workspace)
+}
+
+func (ops quadDSMOperationsX4) doubleWorkspace(out, point *quadPackedPointX4, workspace *quadPointDoubleWorkspaceX4) error {
 	if ops.hardware {
-		return quadPointDoubleHardwareUncheckedX4(out, point)
+		return quadPointDoubleHardwareWorkspaceUncheckedX4(out, point, workspace)
 	}
 	return quadPointDoubleModelX4(out, point)
 }
@@ -133,18 +146,19 @@ func quadDoubleFinalOperandsX4(left, right, products *IFMAElementX4) {
 }
 
 func quadPointDoubleHardwareUncheckedX4(out, q *quadPackedPointX4) error {
-	var u, v, products, left, right IFMAElementX4
-	quadDoubleFirstOperandsX4(&u, &v, q)
-	if err := ifmaMultiplyComposableUncheckedX4(&products, &u, &v); err != nil {
+	var workspace quadPointDoubleWorkspaceX4
+	return quadPointDoubleHardwareWorkspaceUncheckedX4(out, q, &workspace)
+}
+
+func quadPointDoubleHardwareWorkspaceUncheckedX4(out, q *quadPackedPointX4, workspace *quadPointDoubleWorkspaceX4) error {
+	quadDoubleFirstOperandsX4(&workspace.u, &workspace.v, q)
+	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
 		return err
 	}
-	quadDoubleFinalOperandsX4(&left, &right, &products)
-	var result IFMAElementX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result, &left, &right); err != nil {
-		return err
-	}
-	out.coordinates = result
-	return nil
+	quadDoubleFinalOperandsX4(&workspace.left, &workspace.right, &workspace.products)
+	// q is no longer live after the first packed permutation, so this final
+	// multiply may write directly through out even when out == q.
+	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
 }
 
 func quadPointDoubleModelX4(out, q *quadPackedPointX4) error {
@@ -288,7 +302,8 @@ func buildQuadNAFEntriesX4(positive []quadPackedCachedPointX4, base *Point, ops 
 	}
 
 	twice := *current
-	if err := ops.double(&twice, &twice); err != nil {
+	var doubleWorkspace quadPointDoubleWorkspaceX4
+	if err := ops.doubleWorkspace(&twice, &twice, &doubleWorkspace); err != nil {
 		return err
 	}
 	var twiceCached quadPackedCachedPointX4
@@ -392,8 +407,9 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 	high := 255
 	for ; high >= 0 && aNAF[high] == 0 && bNAF[high] == 0; high-- {
 	}
+	var doubleWorkspace quadPointDoubleWorkspaceX4
 	for bit := high; bit >= 0; bit-- {
-		if err := ops.double(&acc, &acc); err != nil {
+		if err := ops.doubleWorkspace(&acc, &acc, &doubleWorkspace); err != nil {
 			return false, err
 		}
 		if aNAF[bit] != 0 {

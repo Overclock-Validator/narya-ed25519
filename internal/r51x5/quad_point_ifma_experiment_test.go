@@ -196,6 +196,48 @@ func TestExperimentalCoordinateParallelDoubleX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestExperimentalCoordinateParallelDoubleWorkspaceX4IgnoresPriorScratch(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	var encoded [32]byte
+	encoded[0] = 0x58
+	for index := 1; index < len(encoded); index++ {
+		encoded[index] = 0x66
+	}
+	var point Point
+	if _, err := point.SetBytes(encoded[:]); err != nil {
+		t.Fatal(err)
+	}
+
+	clean := new(quadPackedPointX4).setReduced(&point)
+	poisoned := *clean
+	var cleanWorkspace, poisonedWorkspace quadPointDoubleWorkspaceX4
+	for limb := range poisonedWorkspace.u.limbs {
+		for lane := range poisonedWorkspace.u.limbs[limb] {
+			value := uint64(0xa5a5_0000_0000_0000 | uint64(limb<<8|lane))
+			poisonedWorkspace.u.limbs[limb][lane] = value
+			poisonedWorkspace.v.limbs[limb][lane] = ^value
+			poisonedWorkspace.products.limbs[limb][lane] = value ^ 0x1111
+			poisonedWorkspace.left.limbs[limb][lane] = value ^ 0x2222
+			poisonedWorkspace.right.limbs[limb][lane] = value ^ 0x3333
+		}
+	}
+
+	for step := 0; step < 32; step++ {
+		if err := quadPointDoubleHardwareWorkspaceUncheckedX4(clean, clean, &cleanWorkspace); err != nil {
+			t.Fatalf("step %d clean: %v", step, err)
+		}
+		if err := quadPointDoubleHardwareWorkspaceUncheckedX4(&poisoned, &poisoned, &poisonedWorkspace); err != nil {
+			t.Fatalf("step %d poisoned: %v", step, err)
+		}
+		if poisoned.coordinates != clean.coordinates {
+			t.Fatalf("step %d: prior scratch changed the doubled point", step)
+		}
+	}
+}
+
 func assertQuadPackedPointX4(t *testing.T, label string, round, step int, got *quadPackedPointX4, want *PointX4) {
 	t.Helper()
 	gotPoint := got.reduced()
@@ -244,6 +286,19 @@ func BenchmarkExperimentalCoordinateParallelDoubleX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := quadPointDoubleHardwareUncheckedX4(state, state); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkQuadPackedPointX4Sink = *state
+	})
+
+	b.Run("chained/quad-packed-reused-workspace", func(b *testing.B) {
+		state := new(quadPackedPointX4).setReduced(&point)
+		var workspace quadPointDoubleWorkspaceX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := quadPointDoubleHardwareWorkspaceUncheckedX4(state, state, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}
