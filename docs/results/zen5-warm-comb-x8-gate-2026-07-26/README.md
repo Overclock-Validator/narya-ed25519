@@ -37,11 +37,15 @@ directly comparable and is the quantity a dispatch decision turns on.
 
 | evaluator form | median ns/signature | min | max | allocations |
 | --- | ---: | ---: | ---: | ---: |
-| two x4 groups (current shape) | 2,287 | 2,285 | 2,287 | 0 |
-| one x8 group (candidate) | 1,577 | 1,572 | 1,582 | 0 |
+| two x4 groups (current shape) | 2,229 | 2,227 | 2,230 | 0 |
+| one x8 group (candidate) | 1,534 | 1,530 | 1,537 | 0 |
 
-That is a **31.0% reduction per signature**, a 1.45x speedup, with the spread
+That is a **31.2% reduction per signature**, a 1.45x speedup, with the spread
 inside 0.5% on both rows.
+
+Both rows moved down from an earlier capture (2,287 and 1,577) because the
+balanced recoder in this branch no longer divides; see below. The ratio is
+unchanged, since the recoder is shared by both forms.
 
 For context, the same structural change on the cold path measured 26%
 (`x8 / radixA=32 / comb256` at 9.24 µs/sig against two-x4 at 12.50). The warm
@@ -77,3 +81,54 @@ in turn, carrying forward the guard added for the warm-comb nil-lane crash.
 
 Files: `bench.txt` (ten samples per row), `correctness.txt`, `environment.txt`,
 `SHA256SUMS`.
+
+
+## Cost model
+
+`components.txt` measures each operation the evaluator's loop performs, so the
+gap between their sum and the whole is measured rather than assumed. The shape
+is fixed by the specs: A6/r9 contributes 43 digits at an online depth of 48,
+B10/r5 contributes 26 digits at depth 40, so one group is 47 doublings, 43 A
+selections and adds, and 26 B selections and adds.
+
+| operation | each | count | total | share |
+| --- | ---: | ---: | ---: | ---: |
+| cached add | 72.5 ns | 69 | 5,002 ns | 40.7% |
+| point double | 55.9 ns | 47 | 2,627 ns | 21.4% |
+| scalar recode | 792 ns | 2 | 1,584 ns | 12.9% |
+| select A (per-key) | 32.4 ns | 43 | 1,393 ns | 11.3% |
+| select B (shared) | 13.8 ns | 26 | 359 ns | 2.9% |
+| **explained** | | | **10,966 ns** | **89.2%** |
+| unexplained (loop, init, final copy) | | | 1,330 ns | 10.8% |
+
+Two things follow that were not obvious before measuring.
+
+**Recoding was 16.5% of a pure-bookkeeping pass.** The generated assembly showed
+why: `carry = (digit + half) / radix` compiled to a hardware `IDIVL` in the
+innermost loop, once per digit per lane, so 344 divisions for A and 208 for B on
+every group. The numerator is provably non-negative and the radix is a power of
+two, so a shift is exactly the same value. Replacing it took the recoder from
+1,043 to 792 ns and, because the x4 recoder carried the identical expression,
+moved the **shipping** two-x4 form from 2,287 to 2,229 ns/signature.
+
+**Selection is not the bottleneck.** A/B selection together is 14.2%, and the
+addition and doubling arithmetic is 62.1%. Any further large gain has to come
+from performing fewer group operations or cheaper ones, not from faster table
+lookup.
+
+### What reaching 1 microsecond would require
+
+At 1,534 ns/signature, a sub-microsecond warm path needs 4,300 ns off a
+12,272 ns group, about 35%. The levers, sized against the model above:
+
+| lever | estimated saving | cost |
+| --- | ---: | --- |
+| vectorize the recoder across its eight lanes | up to 1,400 ns | none, it is scalar Go today |
+| reduce online depth: A6/r5 with B10/r3 (23 doublings instead of 47) | ~1,340 ns | per-key table 19,200 to 34,560 B; shared B 369 KB to 553 KB |
+| cheaper cached add (72.5 ns for what should be about seven field multiplies) | 700-1,400 ns | new fused leaf |
+| wider A window, A6 to A8 (43 digits to 32) | ~800 ns | per-key table to 61,440 B, 3.2x |
+
+The first three land near 1,050-1,100 ns/signature without touching the A
+window. Going decisively below 1 microsecond needs the wider window, which is
+per-key memory, and per-key memory is capacity: the choice is therefore gated on
+the same unmeasured fee-payer recurrence distribution as the comb width itself.

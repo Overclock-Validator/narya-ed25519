@@ -19,4 +19,4 @@
 === RUN   TestHeterogeneousPartialCombX8SurvivesNilLanesExperiment
 --- PASS: TestHeterogeneousPartialCombX8SurvivesNilLanesExperiment (0.06s)
 PASS
-ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	0.578s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	0.577s
