@@ -168,36 +168,41 @@ func applyLehmerMatrix(rows [2]principalEuclidRow, a, b, c, d int64) ([2]princip
 	var products [8][5]uint64
 	var carry [8]uint64
 	for limb := 0; limb < 5; limb++ {
+		var rho0Word, rho1Word uint64
+		if limb < 4 {
+			rho0Word = rows[0].rho[limb]
+			rho1Word = rows[1].rho[limb]
+		}
 		var ok bool
-		products[0][limb], carry[0], ok = mulLehmerWord(rows[0].rho[limb&3], coeffA, carry[0], limb == 4)
+		products[0][limb], carry[0], ok = mulLehmerWord(rho0Word, coeffA, carry[0])
 		if !ok {
 			return rows, false
 		}
-		products[1][limb], carry[1], ok = mulLehmerWord(rows[1].rho[limb&3], coeffB, carry[1], limb == 4)
+		products[1][limb], carry[1], ok = mulLehmerWord(rho1Word, coeffB, carry[1])
 		if !ok {
 			return rows, false
 		}
-		products[2][limb], carry[2], ok = mulLehmerWord(rows[0].rho[limb&3], coeffC, carry[2], limb == 4)
+		products[2][limb], carry[2], ok = mulLehmerWord(rho0Word, coeffC, carry[2])
 		if !ok {
 			return rows, false
 		}
-		products[3][limb], carry[3], ok = mulLehmerWord(rows[1].rho[limb&3], coeffD, carry[3], limb == 4)
+		products[3][limb], carry[3], ok = mulLehmerWord(rho1Word, coeffD, carry[3])
 		if !ok {
 			return rows, false
 		}
-		products[4][limb], carry[4], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffA, carry[4], false)
+		products[4][limb], carry[4], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffA, carry[4])
 		if !ok {
 			return rows, false
 		}
-		products[5][limb], carry[5], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffB, carry[5], false)
+		products[5][limb], carry[5], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffB, carry[5])
 		if !ok {
 			return rows, false
 		}
-		products[6][limb], carry[6], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffC, carry[6], false)
+		products[6][limb], carry[6], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffC, carry[6])
 		if !ok {
 			return rows, false
 		}
-		products[7][limb], carry[7], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffD, carry[7], false)
+		products[7][limb], carry[7], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffD, carry[7])
 		if !ok {
 			return rows, false
 		}
@@ -252,10 +257,7 @@ func lehmerCoefficientMagnitude(coefficient int64) (uint64, bool) {
 	return uint64(coefficient), false
 }
 
-func mulLehmerWord(word, coefficient, carry uint64, padding bool) (low, high uint64, ok bool) {
-	if padding {
-		word = 0
-	}
+func mulLehmerWord(word, coefficient, carry uint64) (low, high uint64, ok bool) {
 	high, low = bits.Mul64(word, coefficient)
 	low, addCarry := bits.Add64(low, carry, 0)
 	high, overflow := bits.Add64(high, 0, addCarry)

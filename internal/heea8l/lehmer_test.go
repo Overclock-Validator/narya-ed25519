@@ -281,6 +281,7 @@ func BenchmarkSelectLehmerComparison(b *testing.B) {
 				fn   func([32]byte, WidthLimit) FixedSelection
 			}{
 				{name: "lehmer", fn: SelectLehmer},
+				{name: "lehmer-four-combine-reference", fn: selectLehmerFourCombineReference},
 				{name: "principal-euclid", fn: SelectEuclidPrincipal},
 				{name: "shift-subtract", fn: SelectShiftSubtract},
 			} {
@@ -295,6 +296,86 @@ func BenchmarkSelectLehmerComparison(b *testing.B) {
 				})
 			}
 		})
+	}
+}
+
+// selectLehmerFourCombineReference duplicates the production selector's
+// control flow while retaining the former four-combine matrix application.
+// It exists only in tests so the complete before/after paths can be timed in
+// the same binary without putting an indirect call in the production loop.
+func selectLehmerFourCombineReference(kBytes [32]byte, limit WidthLimit) FixedSelection {
+	if limit != Width128 && limit != Width132 && limit != Width136 {
+		return FixedSelection{Fallback: FallbackInvalidWidth}
+	}
+	k := uint256FromBytesLE(kBytes)
+	if k.cmp(fixedOrder) >= 0 {
+		return FixedSelection{Fallback: FallbackInvalidChallenge}
+	}
+	if k.isZero() {
+		return FixedSelection{
+			Candidate: FixedCandidate{
+				Tau:     SignedCoefficient{Limbs: [4]uint64{1}},
+				Epsilon: 1,
+			},
+			UseCandidate: true,
+			Fallback:     NoFallback,
+		}
+	}
+
+	rows := [2]principalEuclidRow{
+		{rho: fixedModulus},
+		{rho: k, tau: signed320FromUint64(1)},
+	}
+	if candidate, ok := principalEuclidCandidate(rows[1], int(limit)); ok {
+		return FixedSelection{Candidate: candidate, UseCandidate: true}
+	}
+
+	iterations := 0
+	for !rows[1].rho.isZero() && iterations < principalEuclidIterationCap {
+		if rows[1].rho.bitLen() > int(limit)+lehmerGuardBits {
+			a, b, c, d, steps := lehmerMatrix(rows[0].rho, rows[1].rho)
+			if steps > 0 {
+				next, ok := applyLehmerMatrixReference(rows, a, b, c, d)
+				if !ok {
+					return FixedSelection{Fallback: FallbackWidthExceeded}
+				}
+				rows = next
+				iterations += steps
+				if candidate, ok := principalEuclidCandidate(rows[1], int(limit)); ok {
+					return FixedSelection{Candidate: candidate, UseCandidate: true}
+				}
+				continue
+			}
+		}
+
+		quotient, remainder := divMod256(rows[0].rho, rows[1].rho)
+		iterations++
+		if quotient[1]|quotient[2]|quotient[3] != 0 {
+			return FixedSelection{Fallback: FallbackWidthExceeded}
+		}
+		tau, ok := subMulUint64Signed320(rows[0].tau, rows[1].tau, quotient[0])
+		if !ok || tau.mag[4] != 0 {
+			return FixedSelection{Fallback: FallbackWidthExceeded}
+		}
+		rows[0], rows[1] = rows[1], principalEuclidRow{rho: remainder, tau: tau}
+		if candidate, ok := principalEuclidCandidate(rows[1], int(limit)); ok {
+			return FixedSelection{Candidate: candidate, UseCandidate: true}
+		}
+	}
+	return FixedSelection{Fallback: FallbackWidthExceeded}
+}
+
+func TestLehmerCompletePathMatchesFourCombineReference(t *testing.T) {
+	rng := rand.New(rand.NewSource(0x4c45484d4552))
+	for _, limit := range []WidthLimit{Width128, Width132, Width136} {
+		for sample := 0; sample < 20000; sample++ {
+			k := randomChallengeBytes(rng)
+			got := SelectLehmer(k, limit)
+			want := selectLehmerFourCombineReference(k, limit)
+			if got != want {
+				t.Fatalf("limit=%d sample=%d k=%x:\n got=%+v\nwant=%+v", limit, sample, k, got, want)
+			}
+		}
 	}
 }
 
