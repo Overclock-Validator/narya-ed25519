@@ -14,10 +14,15 @@ var (
 	errIFMAOutputRange = errors.New("r51x5: experimental IFMA output is outside u60")
 )
 
-// ExperimentalIFMAAvailable reports whether this CPU may execute both the x8
-// ZMM kernel and the x4 AVX-512VL YMM kernel. Merely being available never
-// changes field arithmetic or Ed25519 backend dispatch.
-func ExperimentalIFMAAvailable() bool { return cpufeat.IFMA() }
+// ExperimentalIFMAAvailable reports whether this binary contains the native
+// kernels and this CPU may execute both the x8 ZMM kernel and the x4
+// AVX-512VL YMM kernel. Merely being available never changes field arithmetic
+// or Ed25519 backend dispatch.
+//
+// The compile-time half of the gate matters on amd64 purego builds: CPUID can
+// still report IFMA even though those builds deliberately omit every assembly
+// kernel.
+func ExperimentalIFMAAvailable() bool { return nativeIFMAKernelsBuilt && cpufeat.IFMA() }
 
 // ExperimentalIFMAMultiplyLooseX8 computes eight independent products using
 // ZMM VPMADD52 instructions. x and y must contain reduced radix-2^51 elements.

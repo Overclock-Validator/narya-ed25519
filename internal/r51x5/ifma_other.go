@@ -2,6 +2,8 @@
 
 package r51x5
 
+const nativeIFMAKernelsBuilt = false
+
 func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8) {
 	panic("r51x5: unreachable x8 IFMA call on non-amd64")
 }

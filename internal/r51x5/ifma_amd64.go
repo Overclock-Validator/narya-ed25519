@@ -2,6 +2,8 @@
 
 package r51x5
 
+const nativeIFMAKernelsBuilt = true
+
 // ifmaMulRawX8 multiplies eight lanes whose limbs are below 2^52 and emits an
 // exact folded IFMAProductX8 below 2^61. The caller must enforce cpufeat.IFMA
 // before entry and carry-normalize the result before reusing it.
