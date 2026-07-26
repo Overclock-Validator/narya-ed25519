@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17086035        34.94 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17182767        34.95 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17170131        34.94 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17166907        34.94 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17168092        34.96 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17161166        34.96 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17178656        34.95 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17164480        34.95 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17174193        34.96 ns/op        0 B/op        0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace          17179287        34.96 ns/op        0 B/op        0 allocs/op
+PASS
+ok      github.com/Overclock-Validator/narya-ed25519/internal/r51x5      6.355s

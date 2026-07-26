@@ -579,6 +579,31 @@ zero internal-fault fallbacks, and the complete native repository suite
 passed. Raw output is under
 `docs/results/zen5-packed-singleton-stage2-2026-07-26/`.
 
+### 5.11 Packed-singleton cached-add Stage 2 — retained
+
+The post-doubling profile exposed the analogous cached-add linear layer at
+about 5.7% cumulative. Commit `067188b` adds a second x4 assembly leaf over the
+normalized `[A,B,C,D]` products. It computes E=`B-A`, G=`D+C`, H=`B+A`, and
+F=`D-C`, adds eight whole moduli only to E/F, performs one parallel carry/fold,
+and emits the same packed left/right operands consumed by the unchanged final
+multiplication.
+
+This uses the same narrow safety boundary as the doubling Stage 2. The five
+inputs are loaded before the outputs are stored; either output may therefore
+alias the input, while the outputs must be distinct. A direct portable oracle
+checks exact representations over zero, maximum-u52, and 1,024 random inputs,
+including both input/output alias directions. Existing projective, torsion,
+range, poisoned-workspace, and zero-allocation tests remain unchanged.
+
+Ten pinned Zen 5 samples moved the reused-workspace cached addition from 43.79
+to 34.95 ns (-20.2%). Incrementally after the doubling Stage 2, exported
+`VerifyBatchStrict` at msg=1232 moved n=1 from 18.61 to 17.72 us/signature
+(-4.8%) and n=2 from 18.68 to 17.83 us/signature (-4.6%). The n=4/8/64
+dispatches remained at about 10.20/5.43/5.10 us/signature. Every timed row
+retained zero allocations and zero internal-fault fallbacks, and the complete
+native repository suite passed. Raw output is under
+`docs/results/zen5-packed-singleton-cached-stage2-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
