@@ -1,17 +1,26 @@
-// Package sha512mb computes SHA-512 over batches of independent
-// messages. Digests are bit-identical to crypto/sha512; the batch API
-// exists so a vector kernel can hash Lanes() messages in parallel
-// across SIMD lanes. Without one (non-amd64, or CPUs without AVX-512),
-// the batch degrades to a loop over the standard library, so the
-// package is correct on every platform and the kernel is purely a
-// speedup.
+// Package sha512mb computes SHA-512 over batches of independent messages.
+// Digests are bit-identical to crypto/sha512; the batch API exists so a vector
+// kernel can hash several messages at once across SIMD lanes.
+//
+// The stable surface here — Lanes, Sum512, Sum512Batch — is the portable scalar
+// implementation on every platform, including hosts that have the vector
+// kernels. It does not dispatch. The AVX2 x4 and AVX-512 x8 kernels live behind
+// the hardware-gated Experimental entry points in this package and are reached
+// only by a caller that asks for them by width; today that is the forced r51
+// verifier backend and nothing else.
+//
+// That split is deliberate while the kernels are experimental, but it does mean
+// a batch hashed through Sum512Batch is a loop over the standard library no
+// matter what the CPU supports.
 package sha512mb
 
 import "crypto/sha512"
 
-// Lanes reports how many messages one batch hashes in parallel.
-// Callers should not assume a particular value: it is 1 without a
-// vector kernel and 8 with the AVX-512 one.
+// Lanes reports how many messages the stable batch entry point hashes in
+// parallel. It is 1, because Sum512Batch is the portable scalar loop; the
+// vector kernels are reached through the Experimental entry points instead.
+// Callers should treat any batch size as acceptable rather than grouping work
+// to this value.
 func Lanes() int { return 1 }
 
 // Sum512 writes SHA-512(parts[0] ‖ parts[1] ‖ …) to out. Taking the
