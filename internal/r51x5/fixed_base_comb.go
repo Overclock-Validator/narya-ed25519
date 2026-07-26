@@ -322,7 +322,26 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 			continue
 		}
 		valid |= laneMask
-		recodeFixedBaseLaneX8(out, lane, &scalars[lane])
+	}
+	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
+	var carries [X8Lanes]int16
+	for round := 0; round < int(out.count); round++ {
+		bit := round * int(out.radixBits)
+		for lane := 0; lane < X8Lanes; lane++ {
+			laneMask := uint8(1 << lane)
+			if valid&laneMask == 0 {
+				continue
+			}
+			digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
+			carries[lane] = (digit + half) / radix
+			digit -= carries[lane] * radix
+			setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
+		}
+	}
+	for lane := 0; lane < X8Lanes; lane++ {
+		if carries[lane] != 0 {
+			panic("r51x5: canonical x8 scalar exceeded fixed-base comb width")
+		}
 	}
 	return valid
 }
@@ -330,30 +349,14 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
 	carry := int16(0)
 	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
-	reader := fixedScalarWindowReader{scalar: scalar}
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(reader.window(out.radixBits)) + carry
+		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
 		carry = (digit + half) / radix
 		digit -= carry * radix
 		setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
 	}
 	if carry != 0 {
 		panic("r51x5: canonical x4 scalar exceeded fixed-base comb width")
-	}
-}
-
-func recodeFixedBaseLaneX8(out *fixedBaseDigitsX8, lane int, scalar *[32]byte) {
-	carry := int16(0)
-	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
-	reader := fixedScalarWindowReader{scalar: scalar}
-	for round := 0; round < int(out.count); round++ {
-		digit := int16(reader.window(out.radixBits)) + carry
-		carry = (digit + half) / radix
-		digit -= carry * radix
-		setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
-	}
-	if carry != 0 {
-		panic("r51x5: canonical x8 scalar exceeded fixed-base comb width")
 	}
 }
 

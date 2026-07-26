@@ -5,29 +5,6 @@ import (
 	"testing"
 )
 
-func TestFixedScalarWindowReaderEveryOffset(t *testing.T) {
-	rng := rand.New(rand.NewSource(0x51_b17_2026))
-	for sample := 0; sample < 256; sample++ {
-		var scalar [32]byte
-		_, _ = rng.Read(scalar[:])
-		for _, width := range []uint8{4, 5, 6} {
-			reader := fixedScalarWindowReader{scalar: &scalar}
-			for bit := 0; bit < fixedScalarRoundCount(uint(width))*int(width); bit += int(width) {
-				var want uint16
-				for offset := uint8(0); offset < width; offset++ {
-					sourceBit := bit + int(offset)
-					if sourceBit < 256 && scalar[sourceBit>>3]&(1<<uint(sourceBit&7)) != 0 {
-						want |= 1 << offset
-					}
-				}
-				if got := reader.window(width); got != want {
-					t.Fatalf("sample=%d width=%d bit=%d got=%x want=%x", sample, width, bit, got, want)
-				}
-			}
-		}
-	}
-}
-
 func TestFixedScalarRecodingMatchesArbitraryWidthReference(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x51f1ced))
 	for round := 0; round < 512; round++ {
