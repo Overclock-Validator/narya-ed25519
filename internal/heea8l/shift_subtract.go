@@ -239,7 +239,7 @@ func shiftSubtractFallback(best fixedCandidate, found bool) FixedSelection {
 }
 
 func considerShiftSubtractRow(best *fixedCandidate, found *bool, row shiftSubtractRow, limit int) {
-	if row.tau.isZero() || !row.tau.odd() || row.rho.bitLen() > limit || row.tau.bitLen() > limit {
+	if row.rho.bitLen() > limit || row.tau.bitLen() > limit || !unitMultiplier320(row.tau) {
 		return
 	}
 	tau, ok := row.tau.external()

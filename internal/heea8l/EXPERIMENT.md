@@ -4,6 +4,32 @@ This package is research tooling. It is not imported by signature
 verification and its `math/big` performance is not representative of a future
 fixed-width implementation.
 
+## Strict-equation exactness contract
+
+Let `N=8L`, where `L` is the prime subgroup order. If the selector returns
+signed integers `c0,c1` satisfying
+
+```text
+c1 = c0*k (mod N), and gcd(c0,N) = 1,
+```
+
+then multiplication by `c0` is injective on the full Edwards25519 group and
+
+```text
+[c0*s]B = [c0]R + [c1]A  iff  [s]B = R + [k]A.
+```
+
+The configured 128/132/136-bit fast widths are below `L`, so the unit check
+reduces to oddness for a correctly bounded candidate. The implementation
+nevertheless retains the complete `gcd(c0,8L)=1` admission check. This guards
+both failure modes: an even multiplier can erase torsion, while the odd
+multiplier `c0=L` can erase a prime-order error.
+
+The deterministic torsion discriminator used by the tests sets
+`A=[a]B`, `R=[r]B+T2`, and `s=r+k*a`, where `T2` has order two. The strict
+error is `-T2`, but multiplying the equation by any even `c0` erases it. This
+is the first mandatory vector for any future HEEA implementation.
+
 Run the deterministic, rejection-sampled experiment with:
 
 ```sh
@@ -198,3 +224,34 @@ for batching to repay proposal generation and verification. A future batching
 attempt should start only if the candidate policy changes with a fresh proof,
 or if a platform profile materially differs. Exact signed-integer point
 multiplication remains the larger missing HEEA component.
+
+## Principal-row Euclidean selector checkpoint
+
+`SelectEuclidPrincipal` tests whether restricting the hot selector to
+principal Euclidean rows can replace the power-of-two shift/subtract walk. It
+uses exact fixed-width division, exact signed coefficient updates, a 384-step
+defensive cap that always falls back to ordinary verification, and the full
+unit-multiplier admission check. A verified quotient-lookahead variant reuses
+only proposals checked against the complete 256-bit operands.
+
+This is a negative performance checkpoint under the measured regime, not a
+production candidate. On Apple M4 Pro with Go on Darwin/arm64, five two-second
+runs measured an admitted W128 input at approximately:
+
+| Selector | Time | Allocation |
+| --- | ---: | ---: |
+| existing shift/subtract | 4.75-4.80 us | 0 |
+| principal exact divider | 4.96-5.18 us | 0 |
+| principal verified lookahead | 4.79-4.87 us | 0 |
+
+On 8,192 independent deterministic challenges, W128 fallback counts were
+1,387 for principal rows, 1,245 for shift/subtract, and 908 for the exhaustive
+fixed-width oracle. At W132 they were 7, 7, and 5; all three admitted every
+sample at W136.
+
+The conclusion is specific: merely replacing single-bit cancellations with
+ordinary Euclidean rows does not reach the required reducer budget and loses
+some W128 coverage. Keep the code as a regime-tagged exact experiment, but do
+not wire it into the HEEA verifier. A next attempt must amortize multiple exact
+rows per wide update (for example a true half-GCD/Lehmer matrix or a proven
+delayed-subtraction schedule), rather than changing only the row policy.

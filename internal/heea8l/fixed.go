@@ -55,6 +55,15 @@ func (c *FixedCandidate) BitLen() int {
 	return c.Tau.BitLen()
 }
 
+// UnitMultiplier reports whether Tau is invertible modulo the full Edwards
+// group exponent 8L. This is the injectivity condition required for the
+// transformed equation to be equivalent to the strict equation. In
+// particular, oddness alone is not sufficient: Tau=L is odd but is not a
+// unit and annihilates every prime-order error point.
+func (c *FixedCandidate) UnitMultiplier() bool {
+	return coprimeToModulus(uint256(c.Tau.Limbs), fixedModulus)
+}
+
 // FixedSelection is the allocation-free counterpart of Selection. Candidate
 // remains populated on a width fallback for diagnostics.
 type FixedSelection struct {

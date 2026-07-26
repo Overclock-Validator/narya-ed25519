@@ -4,6 +4,7 @@ import (
 	stded25519 "crypto/ed25519"
 	"crypto/sha512"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math/bits"
 	"runtime"
@@ -306,10 +307,11 @@ func selectR51HEEACandidate(k [32]byte, width heea8l.WidthLimit) (r51HEEASelecto
 	if !selection.UseCandidate || selection.Fallback != heea8l.NoFallback ||
 		!validR51HEEAWidth(width) || selection.Candidate.BitLen() > int(width) ||
 		(selection.Candidate.Epsilon != -1 && selection.Candidate.Epsilon != 1) ||
-		selection.Candidate.Tau.Sign() == 0 || selection.Candidate.Tau.Limbs[0]&1 == 0 {
+		selection.Candidate.Tau.Sign() == 0 || selection.Candidate.Tau.Limbs[0]&1 == 0 ||
+		!selection.Candidate.UnitMultiplier() {
 		fallback := selection.Fallback
 		if fallback == heea8l.NoFallback {
-			// An admitted zero/even tau would violate the selector's
+			// An admitted non-unit tau would violate the selector's
 			// injectivity contract. Treat a defensive invariant failure as
 			// an ordinary fallback, never as an admitted equation.
 			fallback = heea8l.FallbackWidthExceeded
@@ -933,6 +935,49 @@ func TestR51HEEAScalarEndToEndDifferentialWithoutIFMA(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestR51HEEAEvenMultiplierErasesOrderTwoError is the deterministic
+// consensus-divergence witness for a selector that admits an even Tau. Let
+// A=[a]B and R=[r]B+T2, where T2 has order two, and choose s=r+k*a. The strict
+// error point is -T2, so strict verification rejects. Multiplying the entire
+// equation by Tau=2 erases that error and accepts. No challenge grinding is
+// involved because s is constructed after hashing the original A/R bytes.
+func TestR51HEEAEvenMultiplierErasesOrderTwoError(t *testing.T) {
+	a := scalarFromUint64(t, 5)
+	r := scalarFromUint64(t, 7)
+	two := scalarFromUint64(t, 2)
+	torsionEncoding, err := hex.DecodeString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f")
+	if err != nil {
+		t.Fatal(err)
+	}
+	torsion, err := new(edwards25519.Point).SetBytes(torsionEncoding)
+	if err != nil {
+		t.Fatal(err)
+	}
+	A := new(edwards25519.Point).ScalarBaseMult(a)
+	R := new(edwards25519.Point).Add(new(edwards25519.Point).ScalarBaseMult(r), torsion)
+	var pub [stded25519.PublicKeySize]byte
+	copy(pub[:], A.Bytes())
+	message := []byte("deterministic even-tau torsion discriminator")
+	k := strictChallenge(t, R.Bytes(), pub[:], message)
+	s := new(edwards25519.Scalar).Multiply(k, a)
+	s.Add(s, r)
+	sigArray := assembleStrictTestSignature(R, s)
+	if referenceVerifyProfile(DalekStrict, &pub, message, sigArray[:]) {
+		t.Fatal("strict verifier accepted the order-two error witness")
+	}
+
+	tauS := new(edwards25519.Scalar).Multiply(two, s)
+	rho := new(edwards25519.Scalar).Multiply(two, k)
+	left := new(edwards25519.Point).ScalarBaseMult(tauS)
+	right := new(edwards25519.Point).Add(
+		new(edwards25519.Point).ScalarMult(two, R),
+		new(edwards25519.Point).ScalarMult(rho, A),
+	)
+	if left.Equal(right) != 1 {
+		t.Fatal("even transformed equation did not erase the order-two error")
 	}
 }
 

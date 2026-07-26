@@ -73,6 +73,52 @@ func BenchmarkSelectFixed(b *testing.B) {
 	}
 }
 
+func BenchmarkSelectEuclidPrincipal(b *testing.B) {
+	admitted := benchmarkFixedChallenge(func(s FixedSelection) bool { return s.UseCandidate })
+	ordinaryFallback := benchmarkFixedChallenge(func(s FixedSelection) bool {
+		return !s.UseCandidate && s.Fallback == FallbackWidthExceeded
+	})
+	n := Modulus()
+	pathological := new(big.Int).Sub(n, big.NewInt(2))
+	pathological.Quo(pathological, big.NewInt(10))
+
+	cases := []struct {
+		name  string
+		k     *big.Int
+		limit WidthLimit
+	}{
+		{"admitted-W128", admitted, Width128},
+		{"ordinary-fallback-W128", ordinaryFallback, Width128},
+		{"pathological-fallback-W136", pathological, Width136},
+	}
+	for _, tc := range cases {
+		b.Run(tc.name, func(b *testing.B) {
+			encoded := bigToLittle32(b, tc.k)
+			kFixed := uint256FromBytesLE(encoded)
+			for _, mode := range []struct {
+				name            string
+				selectCandidate func(uint256, WidthLimit) (FixedSelection, principalEuclidStats)
+			}{
+				{"exact-divider", selectEuclidPrincipal},
+				{"verified-lookahead", selectEuclidPrincipalLookahead},
+			} {
+				b.Run(mode.name, func(b *testing.B) {
+					b.ReportAllocs()
+					b.ResetTimer()
+					var result FixedSelection
+					var stats principalEuclidStats
+					for i := 0; i < b.N; i++ {
+						result, stats = mode.selectCandidate(kFixed, tc.limit)
+					}
+					benchmarkFixedSelection = result
+					b.ReportMetric(float64(result.Candidate.BitLen()), "candidate_bits")
+					b.ReportMetric(float64(stats.Iterations), "iterations")
+				})
+			}
+		})
+	}
+}
+
 func BenchmarkSelectFixedDivider(b *testing.B) {
 	k := benchmarkChallenge(func(s Selection) bool { return s.UseCandidate })
 	encoded := bigToLittle32(b, k)
@@ -141,4 +187,23 @@ func benchmarkChallenge(accept func(Selection) bool) *big.Int {
 			return k
 		}
 	}
+}
+
+func benchmarkFixedChallenge(accept func(FixedSelection) bool) *big.Int {
+	l := Order()
+	for i := uint64(0); ; i++ {
+		k := sampledChallenge(i, l)
+		selection := SelectEuclidPrincipal(bigToLittle32Bench(k), Width128)
+		if accept(selection) {
+			return k
+		}
+	}
+}
+
+func bigToLittle32Bench(x *big.Int) (out [32]byte) {
+	bytes := x.Bytes()
+	for i := range bytes {
+		out[i] = bytes[len(bytes)-1-i]
+	}
+	return out
 }
