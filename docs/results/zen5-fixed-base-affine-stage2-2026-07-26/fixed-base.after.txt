@@ -1,0 +1,22 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294500	      4068 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  295028	      4068 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294631	      4070 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294668	      4069 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294643	      4067 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294920	      4068 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294938	      4069 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x4/radix=256         	  294540	      4067 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  194362	      6252 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  192022	      6246 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  191785	      6248 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  191656	      6252 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  191811	      6254 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  192402	      6246 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  192172	      6245 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+BenchmarkExperimentalFixedBaseCombScalarMult/ifma/x8/radix=256         	  192326	      6247 ns/op	    245760 table-bytes	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	20.084s

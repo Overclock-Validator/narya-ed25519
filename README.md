@@ -181,7 +181,7 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest snapshot is from implementation commit `1ac9fde` on an AMD Ryzen 7
+The latest snapshot is from implementation commit `fd117ae` on an AMD Ryzen 7
 9700X (Zen 5), Go 1.26.4, one pinned core, the performance governor, and
 `GOMAXPROCS=1`. Values are median microseconds per signature from ten repeated
 one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
@@ -195,17 +195,17 @@ is better)**.
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 14.470 | 14.520 | 8.530 | 4.873 | 4.687 |
-| 1232 | 15.440 | 15.380 | 9.550 | 5.124 | 4.924 |
-| 4096 | 17.300 | 17.305 | 12.370 | 5.857 | 5.664 |
+| 200 | 14.320 | 14.270 | 8.261 | 4.743 | 4.554 |
+| 1232 | 14.890 | 14.880 | 9.274 | 4.995 | 4.794 |
+| 4096 | 16.995 | 17.030 | 12.065 | 5.705 | 5.531 |
 
 **Warm — 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 14.410 | 14.400 | 3.780 | 3.547 | 3.371 |
-| 1232 | 15.345 | 15.315 | 4.531 | 4.291 | 4.143 |
-| 4096 | 17.460 | 17.470 | 6.574 | 6.341 | 6.188 |
+| 200 | 14.300 | 14.230 | 3.418 | 3.182 | 3.020 |
+| 1232 | 14.980 | 14.900 | 4.179 | 3.940 | 3.776 |
+| 4096 | 17.030 | 17.040 | 6.230 | 5.998 | 5.825 |
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
@@ -227,10 +227,10 @@ included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 15.215 | 15.280 | 9.746 | 5.224 | 5.041 |
-| Go `crypto/ed25519` | 27.230 | 27.280 | 27.360 | 27.405 | 27.370 |
-| curve25519-voi, cold strict | 21.640 | 21.770 | 21.730 | 21.860 | 21.910 |
-| curve25519-voi, expanded key | 18.825 | 18.945 | 18.900 | 19.025 | 19.070 |
+| Narya r51, cold strict | 15.010 | 14.795 | 9.414 | 5.038 | 4.865 |
+| Go `crypto/ed25519` | 27.605 | 27.140 | 27.310 | 27.385 | 27.445 |
+| curve25519-voi, cold strict | 21.750 | 21.560 | 21.750 | 21.830 | 21.900 |
+| curve25519-voi, expanded key | 18.940 | 18.740 | 18.930 | 19.000 | 19.070 |
 
 The public cold path also scales across independent callers. At commit
 `ac8c1ab`, six one-second samples per point over 1232-byte messages produced:
@@ -254,7 +254,7 @@ Historical measurements and their exact environments remain in
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
 current snapshot are in
-[`docs/results/zen5-9700x-squarechain-readme-2026-07-26/`](docs/results/zen5-9700x-squarechain-readme-2026-07-26/).
+[`docs/results/zen5-fixed-base-affine-stage2-2026-07-26/`](docs/results/zen5-fixed-base-affine-stage2-2026-07-26/).
 The multicore evidence is in
 [`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
 

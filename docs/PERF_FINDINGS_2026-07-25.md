@@ -796,6 +796,40 @@ HEEA only with a fundamentally cheaper exact selector whose measured cost fits
 inside the point-loop saving; do not spend more assembly effort around the
 current selector first.
 
+### 5.19 Fixed-base affine cached-add Stage 2 — retained
+
+A fresh Zen 5 profile at `f80de02` placed approximately 19% of complete
+n=64 strict verification in the fixed-base comb, including about 8% in its
+affine cached additions and 8% in selection/gather. The x4 and x8 fixed-base
+point-add implementations still used the pre-fusion schedule: three
+individually normalized products, five normalized linear operations, four
+output products, defensive input/result copies, and fresh per-add scratch.
+
+Commits `6fa4c4f` and `fd117ae` give both widths the already-proven Stage-2
+shape. Four raw products feed one linear carry layer, the existing Niels
+Stage-2 leaf accepts affine `D=Z` under a documented tighter-u52 alternative
+to its raw-product contract, the output products write directly to the
+accumulator, and one scratch object is reused across the 32 fixed-base adds.
+Independent arbitrary-precision oracles cover the broadened `D` contract;
+point differentials cover the old and new schedules; alias/in-place,
+poisoned-scratch, range, and zero-allocation tests cover both widths.
+
+On the pinned Zen 5 core, median fixed-base radix-256 group time changed from
+4,935 to 4,068 ns for x4 (-17.6%) and from 7,970 to 6,247.5 ns for x8
+(-21.6%). Complete public 1232-byte strict verification at the same final
+commit measured 9.274 µs/signature at n=4, 4.995 at n=8, and 4.794 at n=64,
+all with zero allocations and zero internal-fault fallbacks. The warm path
+also benefits because it shares the fixed-base term: at 1232 bytes it measured
+4.179, 3.940, and 3.776 µs/signature at n=4/8/64 with 64 promoted keys.
+
+Raw A/B output and the full cold/warm/comparison snapshot are under
+`docs/results/zen5-fixed-base-affine-stage2-2026-07-26/`.
+
+**Regime tag:** the result applies to the shared fixed-base affine cached-add
+inside both cold and warm r51 paths. It does not claim that the scalar gather
+is solved; after this arithmetic reduction, fixed-base selection is a larger
+relative share and remains the next independent cold-path candidate.
+
 ---
 
 ## 6. Smaller observations
