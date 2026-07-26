@@ -1,9 +1,31 @@
 # Narya — Ed25519 verification
 
-Narya verifies Ed25519 signatures under an explicit, versioned acceptance
-profile. It is built for workloads that verify at consensus scale: Solana block
-replay and leader-mode transaction ingest, where a block can carry tens of
-thousands of signatures and many of them come from a stable set of hot signers.
+```
+go get github.com/Overclock-Validator/narya-ed25519
+```
+
+Narya is a pure-Go Ed25519 verifier that makes its acceptance rule explicit and
+versioned, and that gets faster the more signatures you hand it at once.
+
+Both halves matter to any verifier, not just blockchain ones. RFC 8032 leaves
+real choices open — whether to reject small-order keys, whether to accept
+non-canonical encodings — and libraries resolve them differently, so "valid
+signature" is not a single predicate. Any system where two implementations must
+agree on accept/reject, or where a signature verified today must verify the same
+way in five years, needs to name which rule it is using rather than inherit one
+by accident. Narya names it, offers more than one, and never changes the default
+silently.
+
+The performance work follows the same idea. Verification cost per signature is
+mostly a function of batch width, because the accelerated backends verify eight
+signatures per AVX-512 group. Verify one at a time and you pay for a group and
+use one lane of it.
+
+The library was built for Solana consensus — block replay and leader-mode
+ingest, where a block carries tens of thousands of signatures and mainnet's
+exact predicate is not negotiable — and that case is used throughout as the
+worked example, because it is the one where getting the predicate wrong has a
+name and a consequence. Nothing in the API is Solana-specific.
 
 > Narya is Gandalf's ring — the Ring of Fire. The name nods to
 > [Firedancer](https://github.com/firedancer-io/firedancer), whose
@@ -275,6 +297,44 @@ Detailed commands, raw statistical samples, checksums, and caveats are recorded
 in [`docs/results/zen4-8700ge-pr1-2026-07-25/`](docs/results/zen4-8700ge-pr1-2026-07-25/)
 and summarized in
 [`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
+
+### Running the benchmarks yourself
+
+Every number above is reproducible. Nothing here needs a special harness; the
+benchmarks are ordinary `go test -bench` targets.
+
+The baseline comparison is against Go's own `crypto/ed25519`, which is the
+implementation most callers are replacing:
+
+```
+go test -run '^$' -bench 'BenchmarkVerify' -benchtime 2s ./ed25519/
+```
+
+Batch width is the single largest factor in cost per signature, so sweep it
+rather than quoting one number:
+
+```
+go test -run '^$' -bench 'BenchmarkVerifyBatch' -benchtime 2s ./ed25519/
+```
+
+The accelerated backends are opt-in and require AVX512-IFMA. On a machine
+without it they self-skip rather than silently measuring the portable path, so
+a suspiciously flat result usually means the backend was never selected —
+check with `ed25519.ActiveBackend()`. Select one explicitly with
+`SetBackend("r51")` or the `OVERCLOCK_ED25519_BACKEND` environment variable.
+
+Three things will make results unreproducible if ignored:
+
+- **Pin to physical cores.** `nproc` reports SMT siblings; two benchmark
+  threads sharing one core roughly halve throughput. On Linux,
+  `taskset -c 0-N GOMAXPROCS=N go test ...`.
+- **Check the governor.** A `powersave` governor produces absolute numbers that
+  are not comparable across machines, though within-host A/B deltas stay
+  usable.
+- **Do not read clock speed from `/proc/cpuinfo`.** It samples an idle core.
+  Derive the real sustained frequency from `perf stat` as cycles divided by
+  task-clock; under sustained AVX-512 the difference can exceed 30%, which is
+  more than most of the effects being measured.
 
 ## Verification
 
