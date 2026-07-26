@@ -68,6 +68,88 @@
 	VPADDQ C3, IN4, IN4                                                    \
 	VPMADD52LUQ C4, FOLD19, IN0
 
+// Multiply the u52 values addressed by CX and BX and store one normalized
+// u52 result through DI. The four-point-final-product leaf below expands this
+// body four times so the independent Edwards output products share one
+// Go/assembly transition and one VZEROUPPER. AX and DX are deliberately not
+// touched: that leaf keeps its output and operand bases there between bodies.
+#define MUL_NORMALIZED_X8_BODY \
+	VMOVDQU64   0(CX), Z0  \
+	VMOVDQU64  64(CX), Z1  \
+	VMOVDQU64 128(CX), Z2  \
+	VMOVDQU64 192(CX), Z3  \
+	VMOVDQU64 256(CX), Z4  \
+	VMOVDQU64   0(BX), Z5  \
+	VMOVDQU64  64(BX), Z6  \
+	VMOVDQU64 128(BX), Z7  \
+	VMOVDQU64 192(BX), Z8  \
+	VMOVDQU64 256(BX), Z9  \
+	CLEAR(Z10)             \
+	CLEAR(Z11)             \
+	CLEAR(Z12)             \
+	CLEAR(Z13)             \
+	CLEAR(Z14)             \
+	CLEAR(Z15)             \
+	CLEAR(Z16)             \
+	CLEAR(Z17)             \
+	CLEAR(Z18)             \
+	CLEAR(Z19)             \
+	CLEAR(Z20)             \
+	CLEAR(Z21)             \
+	CLEAR(Z22)             \
+	CLEAR(Z23)             \
+	CLEAR(Z24)             \
+	CLEAR(Z25)             \
+	CLEAR(Z26)             \
+	CLEAR(Z27)             \
+	MUL_PAIR(Z0, Z5, Z10, Z19) \
+	MUL_PAIR(Z0, Z6, Z11, Z20) \
+	MUL_PAIR(Z0, Z7, Z12, Z21) \
+	MUL_PAIR(Z0, Z8, Z13, Z22) \
+	MUL_PAIR(Z0, Z9, Z14, Z23) \
+	MUL_PAIR(Z1, Z5, Z11, Z20) \
+	MUL_PAIR(Z1, Z6, Z12, Z21) \
+	MUL_PAIR(Z1, Z7, Z13, Z22) \
+	MUL_PAIR(Z1, Z8, Z14, Z23) \
+	MUL_PAIR(Z1, Z9, Z15, Z24) \
+	MUL_PAIR(Z2, Z5, Z12, Z21) \
+	MUL_PAIR(Z2, Z6, Z13, Z22) \
+	MUL_PAIR(Z2, Z7, Z14, Z23) \
+	MUL_PAIR(Z2, Z8, Z15, Z24) \
+	MUL_PAIR(Z2, Z9, Z16, Z25) \
+	MUL_PAIR(Z3, Z5, Z13, Z22) \
+	MUL_PAIR(Z3, Z6, Z14, Z23) \
+	MUL_PAIR(Z3, Z7, Z15, Z24) \
+	MUL_PAIR(Z3, Z8, Z16, Z25) \
+	MUL_PAIR(Z3, Z9, Z17, Z26) \
+	MUL_PAIR(Z4, Z5, Z14, Z23) \
+	MUL_PAIR(Z4, Z6, Z15, Z24) \
+	MUL_PAIR(Z4, Z7, Z16, Z25) \
+	MUL_PAIR(Z4, Z8, Z17, Z26) \
+	MUL_PAIR(Z4, Z9, Z18, Z27) \
+	COMBINE_HIGH(Z19, Z11)      \
+	COMBINE_HIGH(Z20, Z12)      \
+	COMBINE_HIGH(Z21, Z13)      \
+	COMBINE_HIGH(Z22, Z14)      \
+	COMBINE_HIGH(Z23, Z15)      \
+	COMBINE_HIGH(Z24, Z16)      \
+	COMBINE_HIGH(Z25, Z17)      \
+	COMBINE_HIGH(Z26, Z18)      \
+	VPSLLQ $1, Z27, Z27         \
+	VPBROADCASTQ ·ifmaFold19(SB), Z30 \
+	FOLD_INTO_MUL19(Z10, Z15, Z28, Z30) \
+	FOLD_INTO_MUL19(Z11, Z16, Z28, Z30) \
+	FOLD_INTO_MUL19(Z12, Z17, Z28, Z30) \
+	FOLD_INTO_MUL19(Z13, Z18, Z28, Z30) \
+	FOLD_INTO_MUL19(Z14, Z27, Z28, Z30) \
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5 \
+	NORMALIZE_5(Z10, Z11, Z12, Z13, Z14, Z5, Z15, Z16, Z17, Z18, Z19, Z30) \
+	VMOVDQU64 Z10,   0(DI)      \
+	VMOVDQU64 Z11,  64(DI)      \
+	VMOVDQU64 Z12, 128(DI)      \
+	VMOVDQU64 Z13, 192(DI)      \
+	VMOVDQU64 Z14, 256(DI)
+
 // func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 //
 // Inputs are eight independent radix-2^51 representations whose limbs are
@@ -337,6 +419,45 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	VMOVDQU64 Z12, 128(DI)
 	VMOVDQU64 Z13, 192(DI)
 	VMOVDQU64 Z14, 256(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+//
+// operands points to four consecutive carried-u52 slots in E,F,G,H order.
+// The leaf computes (E*F, G*H, F*G, E*H) into out.X/Y/Z/T. The current point
+// formulas keep operands in separate workspace storage, so aliasing is neither
+// required nor supported. Each multiplication is representation-identical to
+// ifmaMulNormalizedUncheckedX8; the only optimization is sharing the call
+// boundary and final VZEROUPPER across four independent products.
+TEXT ·ifmaPointFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), AX
+	MOVQ operands+8(FP), DX
+
+	// X = E*F.
+	MOVQ AX, DI
+	MOVQ DX, CX
+	LEAQ 320(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Y = G*H.
+	LEAQ 320(AX), DI
+	LEAQ 640(DX), CX
+	LEAQ 960(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// T = E*H.
+	LEAQ 960(AX), DI
+	MOVQ DX, CX
+	LEAQ 960(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Z = F*G.
+	LEAQ 640(AX), DI
+	LEAQ 320(DX), CX
+	LEAQ 640(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
 	VZEROUPPER
 	RET
 

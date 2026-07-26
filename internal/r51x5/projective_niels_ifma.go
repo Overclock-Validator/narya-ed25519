@@ -76,17 +76,9 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	ifmaMulRawX8(&stage2[3], &point.Z.limbs, &cached.Z.limbs)
 	ifmaNielsStage2X8(stage2)
 
-	E := (*LimbsX8)(&stage2[0])
-	F := (*LimbsX8)(&stage2[1])
-	G := (*LimbsX8)(&stage2[2])
-	H := (*LimbsX8)(&stage2[3])
-
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }
 

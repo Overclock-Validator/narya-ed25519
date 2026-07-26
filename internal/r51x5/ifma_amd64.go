@@ -24,6 +24,15 @@ func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //go:noescape
 func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8)
 
+// ifmaPointFinalProductsUncheckedX8 computes the four independent Edwards
+// output products from four consecutive carried-u52 operands in E,F,G,H
+// order. The output must not overlap the operand workspace. The native leaf is
+// representation-identical to four ifmaMulNormalizedUncheckedX8 calls while
+// sharing one Go/assembly transition and one VZEROUPPER.
+//
+//go:noescape
+func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+
 // ifmaMulNormalizedMul19ExperimentX8 replaces each shift/add multiplication
 // by 19 in the x8 pre-carry fold with one AVX-512DQ VPMULLQ. It is kept
 // separate until exact-representation and complete-verifier gates pass.
