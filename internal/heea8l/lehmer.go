@@ -1,5 +1,7 @@
 package heea8l
 
+import "math/bits"
+
 // SelectLehmer is a Lehmer-accelerated modulo-8L selector. It computes the
 // same principal Euclidean sequence as SelectEuclidPrincipal and stops at the
 // same row, but replaces most full-width steps with single-word arithmetic.
@@ -152,6 +154,125 @@ func lehmerMatrix(rho0, rho1 uint256) (a, b, c, d int64, steps int) {
 // batch was not a valid Euclidean transformation and is reported as a failure
 // rather than silently accepted.
 func applyLehmerMatrix(rows [2]principalEuclidRow, a, b, c, d int64) ([2]principalEuclidRow, bool) {
+	// Apply all eight small-coefficient products in one limb pass. The matrix
+	// entries are capped below 2^31 and every reachable rho/tau magnitude fits
+	// four limbs, so the fifth limb is an explicit checked carry boundary.
+	// Keeping the products together removes eight repeated multiply-helper
+	// traversals from every Lehmer batch without changing sign-and-magnitude
+	// semantics.
+	coeffA, negA := lehmerCoefficientMagnitude(a)
+	coeffB, negB := lehmerCoefficientMagnitude(b)
+	coeffC, negC := lehmerCoefficientMagnitude(c)
+	coeffD, negD := lehmerCoefficientMagnitude(d)
+
+	var products [8][5]uint64
+	var carry [8]uint64
+	for limb := 0; limb < 5; limb++ {
+		var ok bool
+		products[0][limb], carry[0], ok = mulLehmerWord(rows[0].rho[limb&3], coeffA, carry[0], limb == 4)
+		if !ok {
+			return rows, false
+		}
+		products[1][limb], carry[1], ok = mulLehmerWord(rows[1].rho[limb&3], coeffB, carry[1], limb == 4)
+		if !ok {
+			return rows, false
+		}
+		products[2][limb], carry[2], ok = mulLehmerWord(rows[0].rho[limb&3], coeffC, carry[2], limb == 4)
+		if !ok {
+			return rows, false
+		}
+		products[3][limb], carry[3], ok = mulLehmerWord(rows[1].rho[limb&3], coeffD, carry[3], limb == 4)
+		if !ok {
+			return rows, false
+		}
+		products[4][limb], carry[4], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffA, carry[4], false)
+		if !ok {
+			return rows, false
+		}
+		products[5][limb], carry[5], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffB, carry[5], false)
+		if !ok {
+			return rows, false
+		}
+		products[6][limb], carry[6], ok = mulLehmerWord(rows[0].tau.mag[limb], coeffC, carry[6], false)
+		if !ok {
+			return rows, false
+		}
+		products[7][limb], carry[7], ok = mulLehmerWord(rows[1].tau.mag[limb], coeffD, carry[7], false)
+		if !ok {
+			return rows, false
+		}
+	}
+	for _, high := range carry {
+		if high != 0 {
+			return rows, false
+		}
+	}
+
+	rho0, ok := addSigned320(
+		lehmerProduct(products[0], false, negA, coeffA),
+		lehmerProduct(products[1], false, negB, coeffB),
+	)
+	if !ok || rho0.neg {
+		return rows, false
+	}
+	rho1, ok := addSigned320(
+		lehmerProduct(products[2], false, negC, coeffC),
+		lehmerProduct(products[3], false, negD, coeffD),
+	)
+	if !ok || rho1.neg {
+		return rows, false
+	}
+	tau0, ok := addSigned320(
+		lehmerProduct(products[4], rows[0].tau.neg, negA, coeffA),
+		lehmerProduct(products[5], rows[1].tau.neg, negB, coeffB),
+	)
+	if !ok || tau0.mag[4] != 0 {
+		return rows, false
+	}
+	tau1, ok := addSigned320(
+		lehmerProduct(products[6], rows[0].tau.neg, negC, coeffC),
+		lehmerProduct(products[7], rows[1].tau.neg, negD, coeffD),
+	)
+	if !ok || tau1.mag[4] != 0 {
+		return rows, false
+	}
+	if rho0.mag[4] != 0 || rho1.mag[4] != 0 {
+		return rows, false
+	}
+	return [2]principalEuclidRow{
+		{rho: uint256{rho0.mag[0], rho0.mag[1], rho0.mag[2], rho0.mag[3]}, tau: tau0},
+		{rho: uint256{rho1.mag[0], rho1.mag[1], rho1.mag[2], rho1.mag[3]}, tau: tau1},
+	}, true
+}
+
+func lehmerCoefficientMagnitude(coefficient int64) (uint64, bool) {
+	if coefficient < 0 {
+		return uint64(-coefficient), true
+	}
+	return uint64(coefficient), false
+}
+
+func mulLehmerWord(word, coefficient, carry uint64, padding bool) (low, high uint64, ok bool) {
+	if padding {
+		word = 0
+	}
+	high, low = bits.Mul64(word, coefficient)
+	low, addCarry := bits.Add64(low, carry, 0)
+	high, overflow := bits.Add64(high, 0, addCarry)
+	return low, high, overflow == 0
+}
+
+func lehmerProduct(magnitude [5]uint64, inputNegative, coefficientNegative bool, coefficient uint64) signed320 {
+	product := signed320{mag: magnitude}
+	if coefficient != 0 && !product.isZero() {
+		product.neg = inputNegative != coefficientNegative
+	}
+	return product
+}
+
+// applyLehmerMatrixReference retains the straightforward four-combine form as
+// an independent test oracle for the fused limb schedule above.
+func applyLehmerMatrixReference(rows [2]principalEuclidRow, a, b, c, d int64) ([2]principalEuclidRow, bool) {
 	rho0, ok := combine320(signed320FromUint256(rows[0].rho), a, signed320FromUint256(rows[1].rho), b)
 	if !ok || rho0.neg {
 		return rows, false

@@ -150,6 +150,103 @@ func TestLehmerActuallyBatches(t *testing.T) {
 	}
 }
 
+func TestApplyLehmerMatrixMatchesReference(t *testing.T) {
+	rng := rand.New(rand.NewSource(0x8_1e4e7))
+	for sample := 0; sample < 100000; sample++ {
+		rows := [2]principalEuclidRow{}
+		for row := range rows {
+			for limb := range rows[row].rho {
+				rows[row].rho[limb] = rng.Uint64()
+				rows[row].tau.mag[limb] = rng.Uint64()
+			}
+			rows[row].tau.neg = rng.Intn(2) != 0
+		}
+		coefficient := func() int64 {
+			value := int64(rng.Uint32() & (lehmerCoefficientCap - 1))
+			if rng.Intn(2) != 0 {
+				value = -value
+			}
+			return value
+		}
+		a, b, c, d := coefficient(), coefficient(), coefficient(), coefficient()
+		got, gotOK := applyLehmerMatrix(rows, a, b, c, d)
+		want, wantOK := applyLehmerMatrixReference(rows, a, b, c, d)
+		if gotOK != wantOK || got != want {
+			t.Fatalf("sample=%d matrix=[%d %d;%d %d] ok=%v/%v\n got=%+v\nwant=%+v",
+				sample, a, b, c, d, gotOK, wantOK, got, want)
+		}
+	}
+}
+
+type lehmerMatrixFixture struct {
+	rows       [2]principalEuclidRow
+	a, b, c, d int64
+}
+
+func makeLehmerMatrixFixtures(tb testing.TB) []lehmerMatrixFixture {
+	tb.Helper()
+	rng := rand.New(rand.NewSource(20260726))
+	fixtures := make([]lehmerMatrixFixture, 0, 512)
+	for len(fixtures) < cap(fixtures) {
+		k := uint256FromBytesLE(randomChallengeBytes(rng))
+		rows := [2]principalEuclidRow{
+			{rho: fixedModulus},
+			{rho: k, tau: signed320FromUint64(1)},
+		}
+		for !rows[1].rho.isZero() && rows[1].rho.bitLen() > int(Width128)+lehmerGuardBits {
+			a, b, c, d, steps := lehmerMatrix(rows[0].rho, rows[1].rho)
+			if steps == 0 {
+				quotient, remainder := divMod256(rows[0].rho, rows[1].rho)
+				if quotient[1]|quotient[2]|quotient[3] != 0 {
+					break
+				}
+				tau, ok := subMulUint64Signed320(rows[0].tau, rows[1].tau, quotient[0])
+				if !ok {
+					break
+				}
+				rows[0], rows[1] = rows[1], principalEuclidRow{rho: remainder, tau: tau}
+				continue
+			}
+			fixtures = append(fixtures, lehmerMatrixFixture{rows: rows, a: a, b: b, c: c, d: d})
+			next, ok := applyLehmerMatrixReference(rows, a, b, c, d)
+			if !ok {
+				tb.Fatal("reference rejected reachable Lehmer matrix")
+			}
+			rows = next
+			if len(fixtures) == cap(fixtures) {
+				break
+			}
+		}
+	}
+	return fixtures
+}
+
+func BenchmarkApplyLehmerMatrix(b *testing.B) {
+	fixtures := makeLehmerMatrixFixtures(b)
+	for _, candidate := range []struct {
+		name string
+		fn   func([2]principalEuclidRow, int64, int64, int64, int64) ([2]principalEuclidRow, bool)
+	}{
+		{name: "fused", fn: applyLehmerMatrix},
+		{name: "four-combine-reference", fn: applyLehmerMatrixReference},
+	} {
+		candidate := candidate
+		b.Run(candidate.name, func(b *testing.B) {
+			b.ReportAllocs()
+			var result [2]principalEuclidRow
+			var ok bool
+			for i := 0; i < b.N; i++ {
+				fixture := &fixtures[i%len(fixtures)]
+				result, ok = candidate.fn(fixture.rows, fixture.a, fixture.b, fixture.c, fixture.d)
+			}
+			if !ok {
+				b.Fatal("reachable matrix rejected")
+			}
+			benchmarkFixedSelection = FixedSelection{Candidate: FixedCandidate{Rho: SignedCoefficient{Limbs: result[1].rho}}}
+		})
+	}
+}
+
 func BenchmarkSelectLehmer(b *testing.B) {
 	rng := rand.New(rand.NewSource(20260726))
 	keys := make([][32]byte, 512)
