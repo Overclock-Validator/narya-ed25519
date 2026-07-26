@@ -40,6 +40,12 @@ type r51IFMABatchQPipeline struct {
 	// registered worker until a CPU-specific public gate admits it.
 	experimentalRawSquareX4 bool
 
+	// experimentalProjectiveNielsX4 changes the four-lane cold A table from
+	// extended coordinates to projective Niels coordinates. It reuses the same
+	// micro-AoS footprint and the proven x4 Stage-2 leaf, but remains a
+	// same-binary measurement seam until the complete verifier passes its gate.
+	experimentalProjectiveNielsX4 bool
+
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
 	points  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.IFMAPointX4
 	active  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
@@ -996,13 +1002,21 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX4(
 	if variable == nil {
 		panic("ed25519: uninitialized forced r51 IFMA x4 comb workspace")
 	}
-	if err := variable.Prepare(A, pipeline.core.radixBits); err != nil {
-		return 0, err
+	var prepareErr error
+	if pipeline.experimentalProjectiveNielsX4 {
+		prepareErr = variable.PrepareProjectiveNielsExperiment(A, pipeline.core.radixBits)
+	} else {
+		prepareErr = variable.Prepare(A, pipeline.core.radixBits)
+	}
+	if prepareErr != nil {
+		return 0, prepareErr
 	}
 	var aTerm, bTerm r51x5.IFMAPointX4
 	var usableA uint8
 	var err error
-	if pipeline.experimentalRawSquareX4 {
+	if pipeline.experimentalProjectiveNielsX4 {
+		usableA, err = variable.EvaluateProjectiveNielsExperiment(&aTerm, k, active, active)
+	} else if pipeline.experimentalRawSquareX4 {
 		usableA, err = variable.EvaluateRawSquareExperiment(&aTerm, k, active, active)
 	} else {
 		usableA, err = variable.Evaluate(&aTerm, k, active, active)

@@ -69,6 +69,88 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Prepare(base *PointX4,
 	return nil
 }
 
+// PrepareProjectiveNielsExperiment stores the same [1]A..[16]A table in
+// projective-Niels form [Y+X,Y-X,Z,2dT]. It deliberately reuses the existing
+// micro-AoS payload so the complete-pipeline A/B changes only table contents
+// and the mixed-add evaluator, not allocation or cache footprint.
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) PrepareProjectiveNielsExperiment(base *PointX4, radixBits uint) error {
+	validateIFMAFullTableStorage(16, radixBits)
+	if !ExperimentalIFMAAvailable() {
+		return ErrIFMAUnavailable
+	}
+	w.prepared = false
+	var current IFMAPointX4
+	current.SetReduced(base)
+	var baseCached IFMAPointX4
+	if err := ifmaProjectiveNielsContainerFromPointX4(&baseCached, &current); err != nil {
+		return err
+	}
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX4
+	for entry := 0; entry < 16; entry++ {
+		var cached IFMAPointX4
+		if err := ifmaProjectiveNielsContainerFromPointX4(&cached, &current); err != nil {
+			return err
+		}
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X4Lanes; lane++ {
+				w.table[lane][entry][limb] = [4]uint64{
+					cached.X.limbs[limb][lane],
+					cached.Y.limbs[limb][lane],
+					cached.Z.limbs[limb][lane],
+					cached.T.limbs[limb][lane],
+				}
+			}
+		}
+		if entry != 15 {
+			if err := ifmaPointAddProjectiveNielsContainerWorkspaceX4(&current, &current, &baseCached, &addWorkspace); err != nil {
+				return err
+			}
+		}
+	}
+	w.prepared = true
+	return nil
+}
+
+// IFMAPointX4 is used below only as a physical-layout container: X/Y/Z/T
+// carry Y+X/Y-X/Z/2dT. A distinct exported point type would invite accidental
+// use in the generic point formulas; keeping these helpers private makes the
+// representation boundary explicit at every call site.
+func ifmaProjectiveNielsContainerFromPointX4(out, point *IFMAPointX4) error {
+	ifmaAddComposableUncheckedX4(&out.X, &point.Y, &point.X)
+	ifmaSubtractComposableUncheckedX4(&out.Y, &point.Y, &point.X)
+	out.Z = point.Z
+	return ifmaMultiplyComposableUncheckedX4(&out.T, &point.T, &ifmaCurve2DX4)
+}
+
+type ifmaPointAddProjectiveNielsScratchX4 struct {
+	yMinusX, yPlusX IFMAElementX4
+	stage2          ifmaNielsStage2WorkspaceX4
+}
+
+func ifmaPointAddProjectiveNielsContainerWorkspaceX4(
+	out, point, cached *IFMAPointX4,
+	workspace *ifmaPointAddProjectiveNielsScratchX4,
+) error {
+	ifmaSubtractComposableUncheckedX4(&workspace.yMinusX, &point.Y, &point.X)
+	ifmaAddComposableUncheckedX4(&workspace.yPlusX, &point.Y, &point.X)
+	stage2 := &workspace.stage2
+	ifmaMulRawX4(&stage2[0], &workspace.yMinusX.limbs, &cached.Y.limbs)
+	ifmaMulRawX4(&stage2[1], &workspace.yPlusX.limbs, &cached.X.limbs)
+	ifmaMulRawX4(&stage2[2], &point.T.limbs, &cached.T.limbs)
+	ifmaMulRawX4(&stage2[3], &point.Z.limbs, &cached.Z.limbs)
+	ifmaNielsStage2X4(stage2)
+
+	E := (*LimbsX4)(&stage2[0])
+	F := (*LimbsX4)(&stage2[1])
+	G := (*LimbsX4)(&stage2[2])
+	H := (*LimbsX4)(&stage2[3])
+	ifmaMulNormalizedUncheckedX4(&out.X.limbs, E, F)
+	ifmaMulNormalizedUncheckedX4(&out.Y.limbs, G, H)
+	ifmaMulNormalizedUncheckedX4(&out.T.limbs, E, H)
+	ifmaMulNormalizedUncheckedX4(&out.Z.limbs, F, G)
+	return nil
+}
+
 func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) Evaluate(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
 	if !w.prepared {
 		panic("r51x5: experimental IFMA x4 variable-base workspace is not prepared")
@@ -139,6 +221,46 @@ func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateRawSquareExper
 		var selected IFMAPointX4
 		selectIFMAMicroAoSRadix32UncheckedX4(&selected, &w.table, digit, usable)
 		if err := ifmaPointAddComposableStaticX4(&acc, &acc, &selected); err != nil {
+			return 0, err
+		}
+	}
+	*out = acc
+	return usable, nil
+}
+
+// EvaluateProjectiveNielsExperiment is the projective-Niels counterpart of
+// Evaluate. PrepareProjectiveNielsExperiment must have populated the table.
+// The loop is separate so the registered x4 path pays no experiment branch.
+func (w *experimentalIFMAVariableBaseMicroAoSWorkspaceX4) EvaluateProjectiveNielsExperiment(out *IFMAPointX4, scalar *[X4Lanes][32]byte, negativeMask, active uint8) (uint8, error) {
+	if !w.prepared {
+		panic("r51x5: experimental IFMA x4 Niels workspace is not prepared")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	active &= 0x0f
+	usable := RecodeCanonicalScalarsX4(&w.digits, scalar, negativeMask, active, 5)
+	acc := identityIFMAPointX4Value()
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX4
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+	for round := w.digits.RoundCount() - 1; round >= 0; round-- {
+		if round != w.digits.RoundCount()-1 {
+			for doubling := uint8(0); doubling < 5; doubling++ {
+				if err := ifmaPointDoubleComposableStaticX4(&acc, &acc); err != nil {
+					return 0, err
+				}
+			}
+		}
+		digit := w.digits.Round(round)
+		if digit.NonzeroMask&usable == 0 {
+			continue
+		}
+		var selected IFMAPointX4
+		selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(&selected, &w.table, digit, usable)
+		if err := ifmaPointAddProjectiveNielsContainerWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}

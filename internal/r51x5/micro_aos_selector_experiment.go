@@ -24,11 +24,22 @@ type ifmaMicroAoSPerKeyTableExperiment struct {
 type ifmaMicroAoSTableRadix32X4 [X4Lanes][16]ifmaMicroAoSPointEntryExperiment
 
 var ifmaMicroAoSIdentityEntryExperiment = identityIFMAMicroAoSEntryExperiment()
+var ifmaProjectiveNielsMicroAoSIdentityEntryX4 = identityIFMAProjectiveNielsMicroAoSEntryX4()
 
 func identityIFMAMicroAoSEntryExperiment() ifmaMicroAoSPointEntryExperiment {
 	var identity ifmaMicroAoSPointEntryExperiment
 	identity[0][1] = 1 // Y
 	identity[0][2] = 1 // Z
+	return identity
+}
+
+// identityIFMAProjectiveNielsMicroAoSEntryX4 uses the same four-column
+// micro-AoS storage as an extended point, but interprets those columns as
+// [Y+X,Y-X,Z,2dT]. Keeping the physical layout identical lets the x4 Niels
+// experiment reuse the hardware-differentialed transpose leaf unchanged.
+func identityIFMAProjectiveNielsMicroAoSEntryX4() ifmaMicroAoSPointEntryExperiment {
+	var identity ifmaMicroAoSPointEntryExperiment
+	identity[0] = [4]uint64{1, 1, 1, 0}
 	return identity
 }
 
@@ -153,6 +164,54 @@ func selectIFMAMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table *ifmaMicroAoST
 	ifmaMicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
 	conditionalNegateIFMAPointX4(out, round.NegativeMask&lookupMask)
 	return out
+}
+
+// selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4 selects projective-Niels
+// entries stored in the existing four-column micro-AoS table. out is a private
+// physical-layout container whose X/Y/Z/T fields mean Y+X/Y-X/Z/2dT. A
+// negative public digit swaps Y+X with Y-X and negates 2dT.
+func selectIFMAProjectiveNielsMicroAoSRadix32UncheckedX4(out *IFMAPointX4, table *ifmaMicroAoSTableRadix32X4, round *RadixRoundX4, active uint8) *IFMAPointX4 {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaProjectiveNielsMicroAoSIdentityEntryX4
+	p1, p2, p3 := p0, p0, p0
+	if lookupMask == 0x0f {
+		p0 = &table[0][int(round.Magnitude[0])-1]
+		p1 = &table[1][int(round.Magnitude[1])-1]
+		p2 = &table[2][int(round.Magnitude[2])-1]
+		p3 = &table[3][int(round.Magnitude[3])-1]
+	} else {
+		if lookupMask&0x01 != 0 {
+			p0 = &table[0][int(round.Magnitude[0])-1]
+		}
+		if lookupMask&0x02 != 0 {
+			p1 = &table[1][int(round.Magnitude[1])-1]
+		}
+		if lookupMask&0x04 != 0 {
+			p2 = &table[2][int(round.Magnitude[2])-1]
+		}
+		if lookupMask&0x08 != 0 {
+			p3 = &table[3][int(round.Magnitude[3])-1]
+		}
+	}
+	ifmaMicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+	conditionalNegateIFMAProjectiveNielsContainerX4(out, round.NegativeMask&lookupMask)
+	return out
+}
+
+func conditionalNegateIFMAProjectiveNielsContainerX4(point *IFMAPointX4, negativeMask uint8) {
+	negativeMask &= 0x0f
+	if negativeMask == 0 {
+		return
+	}
+	for limb := range point.X.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			if negativeMask&(1<<lane) != 0 {
+				point.X.limbs[limb][lane], point.Y.limbs[limb][lane] =
+					point.Y.limbs[limb][lane], point.X.limbs[limb][lane]
+			}
+		}
+	}
+	conditionalNegateIFMAElementX4(&point.T, negativeMask)
 }
 
 // importIFMAMicroAoSTablesExperimentX4 splits one grouped x4 table into four
