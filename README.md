@@ -4,13 +4,18 @@
 go get github.com/Overclock-Validator/narya-ed25519
 ```
 
-Narya is a pure-Go Ed25519 verifier that makes its acceptance rule explicit and
-versioned, preserves an independent verdict for every signature, and uses
-wide-lane SIMD to turn a queue of unrelated signatures into useful parallel
-work. It is aimed at replicated systems, high-throughput services, archival
-verification, and any other application where two properties matter at once:
-verification must be fast, and every implementation must agree on exactly
-which byte strings are valid.
+Narya is a no-cgo Ed25519 verification library for Go built to make
+consensus-exact verification fast. Its opt-in AVX-512 IFMA backend delivers
+substantial cold-key speedups over Go's `crypto/ed25519` when independent
+signatures can be processed together; see [Performance](#performance) for the
+measured results, hardware, checkpoints, and limitations.
+
+The speedup comes from wide-lane SIMD: Narya maps unrelated signatures onto
+independent AVX-512 lanes, keeping a separate verification equation and verdict
+for every input. It is aimed at replicated systems, high-throughput services,
+archival verification, and any other application where two properties matter
+at once: verification must be fast, and every implementation must agree on
+exactly which byte strings are valid.
 
 Narya provides explicit `DalekStrict` and Go-standard-library-compatible
 profiles instead of treating "Ed25519 verification" as one universal
