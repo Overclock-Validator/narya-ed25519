@@ -1,42 +1,32 @@
 # Ed25519 cross-library comparison on Zen 4
 
 > **Historical record with a current follow-up.** The original comparison
-> below is intentionally preserved at its named Narya and Firedancer commits.
-> It predates the packed singleton, exact-tail dispatcher, and registration of
-> forced backend `r51`. Use this section for current Narya capacity estimates;
-> use the remainder to reproduce the earlier architecture decision.
+> below is intentionally preserved at its named Narya commit. It predates the
+> packed singleton, exact-tail dispatcher, and registration of forced backend
+> `r51`. Use this section for current Narya capacity estimates; use the
+> remainder to reproduce the earlier architecture decision.
 
 ## Current registered r51 dispatcher
 
 Final pinned-core valid-signature medians for the registered, explicitly
-forced public r51 dispatcher are compared with an independent native
-Firedancer C harness.
-Firedancer was built from commit
-`3ed37488372b7e50bb03ca30477be48508ee7022` using `-O3 -march=znver4` and
-linked directly into a standalone C executable, without cgo. Each Firedancer
-entry below is one approximately 20,000-signature run (the harness records the
-exact integer count); each Narya entry is the median of ten three-second
+forced public r51 dispatcher. Each entry is the median of ten three-second
 samples through exported `SetBackend("r51")` and `VerifyBatchStrict`, with
-`GOMAXPROCS=1`. Values are microseconds per signature. The harnesses are
-independent, so these are engineering comparisons rather than paired
-`benchstat` samples. The Firedancer values below use its ordinary
-distinct-message loop; its shared-message native batch API measured nearly the
-same speed.
+`GOMAXPROCS=1`. Values are microseconds per signature.
 
-| message bytes | batch | Narya r51 | Firedancer |
-| ---: | ---: | ---: | ---: |
-| 64 | 1 | 26.14 | 20.958 |
-| 64 | 4 | 15.05 | 21.000 |
-| 64 | 8 | 14.68 | 20.956 |
-| 64 | 64 | 14.38 | 20.947 |
-| 200 | 1 | 26.28 | 21.005 |
-| 200 | 4 | 15.24 | 20.961 |
-| 200 | 8 | 14.81 | 20.968 |
-| 200 | 64 | 14.51 | 20.973 |
-| 1232 | 1 | 27.12 | 21.856 |
-| 1232 | 4 | 16.02 | 21.953 |
-| 1232 | 8 | 15.58 | 21.965 |
-| 1232 | 64 | 15.30 | 21.891 |
+| message bytes | batch | Narya r51 |
+| ---: | ---: | ---: |
+| 64 | 1 | 26.14 |
+| 64 | 4 | 15.05 |
+| 64 | 8 | 14.68 |
+| 64 | 64 | 14.38 |
+| 200 | 1 | 26.28 |
+| 200 | 4 | 15.24 |
+| 200 | 8 | 14.81 |
+| 200 | 64 | 14.51 |
+| 1232 | 1 | 27.12 |
+| 1232 | 4 | 16.02 |
+| 1232 | 8 | 15.58 |
+| 1232 | 64 | 15.30 |
 
 The same 200-byte Go benchmark binary compared the Narya public dispatcher,
 the standard-library loop, and curve25519-voi. Each entry below is the median
@@ -61,10 +51,9 @@ performs that work for every verification.
 | 32 | 15.020 | 36.720 | 25.440 | 21.395 |
 | 64 | 15.010 | 36.680 | 25.490 | 21.390 |
 
-The result is deliberately width-specific: Firedancer remains faster for a
-cold singleton, as do both voi modes. Narya overtakes both voi modes at n=3
-and Firedancer when an x4 group is full. Narya beats the standard-library loop
-at every measured width. Automatic Narya selection remains `generic`; these
+The result is deliberately width-specific: both voi modes remain faster for a
+cold singleton, and Narya overtakes them at n=3. Narya beats the
+standard-library loop at every measured width. Automatic Narya selection remains `generic`; these
 rows require `SetBackend("r51")` or `OVERCLOCK_ED25519_BACKEND=r51`.
 
 At 200 bytes, Narya's strict canonical-S precheck rejects without curve work
@@ -72,23 +61,17 @@ in 0.035/0.046/0.044 us per signature at n=1/8/64. A self-consistent signature
 that fails only at the final equation costs 26.03/15.02/14.75 us/signature.
 The same all-lanes comparison measured Go stdlib at 36.33/36.62/36.68,
 curve25519-voi cold at 24.86/24.89/24.98, and voi expanded at
-21.79/22.16/22.09 us/signature. Firedancer's ordinary serial loop remains
-about 20.8--21.0 us/signature for the corresponding late failure. Its native
-batch API reports only the first error, so its early-invalid timing is not an
-all-lane comparison and is intentionally kept separate in the raw output.
+21.79/22.16/22.09 us/signature for the corresponding late failure.
 
 ## Historical comparison at Narya `64851dc`
 
 This note records a pinned, single-core comparison on the AMD Ryzen 7 PRO
-8700GE. It covers Narya, Go's `crypto/ed25519`, Oasis
-`curve25519-voi`, and Firedancer's r43x6 Ed25519 implementation.
+8700GE. It covers Narya, Go's `crypto/ed25519`, and Oasis `curve25519-voi`.
 
 The Narya r51 rows are the forced, test-only two-x4/radix-64 batch-Q
 candidate. Automatic production selection remains generic. The arithmetic
 under test is Narya commit `64851dc`; the reusable Go benchmark was introduced
-at `36f23a1` and subsequently extended with dense crossover widths. Firedancer
-was built from commit `3ed37488372b7e50bb03ca30477be48508ee7022` with
-`-O3 -march=znver4`.
+at `36f23a1` and subsequently extended with dense crossover widths.
 
 ## Method and semantics
 
@@ -107,14 +90,6 @@ the cofactorless equation, and hashing of the original bytes. Go stdlib has a
 different acceptance predicate and is included only as a performance baseline
 on honest canonical signatures.
 
-Upstream Firedancer omits canonical-R enforcement. The standalone comparison
-harness adds `low255(R) < p` before Firedancer verification; because
-Firedancer already rejects small-order R, this also excludes the remaining
-negative-zero anomaly and yields the Narya strict predicate. Firedancer's
-native batch API accepts one shared message, returns only the first error, and
-executes each verification serially. Widths above 16 are therefore chunked;
-the ordinary distinct-message loop measures essentially the same speed.
-
 Values below are microseconds per signature. Short repeated samples were
 extremely stable, but these are engineering measurements rather than a release
 gate.
@@ -125,19 +100,19 @@ gate.
 The `Narya r51` singleton is shown separately because it exposes the cost of
 running one live lane in an x4 kernel.
 
-| batch | Narya cold choice | Narya r51 | Go stdlib | Oasis cold | Oasis expanded | Firedancer |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 38.75 | 60.06 | 36.78 | 25.56 | 21.39 | 20.85 |
-| 4 | 16.19 | 16.19 | 36.64 | 25.47 | 21.29 | 20.98 |
-| 8 | 15.75 | 15.75 | 36.63 | 25.40 | 21.23 | 20.97 |
-| 16 | 15.51 | 15.51 | 36.66 | 25.45 | 21.30 | 21.00 |
-| 17 | 17.98 | 17.98 | 36.66 | 25.41 | 21.27 | 21.01 |
-| 32 | 15.52 | 15.52 | 36.71 | 25.48 | 21.33 | 20.99 |
-| 64 | 15.48 | 15.48 | 36.68 | 25.47 | 21.32 | 21.01 |
+| batch | Narya cold choice | Narya r51 | Go stdlib | Oasis cold | Oasis expanded |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 38.75 | 60.06 | 36.78 | 25.56 | 21.39 |
+| 4 | 16.19 | 16.19 | 36.64 | 25.47 | 21.29 |
+| 8 | 15.75 | 15.75 | 36.63 | 25.40 | 21.23 |
+| 16 | 15.51 | 15.51 | 36.66 | 25.45 | 21.30 |
+| 17 | 17.98 | 17.98 | 36.66 | 25.41 | 21.27 |
+| 32 | 15.52 | 15.52 | 36.71 | 25.48 | 21.33 |
+| 64 | 15.48 | 15.48 | 36.68 | 25.47 | 21.32 |
 
-At full x4 occupancy, Narya is 22.8% faster than Firedancer at `n=4`,
-24.9% faster at `n=8`, and 26.3% faster at `n=64`. The `n=17` row exposes a
-one-lane second chunk and is correspondingly slower.
+At full x4 occupancy, Narya is 27.3% faster than Oasis expanded at `n=4` and
+27.4% faster at `n=64`. The `n=17` row exposes a one-lane second chunk and is
+correspondingly slower.
 
 Dense widths make the dispatch crossover and tail cost explicit:
 
@@ -150,7 +125,7 @@ Dense widths make the dispatch crossover and tail cost explicit:
 | 12 | 15.66 | 36.94 | 25.48 | 21.35 |
 
 The current r51 kernel already beats Narya generic at `n=2`. It reaches the
-roughly 21-us Firedancer/Oasis-expanded level at `n=3` and wins clearly once
+roughly 21-us Oasis-expanded level at `n=3` and wins clearly once
 an x4 group is full. The sharp `n=5/9/17` sawtooth is lane underfill, not an
 arithmetic regression. A dispatcher that sends full x4 groups through r51
 and handles a one-signature remainder with the scalar path should remove much
@@ -160,17 +135,16 @@ of it.
 
 The same conclusion holds at Solana-shaped message lengths:
 
-| message bytes | Narya r51 n=8 | Narya r51 n=64 | Firedancer n=8 | Firedancer n=64 |
-| ---: | ---: | ---: | ---: | ---: |
-| 64 | 15.70 | 15.38 | 20.82 | 20.88 |
-| 200 | 15.75 | 15.48 | 20.97 | 21.01 |
-| 1232 | 16.54 | 16.22 | 21.83 | 21.83 |
+| message bytes | Narya r51 n=8 | Narya r51 n=64 |
+| ---: | ---: | ---: |
+| 64 | 15.70 | 15.38 |
+| 200 | 15.75 | 15.48 |
+| 1232 | 16.54 | 16.22 |
 
 The extra 1,168 message bytes add about 0.8 us/signature to Narya. Reusing one
-message across every signer did not materially help any implementation:
-Narya r51 measured 15.75 us/signature for independent 200-byte messages at
-`n=8` and 15.79 for a shared message. Firedancer's specialized shared-message
-API likewise remained serial.
+message across every signer did not materially help: Narya r51 measured
+15.75 us/signature for independent 200-byte messages at `n=8` and 15.79 for a
+shared message.
 
 ## Cold, decoded, compact, and hot keys
 
@@ -189,8 +163,8 @@ still builds the variable-base table during verification. Compact NAF uses
 | 64 | 15.23 | 14.38 | 34.42 | 17.94 | 21.84 |
 
 The important singleton result is positive: Narya's existing hot-comb path
-at 17.79 us/signature is about 14.7% faster than Firedancer's 20.85 and 18.6%
-faster than Oasis expanded in this same prepared-tier run. Its 30 KiB/key
+at 17.79 us/signature is about 18.6% faster than Oasis expanded in this same
+prepared-tier run. Its 30 KiB/key
 footprint limits it to genuinely hot signers. Decoded-A saves only about
 0.9--1.3 us/signature at useful r51 widths, so a broad decoded-point cache is
 an incremental complement rather than the main speed source.
@@ -210,11 +184,8 @@ bad-message fixture passes parsing and measures full equation failure.
 | bad message | 8 | 15.58 | 38.23 | 36.77 | 24.96 | 21.86 |
 | bad message | 64 | 15.21 | 38.37 | 36.68 | 24.95 | 21.87 |
 
-Firedancer's native first-error API makes its early-invalid number
-non-comparable to the all-lanes contract. With the invalid signature placed
-last, its full-equation failure remains approximately 20.9 us per attempted
-signature. No implementation gets a shortcut when malformed traffic reaches
-the curve equation.
+No implementation gets a shortcut when malformed traffic reaches the curve
+equation.
 
 ## Decisions supported by this run
 

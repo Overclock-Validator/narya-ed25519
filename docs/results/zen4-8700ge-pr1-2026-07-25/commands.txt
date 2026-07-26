@@ -20,14 +20,6 @@ go test -c -tags sde_gate -o /tmp/ed25519-pr1.test ./ed25519
 /tmp/sde-external-10.8.0-2026-03-15-lin/sde64 -icx -- /tmp/ed25519-pr1.test -test.v -test.count=1 -test.timeout=20m -test.run '^TestSDEForcedR51PublicPath$'
 /tmp/sde-external-10.8.0-2026-03-15-lin/sde64 -icx -- /tmp/ed25519-pr1.test -test.v -test.count=1 -test.timeout=20m -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping)$'
 
-# Native Firedancer C comparison
-# Source: scripts/firedancer-compare/fd_ed25519_compare.c
-# Firedancer: 3ed37488372b7e50bb03ca30477be48508ee7022
-# Run from the pinned Firedancer checkout after its normal zen4 build.
-gcc -I. -isystem ./opt/include -DFD_USING_GCC=1 -mfpmath=sse -falign-functions=32 -mbranch-cost=5 -falign-jumps=32 -falign-labels=32 -falign-loops=32 -isystem src/third_party/s2n-bignum/include -isystem src/third_party/zstd/lib -isystem src/third_party/lz4/lib -g3 -fno-omit-frame-pointer -fno-var-tracking -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -O3 -ffast-math -fno-associative-math -fno-reciprocal-math -DFD_HAS_OPTIMIZATION=1 -D_XOPEN_SOURCE=700 -DFD_HAS_HOSTED=1 -pthread -DFD_HAS_THREADS=1 -DFD_HAS_ATOMIC=1 -march=znver4 -mtune=znver4 -DFD_HAS_INT128=1 -DFD_HAS_DOUBLE=1 -DFD_HAS_ALLOCA=1 -DFD_HAS_X86=1 -DFD_HAS_SSE=1 -DFD_HAS_AVX=1 -DFD_HAS_SHANI=1 -DFD_HAS_AESNI=1 -DFD_HAS_AVX512=1 -DFD_HAS_GFNI=1 -DFD_BUILD_INFO=\"build/linux/gcc/zen4/info\" -fcf-protection=return -std=c17 -fwrapv -DFD_HAS_S2NBIGNUM=1 -DFD_HAS_BLST=1 -DFD_HAS_ZSTD=1 -DFD_HAS_LZ4=1 -c /tmp/fd_ed25519_compare.c -o /tmp/fd_ed25519_compare.o
-gcc -Lbuild/linux/gcc/zen4/lib /tmp/fd_ed25519_compare.o -lfd_ballet -lfd_util -pie -Wl,-z,shstk -lm -ldl -L./opt/lib -static-libgcc build/linux/gcc/zen4/lib/libfd_blst.a build/linux/gcc/zen4/lib/libfd_zstd.a build/linux/gcc/zen4/lib/libfd_lz4.a -rdynamic -Wl,-z,relro,-z,now -fstack-protector-strong -z noexecstack -lrt -pthread -o /tmp/fd_ed25519_compare-pr1
-taskset -c 2 /tmp/fd_ed25519_compare-pr1 20000
-
 # Local portable gates
 go test -count=1 ./...
 go vet ./...

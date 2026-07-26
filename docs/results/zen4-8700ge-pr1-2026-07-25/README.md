@@ -23,8 +23,6 @@ not represented as production performance here.
 - benchmark affinity: CPU 2, `GOMAXPROCS=1`
 - valid public release benchmark: ten three-second samples
 - same-binary stdlib/curve25519-voi comparison: six two-second samples
-- native Firedancer: standalone C linked to unmodified pinned libraries,
-  approximately 20,000 signatures per row
 
 `environment.txt` contains the complete CPU flags, kernel, toolchain, governor,
 and implementation SHA. `commands.txt` records the exact command shapes.
@@ -62,27 +60,12 @@ The Oasis-tagged comparison executable has a different code layout from the
 lean release executable, so only rows from this table should be compared. The
 expanded row excludes key expansion and is a warm-key result.
 
-## Native Firedancer comparison
-
-The C harness uses Firedancer commit
-`3ed37488372b7e50bb03ca30477be48508ee7022`, compiled with
-`-O3 -march=znver4`. It does not use cgo and does not modify Firedancer's Ed25519
-implementation. The source and executable hashes are in
-`firedancer-native-c.sha256`.
-
-Firedancer's distinct-message path measured approximately 20.95/20.97/21.89
-microseconds per signature for 64/200/1232-byte messages at n=64. It is faster
-than r51 at a cold singleton; r51 is faster once an x4 group is full. The native
-shared-message batch API remains serial and measured nearly the same speed.
-
 ## Invalid inputs
 
 `public-r51-invalid.txt` covers an early canonical-scalar failure and a late
 equation failure through the exported API. `crosslib-invalid.txt` processes
 every lane for every library so an early invalid lane cannot shorten one loop.
-All r51 timed rows remain allocation-free. Firedancer's native batch API
-returns only its first error, so its early-return numbers remain separate in
-`firedancer-native-c.txt`.
+All r51 timed rows remain allocation-free.
 
 ## Correctness
 
