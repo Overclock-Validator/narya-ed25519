@@ -121,6 +121,19 @@ correctness limitation. Keep x4 at n=4 and native x8 at n>=8; remeasure only on
 a materially different microarchitecture or after a major x8-only kernel
 change.
 
+**Regime tag — the normalized dedicated x4 square remains test-only.** The
+symmetry-aware square still returns the exact same u52 representation as the
+general multiply and retains its boundary, alias, scalar-differential, chaining,
+and zero-allocation coverage. On the pinned Zen 5 core, however, a dependent
+point-double chain measured about 82.75 ns with the dedicated square versus
+79.18 ns with the production general multiply (about 4.5% slower). The prepared
+radix-64 loop measured about 55.94 us versus 54.46 us (about 2.7% slower). This
+supersedes the older Zen 4 primitive-only keep result for production dispatch:
+fewer IFMA product instructions did not overcome the dedicated schedule's
+dependency/register costs in the real loop. Keep the experiment and its tests,
+but do not wire it into the Zen 5 cold path. A future fused Stage-1/Stage-2
+doubling may reuse its algebra without inheriting this normalized-call boundary.
+
 ---
 
 ## 1. What landed on this branch
