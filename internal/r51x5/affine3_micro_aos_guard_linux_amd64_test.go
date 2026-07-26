@@ -53,5 +53,17 @@ func TestIFMAAffine3MicroAoSTransposeMaskedLoadDoesNotOverread(t *testing.T) {
 			}
 		}
 	}
+
+	var got8 fixedBaseIFMACachedX8
+	ifmaAffine3MicroAoSTransposeSelectExperimentX8(&got8, entry, entry, entry, entry, entry, entry, entry, entry)
+	for limb := 0; limb < 5; limb++ {
+		for lane := 0; lane < X8Lanes; lane++ {
+			if got8.YPlusX.limbs[limb][lane] != entry[limb][0] ||
+				got8.YMinusX.limbs[limb][lane] != entry[limb][1] ||
+				got8.T2D.limbs[limb][lane] != entry[limb][2] {
+				t.Fatalf("x8 limb=%d lane=%d masked-load transpose mismatch", limb, lane)
+			}
+		}
+	}
 	runtime.KeepAlive(memory)
 }

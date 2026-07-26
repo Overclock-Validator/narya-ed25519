@@ -13,13 +13,19 @@ package r51x5
 // Construction allocates and normalizes the table once. Evaluation is
 // allocation-free. This experiment is not reachable from production dispatch.
 type ExperimentalFixedBaseCombTable struct {
-	points      []fixedBaseAffineCached
-	negativeT2D []Element
-	radixBits   uint8
-	rounds      uint8
-	positions   uint8
-	entries     uint8
+	signedPoints []fixedBaseIFMASignedAffineCached
+	radixBits    uint8
+	rounds       uint8
+	positions    uint8
+	entries      uint8
 }
+
+// fixedBaseIFMASignedAffineCached stores both public signs of one affine
+// cached point in the dense three-coordinate layout consumed by the native
+// x4/x8 transpose. Index 0 is positive; index 1 swaps Y+X/Y-X and negates 2dT.
+// The fixed B table is shared process-wide, so this 240-byte entry does not
+// scale with the number of verified public keys.
+type fixedBaseIFMASignedAffineCached [2]ifmaAffine3MicroAoSEntryExperiment
 
 // A fixed-base affine cached point stores (y+x, y-x, 2*d*x*y). Three scalar
 // field elements are enough for a mixed extended/affine addition, so the
@@ -72,12 +78,11 @@ type fixedBaseDigitsX8 struct {
 func BuildExperimentalFixedBaseCombTable(base *Point, radixBits uint) *ExperimentalFixedBaseCombTable {
 	rounds, positions, entries := fixedBaseCombShape(radixBits)
 	table := &ExperimentalFixedBaseCombTable{
-		points:      make([]fixedBaseAffineCached, positions*entries),
-		negativeT2D: make([]Element, positions*entries),
-		radixBits:   uint8(radixBits),
-		rounds:      uint8(rounds),
-		positions:   uint8(positions),
-		entries:     uint8(entries),
+		signedPoints: make([]fixedBaseIFMASignedAffineCached, positions*entries),
+		radixBits:    uint8(radixBits),
+		rounds:       uint8(rounds),
+		positions:    uint8(positions),
+		entries:      uint8(entries),
 	}
 
 	positionBase := *base
@@ -85,8 +90,9 @@ func BuildExperimentalFixedBaseCombTable(base *Point, radixBits uint) *Experimen
 		multiple := positionBase
 		for entry := 0; entry < entries; entry++ {
 			index := position*entries + entry
-			fixedBaseCacheAffine(&table.points[index], &multiple)
-			table.negativeT2D[index].Negate(&table.points[index].T2D)
+			var cached fixedBaseAffineCached
+			fixedBaseCacheAffine(&cached, &multiple)
+			storeFixedBaseIFMASignedAffineCached(&table.signedPoints[index], &cached)
 			if entry+1 < entries {
 				fixedBasePointAdd(&multiple, &multiple, &positionBase)
 			}
@@ -112,13 +118,29 @@ func (t *ExperimentalFixedBaseCombTable) PositionCount() int { return int(t.posi
 // EntryCount reports the positive multiples stored at each position.
 func (t *ExperimentalFixedBaseCombTable) EntryCount() int { return int(t.entries) }
 
-// NominalPayloadBytes reports the exact coordinate payload, excluding Go slice
-// headers and allocator rounding. Each entry stores the three positive affine
-// cached coordinates plus a precomputed negative 2dT coordinate: 4*5*8=160
-// bytes. The extra coordinate removes public-digit field negation from every
-// x4/x8 selection. The result is independent of evaluation width.
+// NominalPayloadBytes reports the exact coordinate payload, excluding the Go
+// slice header and allocator rounding. Each entry stores both public signs of
+// three affine cached coordinates: 2*3*5*8=240 bytes. Full pre-signing lets the
+// x4/x8 selector transpose directly into SoA form without online sign work.
 func (t *ExperimentalFixedBaseCombTable) NominalPayloadBytes() int {
-	return len(t.points) * 4 * len(modulusLimbs) * 8
+	return len(t.signedPoints) * 2 * 3 * len(modulusLimbs) * 8
+}
+
+func storeFixedBaseIFMASignedAffineCached(out *fixedBaseIFMASignedAffineCached, source *fixedBaseAffineCached) {
+	var negativeT2D Element
+	negativeT2D.Negate(&source.T2D)
+	for limb := range modulusLimbs {
+		out[0][limb] = [3]uint64{
+			source.YPlusX.limbs[limb],
+			source.YMinusX.limbs[limb],
+			source.T2D.limbs[limb],
+		}
+		out[1][limb] = [3]uint64{
+			source.YMinusX.limbs[limb],
+			source.YPlusX.limbs[limb],
+			negativeT2D.limbs[limb],
+		}
+	}
 }
 
 // ExperimentalFixedBaseCombScalarMultX4 computes [s]B in four independent
@@ -429,7 +451,7 @@ func fixedBasePointDouble(out, point *Point) {
 }
 
 func selectFixedBaseCachedX4(out *fixedBaseCachedX4, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX4, active uint8) {
-	*out = identityFixedBaseCachedX4()
+	selected := identityFixedBaseCachedX4()
 	lookupMask := round.NonzeroMask & active & 0x0f
 	for lane := 0; lane < X4Lanes; lane++ {
 		laneMask := uint8(1 << lane)
@@ -438,13 +460,15 @@ func selectFixedBaseCachedX4(out *fixedBaseCachedX4, table *ExperimentalFixedBas
 		if lookupMask&laneMask == 0 {
 			continue
 		}
-		source := &table.points[position*int(table.entries)+int(magnitude)-1]
-		setFixedBaseCachedLaneX4(out, source, lane, round.NegativeMask&laneMask != 0)
+		index := position*int(table.entries) + int(magnitude) - 1
+		sign := fixedBasePublicSign(round.NegativeMask, laneMask)
+		setFixedBaseSignedCachedLaneX4(&selected, &table.signedPoints[index][sign], lane)
 	}
+	*out = selected
 }
 
 func selectFixedBaseCachedX8(out *fixedBaseCachedX8, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX8, active uint8) {
-	*out = identityFixedBaseCachedX8()
+	selected := identityFixedBaseCachedX8()
 	lookupMask := round.NonzeroMask & active
 	for lane := 0; lane < X8Lanes; lane++ {
 		laneMask := uint8(1 << lane)
@@ -453,14 +477,17 @@ func selectFixedBaseCachedX8(out *fixedBaseCachedX8, table *ExperimentalFixedBas
 		if lookupMask&laneMask == 0 {
 			continue
 		}
-		source := &table.points[position*int(table.entries)+int(magnitude)-1]
-		setFixedBaseCachedLaneX8(out, source, lane, round.NegativeMask&laneMask != 0)
+		index := position*int(table.entries) + int(magnitude) - 1
+		sign := fixedBasePublicSign(round.NegativeMask, laneMask)
+		setFixedBaseSignedCachedLaneX8(&selected, &table.signedPoints[index][sign], lane)
 	}
+	*out = selected
 }
 
 func selectFixedBaseIFMACachedX4(out *fixedBaseIFMACachedX4, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX4, active uint8) {
-	*out = identityFixedBaseIFMACachedX4()
 	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
 	for lane := 0; lane < X4Lanes; lane++ {
 		laneMask := uint8(1 << lane)
 		magnitude := round.Magnitude[lane]
@@ -469,13 +496,25 @@ func selectFixedBaseIFMACachedX4(out *fixedBaseIFMACachedX4, table *Experimental
 			continue
 		}
 		index := position*int(table.entries) + int(magnitude) - 1
-		setFixedBaseIFMACachedPreSignedLaneX4(out, &table.points[index], &table.negativeT2D[index], lane, round.NegativeMask&laneMask != 0)
+		source := &table.signedPoints[index][fixedBasePublicSign(round.NegativeMask, laneMask)]
+		switch lane {
+		case 0:
+			p0 = source
+		case 1:
+			p1 = source
+		case 2:
+			p2 = source
+		case 3:
+			p3 = source
+		}
 	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
 }
 
 func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX8, active uint8) {
-	*out = identityFixedBaseIFMACachedX8()
 	lookupMask := round.NonzeroMask & active
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3, p4, p5, p6, p7 := p0, p0, p0, p0, p0, p0, p0
 	for lane := 0; lane < X8Lanes; lane++ {
 		laneMask := uint8(1 << lane)
 		magnitude := round.Magnitude[lane]
@@ -484,33 +523,49 @@ func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *Experimental
 			continue
 		}
 		index := position*int(table.entries) + int(magnitude) - 1
-		setFixedBaseIFMACachedPreSignedLaneX8(out, &table.points[index], &table.negativeT2D[index], lane, round.NegativeMask&laneMask != 0)
+		source := &table.signedPoints[index][fixedBasePublicSign(round.NegativeMask, laneMask)]
+		switch lane {
+		case 0:
+			p0 = source
+		case 1:
+			p1 = source
+		case 2:
+			p2 = source
+		case 3:
+			p3 = source
+		case 4:
+			p4 = source
+		case 5:
+			p5 = source
+		case 6:
+			p6 = source
+		case 7:
+			p7 = source
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
+}
+
+func fixedBasePublicSign(negativeMask, laneMask uint8) int {
+	if negativeMask&laneMask != 0 {
+		return 1
+	}
+	return 0
+}
+
+func setFixedBaseSignedCachedLaneX4(out *fixedBaseCachedX4, source *ifmaAffine3MicroAoSEntryExperiment, lane int) {
+	for limb := range modulusLimbs {
+		out.YPlusX.limbs[limb][lane] = source[limb][0]
+		out.YMinusX.limbs[limb][lane] = source[limb][1]
+		out.T2D.limbs[limb][lane] = source[limb][2]
 	}
 }
 
-func setFixedBaseIFMACachedPreSignedLaneX4(out *fixedBaseIFMACachedX4, source *fixedBaseAffineCached, negativeT2D *Element, lane int, negative bool) {
-	yPlusX, yMinusX, t2d := &source.YPlusX, &source.YMinusX, &source.T2D
-	if negative {
-		yPlusX, yMinusX = yMinusX, yPlusX
-		t2d = negativeT2D
-	}
+func setFixedBaseSignedCachedLaneX8(out *fixedBaseCachedX8, source *ifmaAffine3MicroAoSEntryExperiment, lane int) {
 	for limb := range modulusLimbs {
-		out.YPlusX.limbs[limb][lane] = yPlusX.limbs[limb]
-		out.YMinusX.limbs[limb][lane] = yMinusX.limbs[limb]
-		out.T2D.limbs[limb][lane] = t2d.limbs[limb]
-	}
-}
-
-func setFixedBaseIFMACachedPreSignedLaneX8(out *fixedBaseIFMACachedX8, source *fixedBaseAffineCached, negativeT2D *Element, lane int, negative bool) {
-	yPlusX, yMinusX, t2d := &source.YPlusX, &source.YMinusX, &source.T2D
-	if negative {
-		yPlusX, yMinusX = yMinusX, yPlusX
-		t2d = negativeT2D
-	}
-	for limb := range modulusLimbs {
-		out.YPlusX.limbs[limb][lane] = yPlusX.limbs[limb]
-		out.YMinusX.limbs[limb][lane] = yMinusX.limbs[limb]
-		out.T2D.limbs[limb][lane] = t2d.limbs[limb]
+		out.YPlusX.limbs[limb][lane] = source[limb][0]
+		out.YMinusX.limbs[limb][lane] = source[limb][1]
+		out.T2D.limbs[limb][lane] = source[limb][2]
 	}
 }
 

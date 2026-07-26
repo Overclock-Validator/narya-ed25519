@@ -13,3 +13,17 @@ func ifmaAffine3MicroAoSTransposeSelectExperimentX4(
 		out.T2D.limbs[limb] = [X4Lanes]uint64{a[limb][2], b[limb][2], c[limb][2], d[limb][2]}
 	}
 }
+
+func ifmaAffine3MicroAoSTransposeSelectExperimentX8(
+	out *fixedBaseIFMACachedX8,
+	p0, p1, p2, p3, p4, p5, p6, p7 *ifmaAffine3MicroAoSEntryExperiment,
+) {
+	points := [X8Lanes]*ifmaAffine3MicroAoSEntryExperiment{p0, p1, p2, p3, p4, p5, p6, p7}
+	for limb := 0; limb < 5; limb++ {
+		for lane, point := range points {
+			out.YPlusX.limbs[limb][lane] = point[limb][0]
+			out.YMinusX.limbs[limb][lane] = point[limb][1]
+			out.T2D.limbs[limb][lane] = point[limb][2]
+		}
+	}
+}

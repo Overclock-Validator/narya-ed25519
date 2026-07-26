@@ -11,3 +11,13 @@ func ifmaAffine3MicroAoSTransposeSelectExperimentX4(
 	out *fixedBaseIFMACachedX4,
 	p0, p1, p2, p3 *ifmaAffine3MicroAoSEntryExperiment,
 )
+
+// ifmaAffine3MicroAoSTransposeSelectExperimentX8 is the native-wide version.
+// Sources and out must not overlap; fixed-base selection always reads the
+// immutable process-shared table and writes worker-local scratch.
+//
+//go:noescape
+func ifmaAffine3MicroAoSTransposeSelectExperimentX8(
+	out *fixedBaseIFMACachedX8,
+	p0, p1, p2, p3, p4, p5, p6, p7 *ifmaAffine3MicroAoSEntryExperiment,
+)

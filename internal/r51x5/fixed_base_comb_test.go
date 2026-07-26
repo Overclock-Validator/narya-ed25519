@@ -15,9 +15,9 @@ func TestExperimentalFixedBaseCombShapeAndPayload(t *testing.T) {
 	tests := []struct {
 		width, rounds, positions, entries, bytes int
 	}{
-		{4, 64, 32, 8, 40 * 1024},
-		{5, 51, 26, 16, 66_560},
-		{8, 32, 16, 128, 320 * 1024},
+		{4, 64, 32, 8, 60 * 1024},
+		{5, 51, 26, 16, 99_840},
+		{8, 32, 16, 128, 480 * 1024},
 	}
 	base, _ := fixedBaseGenerator(t)
 	for _, test := range tests {
@@ -31,17 +31,23 @@ func TestExperimentalFixedBaseCombShapeAndPayload(t *testing.T) {
 	}
 }
 
-func TestExperimentalFixedBaseCombPrecomputedNegativeT2D(t *testing.T) {
+func TestExperimentalFixedBaseCombPrecomputedSigns(t *testing.T) {
 	base, _ := fixedBaseGenerator(t)
 	for _, width := range []uint{4, 5, 8} {
 		table := BuildExperimentalFixedBaseCombTable(&base, width)
-		if len(table.negativeT2D) != len(table.points) {
-			t.Fatalf("width %d signed coordinates=%d points=%d", width, len(table.negativeT2D), len(table.points))
-		}
-		for index := range table.points {
+		for index := range table.signedPoints {
+			positive, negative := &table.signedPoints[index][0], &table.signedPoints[index][1]
+			var positiveT2D, negativeT2D Element
+			for limb := range modulusLimbs {
+				if negative[limb][0] != positive[limb][1] || negative[limb][1] != positive[limb][0] {
+					t.Fatalf("width %d entry %d limb %d signed Y coordinates mismatch", width, index, limb)
+				}
+				positiveT2D.limbs[limb] = positive[limb][2]
+				negativeT2D.limbs[limb] = negative[limb][2]
+			}
 			var want Element
-			want.Negate(&table.points[index].T2D)
-			if table.negativeT2D[index].Equal(&want) != 1 {
+			want.Negate(&positiveT2D)
+			if negativeT2D.Equal(&want) != 1 {
 				t.Fatalf("width %d entry %d negative 2dT mismatch", width, index)
 			}
 		}

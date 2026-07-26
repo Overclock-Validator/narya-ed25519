@@ -115,6 +115,36 @@ func TestIFMAAffine3MicroAoSTransposeU52Boundary(t *testing.T) {
 	}
 }
 
+func TestIFMAAffine3MicroAoSTransposeX8U52Boundary(t *testing.T) {
+	if !microAoSSelectorExperimentCanCall() {
+		t.Skip("requires AVX-512 IFMA target on amd64")
+	}
+	var entries [X8Lanes]ifmaAffine3MicroAoSEntryExperiment
+	for lane := range entries {
+		for limb := range entries[lane] {
+			for coordinate := range entries[lane][limb] {
+				entries[lane][limb][coordinate] = ifmaComposableLimbLimit - 1 - uint64((lane+limb+coordinate)%29)
+			}
+		}
+	}
+	var got fixedBaseIFMACachedX8
+	ifmaAffine3MicroAoSTransposeSelectExperimentX8(
+		&got,
+		&entries[0], &entries[1], &entries[2], &entries[3],
+		&entries[4], &entries[5], &entries[6], &entries[7],
+	)
+	coordinates := [3]*IFMAElementX8{&got.YPlusX, &got.YMinusX, &got.T2D}
+	for coordinate, element := range coordinates {
+		for limb := 0; limb < 5; limb++ {
+			for lane := 0; lane < X8Lanes; lane++ {
+				if value, want := element.limbs[limb][lane], entries[lane][limb][coordinate]; value != want {
+					t.Fatalf("coordinate=%d limb=%d lane=%d got=%x want=%x", coordinate, limb, lane, value, want)
+				}
+			}
+		}
+	}
+}
+
 func TestIFMAAffine3MicroAoSTransposeExactAlias(t *testing.T) {
 	if !microAoSSelectorExperimentCanCall() {
 		t.Skip("requires AVX-512 IFMA target on amd64")
