@@ -5,33 +5,35 @@ go get github.com/Overclock-Validator/narya-ed25519
 ```
 
 Narya is a pure-Go Ed25519 verifier that makes its acceptance rule explicit and
-versioned, and that gets faster the more signatures you hand it at once.
+versioned, preserves an independent verdict for every signature, and uses
+wide-lane SIMD to turn a queue of unrelated signatures into useful parallel
+work. It is aimed at replicated systems, high-throughput services, archival
+verification, and any other application where two properties matter at once:
+verification must be fast, and every implementation must agree on exactly
+which byte strings are valid.
 
-Both halves matter to any verifier, not just blockchain ones. RFC 8032 leaves
-real choices open — whether to reject small-order keys, whether to accept
-non-canonical encodings — and libraries resolve them differently, so "valid
-signature" is not a single predicate. Any system where two implementations must
-agree on accept/reject, or where a signature verified today must verify the same
-way in five years, needs to name which rule it is using rather than inherit one
-by accident. Narya names it, offers more than one, and never changes the default
-silently.
+Narya provides explicit `DalekStrict` and Go-standard-library-compatible
+profiles instead of treating "Ed25519 verification" as one universal
+predicate. Its cold path handles arbitrary public keys without persistent
+state. Its optional cache adds a decoded-key tier for broad recurrence and a
+larger precomputed tier for genuinely hot keys. Batch APIs never replace
+per-signature verification with a randomized aggregate equation: every input
+still receives its own deterministic accept/reject result.
 
-The performance work follows the same idea. Verification cost per signature is
-mostly a function of batch width, because the accelerated backends verify eight
-signatures per AVX-512 group. Verify one at a time and you pay for a group and
-use one lane of it.
+On supported AMD64 processors, the forced `r51` backend runs independent
+signatures across AVX-512 IFMA lanes, with native x8 groups and x4 tails on
+measured AMD CPUs. Portable callers retain the pure-Go `generic` backend, and
+automatic backend selection remains conservative.
 
-The library was built for Solana consensus — block replay and leader-mode
-ingest, where a block carries tens of thousands of signatures and mainnet's
-exact predicate is not negotiable — and that case is used throughout as the
-worked example, because it is the one where getting the predicate wrong has a
-name and a consequence. Nothing in the API is Solana-specific.
+> **Security status: experimental and unaudited.** Narya has extensive
+> differential, vector, fuzz, range, aliasing, and hardware tests, but it has
+> not received an independent cryptographic or assembly audit. Do not treat it
+> as a drop-in production security boundary without your own review and
+> validation. The software is provided **as is**, without warranty; the
+> authors and contributors accept no liability for its use. See
+> [LICENSE](LICENSE) for the governing terms.
 
-> Narya is Gandalf's ring — the Ring of Fire. The name nods to
-> [Firedancer](https://github.com/firedancer-io/firedancer), whose
-> AVX-512 `r43x6` design the `ifma` backend ports, and to
-> [Mithril](https://github.com/Overclock-Validator/mithril), the Go
-> Solana node this library was built for.
+The name comes from Narya, the Ring of Fire.
 
 ## Why this exists
 
@@ -45,10 +47,9 @@ open, and production implementations resolve them differently:
 | ZIP 215 | no (cofactored) | accept | accept | accept | **accept** |
 
 Any two rows disagree on a nonempty, adversarially constructible set of inputs.
-For a validating node that is a fork, and it is remotely triggerable — an
-attacker picks an input in the symmetric difference. Solana is the maximal
-case: Agave in Rust, Firedancer in C, and Mithril in Go must agree byte for
-byte, on every input, indefinitely.
+In a replicated or long-lived system, that difference can become a remotely
+triggerable consistency failure: an attacker chooses an input in the symmetric
+difference and two otherwise-correct implementations return different verdicts.
 
 The subtlety that makes this worth a library: `verify_strict` is **not**
 "strict about everything." It rejects non-canonical `R` but *accepts*
@@ -65,9 +66,8 @@ consensus-correct acceptance predicate is itself versioned — an
 accept/reject flip is a fork, so it is a deliberate choice, not an
 implementation detail:
 
-- **`DalekStrict`** (default, and the zero value) — current Solana mainnet
-  transaction semantics: `ed25519-dalek` 2.x `verify_strict`, reached through
-  the `solana-signature` crate. This is `crypto/ed25519.Verify` **plus**
+- **`DalekStrict`** (default, and the zero value) — matches
+  `ed25519-dalek` 2.x `verify_strict`. This is `crypto/ed25519.Verify` **plus**
   rejection of small-order public keys A and small-order signature
   points R. The standard library accepts those (it never decodes R); a
   verifying node that used it unmodified could be forked off the
@@ -95,10 +95,8 @@ for every signature. The default `generic` backend processes signatures
 independently. The explicitly selected `r51` backend instead hashes and
 decodes several independent signatures in SIMD lanes while retaining a
 separate verdict for every input.
-A future `ZIP215` profile will track Solana's proposed
-[SIMD-0376 at `b13be70`](https://github.com/solana-foundation/solana-improvement-documents/blob/b13be70e7454144becbe9c474b296d737d72df98/proposals/0376-verify-strict.md)
-loosening only after it is accepted and its feature gate activates on mainnet.
-The existence of a ZIP-215 implementation is not itself an activation signal.
+A future `ZIP215` profile may expose the cofactored predicate explicitly. It
+will not silently change either existing profile.
 
 **Narya has no signing API, deliberately.** The mismatched private/public-key
 signing-oracle failures catalogued by
@@ -176,165 +174,83 @@ backend selection never reaches either kernel.
 The x8 fixed-three-segment entry recognizes full
 groups of the exact `R[32] || A[32] || message` shapes at message sizes
 64/200/1232, ingesting their first and final blocks without generic segmented
-staging. On the Zen 4 release machine this hash-only path measured about
-110.5 ns/message at 200 bytes and 390.3 ns/message at 1232 bytes. See
+staging. Design details and historical measurements are kept in
 [`docs/SHA512_MULTIBUFFER.md`](docs/SHA512_MULTIBUFFER.md).
 
 ## Performance
 
-The following results are from the exported `SetBackend("r51")` plus
-`VerifyBatchStrict` API at implementation commit `2302d40`, on an AMD Ryzen 7
-PRO 8700GE (Zen 4), one pinned core, `GOMAXPROCS=1`, valid signatures, and zero
-allocations in the timed verification path. Each value is the median of ten
-three-second samples in microseconds per signature. The backend was forced
-explicitly and is not the automatic default. A paired diagnostic in the same
-binary confirmed that the public wrapper was no more than 2% slower than the
-private dispatcher core; code layout made some public rows slightly faster.
+Narya's accelerated path is measured through the exported
+`SetBackend("r51")` and `VerifyBatchStrict` APIs. The latest cold checkpoint
+below is from implementation commit `754e7c9` on an AMD Ryzen 7 9700X (Zen 5),
+one pinned core, `GOMAXPROCS=1`, valid 1232-byte messages, and zero allocations
+in the timed path. Values are rounded microseconds per signature; n=4, n=8,
+and n=64 include the current staged x4/x8 doubling kernels.
 
-| message bytes | n=1 | n=4 | n=8 | n=64 |
-| ---: | ---: | ---: | ---: | ---: |
-| 64 | 26.14 | 15.05 | 14.68 | 14.38 |
-| 200 | 26.28 | 15.24 | 14.81 | 14.51 |
-| 1232 | 27.12 | 16.02 | 15.58 | 15.30 |
-
-That table is the pinned PR-1 baseline. The current convergence branch promotes
-the radix-32/comb256 cold core after ten-sample A/B gates showed 5.2--5.4% on
-Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. Later complete-verifier gates also
-selected native x8 on both measured AMD generations.
-Subsequent SIMD traffic removal and table-layout work improved the exported
-`VerifyBatchStrict` n=64/msg=1232 row from 7.291 to **5.782 us/signature** at
-commit `3499fdd` (pinned two-second samples, 0 B/op and 0 allocs/op). The last
-admitted steps were an exact 160-byte micro-AoS A-table transpose (6.404 us),
-pre-signing both public-scalar Niels forms (6.072 us), and bypassing the large
-portable element wrappers inside the already-gated x4/x8 point loops (5.782
-us). That final mechanical change also improved the requested n=4 row from
-about 12.81 to 12.60 us/signature. Removing the x4 point-add input and result
-copies in `c6c27c3` reduced it again to about **12.36 us/signature**. Neither
-change affects the separate packed singleton kernel.
-The next n=4-specific checkpoint replaces the scalar temporary-product path
-used to apply public table-digit signs with a bit-exact masked x4 assembly
-normalizer. A same-core paired A/B at 1232 bytes measured **12.33 to 11.82
-us/signature (-4.1%)**, with every timed row still at 0 B/op and 0 allocs/op.
-The native all-mask/boundary differential and the full r51/Ed25519 suites pass;
-the operation remains public-data-dependent and does not change table contents
-or verification semantics. Full x8 groups do not execute this x4 helper.
-Replacing the remaining grouped x4 A-table gather with the already-tested
-fixed 160-byte micro-AoS transpose then reduced n=4 again to **11.62--11.63
-us/signature**. The cold workspace builds those entries directly in
-caller-owned storage: it adds no allocation, cache, or admission policy.
-The promoted raw-product doubling Stage 2 at `d356878` then reduced n=4 from
-11.61--11.62 to **10.82--10.83 us/signature (-6.8%)** at 1232 bytes. It uses
-independently checked whole-modulus biases, one carry layer for E/F/G/H, and
-direct final output after every input coordinate has been consumed. The full
-native suite, arbitrary-precision range oracle, alias/chaining differentials,
-and zero-allocation gates pass. The current pinned Zen 5 release matrix is:
-
-| message bytes | n=1 | n=2 | n=4 | n=8 | n=64 |
+| batch width | n=1 | n=2 | n=4 | n=8 | n=64 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 64 | 21.55 | 21.62 | **9.68** | 5.80 | 5.48 |
-| 200 | 21.60 | 21.60 | **9.81** | 5.83 | 5.52 |
-| 1232 | 22.50 | 22.49 | **10.80** | 6.08 | 5.75 |
+| cold r51 | 22.50 | 22.49 | 10.07 | 5.63 | 5.32 |
 
-These are cold arbitrary-key results: A is decoded and its table is rebuilt for
-every signature. The complete three-message Zen 4 matrix still needs to be
-rerun before replacing the pinned PR-1 table above.
+These numbers describe the explicitly forced backend, not automatic dispatch.
+The portable `generic` backend remains the default. Batch width matters because
+r51 maps independent signatures onto SIMD lanes: n=1 and n=2 use dedicated tail
+paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups.
 
-The same 200-byte Go benchmark binary also measured the comparison libraries;
-each value below is the median of six two-second samples.
+The next pinned release snapshot will replace this checkpoint with one
+same-commit matrix covering 200-, 1232-, and 4096-byte messages at n=1, 2, 4,
+8, and 64, including the cache and the comparison implementations at 1232
+bytes. Historical measurements and their exact environments remain in
+[`docs/results/`](docs/results/); they are intentionally not stacked into the
+README table because code, CPU generation, and cache population materially
+change the result.
 
-| implementation | n=1 | n=4 | n=8 | n=64 |
-| --- | ---: | ---: | ---: | ---: |
-| Narya r51 public dispatcher, cold strict | 27.35 | 15.78 | 15.29 | 15.01 |
-| Go `crypto/ed25519` loop | 36.48 | 36.60 | 36.59 | 36.68 |
-| curve25519-voi, cold strict | 25.50 | 25.34 | 25.44 | 25.49 |
-| curve25519-voi, pre-expanded key | 21.41 | 21.44 | 21.41 | 21.39 |
+### Cold and warm verification
 
-The comparison rows were measured in one Oasis-tagged binary; its different
-code layout makes the Narya row about 3.5% slower than the lean release
-benchmark above, so comparisons use only rows from that same executable. The
-expanded-key row excludes key-expansion cost and is therefore a warm-key
-comparison. Narya trails both voi rows at a cold singleton, but overtakes both
-by n=3; the exact tail-width sweep is in the cross-library note. For additional
-context, the same machine previously measured generic cold strict verification
-at about 36.1 us/signature and the generic hot comb cache at about
-16.3 us/signature. Those generic rows came from an earlier pinned run.
+Cold and warm are two execution conditions with the same acceptance predicate,
+not different security modes:
 
-The registered r51 cold path remains arbitrary-key verification: its full SIMD
-groups decode A and build the small variable-base table for every signature.
-The opt-in `Cache.VerifyBatchStrict` path now has two exact-byte-bound tiers.
-The first retains decoded A; a valid `DalekStrict` hit can then promote four
-independent keys together to an immutable 19,424-byte entry containing the
-A6/r9 warm comb. The original public-key bytes are still hashed, and strict
-prechecks and final equality are unchanged. Invalid equations and inputs never
-earn promotion. The first-tier threshold is eight successful sightings; group
-promotion starts after eight valid hits and a stranded single key is flushed
-only after 32 hits. These are conservative library defaults, not a production
-traffic-policy recommendation.
+| path | public entry point | intended workload | trade-off |
+| --- | --- | --- | --- |
+| **cold** | `VerifyStrict` / `VerifyBatchStrict` | arbitrary, first-seen, or low-recurrence public keys | no persistent key state; decodes A and builds its small variable-base table for each verification |
+| **warm** | `Cache.VerifyStrict` / `Cache.VerifyBatchStrict` | public keys that recur enough to repay preparation | exact-byte-bound decoded-A and precomputed-comb tiers reduce curve work in exchange for memory, lookup, and admission overhead |
 
-At implementation commit `2f54a30`, the complete public/private Cache seam at
-1232 bytes and n=64 measured, in microseconds per signature:
+Both paths hash the original public-key and signature bytes, retain independent
+per-signature verdicts, and enforce the selected profile. Invalid inputs and
+invalid equations never earn cache promotion. Warm results depend on the
+number and recurrence of keys: a tiny permanently hot fixture can overstate
+performance compared with a populated cache, so Narya reports cache population
+alongside every release measurement.
 
-| CPU | raw cold | decoded/staging, 0% warm | 25% warm | 50% warm | 75% warm | 100% warm |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Ryzen 7 9700X (Zen 5) | 8.242 | 7.756 | 6.974 | 6.166 | 5.360 | 4.492 |
-| Ryzen 7 PRO 8700GE (Zen 4) | 14.52 | 15.51 | 12.27 | 10.10 | 7.957 | 5.729 |
+The cache is opt-in. Raw `VerifyBatchStrict` remains cold and stateless, and
+automatic backend selection remains `generic`.
 
-All timed rows allocated zero. The warm path accumulates up to 16 x4 groups
-before encoding Q, amortizing one field inversion across as many as 64
-signatures. At 200 bytes and n=64 this reaches 3.74 us/signature on Zen 5 and
-4.76 on Zen 4; the 1232-byte rows above include the additional SHA-512 work.
-Zen 5 benefits immediately from decoded A.
-Zen 4 pays about 8% while admitted keys are only staging entries, then wins by
-25% warm density; callers should therefore enable its Cache only for workloads
-with demonstrated recurrence, such as validator-key repair or shred traffic,
-not as an unconditional TPU-spam policy. The Cache is never used by raw
-`VerifyBatchStrict`, and automatic backend selection remains `generic`.
-HEEA remains a slower research oracle rather than a dispatch candidate. Exact
-methodology and the complete n=4/8/64 matrix are in
-[`docs/results/warm-comb-cache-2026-07-25/`](docs/results/warm-comb-cache-2026-07-25/).
+### Running the benchmarks
 
-Detailed commands, raw statistical samples, checksums, and caveats are recorded
-in [`docs/results/zen4-8700ge-pr1-2026-07-25/`](docs/results/zen4-8700ge-pr1-2026-07-25/)
-and summarized in
-[`docs/ZEN4_8700GE_2026-07-24.md`](docs/ZEN4_8700GE_2026-07-24.md).
+The public cold benchmark is isolated behind a build tag so it cannot
+accidentally measure a private implementation seam:
 
-### Running the benchmarks yourself
-
-Every number above is reproducible. Nothing here needs a special harness; the
-benchmarks are ordinary `go test -bench` targets.
-
-The baseline comparison is against Go's own `crypto/ed25519`, which is the
-implementation most callers are replacing:
-
-```
-go test -run '^$' -bench 'BenchmarkVerify' -benchtime 2s ./ed25519/
+```sh
+taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench \
+  -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrict$' \
+  -benchmem -benchtime=3s -count=10 ./ed25519
 ```
 
-Batch width is the single largest factor in cost per signature, so sweep it
-rather than quoting one number:
+For ordinary package-level comparisons and cache diagnostics:
 
+```sh
+go test -run '^$' -bench 'BenchmarkVerify|BenchmarkR51CacheTierMatrix' \
+  -benchmem -benchtime=2s ./ed25519
 ```
-go test -run '^$' -bench 'BenchmarkVerifyBatch' -benchtime 2s ./ed25519/
-```
 
-The accelerated backends are opt-in and require AVX512-IFMA. On a machine
-without it they self-skip rather than silently measuring the portable path, so
-a suspiciously flat result usually means the backend was never selected —
-check with `ed25519.ActiveBackend()`. Select one explicitly with
-`SetBackend("r51")` or the `OVERCLOCK_ED25519_BACKEND` environment variable.
+The accelerated backends require AVX512-IFMA and must be selected explicitly
+with `SetBackend("r51")` or `OVERCLOCK_ED25519_BACKEND=r51`. Unsupported
+forced activation fails synchronously instead of silently measuring the
+portable path.
 
-Three things will make results unreproducible if ignored:
-
-- **Pin to physical cores.** `nproc` reports SMT siblings; two benchmark
-  threads sharing one core roughly halve throughput. On Linux,
-  `taskset -c 0-N GOMAXPROCS=N go test ...`.
-- **Check the governor.** A `powersave` governor produces absolute numbers that
-  are not comparable across machines, though within-host A/B deltas stay
-  usable.
-- **Do not read clock speed from `/proc/cpuinfo`.** It samples an idle core.
-  Derive the real sustained frequency from `perf stat` as cycles divided by
-  task-clock; under sustained AVX-512 the difference can exceed 30%, which is
-  more than most of the effects being measured.
+For reproducible CPU measurements, pin a physical core, use the same Go
+toolchain, record the CPU governor, and use repeated samples with
+`benchstat`. Do not infer sustained frequency from an idle
+`/proc/cpuinfo` sample; use hardware counters when cycle-level comparisons
+matter.
 
 ## Verification
 
