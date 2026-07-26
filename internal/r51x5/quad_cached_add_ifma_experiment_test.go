@@ -141,6 +141,40 @@ func TestExperimentalCoordinateParallelCachedAddX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestExperimentalCoordinateParallelCachedAddWorkspaceX4IgnoresPriorScratch(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	accumulator := decodePointX4TestHex(t, pointTestEncodings[6])
+	addend := decodePointX4TestHex(t, pointTestEncodings[7])
+	clean := new(quadPackedPointX4).setReduced(&accumulator)
+	poisoned := *clean
+	cached := new(quadPackedCachedPointX4).setReduced(&addend, false)
+	var cleanWorkspace, poisonedWorkspace quadPointAddCachedWorkspaceX4
+	for limb := range poisonedWorkspace.pointOperand.limbs {
+		for lane := range poisonedWorkspace.pointOperand.limbs[limb] {
+			value := uint64(0x5a5a_0000_0000_0000 | uint64(limb<<8|lane))
+			poisonedWorkspace.pointOperand.limbs[limb][lane] = value
+			poisonedWorkspace.products.limbs[limb][lane] = ^value
+			poisonedWorkspace.left.limbs[limb][lane] = value ^ 0x1111
+			poisonedWorkspace.right.limbs[limb][lane] = value ^ 0x2222
+		}
+	}
+
+	for step := 0; step < 32; step++ {
+		if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(clean, clean, cached, &cleanWorkspace); err != nil {
+			t.Fatalf("step %d clean: %v", step, err)
+		}
+		if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&poisoned, &poisoned, cached, &poisonedWorkspace); err != nil {
+			t.Fatalf("step %d poisoned: %v", step, err)
+		}
+		if poisoned.coordinates != clean.coordinates {
+			t.Fatalf("step %d: prior scratch changed the cached-add result", step)
+		}
+	}
+}
+
 func scaleProjectivePointX4Test(point *Point, lambda Element) {
 	point.X.Multiply(&point.X, &lambda)
 	point.Y.Multiply(&point.Y, &lambda)
@@ -215,6 +249,19 @@ func BenchmarkExperimentalCoordinateParallelCachedAddX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := quadPointAddCachedHardwareUncheckedX4(state, state, cached); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkQuadPackedCachedAddX4Sink = *state
+	})
+
+	b.Run("chained/quad-packed-cached-reused-workspace", func(b *testing.B) {
+		state := new(quadPackedPointX4).setReduced(&accumulator)
+		var workspace quadPointAddCachedWorkspaceX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(state, state, cached, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}

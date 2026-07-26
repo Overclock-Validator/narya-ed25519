@@ -71,6 +71,12 @@ type quadPointDoubleWorkspaceX4 struct {
 	u, v, products, left, right IFMAElementX4
 }
 
+// quadPointAddCachedWorkspaceX4 is the cached-add counterpart of
+// quadPointDoubleWorkspaceX4. Every field is fully overwritten before use.
+type quadPointAddCachedWorkspaceX4 struct {
+	pointOperand, products, left, right IFMAElementX4
+}
+
 func (ops quadDSMOperationsX4) multiply(out, a, b *IFMAElementX4) error {
 	if ops.hardware {
 		return ifmaMultiplyComposableUncheckedX4(out, a, b)
@@ -79,8 +85,13 @@ func (ops quadDSMOperationsX4) multiply(out, a, b *IFMAElementX4) error {
 }
 
 func (ops quadDSMOperationsX4) addCached(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4) error {
+	var workspace quadPointAddCachedWorkspaceX4
+	return ops.addCachedWorkspace(out, point, cached, &workspace)
+}
+
+func (ops quadDSMOperationsX4) addCachedWorkspace(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4, workspace *quadPointAddCachedWorkspaceX4) error {
 	if ops.hardware {
-		return quadPointAddCachedHardwareUncheckedX4(out, point, cached)
+		return quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point, cached, workspace)
 	}
 	return quadPointAddCachedModelX4(out, point, cached)
 }
@@ -225,18 +236,19 @@ func quadCachedAddFinalOperandsX4(left, right, products *IFMAElementX4) {
 }
 
 func quadPointAddCachedHardwareUncheckedX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4) error {
-	var pointOperand, products, left, right IFMAElementX4
-	quadCachedAddFirstOperandX4(&pointOperand, point)
-	if err := ifmaMultiplyComposableUncheckedX4(&products, &pointOperand, &cached.coordinates); err != nil {
+	var workspace quadPointAddCachedWorkspaceX4
+	return quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point, cached, &workspace)
+}
+
+func quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4, workspace *quadPointAddCachedWorkspaceX4) error {
+	quadCachedAddFirstOperandX4(&workspace.pointOperand, point)
+	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
 		return err
 	}
-	quadCachedAddFinalOperandsX4(&left, &right, &products)
-	var result IFMAElementX4
-	if err := ifmaMultiplyComposableUncheckedX4(&result, &left, &right); err != nil {
-		return err
-	}
-	out.coordinates = result
-	return nil
+	quadCachedAddFinalOperandsX4(&workspace.left, &workspace.right, &workspace.products)
+	// point is no longer live after the first packed permutation, so this
+	// final multiplication may write directly through out when out == point.
+	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
 }
 
 func quadPointAddCachedModelX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4) error {
@@ -310,8 +322,9 @@ func buildQuadNAFEntriesX4(positive []quadPackedCachedPointX4, base *Point, ops 
 	if err := quadCachePackedPointX4(&twiceCached, &twice, ops); err != nil {
 		return err
 	}
+	var addWorkspace quadPointAddCachedWorkspaceX4
 	for entry := 1; entry < len(positive); entry++ {
-		if err := ops.addCached(current, current, &twiceCached); err != nil {
+		if err := ops.addCachedWorkspace(current, current, &twiceCached, &addWorkspace); err != nil {
 			return err
 		}
 		if err := quadCachePackedPointX4(&positive[entry], current, ops); err != nil {
@@ -408,6 +421,7 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 	for ; high >= 0 && aNAF[high] == 0 && bNAF[high] == 0; high-- {
 	}
 	var doubleWorkspace quadPointDoubleWorkspaceX4
+	var addWorkspace quadPointAddCachedWorkspaceX4
 	for bit := high; bit >= 0; bit-- {
 		if err := ops.doubleWorkspace(&acc, &acc, &doubleWorkspace); err != nil {
 			return false, err
@@ -415,14 +429,14 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 		if aNAF[bit] != 0 {
 			var negative quadPackedCachedPointX4
 			selected := selectQuadNAFEntryX4(&negative, aTable.positive[:], -aNAF[bit])
-			if err := ops.addCached(&acc, &acc, selected); err != nil {
+			if err := ops.addCachedWorkspace(&acc, &acc, selected, &addWorkspace); err != nil {
 				return false, err
 			}
 		}
 		if bNAF[bit] != 0 {
 			var negative quadPackedCachedPointX4
 			selected := selectQuadNAFEntryX4(&negative, bTable.positive[:], bNAF[bit])
-			if err := ops.addCached(&acc, &acc, selected); err != nil {
+			if err := ops.addCachedWorkspace(&acc, &acc, selected, &addWorkspace); err != nil {
 				return false, err
 			}
 		}
