@@ -6,9 +6,10 @@ It is deliberately separate from `internal/r43x6`:
 > **Current status.** The reviewed Zen 4/Zen 5 composition is registered as
 > backend `r51` for explicit selection. Automatic selection remains `generic`.
 > `r51` uses a packed paired-A/R singleton plus a radix-32 A table, the shared
-> radix-256 B comb, and batch-Q finalization. Zen 4 uses two x4/YMM groups;
-> AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and
-> x4 for the tail. Its opt-in Cache admits decoded A and promotes recurring
+> radix-256 B comb, and batch-Q finalization. Measured AMD family 19h+ IFMA
+> parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature
+> groups and x4 for the tail; unknown IFMA CPUs retain the x4 default. Its
+> opt-in Cache admits decoded A and promotes recurring
 > valid strict keys to A6/r9 warm combs on both CPUs. HEEA remains a slower
 > research oracle rather than a dispatch candidate.
 
@@ -362,14 +363,16 @@ material.
 
 ## x8 versus two x4 groups
 
-Zen 4 measurements kept two x4 groups: x8 improved complete wide verification
-by only about 1%, below the keep threshold. Zen 5 measurements selected x8:
-at 1232-byte messages the complete x8 path measured about 8.2 us/signature at
-n=64 versus about 12.2 us for two-x4. Public-wrapper measurements stayed within
-2% of the private core and allocated zero.
+Early Zen 4 measurements kept two x4 groups because x8 improved complete wide
+verification by only about 1%. Later DQ-fold, projective-Niels, and table-layout
+changes moved that regime: complete-verifier gates selected x8 on both measured
+Zen 4 and Zen 5 systems. On Zen 5 at 1232-byte messages, the complete x8 path
+measured about 8.2 us/signature at n=64 versus about 12.2 us for two-x4 before
+the later convergence work. Public-wrapper measurements stayed within 2% of
+the private core and allocated zero.
 
-The width rule is deliberately a step: on Zen 5, every complete eight-lane
-group uses x8 and the remainder uses x4; Zen 4 uses x4 throughout. A half-full
+The width rule is deliberately a step: on measured AMD family 19h+ IFMA parts,
+every complete eight-lane group uses x8 and the remainder uses x4. A half-full
 x8 group pays roughly 96% of full-group cost, so masked arithmetic cannot make
 it occupancy-elastic. Leading-zero shortening, vector-wide sparse-digit
 skipping, and an x4-by-two hybrid do not beat the existing x4 tail on the
@@ -405,9 +408,9 @@ taskset -c 0-7 env GOMAXPROCS=8 go test -run '^$' \
 ### Zen 5 bring-up contract
 
 Zen 5 bring-up is complete inside forced `r51`: CPUID vendor/family selects x8
-only for AMD family 1Ah and newer, complete groups use the native x8 core, and
-tails reuse x4. Unknown IFMA machines conservatively retain x4. This does not
-change the global automatic backend, which remains `generic`.
+for measured AMD family 19h and newer IFMA parts, complete groups use the native
+x8 core, and tails reuse x4. Unknown IFMA machines conservatively retain x4.
+This does not change the global automatic backend, which remains `generic`.
 
 Comb parameters are part of the lane-width candidate configuration, not global
 constants. Eight live signatures roughly double the distinct per-key A-table

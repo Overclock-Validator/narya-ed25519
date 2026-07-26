@@ -136,7 +136,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Zen 4 uses x4/YMM groups; AMD family 1Ah (Zen 5) uses x8/ZMM for complete eight-signature groups and x4 for the tail. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Zen 5 consumes warm x4 groups only in aligned pairs, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide path. Zen 4 uses each complete warm x4 group independently. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 for the tail; unknown IFMA CPUs retain the reviewed x4 default. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -147,8 +147,9 @@ operator intent and must not silently fall back.
 
 `sha512mb`'s public `Lanes()` and `Sum512Batch` surface remains the portable
 scalar implementation. Its AVX2 and AVX-512 kernels are hardware-gated behind
-the `Experimental*` entry points; the forced `r51` backend calls the x4 native
-entry on Zen 4 and the x8 native entry for complete Zen 5 groups. Automatic
+the `Experimental*` entry points; the forced `r51` backend calls the x8 native
+entry for complete groups on measured AMD family 19h+ IFMA parts and retains
+x4 for tails and unknown IFMA CPUs. Automatic
 backend selection never reaches either kernel.
 The x8 fixed-three-segment entry recognizes full
 groups of the exact `R[32] || A[32] || message` shapes at message sizes
@@ -176,12 +177,17 @@ private dispatcher core; code layout made some public rows slightly faster.
 
 That table is the pinned PR-1 baseline. The current convergence branch promotes
 the radix-32/comb256 cold core after ten-sample A/B gates showed 5.2--5.4% on
-Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. It also selects native x8 on Zen 5.
-Subsequent x8-only traffic removal and table-layout work improved the exported
-`VerifyBatchStrict` n=64/msg=1232 row from 7.291 to **6.072 us/signature** at
-commit `997d9b9` (median of ten pinned two-second samples, 0 B/op and 0
-allocs/op). The last two admitted steps were an exact 160-byte micro-AoS A-table
-transpose (6.404 us) and pre-signing both public-scalar Niels forms (6.072 us).
+Zen 4 and 4.4--4.6% on Zen 5 at 1232 bytes. Later complete-verifier gates also
+selected native x8 on both measured AMD generations.
+Subsequent SIMD traffic removal and table-layout work improved the exported
+`VerifyBatchStrict` n=64/msg=1232 row from 7.291 to **5.782 us/signature** at
+commit `3499fdd` (pinned two-second samples, 0 B/op and 0 allocs/op). The last
+admitted steps were an exact 160-byte micro-AoS A-table transpose (6.404 us),
+pre-signing both public-scalar Niels forms (6.072 us), and bypassing the large
+portable element wrappers inside the already-gated x4/x8 point loops (5.782
+us). That final mechanical change also improved the requested n=4 row from
+about 12.81 to 12.60 us/signature; it does not affect the separate packed
+singleton kernel.
 These are cold arbitrary-key results: A is decoded and its table is rebuilt for
 every signature. The complete three-message Zen 4/Zen 5 release matrix still
 needs to be rerun before replacing the pinned PR-1 table above.
@@ -287,8 +293,8 @@ zero-allocation release authority. Automatic backend selection remains
 Alpha. The `generic` backend, the profile contract, and the per-key comb cache
 are functional and differential-tested. The `r51` throughput backend is
 registered for explicit selection on supported hardware but remains outside
-automatic dispatch. It uses the promoted two-x4 cold comb on Zen 4 and native
-x8 groups plus x4 tails on AMD family 1Ah (Zen 5). Its opt-in two-tier Cache
+automatic dispatch. It uses native x8 groups plus x4 tails on measured AMD
+family 19h+ IFMA processors. Its opt-in two-tier Cache
 and width-aware A6/r9 warm promotion are implemented and hardware-tested; the
 traffic-specific admission and eviction policy remains integration work. The
 `ifma` reference backend and alternate arithmetic experiments remain under

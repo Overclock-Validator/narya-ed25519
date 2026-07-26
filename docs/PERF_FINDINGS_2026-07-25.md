@@ -22,8 +22,10 @@ msg=1232, one pinned 9700X core, `GOMAXPROCS=1`, and zero allocations:
 | direct outputs plus reusable double/add scratch (`e594ada`) | 6.617 | -9.2% |
 | exact 160-byte micro-AoS A tables (`db2807e`) | 6.404 | -3.2% |
 | pre-signed micro-AoS A tables (`997d9b9`) | 6.072 | -5.2% |
+| unchecked x4/x8 linear point ops (`3499fdd`) | 5.782 | -4.8% |
 
-The final two values are medians of ten two-second public-API samples. The
+The micro-AoS and pre-signed values are medians of ten two-second public-API
+samples; the unchecked-linear row is the median of the six-sample A/B below. The
 micro-AoS record is exactly `[5][Y+X,Y-X,Z,2dT]uint64` (160 bytes), and its
 assembly performs five exact 32-byte loads at offsets 0, 32, 64, 96, and 128.
 It does not issue a 64-byte tail load or read beyond the record. Pre-signing
@@ -45,6 +47,26 @@ Experiment regime tags matter. The earlier micro-AoS production A/B regressed
 on the pre-scratch x8 loop and was reverted; the same exact layout wins after
 the double/add workspaces stopped being re-zeroed every operation. Keep both
 records rather than treating either result as timeless.
+
+The unchecked-linear checkpoint came from a generated-assembly audit: the
+portable `IFMAElementX4/X8` methods reserved 496/976-byte frames even though
+the native branch never used their raw fallback product. Splitting those
+fallbacks reduced the wrapper frames, while the already-IFMA-gated point
+schedules now call the same audited native add/subtract/negate leaves directly,
+just as they already did for multiplication. A same-host public-API A/B at
+msg=1232, six two-second samples per row, measured:
+
+| width | before us/signature | `3499fdd` us/signature | change |
+|---:|---:|---:|---:|
+| 1 | 22.86 | 22.85 | neutral |
+| 2 | 22.91 | 22.88 | about -0.1% |
+| 4 | 12.81 | 12.60 | about -1.7% |
+| 8 | 6.40 | 6.10 | about -4.7% |
+| 64 | 6.073 | 5.782 | about -4.8% |
+
+All rows remained zero-allocation. Widths one and two use the separate packed
+singleton/tail kernel, so their neutral result is expected. The n=4 row is the
+primary small-batch gate; n=8 and n=64 retain the full-width throughput check.
 
 ---
 
