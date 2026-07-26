@@ -93,4 +93,31 @@ jobs:
           "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
           "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+
+      # Everything above runs the x4 paths only. The x8/ZMM groups, the
+      # decoded-A cache tier, warm x4 pairing and the raw-square schedule are
+      # gated on an AuthenticAMD vendor string and a family check, and SDE
+      # emulates Intel parts, so those policies all report false above. Without
+      # this second pass the library's headline path has no automated coverage
+      # anywhere and a regression in it merges green.
+      #
+      # narya_test_amd_policy widens the family gate for correctness coverage
+      # only. It is a build tag precisely so no ordinary build can contain it,
+      # and these runs are not performance evidence: SDE is an emulator, and the
+      # policies being overridden were chosen by measurement on real AMD parts.
+      - name: Compile AMD-policy test binaries
+        run: |
+          go test -c -tags 'sde_gate narya_test_amd_policy' -o /tmp/cpufeat.wide.test ./internal/cpufeat
+          go test -c -tags 'sde_gate narya_test_amd_policy' -o /tmp/r51x5.wide.test ./internal/r51x5
+          go test -c -tags 'sde_gate narya_test_amd_policy' -o /tmp/ed25519.wide.test ./ed25519
+      - name: Require the override to actually reach the gated paths
+        run: |
+          "$SDE64" -icx -- /tmp/cpufeat.wide.test -test.v -test.count=1 -test.timeout=5m \
+            -test.run '^TestAMDPolicyOverrideReachesTheGatedPaths$'
+      - name: Test x8, decoded-A and warm pairing under SDE
+        run: |
+          "$SDE64" -icx -- /tmp/r51x5.wide.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAFixedDSMHardware|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
+          "$SDE64" -icx -- /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=20m \
+            -test.run '^(TestSDEForcedR51PublicPath|TestR51BackendDispatchDifferential|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane|TestRawBatchPathRejectsOnlyThePrePassFailures)$'

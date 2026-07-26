@@ -131,8 +131,12 @@ type batchItem struct {
 }
 
 // applyProfile marks items the selected profile rejects outright, so
-// batch backends skip them. Called by every batch entry point before
-// the selected profile is passed to the backend.
+// batch backends skip them.
+//
+// It is called by the batchItem batch path only. A backend implementing
+// rawBatchBackend receives the caller's slices directly and never reaches here,
+// so it owns applying the profile's byte-level rules itself. See verifyOne for
+// why that split exists and which test enforces it.
 func applyProfile(profile Profile, items []batchItem) {
 	for i := range items {
 		if rejectedByProfile(profile, items[i].pub, items[i].sig) {

@@ -123,10 +123,16 @@ func (genericBackend) verify(profile Profile, pub *[32]byte, message, sig []byte
 
 // verifyBatch runs the batch pipeline: a scalar precheck-and-decode
 // pass that drops items whose verdict is already known false, one
-// multi-buffer hash round for the survivors' k = H(R ‖ A ‖ M), then
-// per-item point math. Verdicts are per-signature and bit-identical
-// to verify — batching only ever amortizes hashing and decoding, it
+// hashing round over the survivors' k = H(R ‖ A ‖ M), then per-item
+// point math. Verdicts are per-signature and bit-identical to verify —
+// batching only ever amortizes decoding and the shape of the work, it
 // never mixes signatures into one equation.
+//
+// The hashing round goes through sha512mb.Sum512Batch, which is the
+// portable scalar loop on every host. The package's vector kernels sit
+// behind its Experimental entry points and only the r51 backend reaches
+// them, so this path does not currently hash several messages in
+// parallel despite consuming a batch-shaped API.
 func (g genericBackend) verifyBatch(profile Profile, items []batchItem) {
 	type work struct {
 		idx     int
