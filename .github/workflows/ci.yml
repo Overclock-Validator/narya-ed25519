@@ -83,7 +83,7 @@ jobs:
       - name: Require and test r51x5 IFMA kernels under SDE
         run: |
           "$SDE64" -icx -- /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8)$'
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
       - name: Require and test native SHA-512 kernels under SDE
         run: |
           "$SDE64" -icx -- /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \

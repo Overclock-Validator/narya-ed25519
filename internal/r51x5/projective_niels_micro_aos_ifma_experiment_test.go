@@ -60,6 +60,80 @@ func TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8(t *testing.T) {
 	}
 }
 
+func prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(
+	workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8,
+	base *PointX8,
+) error {
+	if !ExperimentalIFMAAvailable() {
+		return ErrIFMAUnavailable
+	}
+	workspace.prepared = false
+	var current IFMAPointX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	current.SetReduced(base)
+	var baseCached IFMAProjectiveNielsX8
+	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
+		return err
+	}
+	for entry := 0; entry < len(workspace.table[0][0]); entry++ {
+		var cached IFMAProjectiveNielsX8
+		if entry == 0 {
+			cached = baseCached
+		} else {
+			if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
+				return err
+			}
+		}
+		var negativeT2D IFMAElementX8
+		ifmaNegateComposableUncheckedX8(&negativeT2D, &cached.T2D)
+		ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(
+			&workspace.table,
+			uint64(entry),
+			&cached,
+			&negativeT2D,
+		)
+		if entry+1 < len(workspace.table[0][0]) {
+			if err := ifmaPointAddProjectiveNielsWorkspaceX8(
+				&current,
+				&current,
+				&baseCached,
+				&addWorkspace,
+			); err != nil {
+				return err
+			}
+		}
+	}
+	workspace.prepared = true
+	return nil
+}
+
+func TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	_, variable, _, scalars := fixedBaseCombDSMFixtures(t)
+	var current, candidate ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+	if err := current.Prepare(&variable, 5); err != nil {
+		t.Fatal(err)
+	}
+	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(&candidate, &variable); err != nil {
+		t.Fatal(err)
+	}
+	if candidate.table != current.table {
+		t.Fatal("transpose-store prepare differs from scalar-store table")
+	}
+	var got, want IFMAPointX8
+	gotMask, gotErr := candidate.Evaluate(&got, &scalars, 0xa5, 0xff)
+	wantMask, wantErr := current.Evaluate(&want, &scalars, 0xa5, 0xff)
+	if gotErr != nil || wantErr != nil {
+		t.Fatalf("evaluate errors=%v/%v", gotErr, wantErr)
+	}
+	gotReduced, wantReduced := got.Reduced(), want.Reduced()
+	if gotMask != wantMask || gotReduced.Bytes() != wantReduced.Bytes() {
+		t.Fatalf("evaluate masks=%02x/%02x", gotMask, wantMask)
+	}
+}
+
 func TestIFMAProjectiveNielsPreSignedMicroAoSX8RandomMixedOrder(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -246,6 +320,10 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 	if err := preSigned.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
+	var preSignedTranspose ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(&preSignedTranspose, &variable); err != nil {
+		b.Fatal(err)
+	}
 	for _, path := range []string{"prepared-loop", "cold-table+loop"} {
 		b.Run("layout=grouped-soa/"+path, func(b *testing.B) {
 			var out IFMAPointX8
@@ -298,5 +376,25 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 			benchmarkIFMAProjectiveNielsMicroAoSX8Sink = out
 			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
 		})
+		if path == "cold-table+loop" {
+			b.Run("layout=presigned-micro-aos-transpose-store/"+path, func(b *testing.B) {
+				var out IFMAPointX8
+				b.ReportAllocs()
+				b.ReportMetric(float64(unsafe.Sizeof(preSignedTranspose)), "workspace-B")
+				for range b.N {
+					if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(
+						&preSignedTranspose,
+						&variable,
+					); err != nil {
+						b.Fatal(err)
+					}
+					if _, err := preSignedTranspose.Evaluate(&out, &scalars, 0xff, 0xff); err != nil {
+						b.Fatal(err)
+					}
+				}
+				benchmarkIFMAProjectiveNielsMicroAoSX8Sink = out
+				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
+			})
+		}
 	}
 }
