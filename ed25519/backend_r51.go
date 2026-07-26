@@ -146,6 +146,9 @@ func (*r51Backend) newBatchWorker() *r51BatchWorker {
 	var err error
 	if cpufeat.PreferWideIFMA() {
 		pipeline, err = newR51IFMABatchQX8CombPipelineWithFinalizer(r51IFMABatchQFinalizerLiteral)
+		if err == nil {
+			pipeline.experimentalRawSquareX8 = cpufeat.PreferRawSquareIFMA()
+		}
 	} else {
 		pipeline, err = newR51IFMABatchQPipeline()
 	}

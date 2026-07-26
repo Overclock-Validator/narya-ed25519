@@ -27,6 +27,18 @@ func PreferDecodedAIFMA() bool { return preferDecodedAIFMA }
 // and decoded-A policy even when the current measured AMD set is identical.
 func PreferWarmX8IFMA() bool { return preferWarmX8IFMA }
 
+// PreferRawSquareIFMA reports whether the x8 cold verifier should use the
+// symmetry-aware raw-square doubling schedule. Complete-verifier measurements
+// select it only on AMD family 19h (Zen 4); native-width family 1Ah (Zen 5)
+// remains faster with the general-multiply schedule. This is deliberately a
+// separate policy bit so a future width decision cannot silently change the
+// arithmetic schedule.
+func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
+
+func rawSquareForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x19
+}
+
 func x86FamilyFromVersion(version uint32) uint32 {
 	base := (version >> 8) & 0x0f
 	if base == 0x0f {

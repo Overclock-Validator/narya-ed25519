@@ -29,8 +29,10 @@ type r51IFMABatchQPipeline struct {
 	experimentalComposableDecodeX8 bool
 
 	// experimentalRawSquareX8 changes only the x8 variable-base doubling leaf
-	// to the exact folded-u61 dedicated-square candidate. Registered
-	// construction leaves it false until a complete Zen 5 gate retains a gain.
+	// to the exact folded-u61 dedicated-square schedule. The registered worker
+	// enables it on Zen 4, where complete verification is faster, and leaves it
+	// off on Zen 5, where the general-multiply schedule remains faster. Tests
+	// also use this field to compare both schedules in one binary.
 	experimentalRawSquareX8 bool
 
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4

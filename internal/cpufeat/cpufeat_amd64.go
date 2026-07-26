@@ -7,12 +7,14 @@ import "golang.org/x/sys/cpu"
 var hasIFMA = cpu.X86.HasAVX512F && cpu.X86.HasAVX512VL && cpu.X86.HasAVX512DQ &&
 	cpu.X86.HasAVX512BW && cpu.X86.HasAVX512IFMA && cpu.X86.HasAVX512VBMI
 
-var amdFamily19OrNewer = detectAMDFamily19OrNewer()
+var amdFamily = detectAMDFamily()
+var amdFamily19OrNewer = amdFamily >= 0x19
 var preferWideIFMA = hasIFMA && amdFamily19OrNewer
 var preferDecodedAIFMA = hasIFMA && amdFamily19OrNewer
 var preferWarmX8IFMA = hasIFMA && amdFamily19OrNewer
+var preferRawSquareIFMA = rawSquareForAMDVersion(hasIFMA, amdFamily)
 
-func detectAMDFamily19OrNewer() bool {
+func detectAMDFamily() uint32 {
 	_, ebx, ecx, edx := cpuid(0, 0)
 	const (
 		auth = 0x68747541
@@ -20,10 +22,10 @@ func detectAMDFamily19OrNewer() bool {
 		cAMD = 0x444d4163
 	)
 	if ebx != auth || edx != enti || ecx != cAMD {
-		return false
+		return 0
 	}
 	version, _, _, _ := cpuid(1, 0)
-	return x86FamilyFromVersion(version) >= 0x19
+	return x86FamilyFromVersion(version)
 }
 
 //go:noescape
