@@ -47,6 +47,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Prepare(base *PointX8) 
 	}
 	workspace.prepared = false
 	var current IFMAPointX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
 	current.SetReduced(base)
 	var baseCached IFMAProjectiveNielsX8
 	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
@@ -54,7 +55,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Prepare(base *PointX8) 
 	}
 	storeIFMAProjectiveNielsMicroAoSEntryX8(&workspace.table, 0, &baseCached)
 	for entry := 1; entry < 16; entry++ {
-		if err := ifmaPointAddProjectiveNielsX8(&current, &current, &baseCached); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&current, &current, &baseCached, &addWorkspace); err != nil {
 			return err
 		}
 		var cached IFMAProjectiveNielsX8
@@ -81,6 +82,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Evaluate(
 	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -99,7 +101,7 @@ func (workspace *ifmaProjectiveNielsMicroAoSWorkspaceX8) Evaluate(
 		}
 		var selected IFMAProjectiveNielsX8
 		selectIFMAProjectiveNielsMicroAoSX8(&selected, &workspace.table, digit, usable)
-		if err := ifmaPointAddProjectiveNielsX8(&acc, &acc, &selected); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}

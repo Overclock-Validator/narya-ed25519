@@ -43,43 +43,61 @@ func ifmaProjectiveNielsFromPointX8(out *IFMAProjectiveNielsX8, point *IFMAPoint
 // versus ten when both operands are stored as raw extended coordinates.
 // Inputs may alias out; out is unchanged on error.
 func ifmaPointAddProjectiveNielsX8(out, point *IFMAPointX8, cached *IFMAProjectiveNielsX8) error {
-	var yMinusX, yPlusX IFMAElementX8
+	var workspace ifmaPointAddProjectiveNielsScratchX8
+	return ifmaPointAddProjectiveNielsWorkspaceX8(out, point, cached, &workspace)
+}
+
+// ifmaPointAddProjectiveNielsScratchX8 owns the fully overwritten scratch
+// for one mixed addition. Evaluation loops reuse it so Go does not zero ten
+// 320-byte field elements for every selected digit.
+type ifmaPointAddProjectiveNielsScratchX8 struct {
+	yMinusX, yPlusX        IFMAElementX8
+	A, B, C, D, E, F, G, H IFMAElementX8
+}
+
+func ifmaPointAddProjectiveNielsWorkspaceX8(
+	out, point *IFMAPointX8,
+	cached *IFMAProjectiveNielsX8,
+	workspace *ifmaPointAddProjectiveNielsScratchX8,
+) error {
+	yMinusX, yPlusX := &workspace.yMinusX, &workspace.yPlusX
+	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
+	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
 	yMinusX.Subtract(&point.Y, &point.X)
 	yPlusX.Add(&point.Y, &point.X)
 
-	var A, B, C, D, E, F, G, H IFMAElementX8
-	if err := ifmaMultiplyComposableUncheckedX8(&A, &yMinusX, &cached.YMinusX); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(A, yMinusX, &cached.YMinusX); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&B, &yPlusX, &cached.YPlusX); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(B, yPlusX, &cached.YPlusX); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&C, &point.T, &cached.T2D); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(C, &point.T, &cached.T2D); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&D, &point.Z, &cached.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(D, &point.Z, &cached.Z); err != nil {
 		return err
 	}
-	D.Add(&D, &D)
-	E.Subtract(&B, &A)
-	F.Subtract(&D, &C)
-	G.Add(&D, &C)
-	H.Add(&B, &A)
+	D.Add(D, D)
+	E.Subtract(B, A)
+	F.Subtract(D, C)
+	G.Add(D, C)
+	H.Add(B, A)
 
-	var result IFMAPointX8
-	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
+	// point and cached are both dead after A/B/C/D have been formed, so
+	// direct output remains safe for exact out==point aliasing.
+	if err := ifmaMultiplyComposableUncheckedX8(&out.X, E, F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, G, H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.T, E, H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, F, G); err != nil {
 		return err
 	}
-	*out = result
 	return nil
 }
 
@@ -96,13 +114,14 @@ func (workspace *ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8) Prepare
 	}
 	workspace.prepared = false
 	var current IFMAPointX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
 	current.SetReduced(base)
 	if err := ifmaProjectiveNielsFromPointX8(&workspace.table.points[0], &current); err != nil {
 		return err
 	}
 	baseCached := &workspace.table.points[0]
 	for entry := 1; entry < len(workspace.table.points); entry++ {
-		if err := ifmaPointAddProjectiveNielsX8(&current, &current, baseCached); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&current, &current, baseCached, &addWorkspace); err != nil {
 			return err
 		}
 		if err := ifmaProjectiveNielsFromPointX8(&workspace.table.points[entry], &current); err != nil {
@@ -127,6 +146,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8) Evaluat
 	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
 	if usable == 0 {
 		*out = acc
 		return 0, nil
@@ -145,7 +165,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8) Evaluat
 		}
 		var selected IFMAProjectiveNielsX8
 		selectIFMAProjectiveNielsX8(&selected, &workspace.table, digit, usable)
-		if err := ifmaPointAddProjectiveNielsX8(&acc, &acc, &selected); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}

@@ -6,18 +6,13 @@ import (
 	"testing"
 )
 
-type ifmaProjectiveNielsAddWorkspaceExperimentX8 struct {
-	yMinusX, yPlusX        IFMAElementX8
-	A, B, C, D, E, F, G, H IFMAElementX8
-}
-
 func TestIFMAProjectiveNielsAddReusedWorkspaceX8Differential(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
 	rng := rand.New(rand.NewSource(0x51_add_2026))
-	var workspace ifmaProjectiveNielsAddWorkspaceExperimentX8
+	var workspace ifmaPointAddProjectiveNielsScratchX8
 	for round := 0; round < 4096; round++ {
 		point := randomSquareIFMAPointX8(rng)
 		cachedPoint := randomSquareIFMAPointX8(rng)
@@ -27,10 +22,10 @@ func TestIFMAProjectiveNielsAddReusedWorkspaceX8Differential(t *testing.T) {
 		}
 
 		var got, want IFMAPointX8
-		if err := ifmaPointAddProjectiveNielsReusedWorkspaceExperimentX8(&got, &point, &cached, &workspace); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&got, &point, &cached, &workspace); err != nil {
 			t.Fatal(err)
 		}
-		if err := ifmaPointAddProjectiveNielsX8(&want, &point, &cached); err != nil {
+		if err := ifmaPointAddProjectiveNielsTemporaryCopyExperimentX8(&want, &point, &cached); err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
@@ -38,7 +33,7 @@ func TestIFMAProjectiveNielsAddReusedWorkspaceX8Differential(t *testing.T) {
 		}
 
 		aliasPoint := point
-		if err := ifmaPointAddProjectiveNielsReusedWorkspaceExperimentX8(&aliasPoint, &aliasPoint, &cached, &workspace); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&aliasPoint, &aliasPoint, &cached, &workspace); err != nil {
 			t.Fatal(err)
 		}
 		if aliasPoint != want {
@@ -58,9 +53,9 @@ func TestIFMAProjectiveNielsAddReusedWorkspaceX8ZeroAllocations(t *testing.T) {
 	if err := ifmaProjectiveNielsFromPointX8(&cached, &cachedPoint); err != nil {
 		t.Fatal(err)
 	}
-	var workspace ifmaProjectiveNielsAddWorkspaceExperimentX8
+	var workspace ifmaPointAddProjectiveNielsScratchX8
 	if allocs := testing.AllocsPerRun(1000, func() {
-		if err := ifmaPointAddProjectiveNielsReusedWorkspaceExperimentX8(&state, &state, &cached, &workspace); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&state, &state, &cached, &workspace); err != nil {
 			panic(err)
 		}
 	}); allocs != 0 {
@@ -86,7 +81,7 @@ func BenchmarkIFMAProjectiveNielsAddReusedWorkspaceX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			if err := ifmaPointAddProjectiveNielsX8(&state, &state, &cached); err != nil {
+			if err := ifmaPointAddProjectiveNielsTemporaryCopyExperimentX8(&state, &state, &cached); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -94,11 +89,11 @@ func BenchmarkIFMAProjectiveNielsAddReusedWorkspaceX8(b *testing.B) {
 	})
 	b.Run("scaffold=reused-workspace", func(b *testing.B) {
 		state := seed
-		var workspace ifmaProjectiveNielsAddWorkspaceExperimentX8
+		var workspace ifmaPointAddProjectiveNielsScratchX8
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			if err := ifmaPointAddProjectiveNielsReusedWorkspaceExperimentX8(&state, &state, &cached, &workspace); err != nil {
+			if err := ifmaPointAddProjectiveNielsWorkspaceX8(&state, &state, &cached, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -106,45 +101,45 @@ func BenchmarkIFMAProjectiveNielsAddReusedWorkspaceX8(b *testing.B) {
 	})
 }
 
-func ifmaPointAddProjectiveNielsReusedWorkspaceExperimentX8(
+func ifmaPointAddProjectiveNielsTemporaryCopyExperimentX8(
 	out, point *IFMAPointX8,
 	cached *IFMAProjectiveNielsX8,
-	workspace *ifmaProjectiveNielsAddWorkspaceExperimentX8,
 ) error {
-	yMinusX, yPlusX := &workspace.yMinusX, &workspace.yPlusX
-	A, B, C, D := &workspace.A, &workspace.B, &workspace.C, &workspace.D
-	E, F, G, H := &workspace.E, &workspace.F, &workspace.G, &workspace.H
+	var yMinusX, yPlusX IFMAElementX8
 	yMinusX.Subtract(&point.Y, &point.X)
 	yPlusX.Add(&point.Y, &point.X)
-	if err := ifmaMultiplyComposableUncheckedX8(A, yMinusX, &cached.YMinusX); err != nil {
+	var A, B, C, D, E, F, G, H IFMAElementX8
+	if err := ifmaMultiplyComposableUncheckedX8(&A, &yMinusX, &cached.YMinusX); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(B, yPlusX, &cached.YPlusX); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&B, &yPlusX, &cached.YPlusX); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(C, &point.T, &cached.T2D); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&C, &point.T, &cached.T2D); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(D, &point.Z, &cached.Z); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&D, &point.Z, &cached.Z); err != nil {
 		return err
 	}
-	D.Add(D, D)
-	E.Subtract(B, A)
-	F.Subtract(D, C)
-	G.Add(D, C)
-	H.Add(B, A)
+	D.Add(&D, &D)
+	E.Subtract(&B, &A)
+	F.Subtract(&D, &C)
+	G.Add(&D, &C)
+	H.Add(&B, &A)
 
-	if err := ifmaMultiplyComposableUncheckedX8(&out.X, E, F); err != nil {
+	var result IFMAPointX8
+	if err := ifmaMultiplyComposableUncheckedX8(&result.X, &E, &F); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Y, G, H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Y, &G, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.T, E, H); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.T, &E, &H); err != nil {
 		return err
 	}
-	if err := ifmaMultiplyComposableUncheckedX8(&out.Z, F, G); err != nil {
+	if err := ifmaMultiplyComposableUncheckedX8(&result.Z, &F, &G); err != nil {
 		return err
 	}
+	*out = result
 	return nil
 }
