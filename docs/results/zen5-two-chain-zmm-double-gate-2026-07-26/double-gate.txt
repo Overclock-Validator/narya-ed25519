@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71416308	        50.29 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71590652	        50.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71595559	        50.28 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71561110	        50.29 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71602950	        50.29 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71548300	        50.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71573826	        50.31 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71565373	        50.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71601193	        50.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-independent-packed-x4         	71520446	        50.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.41 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.41 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalQuadTwoChainDoubleX8/two-chain-zmm                     	100000000	        30.43 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	67.233s

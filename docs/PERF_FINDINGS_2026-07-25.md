@@ -742,6 +742,39 @@ doubling used by singleton and pair tails. It does not change the x8
 lane-per-signature point loop. The split helper is intentionally retained as
 an exact-representation oracle and as a reusable measurement seam.
 
+### 5.17 Two independent packed chains in one ZMM — positive gate
+
+The packed singleton normally uses one YMM register's four lanes for one
+point's `[X,Y,T,Z]` coordinates. Mechanically widening that representation to
+ZMM would leave four lanes idle and is not an optimization. An algorithm that
+produces two independent point chains—separate `[s]B` and `[k]A` terms, or a
+torsion-safe HEEA transform—can instead place one packed point in each 256-bit
+half.
+
+Commit `d01b574` adds a test-only Zen 5 regime probe for that shape. The same
+packed doubling formulas and range contracts execute independently in both
+halves, while one native x8 IFMA multiply services both points. It deliberately
+does not add a verifier or dispatch path.
+
+On a pinned Zen 5 core, two separately maintained packed-x4 chains cost 50.30
+ns per pair. The two-chain ZMM operation cost 30.42 ns per pair (-39.5%),
+essentially the same as the 30.575 ns cost of one packed-x4 chain. Exact
+redundant representations matched two independent x4 oracles through random
+mixed-order, non-unit-projective doubling chains; the operation remained
+zero-allocation; and the complete native repository suite passed.
+
+This closes only the doubling premise. A complete candidate still needs an x8
+packed cached-add layer, two independently recoded/table-selected terms, final
+term combination, and complete strict-predicate differentials. HEEA additionally
+retains its modulo-8L congruence, odd/nonzero multiplier, width, and fallback
+guards. No complete-verifier speedup is claimed from this gate alone. Raw
+output is under `docs/results/zen5-two-chain-zmm-double-gate-2026-07-26/`.
+
+**Regime tag:** a negative batch-HEEA result cannot close singleton HEEA. The
+batch x8 orientation already fills all lanes with signatures, while this
+singleton orientation has a second 256-bit half available only when the scalar
+algorithm exposes a second independent chain.
+
 ---
 
 ## 6. Smaller observations
