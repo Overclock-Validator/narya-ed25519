@@ -178,6 +178,20 @@ func (b *r51Backend) verify(profile Profile, pub *[32]byte, message, sig []byte,
 	return verifyOne(genericBackend{}, profile, pub, message, sig, nil)
 }
 
+// verifyStrictRaw is the direct public VerifyStrict seam. Unlike verify, its
+// caller has not applied the shared profile pre-pass, so the packed verifier's
+// complete and independently tested strict byte checks remain load-bearing.
+// Internal faults still recompute through the generic strict predicate and
+// increment the same operational counter as every other r51 entry point.
+func (b *r51Backend) verifyStrictRaw(pub *[32]byte, message, sig []byte) bool {
+	ok, err := b.verifyOne(DalekStrict, pub, message, sig)
+	if err == nil {
+		return ok
+	}
+	b.faults.Add(1)
+	return verifyOne(genericBackend{}, DalekStrict, pub, message, sig, nil)
+}
+
 func (b *r51Backend) verifyOne(profile Profile, pub *[32]byte, message, sig []byte) (bool, error) {
 	// rawBatchBackend bypasses the shared applyProfile wrapper. Keep the nil
 	// guard local so the StdlibCompat singleton/tail fallback cannot pass a nil

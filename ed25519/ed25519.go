@@ -37,7 +37,12 @@ func VerifyStrict(pub, message, sig []byte) bool {
 	if len(pub) != 32 {
 		return false
 	}
-	return verifyOne(active(), DalekStrict, (*[32]byte)(pub), message, sig, nil)
+	b := active()
+	publicKey := (*[32]byte)(pub)
+	if raw, ok := b.(rawStrictSingleBackend); ok {
+		return raw.verifyStrictRaw(publicKey, message, sig)
+	}
+	return verifyOne(b, DalekStrict, publicKey, message, sig, nil)
 }
 
 // verifyOne applies the given profile's shared rejection pre-pass,

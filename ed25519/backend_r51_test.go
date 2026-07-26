@@ -268,13 +268,64 @@ func TestR51BackendInternalFaultFallsBackToGeneric(t *testing.T) {
 	if !b.verify(DalekStrict, &single.pub, single.msg, single.sig, nil) {
 		t.Fatal("singleton native fault did not fall back to generic verification")
 	}
+	if !b.verifyStrictRaw(&single.pub, single.msg, single.sig) {
+		t.Fatal("raw strict singleton native fault did not fall back to generic verification")
+	}
 	batch := makeBatchFixture(t, 4, 200)
 	verdicts := make([]bool, len(batch.pubs))
 	if !b.verifyBatchRaw(DalekStrict, batch.pubs, batch.msgs, batch.sigs, verdicts) {
 		t.Fatalf("batch native fault did not fall back: %v", verdicts)
 	}
-	if got := b.backendStats().InternalFaultFallbacks; got != 2 {
-		t.Fatalf("fault fallback count=%d, want 2", got)
+	if got := b.backendStats().InternalFaultFallbacks; got != 3 {
+		t.Fatalf("fault fallback count=%d, want 3", got)
+	}
+}
+
+func TestR51BackendRawStrictSingletonDifferential(t *testing.T) {
+	b := requireR51Backend(t)
+	fixture := makeFixture(t, 1232)
+	for _, test := range []struct {
+		name string
+		pub  *[32]byte
+		msg  []byte
+		sig  []byte
+		want bool
+	}{
+		{name: "valid", pub: &fixture.pub, msg: fixture.msg, sig: fixture.sig, want: true},
+		{name: "nil-public-key", pub: nil, msg: fixture.msg, sig: fixture.sig},
+		{name: "short-signature", pub: &fixture.pub, msg: fixture.msg, sig: fixture.sig[:63]},
+		{name: "invalid-equation", pub: &fixture.pub, msg: append([]byte(nil), fixture.msg...), sig: fixture.sig},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.name == "invalid-equation" {
+				test.msg[0] ^= 0x80
+			}
+			got := b.verifyStrictRaw(test.pub, test.msg, test.sig)
+			if got != test.want {
+				t.Fatalf("raw strict=%v want=%v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestR51BackendRawStrictSingletonCorpora(t *testing.T) {
+	b := requireR51Backend(t)
+	for _, corpus := range []struct {
+		name    string
+		vectors []r51ReferenceVector
+	}{
+		{name: "cctv", vectors: r51CCTVVectors(t)},
+		{name: "wycheproof", vectors: r51WycheproofVectors(t)},
+	} {
+		t.Run(corpus.name, func(t *testing.T) {
+			for _, vector := range corpus.vectors {
+				got := b.verifyStrictRaw(&vector.pub, vector.msg, vector.sig)
+				want := referenceVerifyProfile(DalekStrict, &vector.pub, vector.msg, vector.sig)
+				if got != want {
+					t.Fatalf("%s: raw strict=%v want=%v", vector.name, got, want)
+				}
+			}
+		})
 	}
 }
 

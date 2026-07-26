@@ -1,0 +1,44 @@
+go version go1.26.4 linux/amd64
+AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71882	     16681 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71876	     16681 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71905	     16683 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71922	     16687 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71884	     16689 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyStrict         	   71896	     16700 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72127	     16643 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72078	     16646 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72066	     16637 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72055	     16640 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72096	     16635 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=200/VerifyBatchStrict-n=1         	   72086	     16630 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67592	     17743 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67594	     17743 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67604	     17743 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67622	     17747 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67620	     17744 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyStrict                 	   67598	     17747 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67936	     17665 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67915	     17664 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67856	     17665 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67952	     17666 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67938	     17665 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=1232/VerifyBatchStrict-n=1        	   67920	     17667 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59242	     20253 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59239	     20256 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59244	     20258 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59239	     20254 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59215	     20255 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyStrict                 	   59242	     20254 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59548	     20148 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59535	     20150 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59551	     20150 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59547	     20141 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59533	     20148 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPublicR51SingletonEntryPoints/msg=4096/VerifyBatchStrict-n=1        	   59521	     20148 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	49.873s

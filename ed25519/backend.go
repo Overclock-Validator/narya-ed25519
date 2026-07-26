@@ -48,6 +48,16 @@ type rawBatchBackend interface {
 	verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool
 }
 
+// rawStrictSingleBackend is the singleton counterpart of rawBatchBackend for
+// the fixed DalekStrict API. Implementations consume the public input shape
+// directly and must apply the complete strict byte predicate themselves.
+// This avoids sending a native backend through the generic profile/interface
+// stack only to repeat the same prechecks inside its specialized verifier.
+// Backends that do not implement it retain the shared verifyOne path.
+type rawStrictSingleBackend interface {
+	verifyStrictRaw(pub *[32]byte, message, sig []byte) bool
+}
+
 // precomputedKeyLookup is the cache lookup boundary used by native raw batch
 // backends. Keeping lookup behind this private interface lets the backend fill
 // fixed-size native scratch directly without allocating batchItem or a slice

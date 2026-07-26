@@ -888,6 +888,38 @@ gather and SoA stores remain visible and are a separate candidate. Because B
 is shared process-wide, the 80 KiB storage trade does not scale with the public
 key population.
 
+### 5.22 Direct strict singleton dispatch — retained
+
+The exported `VerifyStrict` path previously applied the shared profile layer
+and then entered the r51 backend's packed verifier, while batch-of-one reached
+the packed verifier through the allocation-free raw-batch seam. A diagnostic
+split showed that the strict small-order precheck itself cost only 3.36 ns;
+the measurable loss was the generic singleton dispatch stack, not the
+acceptance predicate.
+
+The private `rawStrictSingleBackend` interface is the singleton analogue of
+the existing `rawBatchBackend`. Forced r51 consumes the public byte shape
+directly and retains the packed verifier's complete strict byte prechecks.
+Unsupported backends keep the original shared path. Native faults still
+increment `InternalFaultFallbacks` and recompute with the generic strict
+verifier.
+
+On the pinned Zen 4 host, an immediate 1232-byte A/B moved `VerifyStrict` from
+about 19.60 to 17.46 µs (-10.9%), while batch-of-one measured 17.40 µs. A
+separate six-sample size sweep measured `VerifyStrict` at 16.681-16.700 µs
+for 200-byte messages, 17.743-17.747 µs for 1232 bytes, and 20.253-20.258 µs
+for 4096 bytes. It remained within 0.3-0.6% of batch-of-one at every size and
+allocated zero bytes.
+
+The complete native repository suite, direct fault fallback, nil/short/invalid
+input cases, and CCTV/Wycheproof strict differentials passed. Raw output is
+under `docs/results/zen4-raw-strict-singleton-2026-07-26/`.
+
+**Regime tag:** the optimization applies only to the explicit `VerifyStrict`
+API when the selected backend implements the private raw singleton contract.
+It does not alter `Verify`, batch dispatch, profile selection, or the
+generic/stdlib implementations.
+
 ---
 
 ## 6. Smaller observations
