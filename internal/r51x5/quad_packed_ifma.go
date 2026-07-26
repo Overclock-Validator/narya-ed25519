@@ -77,6 +77,17 @@ type quadPointAddCachedWorkspaceX4 struct {
 	pointOperand, products, left, right IFMAElementX4
 }
 
+// quadNormalizeModelX4 keeps the coordinate-parallel model independent of
+// the native IFMA carry/fold leaf. Besides making it a stronger oracle, this
+// lets the model execute on amd64 hosts that do not expose AVX-512 IFMA.
+func quadNormalizeModelX4(out *IFMAElementX4, raw *IFMAProductX4) {
+	limbs, ok := normalizeIFMAProductX4(raw)
+	if !ok {
+		panic("r51x5: packed x4 model range invariant violated")
+	}
+	out.limbs = limbs
+}
+
 func (ops quadDSMOperationsX4) multiply(out, a, b *IFMAElementX4) error {
 	if ops.hardware {
 		return ifmaMultiplyComposableUncheckedX4(out, a, b)
@@ -145,7 +156,7 @@ func quadDoubleFinalOperandsX4(left, right, products *IFMAElementX4) {
 	}
 
 	var k IFMAElementX4
-	ifmaNormalizeProductUncheckedX4(&k.limbs, &rawK)
+	quadNormalizeModelX4(&k, &rawK)
 	for limb := range k.limbs {
 		e := k.limbs[limb][0]
 		g := k.limbs[limb][1]
@@ -203,7 +214,7 @@ func quadCachedAddFirstOperandX4(out *IFMAElementX4, point *quadPackedPointX4) {
 			z,
 		}
 	}
-	ifmaNormalizeProductUncheckedX4(&out.limbs, &raw)
+	quadNormalizeModelX4(out, &raw)
 }
 
 // quadCachedAddFinalOperandsX4 converts [A,B,C,D] into the two packed final
@@ -225,7 +236,7 @@ func quadCachedAddFinalOperandsX4(left, right, products *IFMAElementX4) {
 	}
 
 	var k IFMAElementX4
-	ifmaNormalizeProductUncheckedX4(&k.limbs, &rawK)
+	quadNormalizeModelX4(&k, &rawK)
 	for limb := range k.limbs {
 		e := k.limbs[limb][0]
 		g := k.limbs[limb][1]
