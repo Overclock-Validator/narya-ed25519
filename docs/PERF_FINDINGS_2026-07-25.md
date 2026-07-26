@@ -429,11 +429,24 @@ bound.
 Capacity is simply budget divided by table size, so narrowing the comb buys keys
 at the cost of online work:
 
-| spec | rows | entries/row | bytes/key | keys @128 MiB |
-|---|---:|---:|---:|---:|
-| A6/r9 (current) | 5 | 32 | 19,200 | 7,158 |
-| A5/r9 | 6 | 16 | 11,520 | 11,930 |
-| A4/r9 | 8 | 8 | 7,680 | 17,895 |
+| spec | rows | entries/row | comb bytes | cache entry | keys @128 MiB |
+|---|---:|---:|---:|---:|---:|
+| A6/r9 (current) | 5 | 32 | 19,200 | 19,424 | 6,909 |
+| A5/r9 | 6 | 16 | 11,520 | 11,744 | 11,428 |
+| A4/r9 | 8 | 8 | 7,680 | 7,904 | 16,980 |
+
+Two corrections to an earlier form of this table. The promoted cache entry is
+`r51WarmTableBytes`, which is the comb plus the 192-byte decoded-A entry it
+supersedes, so dividing the budget by the bare comb payload overstates capacity;
+the counts above use the entry. And as with the decoded tier below, the
+128 MiB budget is not the binding limit anyway — `admissionEntryLimit` is
+131,072, and it applies to every tier.
+
+The two narrower rows are arithmetic, not configuration.
+`heterogeneousPartialCombSpecExperiment.validate()` admits widths 6 through 10
+only, so A5/r9 and A4/r9 panic today; adopting either means relaxing that bound
+first, which is a change to consensus-critical shape validation rather than a
+tuning knob.
 
 Whether 2.5x the keys is worth a slower warm path depends entirely on the
 fee-payer recurrence distribution, which nobody has measured. **That measurement
@@ -450,7 +463,7 @@ comb tier instead of competing with it.
 
 The exact-byte-bound production entry is 192 bytes per key, versus 19,200 bytes
 for A6/r9. Ignoring map/key metadata, 128 MiB can hold roughly 699,000 entries
-rather than 7,158 comb tables. The current admission-entry limit is 131,072, so
+rather than 6,909 warm comb entries. The current admission-entry limit is 131,072, so
 that arithmetic capacity is not the effective default and must not be quoted as
 one.
 
