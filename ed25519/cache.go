@@ -27,6 +27,12 @@ import (
 // Once the limit is reached, previously unseen keys remain on the plain path.
 // Tables are never evicted; MaxTableBytes stops admission or promotion when its
 // strict memory budget is spent.
+//
+// A nil *Cache rejects everything rather than panicking, matching
+// PrecomputedKey. That makes a mis-wired cache fail the same way for every
+// input instead of only for the ones that reach a table lookup, so it cannot
+// pass a test built from rejected signatures and then fault on the first valid
+// one. Mismatched batch slice lengths still panic, as they do uncached.
 type Cache struct {
 	// MaxTableBytes strictly bounds the memory held by per-key tables. Zero
 	// means DefaultMaxTableBytes. Configure it before the Cache's first use.
@@ -98,6 +104,16 @@ func (c *Cache) verify(profile Profile, pub *[32]byte, message, sig []byte) bool
 }
 
 func (c *Cache) verifyWithBackend(b backend, profile Profile, pub *[32]byte, message, sig []byte) bool {
+	// A nil receiver fails closed, matching PrecomputedKey.Verify.
+	//
+	// This is here rather than left to the runtime because without it the
+	// failure mode depends on the input: a signature the pre-pass rejects
+	// returns false, one that reaches a table lookup panics. A caller who
+	// happened to test with an invalid signature would see a nil cache work,
+	// and meet the panic later on the first valid one.
+	if c == nil {
+		return false
+	}
 	if rejectedByProfile(profile, pub, sig) {
 		return false
 	}
@@ -144,6 +160,17 @@ func (c *Cache) verifyBatch(profile Profile, pubs []*[32]byte, msgs, sigs [][]by
 }
 
 func (c *Cache) verifyBatchWithBackend(b backend, profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
+	// See verifyWithBackend: a nil receiver fails closed rather than panicking
+	// on whichever item first reaches a lookup. Length checking stays with the
+	// uncached path so a nil cache and a live one panic alike on mismatched
+	// slices, which is a caller bug either way.
+	if c == nil {
+		checkBatchLengths(pubs, msgs, sigs, ok)
+		for i := range ok {
+			ok[i] = false
+		}
+		return len(ok) == 0
+	}
 	if !b.supportsPrecomp() {
 		return verifyBatch(b, profile, pubs, msgs, sigs, ok, nil)
 	}
