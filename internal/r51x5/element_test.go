@@ -105,13 +105,15 @@ func TestCanonicalEncodingAgainstBigAndEdwardsField(t *testing.T) {
 }
 
 func TestPermissiveEncodingAgainstBigAndEdwardsField(t *testing.T) {
-	inputs := [][32]byte{
-		{},
-		canonicalBytes(new(big.Int).Set(testModulus)),
-		canonicalBytes(new(big.Int).Add(new(big.Int).Set(testModulus), big.NewInt(1))),
-		canonicalBytes(new(big.Int).Add(new(big.Int).Set(testModulus), big.NewInt(18))),
-		canonicalBytes(new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))),
+	inputs := make([][32]byte, 0, 4+19+4096)
+	inputs = append(inputs, [32]byte{})
+	// Five normalized radix-51 limbs span [0, 2^255), while the field ends
+	// at p=2^255-19. Exhaust the complete non-canonical integer interval:
+	// p+j must decode permissively to j for every 0 <= j <= 18.
+	for j := int64(0); j <= 18; j++ {
+		inputs = append(inputs, canonicalBytes(new(big.Int).Add(new(big.Int).Set(testModulus), big.NewInt(j))))
 	}
+	inputs = append(inputs, canonicalBytes(new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))))
 	highBitZero := [32]byte{}
 	highBitZero[31] = 0x80
 	inputs = append(inputs, highBitZero)
@@ -152,10 +154,9 @@ func TestCanonicalRejectsAndPreservesReceiver(t *testing.T) {
 	var unchanged Element
 	unchanged.One()
 	want := unchanged.Bytes()
-	invalid := [][32]byte{
-		canonicalBytes(new(big.Int).Set(testModulus)),
-		canonicalBytes(new(big.Int).Add(new(big.Int).Set(testModulus), big.NewInt(1))),
-		canonicalBytes(new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))),
+	invalid := make([][32]byte, 0, 21)
+	for j := int64(0); j <= 18; j++ {
+		invalid = append(invalid, canonicalBytes(new(big.Int).Add(new(big.Int).Set(testModulus), big.NewInt(j))))
 	}
 	var highBit [32]byte
 	highBit[31] = 0x80

@@ -497,6 +497,10 @@ traffic-specific admission and eviction policy remains integration work. The
 `ifma` reference backend and alternate arithmetic experiments remain under
 active development.
 
+The radix-51 backend's analytic range evidence, exact test coverage, and
+remaining machine-certificate boundary are summarized in
+[`docs/R51_ARITHMETIC_ASSURANCE.md`](docs/R51_ARITHMETIC_ASSURANCE.md).
+
 ### Outstanding before automatic dispatch
 
 These are open, not pending paperwork. Each is described where it belongs above.
