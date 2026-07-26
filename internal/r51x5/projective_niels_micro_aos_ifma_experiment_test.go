@@ -15,8 +15,8 @@ func TestIFMAProjectiveNielsMicroAoSX8Differential(t *testing.T) {
 	if err := current.Prepare(&variable, 5); err != nil {
 		t.Fatal(err)
 	}
-	var candidate ifmaProjectiveNielsMicroAoSWorkspaceX8
-	if err := candidate.Prepare(&variable); err != nil {
+	var candidate ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	if err := candidate.Prepare(&variable, 5); err != nil {
 		t.Fatal(err)
 	}
 	for active := 0; active < 256; active++ {
@@ -35,7 +35,7 @@ func TestIFMAProjectiveNielsMicroAoSX8Differential(t *testing.T) {
 	}
 	var out IFMAPointX8
 	if allocations := testing.AllocsPerRun(20, func() {
-		if err := candidate.Prepare(&variable); err != nil {
+		if err := candidate.Prepare(&variable, 5); err != nil {
 			panic(err)
 		}
 		if _, err := candidate.Evaluate(&out, &scalars, 0xff, 0xff); err != nil {
@@ -57,8 +57,8 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 	if err := current.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
-	var candidate ifmaProjectiveNielsMicroAoSWorkspaceX8
-	if err := candidate.Prepare(&variable); err != nil {
+	var candidate ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	if err := candidate.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
 	for _, path := range []string{"prepared-loop", "cold-table+loop"} {
@@ -85,7 +85,7 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 			b.ReportMetric(float64(unsafe.Sizeof(candidate)), "workspace-B")
 			for range b.N {
 				if path == "cold-table+loop" {
-					if err := candidate.Prepare(&variable); err != nil {
+					if err := candidate.Prepare(&variable, 5); err != nil {
 						b.Fatal(err)
 					}
 				}
