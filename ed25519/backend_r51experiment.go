@@ -59,7 +59,7 @@ type r51IFMAPipeline struct {
 	fixedBaseComb     *r51x5.ExperimentalFixedBaseCombTable
 	x8                r51IFMAFixedDSMWorkspaceX8
 	x4                [2]r51IFMAFixedDSMWorkspaceX4
-	variableX8        *r51x5.ExperimentalIFMAVariableBaseWorkspaceX8
+	variableX8        *r51x5.ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8
 	variableX4        [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
 
 	// beforePrepareVariableX8 is an error-injection seam used only by the
@@ -297,7 +297,7 @@ func newR51IFMACombPipeline(kind r51IFMAPipelineKind, variableRadixBits, fixedRa
 		fixedBaseComb: sharedR51FixedBaseComb(fixedRadixBits),
 	}
 	if kind == r51IFMAX8 {
-		pipeline.variableX8 = new(r51x5.ExperimentalIFMAVariableBaseWorkspaceX8)
+		pipeline.variableX8 = new(r51x5.ExperimentalIFMAProjectiveNielsVariableBaseWorkspaceX8)
 	} else {
 		halves := 1
 		if kind == r51IFMATwoX4 {
