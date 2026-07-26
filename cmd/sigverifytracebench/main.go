@@ -16,9 +16,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	narya "github.com/Overclock-Validator/narya/ed25519"
-	"github.com/Overclock-Validator/narya/internal/mithriltracev3"
-	"github.com/Overclock-Validator/narya/internal/tracebench"
+	narya "github.com/Overclock-Validator/narya-ed25519/ed25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/mithriltracev3"
+	"github.com/Overclock-Validator/narya-ed25519/internal/tracebench"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package ed25519
 import (
 	stded25519 "crypto/ed25519"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 func init() { register("stdlib", stdlibBackend{}) }

@@ -5,6 +5,13 @@ package sha512mb
 import "golang.org/x/sys/cpu"
 
 func nativeX4Available() bool { return cpu.X86.HasAVX2 }
+
+// nativeX8Available also requires AVX-512VL: nativeCompressVerifierFirstX8Rolling
+// loads the 32-byte R and A segments with VMOVDQU64 into a YMM register, which
+// has no VEX form and so assembles as EVEX.256. That encoding faults with #UD
+// unless VL is present. Every shipping part with AVX-512BW also has VL, so this
+// term only matters where CPUID is synthesized, but the exported availability
+// helpers promise a kernel that is safe to execute on this machine.
 func nativeX8Available() bool {
 	return cpu.X86.HasAVX512F && cpu.X86.HasAVX512VL && cpu.X86.HasAVX512BW
 }

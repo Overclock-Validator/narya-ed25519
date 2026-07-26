@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/Overclock-Validator/narya/internal/r51x5"
-	"github.com/Overclock-Validator/narya/sha512mb"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/sha512mb"
 )
 
 // r51IFMABatchQPipeline is the complete two-x4 r51 path selected by the forced

@@ -6,9 +6,8 @@ import (
 	"testing"
 	"unsafe"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
-
 
 func assertHeterogeneousPartialCombA6R9VectorTablesMatchScalarExperiment(
 	t testing.TB,

@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 var sevenSmallOrderLow255 = [...]string{

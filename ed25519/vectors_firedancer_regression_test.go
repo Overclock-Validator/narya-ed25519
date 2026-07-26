@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
 )
 
 // These seeds are the minimized inputs retained by Firedancer's

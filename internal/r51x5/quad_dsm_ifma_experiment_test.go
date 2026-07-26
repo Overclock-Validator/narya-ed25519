@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unsafe"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 // quadSignedCachedTableX4 is a test-only single-point table. Each entry is

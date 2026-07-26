@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/heea8l"
+	"github.com/Overclock-Validator/narya-ed25519/internal/heea8l"
 )
 
 // exactSignedIntegerMult is deliberately independent of Scalar. Reducing n

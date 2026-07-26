@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync/atomic"
 
-	"github.com/Overclock-Validator/narya/internal/cpufeat"
+	"github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
 )
 
 var experimentalIFMAEnabled atomic.Bool

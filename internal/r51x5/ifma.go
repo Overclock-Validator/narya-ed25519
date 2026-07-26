@@ -3,7 +3,7 @@ package r51x5
 import (
 	"errors"
 
-	"github.com/Overclock-Validator/narya/internal/cpufeat"
+	"github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
 )
 
 var (

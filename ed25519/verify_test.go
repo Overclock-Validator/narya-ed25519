@@ -7,7 +7,7 @@ import (
 	mrand "math/rand"
 	"testing"
 
-	edwards "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwards "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 // referenceVerify is the acceptance oracle for the active profile.

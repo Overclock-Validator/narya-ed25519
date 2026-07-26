@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Overclock-Validator/narya/internal/heea8l"
+	"github.com/Overclock-Validator/narya-ed25519/internal/heea8l"
 )
 
 type stats struct {

@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"testing"
 
-	edwardsref "github.com/Overclock-Validator/narya/internal/edwards25519"
+	edwardsref "github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
 )
 
 func compareDecode2(t *testing.T, label string, aBytes, rBytes []byte) {

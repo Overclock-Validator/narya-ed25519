@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	narya "github.com/Overclock-Validator/narya/ed25519"
+	narya "github.com/Overclock-Validator/narya-ed25519/ed25519"
 )
 
 var publicR51ReleaseSink bool

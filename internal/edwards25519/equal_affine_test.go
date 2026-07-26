@@ -12,7 +12,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519/field"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 )
 
 func TestEqualAffineWithNonUnitZ(t *testing.T) {

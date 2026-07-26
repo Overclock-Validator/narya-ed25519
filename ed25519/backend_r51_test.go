@@ -8,8 +8,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/Overclock-Validator/narya/internal/cpufeat"
-	"github.com/Overclock-Validator/narya/internal/r51x5"
+	"github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
+	"github.com/Overclock-Validator/narya-ed25519/internal/r51x5"
 )
 
 func requireR51Backend(t testing.TB) *r51Backend {

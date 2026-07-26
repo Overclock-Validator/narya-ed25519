@@ -10,7 +10,7 @@ package edwards25519
 import (
 	"errors"
 
-	"github.com/Overclock-Validator/narya/internal/edwards25519/field"
+	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field"
 )
 
 // ExtendedCoordinates returns v in extended coordinates (X:Y:Z:T) where
