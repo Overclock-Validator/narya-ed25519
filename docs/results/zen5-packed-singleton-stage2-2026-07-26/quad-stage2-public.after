@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64454        18603 ns/op        66.23 MB/s        0 internal-fault-fallbacks        53755 signatures/s        18.60 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64491        18607 ns/op        66.21 MB/s        0 internal-fault-fallbacks        53743 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64498        18600 ns/op        66.24 MB/s        0 internal-fault-fallbacks        53764 signatures/s        18.60 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64453        18613 ns/op        66.19 MB/s        0 internal-fault-fallbacks        53727 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64442        18609 ns/op        66.20 MB/s        0 internal-fault-fallbacks        53737 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64503        18608 ns/op        66.21 MB/s        0 internal-fault-fallbacks        53741 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64490        18608 ns/op        66.21 MB/s        0 internal-fault-fallbacks        53741 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64478        18609 ns/op        66.20 MB/s        0 internal-fault-fallbacks        53736 signatures/s        18.61 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64478        18619 ns/op        66.17 MB/s        0 internal-fault-fallbacks        53709 signatures/s        18.62 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=1          64424        18623 ns/op        66.15 MB/s        0 internal-fault-fallbacks        53696 signatures/s        18.62 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32138        37345 ns/op        65.98 MB/s        0 internal-fault-fallbacks        53554 signatures/s        18.67 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32122        37374 ns/op        65.93 MB/s        0 internal-fault-fallbacks        53513 signatures/s        18.69 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32098        37378 ns/op        65.92 MB/s        0 internal-fault-fallbacks        53508 signatures/s        18.69 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32101        37371 ns/op        65.93 MB/s        0 internal-fault-fallbacks        53518 signatures/s        18.69 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32109        37372 ns/op        65.93 MB/s        0 internal-fault-fallbacks        53515 signatures/s        18.69 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32108        37356 ns/op        65.96 MB/s        0 internal-fault-fallbacks        53540 signatures/s        18.68 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32127        37355 ns/op        65.96 MB/s        0 internal-fault-fallbacks        53540 signatures/s        18.68 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32137        37343 ns/op        65.98 MB/s        0 internal-fault-fallbacks        53558 signatures/s        18.67 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32145        37341 ns/op        65.99 MB/s        0 internal-fault-fallbacks        53560 signatures/s        18.67 us/signature        0 B/op        0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=2          32128        37351 ns/op        65.97 MB/s        0 internal-fault-fallbacks        53546 signatures/s        18.68 us/signature        0 B/op        0 allocs/op
+PASS
+ok      github.com/Overclock-Validator/narya-ed25519/ed25519      29.697s

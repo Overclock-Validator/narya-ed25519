@@ -542,6 +542,43 @@ n=2 (-1.7%). Timed rows retained zero allocations and zero internal-fault
 fallbacks, and the complete native repository suite passed. Raw output is
 under `docs/results/zen5-packed-singleton-add-scratch-2026-07-26/`.
 
+### 5.10 Packed-singleton doubling Stage 2 — retained
+
+The reusable-workspace doubling still normalized four packed field products,
+then returned to Go for the E/F/G/H linear layer before issuing the four final
+multiplications. Commit `8fb91a2` replaces only that linear layer with one x4
+assembly leaf. Its input is the normalized packed vector
+`[A=X^2,B=Y^2,C=Z^2,D=XY]`; its outputs are the two packed operand vectors
+needed by the unchanged final multiplications:
+
+```text
+left  = [E, G, E, F]
+right = [F, H, H, G]
+E = 2D
+G = B - A
+H = -A - B
+F = B - A - 2C
+```
+
+The native leaf adds eight whole moduli to the three signed expressions,
+proving non-negative pre-carry limbs below `12*2^51`, then applies one parallel
+carry/fold. All five packed input vectors are loaded before either output is
+stored, so the input may alias either output; the two outputs must be distinct.
+The portable Go construction remains the independent representation oracle.
+Direct tests compare the native result bit for bit over zero, maximum-u52, and
+1,024 random inputs, exercise input/output aliasing, and assert zero
+allocations. Existing projective, torsion, range, and poisoned-workspace tests
+remain unchanged.
+
+Ten pinned Zen 5 samples moved the isolated reusable-workspace doubling from
+42.69 to 34.94 ns (-18.2%). Through exported `VerifyBatchStrict` at msg=1232,
+n=1 moved from 20.38 to 18.61 us/signature (-8.7%) and n=2 from 20.45 to
+18.68 us/signature (-8.7%). The n=4/8/64 dispatches were neutral at about
+10.16/5.43/5.11 us/signature. Every timed row retained zero allocations and
+zero internal-fault fallbacks, and the complete native repository suite
+passed. Raw output is under
+`docs/results/zen5-packed-singleton-stage2-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
