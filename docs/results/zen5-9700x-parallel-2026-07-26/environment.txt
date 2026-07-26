@@ -1,0 +1,17 @@
+date: 2026-07-26
+source: ac8c1abd1ed017921cf6440b2465f0993ae01c1a
+worktree status: clean
+go: go version go1.26.4 linux/amd64
+os/arch: linux/amd64
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+vendor: AuthenticAMD
+family/model/stepping: 26/68/0
+physical cores/logical CPUs: 8/16
+physical-core CPU set: 0-7
+SMT sibling CPU set: 8-15
+thread sibling pairs: 0/8 1/9 2/10 3/11 4/12 5/13 6/14 7/15
+frequency boost: enabled
+maximum reported frequency: 5582.3008 MHz
+governor: performance
+energy performance preference: performance
+

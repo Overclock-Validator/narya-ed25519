@@ -1,0 +1,10 @@
+taskset -c 0 env GOMAXPROCS=1 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=1s -count=6 ./ed25519
+
+taskset -c 0-1 env GOMAXPROCS=2 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=1s -count=6 ./ed25519
+
+taskset -c 0-3 env GOMAXPROCS=4 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=1s -count=6 ./ed25519
+
+taskset -c 0-5 env GOMAXPROCS=6 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=1s -count=6 ./ed25519
+
+taskset -c 0-7 env GOMAXPROCS=8 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=1s -count=6 ./ed25519
+

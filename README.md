@@ -225,12 +225,31 @@ excludes expansion cost and is included as a warm-key reference.
 | curve25519-voi, cold strict | 21.810 | 21.830 | 21.650 | 21.770 | 21.860 |
 | curve25519-voi, expanded key | 18.980 | 19.000 | 18.820 | 18.940 | 19.030 |
 
+The public cold path also scales across independent callers. At commit
+`ac8c1ab`, six one-second samples per point over 1232-byte messages produced:
+
+| physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 99,120 | 1.00x | 175,633 | 1.00x |
+| 2 | 196,862 | 1.99x | 352,288 | 2.01x |
+| 4 | 386,848 | 3.90x | 688,638 | 3.92x |
+| 6 | 560,078 | 5.65x | 978,018 | 5.57x |
+| 8 | 705,648 | 7.12x | 1,216,888 | 6.93x |
+
+The eight-core n=4 and n=8 rows correspond to aggregate throughput costs of
+1.417 and 0.822 microseconds per signature; they are not individual-request
+latencies. Every parallel row reports 0 B/op, 0 allocs/op, and zero internal
+fault fallbacks. CPUs 0--7 were verified as eight distinct physical cores;
+their SMT siblings 8--15 were excluded.
+
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into this
 table because code, CPU generation, and cache population materially change the
 result. Raw output, exact commands, environment details, and checksums for the
 current snapshot are in
 [`docs/results/zen5-9700x-readme-2026-07-26/`](docs/results/zen5-9700x-readme-2026-07-26/).
+The multicore evidence is in
+[`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
 
 ### Cold and warm verification
 

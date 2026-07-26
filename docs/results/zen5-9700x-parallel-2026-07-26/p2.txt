@@ -1,0 +1,18 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59246	     20336 ns/op	 242.33 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    196696 signatures/s	         5.084 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59130	     20343 ns/op	 242.24 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    196624 signatures/s	         5.086 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59120	     20285 ns/op	 242.93 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    197186 signatures/s	         5.071 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59126	     20296 ns/op	 242.81 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    197083 signatures/s	         5.074 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59071	     20361 ns/op	 242.03 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    196456 signatures/s	         5.090 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=4-2         	   59088	     20302 ns/op	 242.74 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    197028 signatures/s	         5.075 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52762	     22779 ns/op	 432.68 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    351204 signatures/s	         2.847 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52899	     22664 ns/op	 434.88 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    352985 signatures/s	         2.833 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52629	     22798 ns/op	 432.31 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    350904 signatures/s	         2.850 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52620	     22693 ns/op	 434.32 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    352531 signatures/s	         2.837 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52507	     22724 ns/op	 433.72 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    352045 signatures/s	         2.841 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8-2         	   52656	     22691 ns/op	 434.35 MB/s	         2.000 GOMAXPROCS	         0 internal-fault-fallbacks	    352559 signatures/s	         2.836 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	17.043s
