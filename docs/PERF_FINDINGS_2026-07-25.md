@@ -630,6 +630,29 @@ zero allocations and zero internal-fault fallbacks, and the complete native
 repository suite passed. Raw output is under
 `docs/results/zen5-packed-singleton-first-permute-2026-07-26/`.
 
+### 5.13 Packed-singleton cached-add input normalization — retained
+
+The last analogous scalar packed operation was
+`quadCachedAddFirstOperandX4`, about 4.0% cumulative in the post-Stage-2
+profile. It formed `[Y-X,Y+X,T,Z]` with a 320-byte raw product and then called
+the normalizer. Commit `3961d6e` moves that exact construction into one YMM
+leaf: it adds 4p only to the subtraction lane, proves every pre-carry limb
+non-negative and below `6*2^51`, and performs one parallel carry/fold.
+
+All five point vectors are loaded before output, preserving in-place aliasing.
+The portable function remains the exact representation oracle across zero,
+maximum-u52, and 1,024 random inputs; direct tests also cover aliasing and zero
+allocations, while the unchanged point tests cover projective, torsion, range,
+and repeated cached-add chains.
+
+Ten pinned Zen 5 samples moved the isolated cached add from 34.95 to 33.72 ns
+(-3.5%). Through exported `VerifyBatchStrict` at msg=1232, n=1 moved from
+17.23 to 16.75 us/signature (-2.8%) and n=2 from 17.17 to 16.74 us/signature
+(-2.5%). The n=4/8/64 dispatches remained around 10.15/5.43/5.10
+us/signature. Timed rows retained zero allocations and zero internal-fault
+fallbacks, and the complete native repository suite passed. Raw output is
+under `docs/results/zen5-packed-singleton-cached-input-2026-07-26/`.
+
 ---
 
 ## 6. Smaller observations
