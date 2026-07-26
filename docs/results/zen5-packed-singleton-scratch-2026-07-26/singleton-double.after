@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12920004	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12963260	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12973106	        46.27 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12974042	        46.27 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12967299	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12950685	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12970700	        46.25 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12964524	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12971043	        46.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12978256	        46.27 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14043789	        42.70 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14041345	        42.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14060119	        42.72 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14052456	        42.67 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14070416	        42.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14071820	        42.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14076213	        42.71 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14051258	        42.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14047972	        42.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	14062658	        42.67 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	12.903s

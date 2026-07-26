@@ -497,20 +497,31 @@ The n=1/2/4 paths were neutral within run drift, and all rows retained zero
 allocations and zero internal-fault fallbacks. See
 `docs/results/zen5-round-major-recode-2026-07-26/` for raw output.
 
-### 5.8 Packed-singleton doubling scratch — open measurement
+### 5.8 Packed-singleton doubling scratch — retained
 
-Static inspection found a width-specific mechanical lead that must not be
-conflated with the x8 work: `quadPointDoubleHardwareUncheckedX4`, used by the
-packed singleton path, still has a roughly 992-byte frame and six zeroing
-sequences for six `IFMAElementX4` scratch values. Each scratch value appears to
-be fully overwritten before use, while the current fused x8 doubling has a
-small frame and no corresponding zeroing. A singleton verification performs
-roughly 253 doublings, so this deserves a before/after hardware gate.
+Static inspection found a width-specific mechanical lead that did not overlap
+the x8 work: `quadPointDoubleHardwareUncheckedX4`, used by the packed singleton
+path, had a roughly 992-byte frame and six zeroing sequences for six
+`IFMAElementX4` scratch values. Each value was fully overwritten before use,
+but a singleton verification paid that clearing cost roughly 253 times.
 
-This is not yet a performance claim. First prove full overwrite and alias
-safety, add boundary and random point differentials, then compare n=1 (and n=2
-where applicable) through the exported API. Keep it only if the complete path
-moves without allocations or predicate changes.
+Commit `9f5659d` moves five intermediates to a reusable per-evaluation workspace
+and writes the final multiplication directly to the output. The alias proof is
+local: the input point is fully permuted into the workspace before the final
+output write. Existing random-projective, torsion, range-envelope, input-T,
+and repeated-alias tests remain; a new poisoned-scratch test fills every
+workspace limb with unrelated patterns before comparing repeated in-place
+doublings. Generated amd64 code reduced the hot helper to a 64-byte frame with
+no scratch zeroing.
+
+Ten pinned Zen 5 samples moved the isolated packed doubling from 49.13 to
+42.69 ns (-13.1%). Through the exported strict API at msg=1232, n=1 moved from
+22.50 to 20.91 us/signature (-7.1%) and n=2 from 22.25 to 20.81
+us/signature (-6.5%). The unchanged n=4/8/64 paths remained at about
+10.14/5.43/5.10 us/signature. All timed rows retained zero allocations and
+zero internal-fault fallbacks; the complete native repository suite passed.
+Raw output is under
+`docs/results/zen5-packed-singleton-scratch-2026-07-26/`.
 
 ---
 

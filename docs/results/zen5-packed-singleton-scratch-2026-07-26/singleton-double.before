@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12175074	        49.14 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12230954	        49.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12224475	        49.13 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12203113	        49.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12217011	        49.15 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12219756	        49.17 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12205174	        49.12 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12216872	        49.13 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12212904	        49.12 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-xytz         	12211695	        49.15 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	6.500s
