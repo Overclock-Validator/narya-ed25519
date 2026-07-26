@@ -166,6 +166,41 @@ func BenchmarkSelectLehmer(b *testing.B) {
 	}
 }
 
+// BenchmarkSelectLehmerComparison keeps the input distribution identical for
+// all selectors. The older standalone benchmarks intentionally exercise
+// different admitted and fallback challenges, so comparing their headline
+// numbers would not measure the reducer alone.
+func BenchmarkSelectLehmerComparison(b *testing.B) {
+	rng := rand.New(rand.NewSource(20260726))
+	keys := make([][32]byte, 512)
+	for i := range keys {
+		keys[i] = randomChallengeBytes(rng)
+	}
+
+	for _, limit := range []WidthLimit{Width128, Width132, Width136} {
+		b.Run(benchWidthName(limit), func(b *testing.B) {
+			for _, selector := range []struct {
+				name string
+				fn   func([32]byte, WidthLimit) FixedSelection
+			}{
+				{name: "lehmer", fn: SelectLehmer},
+				{name: "principal-euclid", fn: SelectEuclidPrincipal},
+				{name: "shift-subtract", fn: SelectShiftSubtract},
+			} {
+				selector := selector
+				b.Run(selector.name, func(b *testing.B) {
+					b.ReportAllocs()
+					var result FixedSelection
+					for i := 0; i < b.N; i++ {
+						result = selector.fn(keys[i%len(keys)], limit)
+					}
+					benchmarkFixedSelection = result
+				})
+			}
+		})
+	}
+}
+
 func benchWidthName(limit WidthLimit) string {
 	switch limit {
 	case Width128:

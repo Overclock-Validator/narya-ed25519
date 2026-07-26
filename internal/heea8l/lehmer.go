@@ -1,7 +1,5 @@
 package heea8l
 
-import "math/bits"
-
 // SelectLehmer is a Lehmer-accelerated modulo-8L selector. It computes the
 // same principal Euclidean sequence as SelectEuclidPrincipal and stops at the
 // same row, but replaces most full-width steps with single-word arithmetic.
@@ -222,7 +220,3 @@ func absInt64(x int64) int64 {
 	}
 	return x
 }
-
-// unused keeps the bits import honest if the file is trimmed; bits is used by
-// uint256.bitLen in this package.
-var _ = bits.UintSize
