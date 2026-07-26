@@ -16,21 +16,40 @@ func TestSDEForcedR51PublicPath(t *testing.T) {
 		t.Fatalf("active backend=%q want r51", got)
 	}
 
-	batch := makeBatchFixture(t, 5, 200)
-	verdicts := make([]bool, len(batch.pubs))
-	if !VerifyBatchStrict(batch.pubs, batch.msgs, batch.sigs, verdicts) {
-		t.Fatalf("valid public r51 batch rejected: %v", verdicts)
-	}
+	previousProfile := DefaultProfile()
+	defer SetDefaultProfile(previousProfile)
 
-	badMessages := append([][]byte(nil), batch.msgs...)
-	badMessages[3] = append([]byte(nil), badMessages[3]...)
-	badMessages[3][0] ^= 1
-	if VerifyBatchStrict(batch.pubs, badMessages, batch.sigs, verdicts) {
-		t.Fatal("invalid public r51 batch accepted")
-	}
-	for lane, verdict := range verdicts {
-		if verdict != (lane != 3) {
-			t.Fatalf("lane=%d verdict=%v want=%v", lane, verdict, lane != 3)
+	for _, profile := range []Profile{DalekStrict, StdlibCompat} {
+		SetDefaultProfile(profile)
+		for _, count := range []int{1, 2, 4, 8, 9, 17} {
+			messageSize := 200
+			if count == 8 {
+				messageSize = 1232
+			}
+			batch := makeBatchFixture(t, count, messageSize)
+			verdicts := make([]bool, count)
+			verify := VerifyBatch
+			if profile == DalekStrict {
+				// Exercise the explicit consensus-safe entry point rather than
+				// relying on the mutable package default for strict semantics.
+				verify = VerifyBatchStrict
+			}
+			if !verify(batch.pubs, batch.msgs, batch.sigs, verdicts) {
+				t.Fatalf("profile=%d n=%d: valid public r51 batch rejected: %v", profile, count, verdicts)
+			}
+
+			badLane := count / 2
+			badMessages := append([][]byte(nil), batch.msgs...)
+			badMessages[badLane] = append([]byte(nil), badMessages[badLane]...)
+			badMessages[badLane][0] ^= 1
+			if verify(batch.pubs, badMessages, batch.sigs, verdicts) {
+				t.Fatalf("profile=%d n=%d: invalid public r51 batch accepted", profile, count)
+			}
+			for lane, verdict := range verdicts {
+				if want := lane != badLane; verdict != want {
+					t.Fatalf("profile=%d n=%d lane=%d verdict=%v want=%v", profile, count, lane, verdict, want)
+				}
+			}
 		}
 	}
 }

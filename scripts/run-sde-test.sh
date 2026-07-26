@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Intel SDE occasionally stops making progress on GitHub-hosted runners. The
-# same focused test process normally completes in seconds, but an observed hang
-# consumed the entire 45-minute job. Go's -test.timeout is measured inside the
-# emulated process and did not stop that failure mode, so enforce a host-side
-# wall-clock limit and retry only timeout-shaped exits once.
+# Intel SDE runtime varies sharply across GitHub-hosted runners. A focused test
+# process that normally completes in seconds has run roughly 30 times slower,
+# and one run consumed the entire 45-minute job. Go's -test.timeout is measured
+# inside the emulated process and did not bound that failure mode, so enforce a
+# host-side wall-clock limit and retry only timeout-shaped exits once.
 
 : "${SDE64:?SDE64 must name the pinned Intel SDE executable}"
 
@@ -29,7 +29,7 @@ for ((attempt = 1; attempt <= max_attempts; attempt++)); do
 		;;
 	*)
 		# Arithmetic/test failures are deterministic evidence. Do not hide them
-		# behind a retry intended only for an emulator that stops progressing.
+		# behind a retry intended only for anomalously slow emulator runs.
 		exit "$status"
 		;;
 	esac

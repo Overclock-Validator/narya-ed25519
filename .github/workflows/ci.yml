@@ -100,7 +100,7 @@ jobs:
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+            -test.run '^(TestR51BackendInternalFaultFallsBackToGeneric|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
 
       # Everything above runs the x4 paths only. The x8/ZMM groups, the
       # decoded-A cache tier, warm x4 pairing and the raw-square schedule are
@@ -127,4 +127,4 @@ jobs:
           bash ./scripts/run-sde-test.sh /tmp/r51x5.wide.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAFixedDSMHardware|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
           bash ./scripts/run-sde-test.sh /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDEForcedR51PublicPath|TestR51BackendDispatchDifferential|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane|TestRawBatchPathRejectsOnlyThePrePassFailures)$'
+            -test.run '^(TestSDEForcedR51PublicPath|TestR51BackendInternalFaultFallsBackToGeneric|TestR51BackendDecodedACacheDifferential|TestR51WarmPrecomputedBatchDifferential|TestR51WarmDispatchPreservesNativeWidth|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures)$'
