@@ -28,6 +28,11 @@ type r51IFMABatchQPipeline struct {
 	// it false until the representation handoff passes a hardware gate.
 	experimentalComposableDecodeX8 bool
 
+	// experimentalRawSquareX8 changes only the x8 variable-base doubling leaf
+	// to the exact folded-u61 dedicated-square candidate. Registered
+	// construction leaves it false until a complete Zen 5 gate retains a gain.
+	experimentalRawSquareX8 bool
+
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
 	points  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.IFMAPointX4
 	active  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
@@ -416,7 +421,12 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 		}
 	}
 	var aTerm, bTerm r51x5.IFMAPointX8
-	usableA, err := pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
+	var usableA uint8
+	if pipeline.experimentalRawSquareX8 {
+		usableA, err = pipeline.wideCore.variableX8.EvaluateRawSquareExperiment(&aTerm, &k, live, live)
+	} else {
+		usableA, err = pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
+	}
 	if err != nil {
 		return err
 	}

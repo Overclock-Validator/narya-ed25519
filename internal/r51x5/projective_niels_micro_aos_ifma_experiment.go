@@ -273,6 +273,51 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	return usable, nil
 }
 
+// EvaluateRawSquareExperiment evaluates the same pre-signed radix-32 table as
+// Evaluate but uses the exact-representation raw-square candidate for every
+// point doubling. It intentionally keeps a separate loop so the registered
+// Evaluate path pays no experiment branch in its 250-doubling hot loop.
+func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8) EvaluateRawSquareExperiment(
+	out *IFMAPointX8,
+	scalar *[X8Lanes][32]byte,
+	negativeMask, active uint8,
+) (uint8, error) {
+	if !workspace.prepared {
+		panic("r51x5: pre-signed projective Niels micro-AoS x8 workspace is not prepared")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	acc := identityIFMAPointX8Value()
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
+		if round != workspace.digits.RoundCount()-1 {
+			for doubling := 0; doubling < 5; doubling++ {
+				if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&acc, &acc, &doubleWorkspace); err != nil {
+					return 0, err
+				}
+			}
+		}
+		digit := workspace.digits.Round(round)
+		if digit.NonzeroMask&usable == 0 {
+			continue
+		}
+		var selected IFMAProjectiveNielsX8
+		selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &workspace.table, digit, usable)
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
+			return 0, err
+		}
+	}
+	*out = acc
+	return usable, nil
+}
+
 func selectIFMAProjectiveNielsMicroAoSX8(
 	out *IFMAProjectiveNielsX8,
 	table *ifmaProjectiveNielsMicroAoSTableX8,

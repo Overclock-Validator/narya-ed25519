@@ -6,31 +6,6 @@ import (
 	"testing"
 )
 
-// ifmaPointDoubleRawSquareStage2ExperimentX8 changes only the three square
-// products in the current fused x8 doubling. The dedicated square is required
-// to return the exact folded-u61 representation of ifmaMulRawX8(x, x), so the
-// existing Stage-2 range proof and every downstream instruction remain valid.
-func ifmaPointDoubleRawSquareStage2ExperimentX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
-	stage2 := &workspace.stage2
-	ifmaSquareRawExperimentX8(&stage2[0], &q.X.limbs)
-	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
-	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
-	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X8(stage2)
-
-	e := (*LimbsX8)(&stage2[0])
-	f := (*LimbsX8)(&stage2[1])
-	g := (*LimbsX8)(&stage2[2])
-	h := (*LimbsX8)(&stage2[3])
-
-	// Stage 1 consumed q completely, so writing through out is alias-safe.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, e, f)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, g, h)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, e, h)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, f, g)
-	return nil
-}
-
 func TestIFMAPointDoubleRawSquareStage2X8Differential(t *testing.T) {
 	requireNativeRawSquareX8(t)
 	rng := rand.New(rand.NewSource(0x51_a8_d0b1))
