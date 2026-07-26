@@ -196,6 +196,68 @@ func TestExperimentalCoordinateParallelDoubleX4RangeEnvelope(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadDoubleFinalOperandsX4MatchesPortable(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 1026)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x51457a62))
+	for sample := 0; sample < 1024; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		var wantLeft, wantRight IFMAElementX4
+		quadDoubleFinalOperandsX4(&wantLeft, &wantRight, &input)
+
+		var gotLeft, gotRight IFMAElementX4
+		ifmaQuadDoubleFinalOperandsUncheckedX4(&gotLeft.limbs, &gotRight.limbs, &input.limbs)
+		if gotLeft != wantLeft || gotRight != wantRight {
+			t.Fatalf("input %d: native packed Stage 2 differs from portable oracle", index)
+		}
+
+		aliased := input
+		var aliasRight IFMAElementX4
+		ifmaQuadDoubleFinalOperandsUncheckedX4(&aliased.limbs, &aliasRight.limbs, &aliased.limbs)
+		if aliased != wantLeft || aliasRight != wantRight {
+			t.Fatalf("input %d: input/left alias differs from portable oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadDoubleFinalOperandsX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, left, right IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadDoubleFinalOperandsUncheckedX4(&left.limbs, &right.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestExperimentalCoordinateParallelDoubleWorkspaceX4IgnoresPriorScratch(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return
