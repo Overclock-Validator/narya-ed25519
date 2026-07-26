@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 PRO 8700GE w/ Radeon 780M Graphics 
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89358	     40271 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89391	     40278 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89367	     40275 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89361	     40282 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89368	     40292 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89314	     40283 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89410	     40272 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89390	     40277 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89341	     40278 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=extended/n=4/msg=1232         	   89378	     40283 ns/op	        10.07 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95336	     37746 ns/op	         9.436 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95216	     37801 ns/op	         9.450 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95209	     37839 ns/op	         9.460 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95110	     37818 ns/op	         9.454 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95212	     37806 ns/op	         9.452 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95197	     37801 ns/op	         9.450 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95218	     37805 ns/op	         9.451 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95134	     37816 ns/op	         9.454 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95238	     37844 ns/op	         9.461 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX4NielsCompletePipeline/path=projective-niels/n=4/msg=1232 	   95209	     37803 ns/op	         9.451 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	79.946s

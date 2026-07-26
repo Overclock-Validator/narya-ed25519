@@ -973,6 +973,36 @@ API when the selected backend implements the private raw singleton contract.
 It does not alter `Verify`, batch dispatch, profile selection, or the
 generic/stdlib implementations.
 
+### 5.23 x4 cold projective-Niels tables — retained
+
+The x4 cold variable-base evaluator still stored each `[1]A` through `[16]A`
+entry as a full extended point and used the ten-multiplication full point-add
+formula for every nonzero radix-32 digit. The x8 path had already established
+the smaller projective-Niels representation `(Y+X,Y-X,Z,2dT)` and the fused
+eight-multiplication Stage-2 schedule, but the four-lane tail had not adopted
+it.
+
+The x4 implementation reuses the existing 160-byte micro-AoS entry and its
+hardware-differentialed transpose. A distinct private Go type prevents a
+cached Niels entry from reaching an ordinary extended-point formula without an
+explicit cast. Public negative digits swap `Y+X`/`Y-X` and negate `2dT`; zero
+and inactive lanes select the projective-Niels identity. No new assembly was
+needed.
+
+On the pinned Zen 4 core, the ten-sample complete 1232-byte n=4 gate moved from
+10.07 to 9.451 µs/signature (-6.1%) with zero allocations. Both profiles,
+CCTV, Wycheproof, mixed valid/invalid batches, mixed-order points, partial
+tails, and the complete native repository suite passed. Registered forced-r51
+workers now use this representation for x4 cold groups; the prior extended
+path remains as a differential/benchmark reference.
+
+Raw output is under
+`docs/results/zen4-x4-projective-niels-2026-07-26/`.
+
+**Regime tag:** the improvement applies to x4 cold A evaluation. Complete x8
+groups already used projective Niels, while prepared warm tables follow a
+different comb schedule.
+
 ---
 
 ## 6. Smaller observations
@@ -998,8 +1028,9 @@ generic/stdlib implementations.
   (`doc.go:22`, `scalarmult.go:68`), and its apparent inefficiencies — full
   projective tables, no leading-zero skip, defensive struct copies — are
   deliberate. I scoped work there before checking and it would have been wasted.
-- **Cached Y+-X tables and AffineNiels mixed addition** (open tasks) are ~3-6% on
-  the cold path. Real, but not before §4.
+- **Projective-Niels cached A entries are now used by both cold x4 and x8
+  evaluators.** Affine three-coordinate storage remains a warm/prebuilt-table
+  question, not an open cold-path prerequisite.
 - **No default was changed.** Automatic dispatch still selects `generic`.
   The two-tier Cache is available only when callers explicitly force r51 and
   choose the Cache API. Raw forced-r51 and every automatic path retain their

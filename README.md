@@ -230,7 +230,7 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The latest complete snapshot is from implementation commit `c31522d` on an AMD
+The latest complete snapshot is from implementation commit `8590b4f` on an AMD
 Ryzen 7 PRO 8700GE (Zen 4), Go 1.26.4, one pinned core, the performance
 governor, and `GOMAXPROCS=1`. Values are median microseconds per signature from
 six repeated 750-millisecond samples. Every timed Narya row reports 0 B/op,
@@ -244,22 +244,23 @@ not per-batch latencies.
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 16.725 | 16.710 | 9.187 | 7.653 | 7.434 |
-| 1232 | 17.640 | 17.560 | 9.949 | 7.927 | 7.710 |
-| 4096 | 20.130 | 20.190 | 12.080 | 8.752 | 8.603 |
+| 200 | 16.600 | 16.570 | 8.666 | 7.604 | 7.410 |
+| 1232 | 17.670 | 17.655 | 9.451 | 7.890 | 7.685 |
+| 4096 | 20.235 | 20.240 | 11.565 | 8.745 | 8.570 |
 
 **Warm: 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 17.140 | 17.060 | 4.123 | 3.860 | 3.705 |
-| 1232 | 17.990 | 17.910 | 5.061 | 4.810 | 4.659 |
-| 4096 | 20.550 | 20.570 | 7.705 | 7.451 | 7.339 |
+| 200 | 17.120 | 17.120 | 4.241 | 3.988 | 3.846 |
+| 1232 | 17.890 | 18.000 | 5.195 | 4.934 | 4.806 |
+| 4096 | 20.440 | 20.555 | 7.839 | 7.586 | 7.482 |
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
 the portable `generic` backend remains the default. Batch width matters because
 r51 maps independent signatures onto SIMD lanes: n=1 and n=2 use dedicated tail
-paths, n=4 fills one x4 group, and n=8 or larger can use native x8 groups. The
+paths, n=4 fills one x4 group with projective-Niels variable-base tables, and
+n=8 or larger can use native x8 groups. The
 cache deliberately bypasses its prepared tables for n<4, so the cold and warm
 singleton/pair rows are effectively the same path.
 
@@ -276,10 +277,10 @@ cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 17.660 | 17.620 | 10.200 | 8.049 | 8.075 |
-| Go `crypto/ed25519` | 37.930 | 37.810 | 37.945 | 37.745 | 37.695 |
-| curve25519-voi, cold strict | 26.490 | 26.480 | 26.590 | 26.500 | 26.450 |
-| curve25519-voi, expanded key | 22.350 | 22.330 | 22.440 | 22.350 | 22.310 |
+| Narya r51, cold strict | 17.530 | 17.570 | 9.479 | 8.117 | 7.855 |
+| Go `crypto/ed25519` | 37.590 | 37.475 | 37.620 | 37.670 | 37.650 |
+| curve25519-voi, cold strict | 26.290 | 26.370 | 26.435 | 26.490 | 26.445 |
+| curve25519-voi, expanded key | 22.180 | 22.250 | 22.320 | 22.380 | 22.345 |
 
 The same current implementation scales across independent callers. These are
 aggregate **signatures per second** over 1232-byte messages, not individual
@@ -287,13 +288,13 @@ request latency:
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 100,574 | 1.00x | 127,252 | 1.00x |
-| 2 | 199,348 | 1.98x | 252,566 | 1.98x |
-| 4 | 363,497 | 3.61x | 466,892 | 3.67x |
-| 8 | 641,628 | 6.38x | 793,700 | 6.24x |
+| 1 | 103,779 | 1.00x | 127,530 | 1.00x |
+| 2 | 206,120 | 1.99x | 253,525 | 1.99x |
+| 4 | 382,654 | 3.69x | 465,264 | 3.65x |
+| 8 | 661,809 | 6.38x | 796,535 | 6.25x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.558 and
-1.260 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.511 and
+1.255 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification.
 
