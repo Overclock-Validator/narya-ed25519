@@ -97,6 +97,15 @@ matrix measured 22.41--22.43 (n=1), 22.50--22.51 (n=2), 11.80 (n=4), 6.14
 (n=8), and 5.82 (n=64) us/signature. The n=1/2 packed path and complete x8
 groups are structurally unaffected, so only n=4 is used to attribute the gain.
 
+**Regime tag — half-full x8 on Zen 5 remains closed.** Immediately after the
+masked-negate checkpoint, routing exactly four signatures through the existing
+x8 cold kernel (four active and four inactive lanes) measured 11.97--12.03
+us/signature versus 11.80 for x4 on the same pinned 9700X core. Native r51 and
+batch-Q tests passed, so this is a performance rejection rather than a
+correctness limitation. Keep x4 at n=4 and native x8 at n>=8; remeasure only on
+a materially different microarchitecture or after a major x8-only kernel
+change.
+
 ---
 
 ## 1. What landed on this branch
