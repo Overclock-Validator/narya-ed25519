@@ -11,6 +11,13 @@ on:
 permissions:
   contents: read
 
+# Only the newest commit on a branch needs the expensive emulator pass. This
+# also keeps rapid checkpoint pushes from running multiple SDE instances in
+# parallel on shared Actions capacity.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:
@@ -82,17 +89,17 @@ jobs:
           go test -c -tags sde_gate -o /tmp/ed25519.test ./ed25519
       - name: Require and test r51x5 IFMA kernels under SDE
         run: |
-          "$SDE64" -icx -- /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
       - name: Require and test native SHA-512 kernels under SDE
         run: |
-          "$SDE64" -icx -- /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDENativeSHARequired|TestNativeX4Differential|TestNativeX8Differential|TestExperimentalSum512Batch3Differential)$'
       - name: Test forced public r51 verification under SDE
         run: |
-          "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
-          "$SDE64" -icx -- /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestR51BackendDispatchDifferential|TestR51BackendInternalFaultFallsBackToGeneric|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
 
       # Everything above runs the x4 paths only. The x8/ZMM groups, the
@@ -113,11 +120,11 @@ jobs:
           go test -c -tags 'sde_gate narya_test_amd_policy' -o /tmp/ed25519.wide.test ./ed25519
       - name: Require the override to actually reach the gated paths
         run: |
-          "$SDE64" -icx -- /tmp/cpufeat.wide.test -test.v -test.count=1 -test.timeout=5m \
+          bash ./scripts/run-sde-test.sh /tmp/cpufeat.wide.test -test.v -test.count=1 -test.timeout=5m \
             -test.run '^TestAMDPolicyOverrideReachesTheGatedPaths$'
       - name: Test x8, decoded-A and warm pairing under SDE
         run: |
-          "$SDE64" -icx -- /tmp/r51x5.wide.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/r51x5.wide.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAFixedDSMHardware|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
-          "$SDE64" -icx -- /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=20m \
+          bash ./scripts/run-sde-test.sh /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDEForcedR51PublicPath|TestR51BackendDispatchDifferential|TestR51IFMABatchQPipelineDifferential|TestR51IFMABatchQPipelineEveryLaneAndTailMapping|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane|TestRawBatchPathRejectsOnlyThePrePassFailures)$'
