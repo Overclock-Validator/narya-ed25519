@@ -213,30 +213,24 @@ func applyLehmerMatrix(rows [2]principalEuclidRow, a, b, c, d int64) ([2]princip
 		}
 	}
 
-	rho0, ok := addSigned320(
-		lehmerProduct(products[0], false, negA, coeffA),
-		lehmerProduct(products[1], false, negB, coeffB),
-	)
+	rho0, ok := addLehmerProducts(products[0], negA, products[1], negB)
 	if !ok || rho0.neg {
 		return rows, false
 	}
-	rho1, ok := addSigned320(
-		lehmerProduct(products[2], false, negC, coeffC),
-		lehmerProduct(products[3], false, negD, coeffD),
-	)
+	rho1, ok := addLehmerProducts(products[2], negC, products[3], negD)
 	if !ok || rho1.neg {
 		return rows, false
 	}
-	tau0, ok := addSigned320(
-		lehmerProduct(products[4], rows[0].tau.neg, negA, coeffA),
-		lehmerProduct(products[5], rows[1].tau.neg, negB, coeffB),
+	tau0, ok := addLehmerProducts(
+		products[4], rows[0].tau.neg != negA,
+		products[5], rows[1].tau.neg != negB,
 	)
 	if !ok || tau0.mag[4] != 0 {
 		return rows, false
 	}
-	tau1, ok := addSigned320(
-		lehmerProduct(products[6], rows[0].tau.neg, negC, coeffC),
-		lehmerProduct(products[7], rows[1].tau.neg, negD, coeffD),
+	tau1, ok := addLehmerProducts(
+		products[6], rows[0].tau.neg != negC,
+		products[7], rows[1].tau.neg != negD,
 	)
 	if !ok || tau1.mag[4] != 0 {
 		return rows, false
@@ -264,12 +258,35 @@ func mulLehmerWord(word, coefficient, carry uint64) (low, high uint64, ok bool) 
 	return low, high, overflow == 0
 }
 
-func lehmerProduct(magnitude [5]uint64, inputNegative, coefficientNegative bool, coefficient uint64) signed320 {
-	product := signed320{mag: magnitude}
-	if coefficient != 0 && !product.isZero() {
-		product.neg = inputNegative != coefficientNegative
+// addLehmerProducts adds two already-computed sign-and-magnitude products.
+// Keeping the pair local avoids constructing signed320 values only to negate
+// and rescan them through the generic addSigned320/subSigned320 stack.
+func addLehmerProducts(left [5]uint64, leftNegative bool, right [5]uint64, rightNegative bool) (signed320, bool) {
+	leftZero := left[0]|left[1]|left[2]|left[3]|left[4] == 0
+	rightZero := right[0]|right[1]|right[2]|right[3]|right[4] == 0
+	if leftZero {
+		if rightZero {
+			return signed320{}, true
+		}
+		return signed320{mag: right, neg: rightNegative}, true
 	}
-	return product
+	if rightZero {
+		return signed320{mag: left, neg: leftNegative}, true
+	}
+	if leftNegative == rightNegative {
+		magnitude, overflow := add320(left, right)
+		return signed320{mag: magnitude, neg: leftNegative}, !overflow
+	}
+	switch cmp320(left, right) {
+	case -1:
+		magnitude, underflow := sub320(right, left)
+		return signed320{mag: magnitude, neg: rightNegative}, !underflow
+	case 0:
+		return signed320{}, true
+	default:
+		magnitude, underflow := sub320(left, right)
+		return signed320{mag: magnitude, neg: leftNegative}, !underflow
+	}
 }
 
 // applyLehmerMatrixReference retains the straightforward four-combine form as
