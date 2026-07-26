@@ -1,4 +1,4 @@
-# Narya — Ed25519 verification
+# Narya: Ed25519 verification
 
 ```
 go get github.com/Overclock-Validator/narya-ed25519
@@ -62,26 +62,26 @@ than incidental.
 ## The contract
 
 Verification enforces one of two versioned **profiles**, because the
-consensus-correct acceptance predicate is itself versioned — an
+consensus-correct acceptance predicate is itself versioned. An
 accept/reject flip is a fork, so it is a deliberate choice, not an
 implementation detail:
 
-- **`DalekStrict`** (default, and the zero value) — matches
+- **`DalekStrict`** (default, and the zero value) matches
   `ed25519-dalek` 2.x `verify_strict`. This is `crypto/ed25519.Verify` **plus**
   rejection of small-order public keys A and small-order signature
   points R. The standard library accepts those (it never decodes R); a
   verifying node that used it unmodified could be forked off the
   network by a crafted block, so this is the default.
-- **`StdlibCompat`** — exactly `crypto/ed25519.Verify`, for
+- **`StdlibCompat`** is exactly `crypto/ed25519.Verify`, for
   differential testing and callers who explicitly want standard-library
   behavior.
 
 Small-order rejection is a byte-level classifier over the seven low-255-bit
-small-order `y` encodings, sign-bit-insensitive — fourteen byte strings, with
+small-order `y` encodings, sign-bit-insensitive: fourteen byte strings, with
 no point decode required.
 
-For every input — non-canonical encodings, small-order points,
-malformed signatures — every backend, cached or not, batched or single,
+For every input (non-canonical encodings, small-order points,
+malformed signatures), every backend, cached or not, batched or single,
 returns exactly what the active profile's predicate returns. This is
 enforced by differential tests, the CCTV and Wycheproof corpora, a
 cross-library differential against curve25519-voi, and fuzzing rather than
@@ -116,7 +116,7 @@ libraries'.
 
 Lane-parallel batching is a *hardware* optimization. Eight independent
 signatures occupy eight AVX-512 lanes, so one instruction stream performs
-eight signatures' worth of field arithmetic — but each signature still gets
+eight signatures' worth of field arithmetic, but each signature still gets
 its own complete verification equation and its own answer. Nothing about the
 mathematics changes; the machine is merely busier. That is why every verdict
 is bit-for-bit what you would get from a loop, and why the curve flattens once
@@ -126,19 +126,19 @@ Aggregate batching is a *mathematical* optimization. It folds N signatures
 into a single equation with random weights, replacing N double-scalar
 multiplications with one multi-scalar multiplication. It is genuinely faster
 where it applies, and it keeps getting faster as N grows. What it returns is
-one answer for the whole set — and it is sound only under a cofactored
+one answer for the whole set, and it is sound only under a cofactored
 predicate, because individual invalid signatures can cancel within the
 aggregate.
 
 That constraint is not Narya's opinion. `curve25519-voi` implements aggregate
 batch verification and refuses to apply it to cofactorless entries, returning
 false rather than a possibly-unsound accept
-(`primitives/ed25519/batch_verify.go`). Under `DalekStrict` — which is
-cofactorless — aggregate batching is simply not an available technique, for
+(`primitives/ed25519/batch_verify.go`). Under `DalekStrict`, which is
+cofactorless, aggregate batching is simply not an available technique, for
 Narya or anyone else.
 
-**Choosing between them.** If one answer for the whole set is enough — you
-reject an entire block on any failure, say — aggregate batching under a
+**Choosing between them.** If one answer for the whole set is enough (you
+reject an entire block on any failure, say), aggregate batching under a
 cofactored predicate is likely the better tool, and Narya is not it. If you
 need to know *which* input failed, or you must match a cofactorless predicate
 exactly, aggregate batching cannot give you that at any speed, and
@@ -192,11 +192,11 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 
 ## Packages and backends
 
-- **`ed25519`** — the public API above. Exactly one backend is active per
+- **`ed25519`** is the public API above. Exactly one backend is active per
   process, latched on first use. Resolution order: the name passed to
   `SetBackend`, then `OVERCLOCK_ED25519_BACKEND`, then the default.
-- **`sha512mb`** — multi-buffer SHA-512.
-- **`cmd/sigverifytracebench`** — offline exact-input schema-v3 replay for a
+- **`sha512mb`** is multi-buffer SHA-512.
+- **`cmd/sigverifytracebench`** is offline exact-input schema-v3 replay for a
   measured stdlib/generic/generic-cache diagnostic. It never promotes the
   generic table result to the pending r51 production cache gate.
 
@@ -204,7 +204,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | --- | --- | --- |
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
-| `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu` — never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
+| `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu`, never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
 | `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 for the tail; unknown IFMA CPUs retain the reviewed x4 default. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
@@ -240,7 +240,7 @@ one-second samples. Every timed Narya row reports 0 B/op and 0 allocs/op.
 table is labeled separately in **signatures per second (`signatures/s`, higher
 is better)**.
 
-**Cold — arbitrary keys, no retained key state (`µs/signature`)**
+**Cold: arbitrary keys, no retained key state (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -248,7 +248,7 @@ is better)**.
 | 1232 | 14.890 | 14.880 | 9.274 | 4.995 | 4.794 |
 | 4096 | 16.995 | 17.030 | 12.065 | 5.705 | 5.531 |
 
-**Warm — 64 distinct keys promoted before timing (`µs/signature`)**
+**Warm: 64 distinct keys promoted before timing (`µs/signature`)**
 
 | message bytes | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -367,8 +367,8 @@ matter.
   [Project Wycheproof](https://github.com/C2SP/wycheproof) `eddsa_test`
   vectors, plus pinned Firedancer regression vectors and a generated edge-point
   corpus.
-- Differential tests anchoring every backend — cached or not, batched or single
-  — to `crypto/ed25519` and to the generic backend, per profile.
+- Differential tests anchoring every backend, cached or not, batched or single,
+  to `crypto/ed25519` and to the generic backend, per profile.
 - A cross-library differential against
   [curve25519-voi](https://github.com/oasisprotocol/curve25519-voi/tree/1f23a7beb09a)
   version `v0.0.0-20230904125328-1f23a7beb09a`, configured to the equivalent
@@ -457,7 +457,7 @@ voi is itself largely derived from
 the vectorized Edwards backend that produces its uncached single-signature
 timings is a Go port of dalek's AVX2 backend (Copyright isis agora lovecruft,
 Henry de Valence, and Oasis Labs), selected whenever AVX2 is present. That intra-signature
-orientation — one point's coordinates across vector lanes — is prior art that
+orientation, one point's coordinates across vector lanes, is prior art that
 Narya did not originate: dalek's AVX2 backend is a documented implementation,
 and Firedancer's `r43x6` QUAD packing, which `internal/r43x6` credits, is the
 same idea at AVX-512 width. Narya's experimental
