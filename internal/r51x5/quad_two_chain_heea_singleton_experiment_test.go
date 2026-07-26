@@ -40,7 +40,24 @@ type experimentalQuadTwoChainHEEAWorkspaceX8 struct {
 	addWorkspace     quadTwoChainCachedAddWorkspaceX8
 	combineWorkspace quadPointAddCachedWorkspaceX4
 	negative         [QSMTerms]quadPackedCachedPointX4
+
+	tableCurrent      IFMAElementX8
+	tableTwice        IFMAElementX8
+	tableCached       IFMAElementX8
+	tableTwiceCached  IFMAElementX8
+	tableCacheOperand IFMAElementX8
 }
+
+var experimentalQuadTwoChainCachedScaleX8 = func() IFMAElementX8 {
+	var scale IFMAElementX8
+	for limb := range scale.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			scale.limbs[limb][lane] = quadCachedScaleX4.limbs[limb][lane]
+			scale.limbs[limb][lane+X4Lanes] = quadCachedScaleX4.limbs[limb][lane]
+		}
+	}
+	return scale
+}()
 
 func newExperimentalQuadTwoChainHEEAWorkspaceX8() (*experimentalQuadTwoChainHEEAWorkspaceX8, error) {
 	if !ExperimentalIFMAAvailable() {
@@ -77,10 +94,58 @@ func newExperimentalQuadTwoChainHEEAWorkspaceX8() (*experimentalQuadTwoChainHEEA
 }
 
 func (workspace *experimentalQuadTwoChainHEEAWorkspaceX8) prepareVariableBases(r, a *Point) error {
-	if err := buildQuadNAFTable5X4(&workspace.rTable, r, workspace.ops); err != nil {
+	var packedR, packedA quadPackedPointX4
+	packedR.setReduced(r)
+	packedA.setReduced(a)
+	workspace.tableCurrent = packQuadTwoChainPointsX8(&packedR, &packedA)
+	if err := workspace.storeVariableTableEntry(0, &workspace.tableCurrent); err != nil {
 		return err
 	}
-	return buildQuadNAFTable5X4(&workspace.aTable, a, workspace.ops)
+
+	workspace.tableTwice = workspace.tableCurrent
+	if err := quadTwoChainDoubleHardwareWorkspaceUncheckedX8(
+		&workspace.tableTwice, &workspace.tableTwice, &workspace.doubleWorkspace,
+	); err != nil {
+		return err
+	}
+	if err := workspace.cacheTwoChainPoint(&workspace.tableTwiceCached, &workspace.tableTwice); err != nil {
+		return err
+	}
+
+	for entry := 1; entry < len(workspace.rTable.positive); entry++ {
+		if err := quadTwoChainCachedAddHardwareWorkspaceUncheckedX8(
+			&workspace.tableCurrent,
+			&workspace.tableCurrent,
+			&workspace.tableTwiceCached,
+			&workspace.addWorkspace,
+		); err != nil {
+			return err
+		}
+		if err := workspace.storeVariableTableEntry(entry, &workspace.tableCurrent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (workspace *experimentalQuadTwoChainHEEAWorkspaceX8) cacheTwoChainPoint(out, point *IFMAElementX8) error {
+	ifmaQuadTwoChainCachedAddFirstOperandUncheckedX8(&workspace.tableCacheOperand.limbs, &point.limbs)
+	return ifmaMultiplyComposableUncheckedX8(out, &workspace.tableCacheOperand, &experimentalQuadTwoChainCachedScaleX8)
+}
+
+func (workspace *experimentalQuadTwoChainHEEAWorkspaceX8) storeVariableTableEntry(entry int, point *IFMAElementX8) error {
+	if err := workspace.cacheTwoChainPoint(&workspace.tableCached, point); err != nil {
+		return err
+	}
+	for limb := range workspace.tableCached.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			workspace.rTable.positive[entry].coordinates.limbs[limb][lane] =
+				workspace.tableCached.limbs[limb][lane]
+			workspace.aTable.positive[entry].coordinates.limbs[limb][lane] =
+				workspace.tableCached.limbs[limb][lane+X4Lanes]
+		}
+	}
+	return nil
 }
 
 func recodeQuadSignedNAFX4(out *[256]int8, scalar *[32]byte, negative bool, width uint) bool {
@@ -429,6 +494,16 @@ func TestExperimentalQuadTwoChainHEEANAFX8MixedOrderDifferential(t *testing.T) {
 	fixedBasePointAdd(&a, &fixture.a, &fixture.b)
 	if err := workspace.prepareVariableBases(&r, &a); err != nil {
 		t.Fatal(err)
+	}
+	var sequentialR, sequentialA quadNAFTable5X4
+	if err := buildQuadNAFTable5X4(&sequentialR, &r, workspace.ops); err != nil {
+		t.Fatal(err)
+	}
+	if err := buildQuadNAFTable5X4(&sequentialA, &a, workspace.ops); err != nil {
+		t.Fatal(err)
+	}
+	if workspace.rTable != sequentialR || workspace.aTable != sequentialA {
+		t.Fatal("paired R/A table build differs from sequential x4 tables")
 	}
 
 	var b4, b1284, r4, a4 PointX4
