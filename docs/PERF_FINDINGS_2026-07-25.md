@@ -775,6 +775,27 @@ batch x8 orientation already fills all lanes with signatures, while this
 singleton orientation has a second 256-bit half available only when the scalar
 algorithm exposes a second independent chain.
 
+### 5.18 Current modulo-8L HEEA selector — negative singleton gate
+
+The positive two-chain doubling result does not include coefficient selection.
+The existing exact allocation-free `SelectShiftSubtract` implementation was
+therefore measured before extending the two-chain cached-add/table layer.
+
+On a pinned Zen 5 core, ordinary admitted selection cost approximately 7.12
+µs at W128, 6.87 µs at W132, and 6.68 µs at W136, all with zero
+allocations. The post-fusion cold singleton measured 14.84 µs/signature.
+Halving the roughly 255-doubling chain cannot recover a selector cost of this
+size: the profile assigns about 48% of the verifier to doubling, so even an
+otherwise-free half-length replacement saves only roughly 3.6 µs before its
+extra tables, additions, and final term combination.
+
+The current selector is therefore closed as a performance candidate for both
+batch and singleton paths. The exactness work, modulo-8L guards, mixed-torsion
+vectors, and two-chain ZMM kernel remain useful foundations. Reopen complete
+HEEA only with a fundamentally cheaper exact selector whose measured cost fits
+inside the point-loop saving; do not spend more assembly effort around the
+current selector first.
+
 ---
 
 ## 6. Smaller observations

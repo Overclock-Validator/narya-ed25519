@@ -234,8 +234,16 @@ This is a coverage snapshot, not a distribution claim. On the Apple M4 Pro,
 an admitted 128-bit selection measured about 4.9--5.4 microseconds with zero
 allocations, versus roughly 65 microseconds for `SelectFixed`; the explicit
 pathological fallback measured about 5.5--5.7 microseconds. Ryzen measurements
-remain required. The selector is connected only to the forced complete
-research verifier described below; production backend dispatch is unchanged.
+were added on 2026-07-26: on a pinned Zen 5 Ryzen 7 9700X, ordinary admitted
+selection measured about 7.12 microseconds at W128, 6.87 at W132, and 6.68 at
+W136, with zero allocations. The concurrently measured strict singleton was
+14.84 microseconds, so the current selector costs more than the plausible
+saving from halving its approximately 255-doubling chain. The positive
+two-chain ZMM arithmetic gate therefore does not make this selector a viable
+complete singleton path. Future HEEA work must first supply a fundamentally
+cheaper exact selector; extending the point layer alone cannot win. The
+selector is connected only to the forced complete research verifier described
+below; production backend dispatch is unchanged.
 
 Run the selector benchmark and its dedicated fuzz target with:
 
