@@ -28,7 +28,7 @@ relaxation: a non-canonical but decodable public-key string `A_bytes` is
 accepted, and those exact original bytes—not a canonical re-encoding—enter the
 challenge hash.
 
-Under the random-oracle model and byte-string public-key identity, that
+Under the classical random-oracle model and byte-string public-key identity, that
 relaxation does not introduce an evident weakness in EUF-CMA, SUF-CMA, S-UEO,
 MBS, M-S-UEO, or SBS. The load-bearing conditions are:
 
@@ -180,10 +180,59 @@ rho_L = [r(q+1)^2 + (L-r)q^2] / N^2
       = 1/L + r(L-r)/(L*N^2).
 ```
 
-Both are approximately `1/L`, or about `2^-252`. For `Q` distinct oracle
-inputs, a union bound gives at most `choose(Q,2) * rho_L` for some reduced
-collision. Hitting one already fixed target with `Q` fresh attempts is bounded
-by `Q * mu_L`.
+Both are approximately `1/L`, or about `2^-252`, with `rho_L <= mu_L`.
+For `Q` distinct oracle inputs, a union bound gives at most
+`choose(Q,2) * rho_L` for some reduced collision. Hitting one already fixed
+target with `Q` fresh attempts is bounded by `Q * mu_L`.
+
+The transcript encoding is injective. Its first 32 bytes are `R_bytes`, its
+next 32 bytes are `A_bytes`, and all remaining bytes are the message. Two
+different `(R_bytes,A_bytes,message)` tuples therefore cannot reach one oracle
+input through a concatenation ambiguity.
+
+### Narya refinement: adaptive weighted-collision lemma
+
+Adaptive key selection is the main subtlety in the malicious-key bounds. List
+the relevant *fresh* oracle inputs in the order first evaluated, including
+transcripts evaluated lazily by final verification. Immediately before answer
+`K_j` is sampled, the bytes of that input—and hence the deterministically
+decoded public key's nonzero prime coefficient `a_j`—are already fixed. The
+coefficient may depend arbitrarily on all earlier oracle answers, but it cannot
+depend on `K_j` without changing `A_bytes` and creating another fresh input.
+
+Define `Y_j = a_j*K_j mod L` for accepted public-key transcripts. Conditional
+on the complete history before query `j`, collision with one earlier `Y_i`
+requires exactly one target value:
+
+```text
+K_j = a_j^-1 * Y_i mod L.
+```
+
+That target has probability at most `mu_L`. Collision with any earlier
+weighted value therefore costs at most `(j-1)*mu_L`, and summing the conditional
+bounds gives
+
+```text
+Pr[some weighted collision among N fresh inputs]
+    <= choose(N,2) * mu_L.
+```
+
+The argument does not require a reduction to know the discrete logarithm
+`a_j`; it uses only its mathematical uniqueness and commitment before the
+fresh answer. A candidate key selected after seeing an earlier challenge can
+turn its own success condition into a chosen-target query, but every adjustment
+of that key commits a new input before the corresponding challenge is known.
+
+This also explains why `mu_L`, rather than the smaller ordinary-collision
+parameter `rho_L`, is the safe quantity for adaptive M-S-UEO and SBS. The bound
+is tight in its basic two-query form. Set `R=B` and `A_1=B`; after observing
+`k_1`, use `A_2=[k_1]B`, target `k_2=1`, and set `S=1+k_1 mod L`. In the
+`k_1=0` case use `A_2=B` and target `k_2=0`. With distinct messages, a hit
+makes the same signature verify for both transcripts. The constructor still
+must win one fresh event of probability `mu_L`.
+
+This is a classical-ROM exposure argument. It is not a proof for quantum
+superposition access to the random oracle.
 
 ## Full-group decomposition
 
@@ -232,8 +281,9 @@ injective on the full `G_L x T_8` group or fall back to the ordinary equation.
 
 ## Security-property classification
 
-Let `Q` include every distinct challenge-oracle input relevant to the game,
-including inputs evaluated during final verification.
+Let `Q_H` count the adversary's distinct challenge-oracle queries. A verifier
+may evaluate as many as two winning transcripts that the adversary did not
+query, so set `N = Q_H+2` for the bounds below.
 
 | Property | Key model | Status for Narya | Bound/status |
 | --- | --- | --- | --- |
@@ -241,8 +291,8 @@ including inputs evaluated during final verification.
 | SUF-CMA | honest target key | direct restriction of published result | no greater than the IETF EUF bound |
 | S-UEO | honest target, malicious substitute | published result plus byte-string bookkeeping | published conservative form `2 Q_H mu_L` |
 | MBS | malicious key | **Narya refinement** | `choose(Q_H+2,2) rho_L` proof sketch |
-| M-S-UEO | two malicious keys | **Narya refinement** | `Q^2 mu_L` proof sketch |
-| SBS | malicious keys and messages | **Narya refinement** of *Taming* Theorem 1 | `Q^2 mu_L` proof sketch |
+| M-S-UEO | two malicious keys | **Narya refinement** | `choose(Q_H+2,2) mu_L` proof sketch |
+| SBS | malicious keys and messages | **Narya refinement** of *Taming* Theorem 1 | `choose(Q_H+2,2) mu_L` proof sketch |
 
 ### EUF-CMA and SUF-CMA
 
@@ -294,13 +344,20 @@ k*a = k'*a' mod L.
 ```
 
 For different points, fixing one challenge determines one target value for the
-other. For aliases of the same point, the relation reduces to `k = k'` on
-distinct byte-level oracle inputs. The conservative union-bound form is
+other. The second key may be selected as a function of that first challenge,
+but its bytes and coefficient are committed before its own challenge is
+sampled. Applying the adaptive weighted-collision lemma to the at most
+`N=Q_H+2` relevant evaluations gives
 
 ```text
-Adv_M-S-UEO <= Q^2 * mu_L
-Adv_SBS     <= Q^2 * mu_L.
+Adv_M-S-UEO <= choose(Q_H+2, 2) * mu_L
+Adv_SBS     <= choose(Q_H+2, 2) * mu_L.
 ```
+
+For aliases of the same decoded point, `a=a'`, so the relation reduces to the
+ordinary collision `k=k'` on distinct byte-level inputs. Searching across the
+same query budget is bounded more tightly by
+`choose(Q_H+2,2)*rho_L`.
 
 *Taming the many EdDSAs* Theorem 1 proves SBS for its Algorithm 2 after
 rejecting small-order public keys and explicitly notes that small-order `R`
@@ -430,14 +487,17 @@ not an external audit.
    represented as `(A_bytes, Decode(A_bytes))` and equality defined on bytes.
 2. **Decoder theorem.** Tie the alias classification to the exact permissive
    decoder with a small proof or exhaustive machine-checked boundary lemma.
-3. **Reduction bookkeeping.** Review the adaptive-query counts and the
-   `mu_L`/`rho_L` union bounds in the MBS, M-S-UEO, and SBS refinements.
+3. **Reduction formalization.** Translate the adaptive exposure lemma and its
+   `Q_H+2` lazy-verification accounting into the complete byte-string games,
+   and have the reduction independently reviewed.
 4. **Almost-correctness.** State the nonce-zero rejection whenever describing
    standard signing plus `DalekStrict` as a signature scheme.
 5. **Protocol identity.** Specify how every consumer compares, stores, and
    canonicalizes public keys.
 6. **Implementation proof.** Keep predicate equivalence separate from the
    field/group implementation audit.
+7. **QROM scope.** Do not transfer the sequential classical-ROM lemma to
+   quantum random-oracle queries without a separate proof and concrete bound.
 
 The strongest defensible summary today is therefore:
 
