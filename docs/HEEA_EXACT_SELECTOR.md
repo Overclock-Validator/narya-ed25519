@@ -120,6 +120,15 @@ by a verifier. A future hot selector needs fixed-width signed coordinates,
 congruence validator. The proof does not justify truncating an intermediate
 or reducing coefficients of `A` or `R` modulo `L`.
 
+`SelectExactGaussFixed` is the corresponding allocation-free experiment. It
+uses Lehmer-batched EEA rows until the exact Euclidean-norm crossover, replays
+the one crossing batch as elementary quotient steps, performs the bounded
+Gauss finish, and then runs the same breakpoint finalizer. Its 512-bit
+arithmetic and signed rounding are differentially tested against `math/big`.
+It also revalidates both reduced basis vectors, their determinant, and the
+selected congruence. This is intentionally proof-shaped code, not a promoted
+hot path.
+
 ## Executable evidence
 
 The tests provide independent layers:
@@ -160,6 +169,31 @@ These are deterministic experiment counts, not a closed-form probability
 claim. The new `math/big` oracle measured about 42--44 microseconds per random
 challenge on the development M4, versus about 535--555 microseconds for the
 older exhaustive EEA oracle. Neither timing is a production-selector result.
+
+### Fixed-width target result
+
+At implementation commit `50ce0f6`, on the pinned Zen 4 Ryzen 7 PRO 8700GE
+with Go 1.26.4 and `GOMAXPROCS=1`, five two-second W132 samples measured:
+
+| Selector | Median | Range | Allocation |
+| --- | ---: | ---: | ---: |
+| Exact fixed Gauss/breakpoint | 18.488 us | 18.413--18.495 us | 0 B/op |
+| Heuristic Lehmer principal-row | 1.833 us | 1.833--1.836 us | 0 B/op |
+
+The exact selector is slower than an entire optimized Narya batch
+verification before any transformed point arithmetic is charged. Even the
+same fixed selector without its independent congruence validations remained
+far outside the reducer budget on the development machine. Exact enumeration
+therefore closes a correctness gap but fails the performance gate. It is not
+connected to HEEA verification or backend dispatch.
+
+Run the comparison with:
+
+```sh
+taskset -c 2 env GOMAXPROCS=1 go test ./internal/heea8l -run '^$' \
+  -bench '^(BenchmarkSelectExactGaussFixed|BenchmarkSelectLehmer)$' \
+  -benchmem -benchtime=2s -count=5
+```
 
 ## Width fallback is intrinsic
 
@@ -231,4 +265,3 @@ line used in Pornin's optimized verification work and by ElSheikh et al.'s
 HEEA scalar-halving work. The odd-coset infinity-norm finalizer above is a
 Narya-specific derivation for the cofactorless full-group equation; the
 executable oracles, rather than provenance alone, are its acceptance evidence.
-

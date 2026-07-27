@@ -17,6 +17,14 @@ That is still too expensive for verifier integration: the selector alone is
 about 35% of the current 1232-byte, n=64 cold r51 cost on this CPU, before any
 transformed point work or fallback. A complete verifier gate remains mandatory.
 
+The later exact Gauss/breakpoint fixed-width selector removes enumeration
+misses but is not a performance successor. At commit `50ce0f6`, its W132
+median on the same Ryzen was 18.488 microseconds versus 1.833 microseconds for
+the heuristic Lehmer selector, both allocation-free. Exact 512-bit basis and
+congruence validation is valuable as executable evidence but cannot fit the
+HEEA reducer budget. See
+[`../../docs/HEEA_EXACT_SELECTOR.md`](../../docs/HEEA_EXACT_SELECTOR.md).
+
 ## Strict-equation exactness contract
 
 Let `N=8L`, where `L` is the prime subgroup order. If the selector returns
