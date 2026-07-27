@@ -1,5 +1,7 @@
 # 5x51 lane-per-signature IFMA track
 
+[Documentation index](../README.md) · Architecture
+
 This is the correctness and benchmark plan for Narya's throughput backend.
 It is deliberately separate from `internal/r43x6`:
 

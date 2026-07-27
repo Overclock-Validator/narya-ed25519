@@ -1,5 +1,7 @@
 # Narya — review notes / PR description
 
+[Documentation index](../README.md) · Audits and validation
+
 > Consensus-exact, accelerated Ed25519 verification for a Go Solana node.
 > Alpha. This branch is up for review. The Zen 4/Zen 5 r51 composition is
 > registered for explicit selection; automatic dispatch remains generic. Its
@@ -81,7 +83,7 @@ verdicts.
     strict keys together to immutable warm A6/r9 tables while preserving the
     native SIMD width. Automatic selection remains generic. Alternate-radix
     configurations remain benchmark candidates. See
-    `docs/R51_THROUGHPUT_BACKEND.md`.
+    `docs/architecture/R51_THROUGHPUT_BACKEND.md`.
   - `stdlib` — routes to `crypto/ed25519`; the rollback proof point.
 - No cgo anywhere. The current AVX-512 primitives are Go assembly, gated on
   `x/sys/cpu` feature detection, with the

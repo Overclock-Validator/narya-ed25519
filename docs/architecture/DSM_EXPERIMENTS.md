@@ -1,5 +1,7 @@
 # Double-scalar multiplication experiments
 
+[Documentation index](../README.md) · Architecture
+
 > **Current status.** Zen 4 measurements selected two-x4 radix-64 DSM for the
 > registered, forced-only r51 batch backend. The other widths and true-x8
 > shapes below remain comparison candidates; x8 is retained for Zen 5.

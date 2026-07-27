@@ -1,5 +1,7 @@
 # Experimental multi-buffer SHA-512
 
+[Documentation index](../README.md) · Architecture
+
 Narya contains forced, hardware-gated x4 and x8 SHA-512 prototypes. They do
 not change `sha512mb.Lanes`, `sha512mb.Sum512Batch`, backend selection, or any
 production verification path.
@@ -42,7 +44,7 @@ production candidate retains the sixteen message words in ZMM registers and
 updates them as a rolling ring; the original 80-word stack schedule remains an
 independent differential and benchmark control. The rolling organization is
 adapted from Firedancer's pinned AVX-512 batch SHA-512 data flow, as recorded
-in [NOTICE](../NOTICE). Zen 4 executes 512-bit operations over 256-bit datapaths,
+in [NOTICE](../../NOTICE). Zen 4 executes 512-bit operations over 256-bit datapaths,
 so neither width is selected without target measurements.
 
 The x8 complete-hash path fuses direct pointer loads, byte swapping, 8x8

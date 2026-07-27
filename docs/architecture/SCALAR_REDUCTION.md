@@ -1,5 +1,7 @@
 # Experimental SHA-512 Digest Reduction
 
+[Documentation index](../README.md) · Architecture
+
 `internal/r51x5` contains the fixed-storage scalar-reduction component used by
 the explicitly forced r51 verifier. The implementation remains portable Go;
 the SIMD/native reducer variants discussed below are benchmark-only. This

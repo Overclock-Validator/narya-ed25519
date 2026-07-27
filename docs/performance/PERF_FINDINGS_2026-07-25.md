@@ -1,7 +1,9 @@
 # Performance findings and open opportunities — 2026-07-25
 
+[Documentation index](../README.md) · Performance
+
 Written alongside branch `claude/narya-perf`. Measurements are in
-`docs/ZEN5_9700X_2026-07-25.md`; this document is the reasoning, the structural
+`docs/performance/ZEN5_9700X_2026-07-25.md`; this document is the reasoning, the structural
 constraints found while integrating, and what is worth doing next.
 
 The original warm-comb measurements below were taken on Zen 5 (Ryzen 7 9700X).
@@ -382,7 +384,7 @@ radix-32 diagnostic at 1232 bytes: about +59% on Zen 5 x8 and +46% on Zen 4
 two-x4 at both n=8 and n=64. The registered ordinary comb path is faster still.
 Do not spend more implementation time on the current HEEA/QSM construction;
 retain it as proof and differential-test evidence. Exact commands and medians
-are recorded in `docs/HEEA.md`.
+are recorded in `docs/proofs/HEEA.md`.
 
 This closure is width-specific. It closes HEEA as a scalar-count trade in the
 already-full lane-per-signature x8/two-x4 batch kernels. It does **not** close a
@@ -1027,7 +1029,7 @@ point-operation calls and was already reduced further by affine Stage-2 fusion
 and pre-signed `2dT` selection.
 
 The associated exactness result is retained in
-[`STRICT_AGGREGATE_BATCHING.md`](STRICT_AGGREGATE_BATCHING.md): fewer than `n`
+[`STRICT_AGGREGATE_BATCHING.md`](../proofs/STRICT_AGGREGATE_BATCHING.md): fewer than `n`
 deterministic linear group outputs cannot reproduce `n` independent residual
 verdicts, because the coefficient map has a nontrivial prime-subgroup kernel.
 That is a group-linear lower bound, not an impossibility claim for arbitrary

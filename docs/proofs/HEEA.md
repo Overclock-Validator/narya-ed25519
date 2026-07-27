@@ -1,5 +1,7 @@
 # Exact HEEA research track
 
+[Documentation index](../README.md) · Proofs and formal reasoning
+
 HEEA is a parallel research track, not a production verifier. The published
 artifact reports a 16.12% median improvement for individual Ed25519
 verification relative to its ed25519-donna DSM baseline. That result justifies
@@ -328,7 +330,7 @@ slower: the best admitted width, W132, measured 22.941 us/signature versus
 17.831 for the ordinary packed x4 singleton (+28.7%). A deterministic
 256-signature corpus measured 24.235 versus 18.780 us/signature (+29.0%) with
 99.61% HEEA admission. Full evidence is in
-[`results/zen4-singleton-heea-two-chain-2026-07-26/`](results/zen4-singleton-heea-two-chain-2026-07-26/).
+[`results/zen4-singleton-heea-two-chain-2026-07-26/`](../results/zen4-singleton-heea-two-chain-2026-07-26/).
 
 This closes the implementation on Zen 4, where each ZMM IFMA instruction is
 executed through two 256-bit passes. It does not answer the intended Zen 5

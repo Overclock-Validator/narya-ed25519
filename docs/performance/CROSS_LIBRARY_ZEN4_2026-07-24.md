@@ -1,5 +1,7 @@
 # Ed25519 cross-library comparison on Zen 4
 
+[Documentation index](../README.md) · Performance
+
 > **Historical record with a current follow-up.** The original comparison
 > below is intentionally preserved at its named Narya commit. It predates the
 > packed singleton, exact-tail dispatcher, and registration of forced backend

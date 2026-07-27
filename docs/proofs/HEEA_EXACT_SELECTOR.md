@@ -1,5 +1,7 @@
 # Exact constrained HEEA selector
 
+[Documentation index](../README.md) · Proofs and formal reasoning
+
 This note records the proof and executable evidence for Narya's constrained
 modulo-`8L` HEEA candidate problem. It is a research result, not a production
 backend contract. HEEA remains opt-in test code and ordinary strict

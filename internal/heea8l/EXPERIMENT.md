@@ -23,7 +23,7 @@ median on the same Ryzen was 18.488 microseconds versus 1.833 microseconds for
 the heuristic Lehmer selector, both allocation-free. Exact 512-bit basis and
 congruence validation is valuable as executable evidence but cannot fit the
 HEEA reducer budget. See
-[`../../docs/HEEA_EXACT_SELECTOR.md`](../../docs/HEEA_EXACT_SELECTOR.md).
+[`../../docs/proofs/HEEA_EXACT_SELECTOR.md`](../../docs/proofs/HEEA_EXACT_SELECTOR.md).
 
 ## Strict-equation exactness contract
 
@@ -62,7 +62,7 @@ Every sample is independently derived from its index under the domain
 count. Timing is machine-dependent.
 
 The command now uses the independently derived exact Gauss/breakpoint oracle
-described in [`../../docs/HEEA_EXACT_SELECTOR.md`](../../docs/HEEA_EXACT_SELECTOR.md).
+described in [`../../docs/proofs/HEEA_EXACT_SELECTOR.md`](../../docs/proofs/HEEA_EXACT_SELECTOR.md).
 On 2026-07-26 it reproduced every count and every histogram bucket below
 exactly. The older parity-aware EEA oracle remains independent differential
 evidence rather than the active sampler.

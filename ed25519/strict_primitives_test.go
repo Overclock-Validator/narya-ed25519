@@ -234,7 +234,7 @@ func TestCanonicalREncoding(t *testing.T) {
 }
 
 // TestPermissiveDecoderNonCanonicalAliasBoundary machine-checks the finite
-// non-canonical-y part of the decoder lemma used by docs/PROVABLE_SECURITY.md.
+// non-canonical-y part of the decoder lemma in docs/proofs/PROVABLE_SECURITY.md.
 // A 255-bit input can exceed p=2^255-19 by only 0..18, so these 38 byte strings
 // (both sign bits) exhaust that boundary. The separate x=0/sign=1 family is
 // pinned by TestCanonicalREncoding above.

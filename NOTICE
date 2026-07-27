@@ -291,7 +291,7 @@ pp. 493–515, DOI 10.46586/tches.v2025.i3.493-515, and its artifact:
     https://doi.org/10.46586/tches.v2025.i3.493-515
     https://artifacts.iacr.org/tches/2025/a26/
 
-The comparison baseline quoted in docs/HEEA.md is that artifact's, measured
+The comparison baseline quoted in docs/proofs/HEEA.md is that artifact's, measured
 against ed25519-donna (Andrew Moon). This code is a research prototype and
 is not part of any production build.
 
@@ -324,7 +324,7 @@ sources; they are recorded because the behavior they define is the product.
     for byte; it reaches verify_strict through the solana-signature crate.
     https://github.com/anza-xyz/agave/tree/7e51da963aee49622a395f562386a6bd8ba0e717
   * Solana Foundation — SIMD-0376 (proposed verify_strict loosening) and
-    SIMD-0152, referenced in docs/REVIEW-NOTES.md.
+    SIMD-0152, referenced in docs/audits/REVIEW-NOTES.md.
     https://github.com/solana-foundation/solana-improvement-documents/tree/b13be70e7454144becbe9c474b296d737d72df98
   * Zcash ZIP 215 — the reserved ZIP215 profile name.
     https://zips.z.cash/zip-0215

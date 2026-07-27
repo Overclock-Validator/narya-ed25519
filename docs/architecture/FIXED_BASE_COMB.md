@@ -1,10 +1,12 @@
 # r51 Fixed-Base Comb
 
+[Documentation index](../README.md) · Architecture
+
 > **Status update.** The early measurements in this note are historical, but
 > the design is no longer merely experimental: the explicitly selected `r51`
 > backend uses the radix-256 specialization for its cold fixed-base term.
 > Subsequent Stage-2 fusion and pre-signed-`2dT` results are recorded in
-> [`PERF_FINDINGS_2026-07-25.md`](PERF_FINDINGS_2026-07-25.md) and under
+> [`PERF_FINDINGS_2026-07-25.md`](../performance/PERF_FINDINGS_2026-07-25.md) and under
 > `docs/results/zen5-fixed-base-*`. Automatic backend selection remains
 > `generic`; the exported Go names retain `Experimental` for compatibility.
 

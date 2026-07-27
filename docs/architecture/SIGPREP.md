@@ -1,5 +1,7 @@
 # The preparation stage
 
+[Documentation index](../README.md) · Architecture
+
 `internal/sigprep` owns everything between the raw bytes of a signature and the
 group equation: length and encoding checks, the predicate's byte-level gates,
 and the challenge `k = H(R ‖ A ‖ M) mod l`.
@@ -109,7 +111,7 @@ zero allocations and zero internal-fault fallbacks. A later repeat on the same
 host became bimodal at almost exactly 2x throughput, so those samples are kept
 as a host-state warning rather than interpreted as a source change. The exact
 regime and commands are recorded in
-[`results/zen4-sigprep-2026-07-26`](results/zen4-sigprep-2026-07-26/README.md).
+[`results/zen4-sigprep-2026-07-26`](../results/zen4-sigprep-2026-07-26/README.md).
 
 ## Where this points
 

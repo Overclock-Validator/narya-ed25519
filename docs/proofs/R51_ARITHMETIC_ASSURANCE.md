@@ -1,5 +1,7 @@
 # Radix-51 IFMA arithmetic assurance
 
+[Documentation index](../README.md) · Proofs and formal reasoning
+
 This note records the proof obligations for Narya's five-limb radix-`2^51`
 AVX-512 IFMA arithmetic, the obligations already backed by independent tests,
 and the boundary that still requires a machine-linked certificate.

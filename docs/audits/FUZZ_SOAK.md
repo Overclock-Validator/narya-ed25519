@@ -1,5 +1,7 @@
 # Zen 4 differential fuzz soak
 
+[Documentation index](../README.md) · Audits and validation
+
 The short fuzz rounds in `scripts/zen4-gate.sh` are smoke tests. They do not
 constitute the prolonged generic and IFMA differential fuzzing required before
 automatic SIMD dispatch or release sign-off. The r51 backend is registered for

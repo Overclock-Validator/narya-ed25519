@@ -1,5 +1,7 @@
 # Benchmarking narya
 
+[Documentation index](../README.md) · Performance
+
 The benchmarks are ordinary Go benchmarks, so they run **independently of
 any consuming node** and put every implementation side by side in one run.
 No Mithril, no ledger, no hardware setup — `go test -bench` anywhere.

@@ -1,5 +1,7 @@
 # Strict aggregate batching: proof boundary and research gate
 
+[Documentation index](../README.md) · Proofs and formal reasoning
+
 > **Status:** proof and research note. Narya does not implement this aggregate
 > verifier, and this document does not change the supported verification
 > contract. `DalekStrict` continues to evaluate one complete equation and

@@ -1,5 +1,7 @@
 # What the Ed25519 security proofs do—and do not—say about Narya
 
+[Documentation index](../README.md) · Proofs and formal reasoning
+
 This note relates Narya's exact `DalekStrict` acceptance predicate to two
 primary references:
 

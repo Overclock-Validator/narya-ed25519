@@ -1,5 +1,7 @@
 # Paired A/R decompression experiment
 
+[Documentation index](../README.md) · Architecture
+
 The strict cold path may decode `A` and `R` together, retain affine `R`, and
 finish with two projective cross-products instead of encoding the computed
 point. Zen 4 complete-verifier measurements admitted this mechanism for the

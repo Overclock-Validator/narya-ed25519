@@ -3,7 +3,7 @@
 # Benchmarks are ordinary Go benchmarks, so they run independently of any
 # consuming node and every implementation appears side by side in one run
 # (stdlib vs narya-compat vs narya-strict vs narya-cached). See
-# docs/BENCHMARKING.md for how to read them and how to A/B with benchstat.
+# docs/performance/BENCHMARKING.md for how to read them and A/B with benchstat.
 
 GO ?= go
 BENCHTIME ?= 2s
@@ -75,7 +75,7 @@ backend:
 
 # Serialized exact-input cache diagnostic. Production-quality evidence also
 # needs TRACEBENCH_ARGS='-output ... -representative -pinned-core-attested'
-# plus external fixed-core execution; see docs/BENCHMARKING.md.
+# plus external fixed-core execution; see docs/performance/BENCHMARKING.md.
 TRACE ?=
 TRACEBENCH_ARGS ?=
 .PHONY: tracebench
