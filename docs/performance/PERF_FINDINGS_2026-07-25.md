@@ -1039,6 +1039,49 @@ nonlinear coordinate algorithms.
 asymptotic estimate. Reopen only for a concrete finite eight-output schedule
 whose affine/projective-weighted cost beats 32 mixed adds plus 8 doublings.
 
+### 5.25 Uniform x8 SHA-512 shapes — retained; two-wave interlace — closed
+
+Commit `1752241` extends the full-x8 fixed-three-segment hash path from three
+enumerated message sizes to every uniform verifier shape
+`R[32] || A[32] || message` with at least 64 message bytes. The existing exact
+assembly finalizer remains selected for 64, 200, and 1232 bytes. Other sizes
+decide their shape once per group, ingest the fixed first block and every
+complete middle block directly, and stage only the one or two SHA-512 padding
+blocks. The generic segmented scheduler remains the oracle and fallback for
+partial groups, unequal lengths, and non-verifier segment shapes.
+
+On a pinned physical core of the Ryzen 7 9700X with Go 1.26.4, the 4096-byte
+hash-only median changed from approximately 1,051 to 1,004 ns/message (-4.5%).
+The 1232-byte control remained approximately 338 ns/message. Complete public
+strict verification improved from 5.337 to 5.304 us/signature at n=8 (-0.6%)
+and from approximately 5.126 to 5.102 at n=64 (about -0.5%, with two noisy
+baseline samples). n=4 was unchanged because it does not enter the full-x8
+shape specialization. Every differential, padding-boundary, fast-path reach,
+and zero-allocation test passed on the native Zen 5 machine, followed by the
+complete repository suite.
+
+Commit `2615086` then tested the two-wave latency-hiding organization used by
+`tape-sha256` on Zen 5. The SHA-512 component retains two independent x8
+states in registers, expands both 80-word schedules to a 10 KiB stack frame,
+and alternates A/B rounds. It is differential-only and not dispatched. Ten
+three-second samples measured the existing two rolling-x8 calls at a median
+28.86 ns/message and the interlaced expanded-schedule kernel at 30.28
+ns/message (+4.9%). The spill/schedule cost therefore exceeds the recovered
+round latency for Narya's SHA-512 implementation.
+
+The experiment and attribution are retained so a future wider-register or
+different-cache regime can be remeasured without reconstructing it. The
+design source is pinned to `spool-labs/sha256` commit
+`39c1fea62015a723f19a2ed9e906926b3be770b8`.
+
+Raw command lines and the measured ranges are recorded under
+`docs/results/zen5-sha512-uniform-x8x2-2026-07-27/`.
+
+**Regime tag:** the retained uniform-shape optimization applies only to full
+x8 groups with equal message lengths of at least 64 bytes. The two-wave
+negative result applies to the expanded-schedule implementation on Zen 5; it
+does not claim that every possible selective-spill interlace is slower.
+
 ---
 
 ## 6. Smaller observations

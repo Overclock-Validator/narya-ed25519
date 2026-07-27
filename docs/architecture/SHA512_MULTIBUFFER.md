@@ -55,20 +55,25 @@ schedule. The first fused block also initializes the transposed SHA state,
 avoiding a scalar 64-word initialization followed by vector reloads.
 
 The fixed-three-segment entry has an additional full-x8 specialization for
-the exact verifier layouts `R[32] || A[32] || message` at message sizes 64,
-200, and 1232. It ingests the first block directly from separate R, A, and
+uniform verifier layouts `R[32] || A[32] || message` whose messages are at
+least 64 bytes. It ingests the first block directly from separate R, A, and
 message pointer vectors, without materializing eight concatenated 128-byte
-buffers. The corresponding final blocks have only zero, one, or two variable
-64-bit words; those words are loaded directly into the transposed schedule,
-while the padding and length words are constructed in vector registers. Other
-lengths, segment shapes, and partial x8 groups retain the general segmented
-path. The general path is also the end-to-end differential oracle for every
-specialized shape.
+buffers, and reads every complete middle block directly from the message.
+The shape is decided once for the group rather than once per lane and block.
+
+Message sizes 64, 200, and 1232 leave zero, one, or two variable 64-bit words
+in the final block. They retain the exact assembly finalizer: the words are
+loaded directly into the transposed schedule while padding and length are
+constructed in vector registers. Other uniform sizes stage only their one or
+two padding blocks, including the complete 128-bit SHA-512 length. Non-verifier
+shapes, unequal lengths, short messages, and partial x8 groups retain the
+general segmented path. The general path is also the end-to-end differential
+oracle for every specialized shape.
 
 Correctness tests compare both the raw compression state and complete
 segmented hashing against independent Go/`crypto/sha512` references. Coverage
 includes batch sizes 0 through 17, every physical lane and tail position,
-message sizes 0, 64, 200, and 1232 (plus padding/block edges), randomized
+message sizes 0, 64, 200, 1232, and 4096 (plus padding/block edges), randomized
 segments and lengths, and fuzzing. Allocation tests require zero allocations
 for prebuilt input descriptors.
 

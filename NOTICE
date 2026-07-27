@@ -258,6 +258,18 @@ API, independently tested round macro, and runtime dispatch. The source is:
     Copyright 2022 Firedancer Contributors
     Apache License 2.0
 
+The test-only two-wave experiment in
+sha512mb/native_amd64_x8x2_experiment.s adapts the independent-wave
+interlacing organization published by tape-sha256 at commit
+39c1fea62015a723f19a2ed9e906926b3be770b8:
+
+    https://github.com/spool-labs/sha256/blob/39c1fea62015a723f19a2ed9e906926b3be770b8/src/avx512x2.rs
+
+Narya applies that scheduling question to two eight-lane SHA-512 waves rather
+than tape-sha256's two sixteen-lane SHA-256 waves. The result is retained as a
+negative, undispatched performance experiment; no tape-sha256 source code is
+redistributed. tape-sha256 is Apache-2.0 licensed.
+
 
 =======================================================================
 DESIGN INFLUENCES — internal/r51x5

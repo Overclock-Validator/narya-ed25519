@@ -261,10 +261,11 @@ AVX2, bounded by SHA-512's share of one verification. **Not wired, not
 measured, and no AVX2-only machine has been benchmarked** — the size of the win
 is an estimate, not a result.
 
-The x8 fixed-three-segment entry recognizes full
-groups of the exact `R[32] || A[32] || message` shapes at message sizes
-64/200/1232, ingesting their first and final blocks without generic segmented
-staging. Design details and historical measurements are kept in
+The x8 fixed-three-segment entry recognizes full groups of uniform
+`R[32] || A[32] || message` inputs for every message size of at least 64
+bytes. It ingests the first and complete middle blocks directly and stages at
+most the SHA-512 padding blocks. The 64/200/1232-byte shapes retain an even
+narrower assembly finalizer. Design details and historical measurements are kept in
 [`docs/architecture/SHA512_MULTIBUFFER.md`](docs/architecture/SHA512_MULTIBUFFER.md).
 
 ## Performance
