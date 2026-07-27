@@ -415,24 +415,29 @@ func sum512NativeGroup3X8(out [][64]byte, msgs [][3][]byte, lanes int) {
 	sum512NativeLanesX8(out, &lane, lanes, maxBlocks)
 }
 
-// sum512NativeFixed3X8 recognizes the equal-width verifier shapes that are
-// important to sigverify: R and A are each 32 bytes, followed by a message of
-// 64, 200, or 1232 bytes. In those shapes the first block always consists of
-// R || A || message[:64], every middle block is a direct slice of message,
-// and the final block contains only 0, 8, or 16 variable bytes. Building the
-// latter directly in transposed word form avoids eight 128-byte padding
-// buffers, their pointer scan, and a full 8x8 input transpose.
+// sum512NativeFixed3X8 recognizes a full group of equal-width verifier inputs:
+// R and A are each 32 bytes, followed by an equal-size message of at least 64
+// bytes. The first block always consists of R || A || message[:64], and every
+// complete middle block is read directly from the message. This moves all
+// shape decisions outside the per-block loop and is especially useful for
+// uniform messages beyond the three common sizes handled by the exact final
+// block kernel below.
+//
+// Message sizes 64, 200, and 1232 leave zero, one, or two complete 64-bit
+// words in the final block. They retain the assembly finalizer, which builds
+// padding and the length directly in transposed form. Other uniform sizes
+// stage only their one or two padding blocks and use the same fused transpose
+// and compression entry as a direct middle block.
 //
 // The generic segmented implementation remains the fallback and differential
-// oracle for every other shape and for partial x8 groups.
+// oracle for non-verifier shapes, unequal message sizes, short messages, and
+// partial x8 groups.
 func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
 	if len(out) != nativeX8Width || len(msgs) != nativeX8Width {
 		return false
 	}
 	messageSize := len(msgs[0][2])
-	switch messageSize {
-	case 64, 200, 1232:
-	default:
+	if messageSize < 64 {
 		return false
 	}
 	for lane := range msgs {
@@ -451,7 +456,8 @@ func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
 	nativeCompressVerifierFirstX8Rolling(&state, &rPtrs, &aPtrs, &messagePtrs)
 
 	var ptrs [nativeX8Width]*byte
-	middleBlocks := (messageSize - 64) / 128
+	remaining := messageSize - 64
+	middleBlocks := remaining / 128
 	for block := 0; block < middleBlocks; block++ {
 		offset := 64 + block*128
 		for lane := range msgs {
@@ -460,18 +466,23 @@ func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
 		nativeTransposeCompressX8Rolling(&state, &ptrs, 0)
 	}
 
-	tailBytes := (messageSize - 64) % 128
-	var tail nativeTailX8
-	for lane := range msgs {
-		offset := messageSize - tailBytes
-		if tailBytes >= 8 {
-			tail[0][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset:])
+	tailBytes := remaining % 128
+	totalBytes := uint64(64) + uint64(messageSize)
+	if tailBytes == 0 || tailBytes == 8 || tailBytes == 16 {
+		var tail nativeTailX8
+		for lane := range msgs {
+			offset := messageSize - tailBytes
+			if tailBytes >= 8 {
+				tail[0][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset:])
+			}
+			if tailBytes == 16 {
+				tail[1][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset+8:])
+			}
 		}
-		if tailBytes == 16 {
-			tail[1][lane] = binary.BigEndian.Uint64(msgs[lane][2][offset+8:])
-		}
+		nativeCompressFinalX8Rolling(&state, &tail, uint64(tailBytes/8), totalBytes<<3)
+	} else {
+		compressUniformVerifierTailX8(&state, msgs, messageSize-tailBytes, tailBytes, totalBytes)
 	}
-	nativeCompressFinalX8Rolling(&state, &tail, uint64(tailBytes/8), uint64(64+messageSize)*8)
 
 	for lane := range out {
 		for word := range nativeInitialState {
@@ -479,6 +490,46 @@ func sum512NativeFixed3X8(out [][64]byte, msgs [][3][]byte) bool {
 		}
 	}
 	return true
+}
+
+// compressUniformVerifierTailX8 constructs the SHA-512 padding block(s) for a
+// full x8 group with one common message shape. The caller has already consumed
+// R, A, and every complete message block. tailOffset and tailBytes therefore
+// identify the only message bytes that need staging.
+//
+// SHA-512 reserves the last sixteen bytes for its 128-bit bit length. A tail
+// through byte 111 fits with the terminator and length in one block; a longer
+// tail needs a second, otherwise-empty length block. Keeping this logic here,
+// rather than in nativeLane.fill, means the block shape is decided once per
+// group rather than once per lane and block.
+func compressUniformVerifierTailX8(state *nativeStateX8, msgs [][3][]byte, tailOffset, tailBytes int, totalBytes uint64) {
+	var raw [nativeX8Width][128]byte
+	var ptrs [nativeX8Width]*byte
+	for lane := range raw {
+		copy(raw[lane][:tailBytes], msgs[lane][2][tailOffset:])
+		raw[lane][tailBytes] = 0x80
+		ptrs[lane] = &raw[lane][0]
+	}
+	if tailBytes <= 111 {
+		writeUniformVerifierLengthX8(&raw, totalBytes)
+		nativeTransposeCompressX8Rolling(state, &ptrs, 0)
+		return
+	}
+
+	nativeTransposeCompressX8Rolling(state, &ptrs, 0)
+	raw = [nativeX8Width][128]byte{}
+	writeUniformVerifierLengthX8(&raw, totalBytes)
+	for lane := range raw {
+		ptrs[lane] = &raw[lane][0]
+	}
+	nativeTransposeCompressX8Rolling(state, &ptrs, 0)
+}
+
+func writeUniformVerifierLengthX8(raw *[nativeX8Width][128]byte, totalBytes uint64) {
+	for lane := range raw {
+		binary.BigEndian.PutUint64(raw[lane][112:120], totalBytes>>61)
+		binary.BigEndian.PutUint64(raw[lane][120:128], totalBytes<<3)
+	}
 }
 
 func sum512NativeLanesX8(out [][64]byte, lane *[nativeX8Width]nativeLane, lanes int, maxBlocks uint64) {

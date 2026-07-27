@@ -475,7 +475,14 @@ func TestExperimentalSum512Batch3UniformVerifierShapesX8(t *testing.T) {
 		t.Skip("requires AVX-512F and AVX-512BW")
 	}
 	rng := rand.New(rand.NewSource(0x512f13d))
-	for _, messageSize := range []int{64, 200, 1232} {
+	// Exercise both sides of every SHA-512 padding boundary after the fixed
+	// 64-byte R || A prefix, exact complete-message blocks, and the larger
+	// uniform message size used by the public benchmark matrix.
+	for _, messageSize := range []int{
+		64, 65, 111, 112, 127, 128, 129,
+		175, 176, 177, 191, 192, 193, 200,
+		303, 304, 305, 1024, 1232, 4096,
+	} {
 		for _, count := range []int{nativeX8Width, 2 * nativeX8Width} {
 			msgs := make([][3][]byte, count)
 			for lane := range msgs {
@@ -491,7 +498,54 @@ func TestExperimentalSum512Batch3UniformVerifierShapesX8(t *testing.T) {
 				t.Fatal("AVX-512 availability changed during the test")
 			}
 			checkNativeDigests3(t, msgs, out)
+
+			// The public entry may fall back to the general x8 scheduler. Drive
+			// each complete group through the uniform helper as well, so this
+			// test fails if a future shape edit silently disables the fast path.
+			for first := 0; first < count; first += nativeX8Width {
+				var direct [nativeX8Width][64]byte
+				if !sum512NativeFixed3X8(direct[:], msgs[first:first+nativeX8Width]) {
+					t.Fatalf("messageSize=%d: uniform verifier shape was not recognized", messageSize)
+				}
+				checkNativeDigests3(t, msgs[first:first+nativeX8Width], direct[:])
+			}
 		}
+	}
+}
+
+func TestNativeFixed3X8RejectsNonUniformShapes(t *testing.T) {
+	if !nativeX8Available() {
+		t.Skip("requires AVX-512F and AVX-512BW")
+	}
+	var storage [nativeX8Width][64 + 200]byte
+	var msgs [nativeX8Width][3][]byte
+	var out [nativeX8Width][64]byte
+	for lane := range msgs {
+		msgs[lane] = [3][]byte{
+			storage[lane][:32],
+			storage[lane][32:64],
+			storage[lane][64:],
+		}
+	}
+
+	short := msgs
+	for lane := range short {
+		short[lane][2] = short[lane][2][:63]
+	}
+	if sum512NativeFixed3X8(out[:], short[:]) {
+		t.Fatal("uniform helper accepted messages shorter than its direct first-block precondition")
+	}
+
+	wrongR := msgs
+	wrongR[3][0] = wrongR[3][0][:31]
+	if sum512NativeFixed3X8(out[:], wrongR[:]) {
+		t.Fatal("uniform helper accepted a non-32-byte R")
+	}
+
+	unequal := msgs
+	unequal[5][2] = unequal[5][2][:199]
+	if sum512NativeFixed3X8(out[:], unequal[:]) {
+		t.Fatal("uniform helper accepted unequal message sizes")
 	}
 }
 
@@ -582,7 +636,7 @@ func TestNativeX8NoAllocations(t *testing.T) {
 }
 
 func TestExperimentalSum512Batch3NoAllocations(t *testing.T) {
-	const maxMessageSize = 1232
+	const maxMessageSize = 4096
 	var storage [17][64 + maxMessageSize]byte
 	var msgs [17][3][]byte
 	var out [17][64]byte
