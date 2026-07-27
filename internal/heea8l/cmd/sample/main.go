@@ -124,7 +124,7 @@ func runRange(first, last uint64, order, cutoff *big.Int) stats {
 		k, draws := uniformChallenge(index, order, cutoff)
 		local.draws += draws
 		started := time.Now()
-		selection := heea8l.Select(k, heea8l.Width136)
+		selection := heea8l.SelectExactGauss(k, heea8l.Width136)
 		local.selectorTime += time.Since(started)
 		local.samples++
 		if selection.Fallback == heea8l.FallbackInvalidChallenge || selection.Fallback == heea8l.FallbackInvalidWidth {
@@ -177,7 +177,7 @@ func printPathological() {
 	n := heea8l.Modulus()
 	k := new(big.Int).Sub(n, big.NewInt(2))
 	k.Quo(k, big.NewInt(10))
-	selection := heea8l.Select(k, heea8l.Width136)
+	selection := heea8l.SelectExactGauss(k, heea8l.Width136)
 	fmt.Printf("pathological k=(N-2)/10 candidate_width=%d use=%v fallback=%v rho=%s tau=%s\n",
 		selection.Candidate.BitLen(), selection.UseCandidate, selection.Fallback,
 		&selection.Candidate.Rho, &selection.Candidate.Tau)

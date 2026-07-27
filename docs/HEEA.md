@@ -12,6 +12,13 @@ strict-compatible Monte Carlo aggregate, including its mandatory exact
 per-item torsion gate and nonzero soundness error, is in
 [`STRICT_AGGREGATE_BATCHING.md`](STRICT_AGGREGATE_BATCHING.md).
 
+The exact odd-coset candidate theorem, its constant-size breakpoint
+enumeration, the universal 252-bit obstruction, and executable differential
+evidence are recorded separately in
+[`HEEA_EXACT_SELECTOR.md`](HEEA_EXACT_SELECTOR.md). That result eliminates
+solver-induced misses; it does not eliminate intrinsic or adversarial width
+fallback.
+
 The paper is Muhammad ElSheikh, İrem Keskinkurt Paksoy, Murat Cenk, and
 M. Anwar Hasan, "Accelerating EdDSA Signature Verification with Faster Scalar
 Size Halving," TCHES 2025(3), pp. 493–515,

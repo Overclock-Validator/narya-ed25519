@@ -53,6 +53,12 @@ Every sample is independently derived from its index under the domain
 `heea8l-sample-v1`, so counts are reproducible and independent of worker
 count. Timing is machine-dependent.
 
+The command now uses the independently derived exact Gauss/breakpoint oracle
+described in [`../../docs/HEEA_EXACT_SELECTOR.md`](../../docs/HEEA_EXACT_SELECTOR.md).
+On 2026-07-26 it reproduced every count and every histogram bucket below
+exactly. The older parity-aware EEA oracle remains independent differential
+evidence rather than the active sampler.
+
 ## 2026-07-24 result
 
 The million-sample experiment ran on an Apple M4 Pro with Go on Darwin/arm64.
