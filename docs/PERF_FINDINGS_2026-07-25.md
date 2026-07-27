@@ -936,6 +936,12 @@ suite passed.
 Raw output is under
 `docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/`.
 
+Commit `2df0e94` subsequently replaced per-lane scalar extraction with a
+native affine3 transpose. To make both signs contiguous inputs to that
+transpose, the current table stores two complete three-coordinate tuples per
+entry: 491,520 bytes at radix 256. The 327,680-byte figure and timing above are
+the exact `afe5c65` gate, not the current table footprint.
+
 **Regime tag:** this removes only online `2dT` negation. The per-lane scalar
 gather and SoA stores remain visible and are a separate candidate. Because B
 is shared process-wide, the 80 KiB storage trade does not scale with the public
@@ -1002,6 +1008,34 @@ Raw output is under
 **Regime tag:** the improvement applies to x4 cold A evaluation. Complete x8
 groups already used projective Niels, while prepared warm tables follow a
 different comb schedule.
+
+### 5.24 Multi-output fixed-base addition chains — closed by operation gate
+
+An external research pass correctly identified the only remaining
+cross-signature algebraic commonality under exact independent verdicts: all
+eight products `[s_i]B` share the basepoint. It proposed vector addition chains
+and quoted Pippenger's asymptotic estimate of roughly 436 scalar group
+operations for eight 252-bit outputs.
+
+That estimate does not beat the selected machine-level baseline. The promoted
+radix-256 comb performs at most 32 affine-Niels mixed-add calls and 8 doubling
+calls per x8 group, with every call advancing all eight outputs. Even ideal
+packing turns 436 scalar operations into at least 55 vector slots, before
+chain construction, cross-lane placement, projective temporaries, or the
+higher cost of non-affine additions. The current schedule needs 40 vector
+point-operation calls and was already reduced further by affine Stage-2 fusion
+and pre-signed `2dT` selection.
+
+The associated exactness result is retained in
+[`STRICT_AGGREGATE_BATCHING.md`](STRICT_AGGREGATE_BATCHING.md): fewer than `n`
+deterministic linear group outputs cannot reproduce `n` independent residual
+verdicts, because the coefficient map has a nontrivial prime-subgroup kernel.
+That is a group-linear lower bound, not an impossibility claim for arbitrary
+nonlinear coordinate algorithms.
+
+**Regime tag:** no IFMA vector-chain prototype is warranted from the
+asymptotic estimate. Reopen only for a concrete finite eight-output schedule
+whose affine/projective-weighted cost beats 32 mixed adds plus 8 doublings.
 
 ---
 

@@ -209,6 +209,71 @@ kernel. Random coefficients trade zero error for a conventional cryptographic
 soundness bound; they do not make the result literally identical to `n`
 independent equations.
 
+## Independent verdicts are a multi-output problem
+
+For `n` signatures, let the prime-order residuals be
+
+```text
+D_i = [s_i]B - R_i - [k_i]A_i.
+```
+
+Any conventional deterministic group-linear construction producing `q`
+aggregate points has a coefficient matrix `C` in `F_L^(q by n)`. If `q<n`,
+`C` has a nonzero kernel vector `v`. Choosing `D_i=[v_i]B` makes every
+aggregate the identity while at least one individual residual is nonidentity.
+The prime subgroup alone supplies the counterexample, so torsion policy cannot
+repair the lost dimension.
+
+Consequently an exact checker based only on deterministic linear group
+combinations needs at least `n` independent output dimensions to reproduce
+`n` independent verdicts. With `q=n`, an invertible coefficient matrix is
+only a change of basis: it does not collapse the curve computation to a
+one-output MSM.
+
+This is deliberately a statement about conventional group-linear algorithms,
+not a universal lower bound for every coordinate program. A nonlinear
+algorithm may inspect encodings or coordinates, and one group element has
+enough cardinality to encode more than `n` Boolean results. No claim is made
+that such an encoding is impossible; only that an ordinary deterministic MSM
+does not provide it.
+
+### The one common-base opportunity, and Narya's present gate
+
+The products `[s_i]B` do share a base, so vector addition chains are a real
+multi-output technique in the abstract. Pippenger's asymptotic estimate for
+eight roughly 252-bit outputs is about 436 scalar group operations. That is a
+useful research bound, but it is not the correct baseline for Narya's x8
+backend.
+
+Narya's promoted radix-256 comb evaluates all eight lanes with at most:
+
+```text
+32 x8 affine-Niels mixed-add calls + 8 x8 doubling calls.
+```
+
+Each call advances eight independent fixed-base products simultaneously. The
+canonical Ed25519 scalar bound `s<L<2^253` also means Narya needs 32 radix-256
+rounds, rather than the 33 additions required by a general table accepting
+unreduced 255-bit scalars.
+
+Even granting perfect eight-way packing, the cited 436-operation estimate has
+a floor of `ceil(436/8)=55` vector group-operation slots. It would additionally
+need batch-specific chain construction, cross-lane source placement, temporary
+projective points, and generally more expensive projective additions. The
+current comb needs only 40 vector point-operation calls and consumes affine
+cached operands. Therefore that estimate does **not** justify an IFMA
+prototype.
+
+At the `afe5c65` gate, the Zen 5 radix-256 fixed-base group measured 5.1715 us
+for eight signatures, or about 0.646 us/signature, while the complete
+1232-byte cold verifier measured 4.673 us/signature. Deleting that fixed-base
+term entirely would have capped the gain at roughly 14%; a realistic
+fractional improvement was low-single-digit end to end. Later selector changes
+altered the table layout, so these numbers are a same-commit ceiling rather
+than a current microbenchmark. Reopen a multi-output-chain prototype only if a
+finite eight-scalar schedule is supplied that beats the current 32 mixed adds
+and 8 doublings after distinguishing affine from projective costs.
+
 ## Point-halving membership experiment
 
 Pornin's subgroup test uses the fact that the image of multiplication by 8 is
@@ -266,6 +331,16 @@ enough to leave a plausible end-to-end win.
 - Henry de Valence,
   [“It's 255:19AM. Do you know what your validation criteria are?”](https://hdevalence.ca/blog/2020-10-04-its-25519am),
   for the scalar-reduction/cofactor distinction in Ed25519 predicates.
+- Nicholas Pippenger,
+  [“On the Evaluation of Powers and Monomials”](https://doi.org/10.1137/0209022),
+  *SIAM Journal on Computing* 9(2), 1980, for the multi-output addition-chain
+  framework. The asymptotic estimate is treated as a research bound, not as a
+  finite eight-scalar implementation count.
+- `curve25519-dalek`'s
+  [basepoint-table documentation](https://docs.rs/curve25519-dalek/latest/curve25519_dalek/edwards/struct.EdwardsBasepointTableRadix128.html),
+  for the published table-size/addition tradeoffs and the distinction between
+  32 radix-256 additions for bounded scalars and the extra carry coefficient
+  needed for general unreduced 255-bit scalars.
 
 The hybrid decomposition and lower-bound discussion were prompted by an
 external ChatGPT Pro research pass, then independently re-derived against the

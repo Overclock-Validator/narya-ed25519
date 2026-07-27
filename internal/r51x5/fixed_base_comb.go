@@ -11,7 +11,10 @@ package r51x5
 // doublings rather than one doubling chain per scalar.
 //
 // Construction allocates and normalizes the table once. Evaluation is
-// allocation-free. This experiment is not reachable from production dispatch.
+// allocation-free. The historical Experimental names are retained to avoid a
+// broad API churn, but the explicitly selected r51 backend now uses the
+// radix-256 specialization for its cold fixed-base term. Automatic backend
+// selection remains generic.
 type ExperimentalFixedBaseCombTable struct {
 	signedPoints []fixedBaseIFMASignedAffineCached
 	radixBits    uint8

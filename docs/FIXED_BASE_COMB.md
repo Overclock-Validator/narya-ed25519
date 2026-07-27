@@ -1,15 +1,17 @@
-# Experimental r51 Fixed-Base Comb
+# r51 Fixed-Base Comb
 
-> **Historical/superseded design note.** The registered forced r51 backend
-> still uses its cold radix-64 path. This symmetric fixed-B experiment remains
-> outside dispatch and has been superseded for new work by asymmetric A/B and
-> prepared warm-key comb measurements. The measurements below remain useful as
-> pinned evidence for the original layout decision.
+> **Status update.** The early measurements in this note are historical, but
+> the design is no longer merely experimental: the explicitly selected `r51`
+> backend uses the radix-256 specialization for its cold fixed-base term.
+> Subsequent Stage-2 fusion and pre-signed-`2dT` results are recorded in
+> [`PERF_FINDINGS_2026-07-25.md`](PERF_FINDINGS_2026-07-25.md) and under
+> `docs/results/zen5-fixed-base-*`. Automatic backend selection remains
+> `generic`; the exported Go names retain `Experimental` for compatibility.
 
-This experiment evaluates a wider fixed-base table for the Ed25519 generator
-`B`. Its complete verifier artifact is private and compiled in normal source,
-but remains unregistered and benchmark-only: production dispatch cannot
-select it.
+This note began as an evaluation of a wider fixed-base table for the Ed25519
+generator `B`. The exact layout that survived the hardware gates is now used
+by the forced r51 verifier. The old comparison rows below document the design
+decision, not current end-to-end performance.
 
 The central implementation choice is to store each `B` multiple once as a
 scalar affine-cached point `(y+x, y-x, 2dxy)`. Public digits from four or eight
@@ -31,7 +33,7 @@ Each scalar affine-cached point occupies exactly `3 * 5 * 8 = 120` coordinate
 bytes. The payload figures below exclude a 32-byte Go table descriptor on
 64-bit platforms and allocator rounding.
 
-| signed width | rounds | positions | entries/position | worst-case mixed adds | doublings | scalar shared-B payload | fraction of 32 KiB L1D |
+| signed width | rounds | positions | entries/position | worst-case mixed adds | doublings | original positive-only payload | fraction of 32 KiB L1D |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | 4 | 64 | 32 | 8 | 64 | 4 | 30,720 B (30 KiB) | 93.75% |
 | 5 | 51 | 26 | 16 | 51 | 5 | 49,920 B (48.75 KiB) | 152.34% |
@@ -41,6 +43,13 @@ The width-8 table is **one process-shared/read-only B table**, not 240 KiB per
 public key and not 240 KiB per x8 group. A layout that duplicated the same
 cached coordinates in every x8 lane would instead consume 240 KiB, 390 KiB,
 and 1,920 KiB for widths 4, 5, and 8 respectively.
+
+The promoted table stores both complete public-sign tuples so selection can
+transpose a contiguous affine3 entry with no online sign work. Its current
+radix-256 payload is `16 * 128 * 2 * 3 * 5 * 8 = 491,520` bytes (480 KiB).
+The table is still process-shared; this increase is not per key, worker, or
+batch. The earlier pre-signed-`2dT` layout used 327,680 bytes and is retained
+only as historical benchmark provenance.
 
 The current x8 radix-32 arbitrary-point table uses 20,480 B of four-coordinate
 payload. Thus the group-arithmetic benchmark has these combined table working
@@ -74,7 +83,8 @@ fixed-storage and supports widths 4, 5, and 8. It:
 
 The implementation has scalar x4/x8 paths and hardware-gated composable IFMA
 x4/x8 paths. Table selection is intentionally variable-time in public
-verification scalars. Production dispatch remains unchanged.
+verification scalars. Only explicit r51 selection reaches this path;
+automatic dispatch remains unchanged.
 
 Tests compare against independent Edwards scalar multiplication for random and
 boundary scalars, every lane/tail shape, x8 versus two x4 groups, and an
