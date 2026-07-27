@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Overclock-Validator/narya-ed25519/internal/edwards25519"
+	"github.com/Overclock-Validator/narya-ed25519/internal/sigprep"
 )
 
 var sevenSmallOrderLow255 = [...]string{
@@ -275,6 +276,39 @@ func TestPermissiveDecoderNonCanonicalAliasBoundary(t *testing.T) {
 	}
 	if decoded == 0 || mixed == 0 {
 		t.Fatalf("alias boundary exercised decoded=%d mixed-order=%d; want both nonzero", decoded, mixed)
+	}
+}
+
+// TestSmallOrderRIsAProfileBoundary pins the smallest self-consistent
+// signature admitted when the pure-small-order-R rule is absent. Let A=B,
+// R=O, and S=H(R||A||M) mod L. The cofactorless equation then holds exactly:
+// [S]B = O + [S]A. StdlibCompat accepts it, while DalekStrict must reject it
+// solely because R is pure small-order. This is an acceptance-predicate
+// witness, not a forgery: the constructor deliberately knows A's scalar 1.
+func TestSmallOrderRIsAProfileBoundary(t *testing.T) {
+	message := []byte("small-order R is a deliberate profile boundary")
+	publicBytes := edwards25519.NewGeneratorPoint().Bytes()
+	identityBytes := edwards25519.NewIdentityPoint().Bytes()
+
+	var publicKey [32]byte
+	copy(publicKey[:], publicBytes)
+	var signature [stded25519.SignatureSize]byte
+	copy(signature[:32], identityBytes)
+	digest := sigprep.Challenge(&publicKey, message, signature[:])
+	k := sigprep.Reduce(&digest)
+	copy(signature[32:], k[:])
+
+	if !stded25519.Verify(publicKey[:], message, signature[:]) {
+		t.Fatal("stdlib rejected the self-consistent R=identity witness")
+	}
+	if !verifyOne(genericBackend{}, StdlibCompat, &publicKey, message, signature[:], nil) {
+		t.Fatal("StdlibCompat rejected the self-consistent R=identity witness")
+	}
+	if verifyOne(genericBackend{}, DalekStrict, &publicKey, message, signature[:], nil) {
+		t.Fatal("DalekStrict accepted the self-consistent R=identity witness")
+	}
+	if !smallOrderEncoding(signature[:32]) || !canonicalREncoding(signature[:32]) {
+		t.Fatal("witness R must be simultaneously canonical and pure small-order")
 	}
 }
 
