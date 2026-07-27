@@ -142,6 +142,95 @@ func TestSelectExactGaussAdmissionAndFallbacks(t *testing.T) {
 	}
 }
 
+func TestSelectExactGaussFixedMatchesOracle(t *testing.T) {
+	l := Order()
+	n := Modulus()
+	edges := []*big.Int{
+		big.NewInt(0),
+		big.NewInt(1),
+		big.NewInt(2),
+		big.NewInt(3),
+		big.NewInt(15),
+		big.NewInt(16),
+		big.NewInt(17),
+		new(big.Int).Rsh(new(big.Int).Set(l), 1),
+		new(big.Int).Sub(new(big.Int).Set(l), big.NewInt(2)),
+		new(big.Int).Sub(new(big.Int).Set(l), big.NewInt(1)),
+	}
+	pathological := new(big.Int).Sub(n, big.NewInt(2))
+	pathological.Quo(pathological, big.NewInt(10))
+	edges = append(edges, pathological)
+
+	check := func(label string, k *big.Int) {
+		t.Helper()
+		encoded := bigToLittle32(t, k)
+		candidate, stats, ok := bestOddLInfFixed(uint256FromBytesLE(encoded))
+		if !ok {
+			t.Fatalf("%s k=%s: fixed exact selector failed (stats=%+v)", label, k, stats)
+		}
+		got := candidate.external()
+		checkFixedCandidate(t, n, k, got)
+		want, _, ok := bestOddLInfForModulus(n, k)
+		if !ok {
+			t.Fatalf("%s: math/big exact selector failed", label)
+		}
+		if gotMax, wantMax := max256(candidate.rho.mag, candidate.tau.mag), bigToUint256(t, maxAbs(&want.Rho, &want.Tau)); gotMax != wantMax {
+			t.Fatalf("%s k=%s: fixed=(%s,%s) max=%s oracle=(%s,%s) max=%s stats=%+v",
+				label, k, fixedSignedBig(got.Rho), fixedSignedBig(got.Tau), uint256Big(gotMax),
+				&want.Rho, &want.Tau, maxAbs(&want.Rho, &want.Tau), stats)
+		}
+		if stats.EuclidSteps > principalEuclidIterationCap || stats.GaussSteps > 16 || stats.Candidates > 10 {
+			t.Fatalf("%s: stats=%+v exceed bounds", label, stats)
+		}
+		for _, width := range []WidthLimit{Width128, Width132, Width136} {
+			fixedSelection := SelectExactGaussFixed(encoded, width)
+			oracleSelection := SelectExactGauss(k, width)
+			if fixedSelection.UseCandidate != oracleSelection.UseCandidate || fixedSelection.Fallback != oracleSelection.Fallback {
+				t.Fatalf("%s width=%d: fixed=(%v,%v) oracle=(%v,%v)", label, width,
+					fixedSelection.UseCandidate, fixedSelection.Fallback,
+					oracleSelection.UseCandidate, oracleSelection.Fallback)
+			}
+		}
+	}
+
+	for index, k := range edges {
+		check(fmt.Sprintf("edge-%d", index), k)
+	}
+	for sample := uint64(0); sample < 8192; sample++ {
+		check(fmt.Sprintf("sample-%d", sample), sampledChallenge(2_400_000+sample, l))
+	}
+}
+
+func TestSelectExactGaussFixedZeroAllocations(t *testing.T) {
+	k := bigToLittle32(t, sampledChallenge(2_500_000, Order()))
+	if allocations := testing.AllocsPerRun(100, func() {
+		SelectExactGaussFixed(k, Width132)
+	}); allocations != 0 {
+		t.Fatalf("allocations=%v want 0", allocations)
+	}
+}
+
+func TestExactGaussFixedWideArithmeticAgainstBig(t *testing.T) {
+	for sample := uint64(0); sample < 4096; sample++ {
+		left := sampledUint256(2_700_000 + 2*sample)
+		right := sampledUint256(2_700_000 + 2*sample + 1)
+		if left.isZero() {
+			left[0] = 1
+		}
+		product := mulWide256(left, right)
+		wantProduct := new(big.Int).Mul(uint256Big(left), uint256Big(right))
+		if uint512Big(product).Cmp(wantProduct) != 0 {
+			t.Fatalf("sample=%d: wide product=%s want %s", sample, uint512Big(product), wantProduct)
+		}
+		denominator := uint512{left[0], left[1], left[2], left[3]}
+		quotient, remainder, ok := divMod512To256(product, denominator)
+		if !ok || quotient != right || remainder != (uint512{}) {
+			t.Fatalf("sample=%d: division=(%s,%s,%v) want (%s,0,true)",
+				sample, uint256Big(quotient), uint512Big(remainder), ok, uint256Big(right))
+		}
+	}
+}
+
 func TestNearestAllowedIntegers(t *testing.T) {
 	for _, test := range []struct {
 		name        string
@@ -167,6 +256,60 @@ func TestNearestAllowedIntegers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEEACrossoverNeedsBoundedGaussFinish(t *testing.T) {
+	l := Order()
+	n := Modulus()
+	maxFinish := 0
+	for sample := uint64(0); sample < 8192; sample++ {
+		k := sampledChallenge(2_300_000+sample, l)
+		if k.Sign() == 0 {
+			continue
+		}
+		left, right, euclidSteps, ok := eeaNormCrossoverBasis(n, k)
+		if !ok {
+			t.Fatalf("sample=%d k=%s: no norm crossover", sample, k)
+		}
+		left, right, finishSteps, ok := gaussReduceExact(left, right, 16)
+		if !ok || !validReducedBasis(n, k, &left, &right) {
+			t.Fatalf("sample=%d k=%s: Gauss finish failed after %d steps", sample, k, finishSteps)
+		}
+		if finishSteps > maxFinish {
+			maxFinish = finishSteps
+		}
+		if euclidSteps > 384 || finishSteps > 16 {
+			t.Fatalf("sample=%d: Euclid=%d Gauss=%d exceed caps", sample, euclidSteps, finishSteps)
+		}
+	}
+	t.Logf("maximum Gauss finish steps after EEA norm crossover: %d", maxFinish)
+}
+
+func eeaNormCrossoverBasis(n, k *big.Int) (exactLatticeVector, exactLatticeVector, int, bool) {
+	r0 := new(big.Int).Set(n)
+	r1 := new(big.Int).Set(k)
+	t0 := new(big.Int)
+	t1 := big.NewInt(1)
+	for step := 0; r1.Sign() != 0 && step < 384; step++ {
+		left := exactLatticeVector{}
+		left.rho.Set(r0)
+		left.tau.Set(t0)
+		right := exactLatticeVector{}
+		right.rho.Set(r1)
+		right.tau.Set(t1)
+		if exactNorm2(&right).Cmp(exactNorm2(&left)) >= 0 {
+			return left, right, step, true
+		}
+
+		quotient := new(big.Int)
+		remainder := new(big.Int)
+		quotient.QuoRem(r0, r1, remainder)
+		t2 := new(big.Int).Mul(quotient, t1)
+		t2.Sub(t0, t2)
+		r0, r1 = r1, remainder
+		t0, t1 = t1, t2
+	}
+	return exactLatticeVector{}, exactLatticeVector{}, 384, false
 }
 
 func bruteOddLInfForModulus(n, k *big.Int) (Candidate, bool) {
@@ -200,6 +343,15 @@ func bruteOddLInfForModulus(n, k *big.Int) (Candidate, bool) {
 	return best, found
 }
 
+func uint512Big(value uint512) *big.Int {
+	out := new(big.Int)
+	for index := len(value) - 1; index >= 0; index-- {
+		out.Lsh(out, 64)
+		out.Add(out, new(big.Int).SetUint64(value[index]))
+	}
+	return out
+}
+
 func BenchmarkExactGaussOracle(b *testing.B) {
 	l := Order()
 	keys := make([]*big.Int, 512)
@@ -216,4 +368,22 @@ func BenchmarkExactGaussOracle(b *testing.B) {
 		}
 	}
 	benchmarkSelection = Selection{Candidate: result}
+}
+
+func BenchmarkSelectExactGaussFixed(b *testing.B) {
+	l := Order()
+	keys := make([][32]byte, 512)
+	for index := range keys {
+		keys[index] = bigToLittle32(b, sampledChallenge(2_600_000+uint64(index), l))
+	}
+	for _, width := range []WidthLimit{Width128, Width132, Width136} {
+		b.Run(benchWidthName(width), func(b *testing.B) {
+			b.ReportAllocs()
+			var result FixedSelection
+			for iteration := 0; iteration < b.N; iteration++ {
+				result = SelectExactGaussFixed(keys[iteration%len(keys)], width)
+			}
+			benchmarkFixedSelection = result
+		})
+	}
 }
