@@ -232,6 +232,52 @@ func TestCanonicalREncoding(t *testing.T) {
 	}
 }
 
+// TestPermissiveDecoderNonCanonicalAliasBoundary machine-checks the finite
+// non-canonical-y part of the decoder lemma used by docs/PROVABLE_SECURITY.md.
+// A 255-bit input can exceed p=2^255-19 by only 0..18, so these 38 byte strings
+// (both sign bits) exhaust that boundary. The separate x=0/sign=1 family is
+// pinned by TestCanonicalREncoding above.
+func TestPermissiveDecoderNonCanonicalAliasBoundary(t *testing.T) {
+	var decoded, mixed int
+	for offset := byte(0); offset <= 18; offset++ {
+		for sign := byte(0); sign <= 1; sign++ {
+			// p is ed ff ... ff 7f in little endian. offset <= 18 changes
+			// only the low byte, so no carry is required.
+			candidate := bytes.Repeat([]byte{0xff}, 32)
+			candidate[0] = 0xed + offset
+			candidate[31] = 0x7f | sign<<7
+
+			point, err := (&edwards25519.Point{}).SetBytes(candidate)
+			if err != nil {
+				continue
+			}
+			decoded++
+			if canonicalREncoding(candidate) || canonicalRReference(candidate) {
+				t.Fatalf("unreduced y=p+%d sign=%d was classified canonical: %x", offset, sign, candidate)
+			}
+
+			gotSmall := smallOrderEncoding(candidate)
+			wantSmall := point.IsSmallOrder()
+			if gotSmall != wantSmall {
+				t.Fatalf("unreduced y=p+%d sign=%d small-order classifier=%v oracle=%v: %x", offset, sign, gotSmall, wantSmall, candidate)
+			}
+			if offset <= 1 {
+				if !wantSmall {
+					t.Fatalf("alias y=p+%d sign=%d decoded outside the small subgroup", offset, sign)
+				}
+				continue
+			}
+			if wantSmall {
+				t.Fatalf("alias y=p+%d sign=%d unexpectedly decoded to pure torsion", offset, sign)
+			}
+			mixed++
+		}
+	}
+	if decoded == 0 || mixed == 0 {
+		t.Fatalf("alias boundary exercised decoded=%d mixed-order=%d; want both nonzero", decoded, mixed)
+	}
+}
+
 func TestStrictPrecheckCompletePipelineDifferential(t *testing.T) {
 	t.Run("CCTV", func(t *testing.T) {
 		for _, vector := range cctvVectors {

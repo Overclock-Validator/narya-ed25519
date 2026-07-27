@@ -1,163 +1,403 @@
 # What the Ed25519 security proofs do—and do not—say about Narya
 
-The primary reference for this note is Brendel, Cremers, Jackson, and Zhao,
-[*The Provable Security of Ed25519: Theory and Practice*][paper], IEEE
-Symposium on Security and Privacy 2021. The authors' publication page and the
-IACR ePrint record are linked below.
+This note relates Narya's exact `DalekStrict` acceptance predicate to two
+primary references:
 
-[paper]: https://dennis-jackson.uk/assets/pdfs/ed25519.pdf
-[publication]: https://cispa.de/en/research/publications/53200-the-provable-security-of-ed25519-theory-and-practice
-[eprint]: https://eprint.iacr.org/2020/823
+- Brendel, Cremers, Jackson, and Zhao,
+  [*The Provable Security of Ed25519: Theory and Practice*][brendel], IEEE
+  Symposium on Security and Privacy 2021; and
+- Chalkias, Garillot, and Nikolaenko,
+  [*Taming the many EdDSAs*][taming], SSR 2020.
 
-This document records how that paper informs Narya's verification contract. It
-is not a claim that the paper formally verifies this implementation.
+[brendel]: https://eprint.iacr.org/2020/823
+[taming]: https://eprint.iacr.org/2020/1244
+[rfc8032]: https://www.rfc-editor.org/rfc/rfc8032
+[dalek]: https://github.com/dalek-cryptography/curve25519-dalek/tree/8016d6d9b9cdbaa681f24147e0b9377cc8cef934/ed25519-dalek
 
-## The paper's results
+This is a proof-oriented design record, not a cryptographic audit or a claim
+that either paper formally verified this implementation. Sections explicitly
+labelled **Narya refinement** are repository proof sketches that still need
+independent formal review. They are recorded so the assumptions, algebra, and
+remaining obligations are inspectable instead of living only in discussion.
 
-The paper separates security properties that are often blurred together:
+## Executive result
 
-- **EUF-CMA** prevents a forgery on a new message under an honestly generated
-  target key.
-- **SUF-CMA** additionally prevents a different valid signature for a message
-  that was already signed.
-- **S-UEO** prevents substitution of another public key for an honest signer's
-  signature.
-- **M-S-UEO** strengthens ownership against maliciously generated signers and
-  keys.
-- **MBS** says one signature cannot verify for two different messages, even
-  under a maliciously generated public key.
+`DalekStrict` does not exactly match a named variant in either paper. It is
+closest to the corrected libsodium-style predicate, with one intentional
+relaxation: a non-canonical but decodable public-key string `A_bytes` is
+accepted, and those exact original bytes—not a canonical re-encoding—enter the
+challenge hash.
 
-In the random-oracle model, under the paper's stated discrete-log and
-identification-protocol assumptions, it proves:
+Under the random-oracle model and byte-string public-key identity, that
+relaxation does not introduce an evident weakness in EUF-CMA, SUF-CMA, S-UEO,
+MBS, M-S-UEO, or SBS. The load-bearing conditions are:
 
-1. its `Ed25519-Original` variant is EUF-CMA secure but not SUF-CMA secure;
-2. requiring the decoded scalar `S` to lie in `[0, L)` makes its
-   `Ed25519-IETF` variant SUF-CMA secure;
-3. Ed25519's inclusion of the public-key encoding in
-   `H(R || A || M)` provides S-UEO key-substitution resistance; and
-4. rejecting pure small-order public keys and signature points gives the
-   paper's `Ed25519-LibS` variant the additional MBS and M-S-UEO properties.
+1. decoding is deterministic;
+2. `H(R_bytes || A_bytes || message)` receives the original fixed-width byte
+   strings;
+3. pure-small-order `A` is rejected, so decoded `A` has a nonzero prime-order
+   component; and
+4. the implementation realizes the documented predicate exactly.
 
-The last two results concern malicious keys, a setting outside ordinary
-EUF-CMA and SUF-CMA. Small-order rejection therefore has a different security
-role from canonical `S`: it is not the step that creates SUF-CMA for honest
-keys, but it rules out signatures whose validity becomes detached from the
-message or uniquely owned key when malicious torsion inputs are admitted.
+For honest-key EUF-CMA and SUF-CMA, the result follows by restriction from the
+published verifier: an honestly generated `A` is canonical and prime-order,
+and a Narya-accepted equation is also accepted by the paper's cofactored
+relation. The malicious-key binding claims require the byte-string refinement
+below. They should not be presented as theorems quoted verbatim from either
+paper.
 
-## The variants are not Narya profiles
+No new verifier check follows from this analysis. In particular, silently
+requiring canonical `A` would change the consensus predicate and is not
+justified as a hardening of `DalekStrict`.
 
-The paper models a generic cofactored equation
+## Exact predicate
+
+For a 32-byte public key `A_bytes`, a 64-byte signature `R_bytes || S_bytes`,
+and a message, `DalekStrict` requires:
+
+1. `A_bytes` decodes with the permissive decoder;
+2. the integer encoded by `S_bytes` is less than the prime subgroup order
+   `L`;
+3. neither `A_bytes` nor `R_bytes` decodes to a pure-small-order point;
+4. `k = SHA-512(R_bytes || A_bytes || message) mod L`, using the original
+   bytes; and
+5. `Encode([S]B - [k]A) == R_bytes`.
+
+The final byte comparison is equivalent to the conjunction
 
 ```text
-[8S]B = [8]R + [8H(R || A || M)]A
+R_bytes is a canonical, decodable point encoding
+and
+[S]B = R + [k]A in the full Edwards25519 group.
 ```
 
-and states its security results for that more-permissive verifier so that they
-also cover a cofactorless verifier that rejects additional inputs. Its named
-variants are distinguished primarily by scalar, point-order, and encoding
-checks.
+The generic backend implements the byte comparison literally. The r51 backend
+may instead establish canonical `R`, decode it, and compare the two affine
+coordinates projectively. Differential tests make those forms one predicate.
+This is the behavior of the pinned [ed25519-dalek 2.2.0 source][dalek] reached
+by the Agave reference snapshot recorded in `README.md` and `NOTICE`.
 
-Narya's current profiles both use the cofactorless equation. They intentionally
-match deployed implementation predicates, not the paper's taxonomy:
+The predicate deliberately accepts mixed-order `A` and `R`. It deliberately
+accepts non-canonical, decodable `A_bytes`. Both choices are consensus
+semantics, not parser accidents.
+
+## Relation to the named variants
+
+Brendel et al. package three variants: Original, IETF, and LibS. Their generic
+formal verifier uses a cofactored equation; their variants are distinguished
+by scalar and point-order checks. The LibS row requires `|A| >= L` and
+`|R| >= L`, which admits mixed-order points. *Taming the many EdDSAs* later
+corrects the mapping from that model to the real libsodium implementation:
+libsodium checks only for pure small order rather than computing full point
+orders, and its verification equation is cofactorless. The papers state that
+the main security conclusions survive those corrections.
 
 | Property | Paper `Ed25519-IETF` | Paper `Ed25519-LibS` | Narya `StdlibCompat` | Narya `DalekStrict` |
 | --- | --- | --- | --- | --- |
-| Require `S < L` | yes | yes | yes | yes |
-| Equation | cofactored in the proof model | cofactored in the proof model | cofactorless | cofactorless |
-| Reject pure-small-order `A` and `R` | no | yes | no | yes |
-| Canonical `R` bytes | not the defining check | yes | yes, by literal recomputation | yes |
-| Canonical `A` bytes | not the defining check | yes | no | **no** |
+| require `S < L` | yes | yes | yes | yes |
+| equation | cofactored proof model | cofactored proof model | cofactorless | cofactorless |
+| reject pure-small-order `A` and `R` | no | yes | no | yes |
+| require canonical `R` | not defining | yes | yes, by byte comparison | yes, by byte comparison or equivalent |
+| require canonical `A` | not defining | yes | no | **no** |
+| accept mixed-order points | yes | yes (`|P| >= L`) | yes | **yes** |
 
-The bold final entry is important. `DalekStrict` deliberately accepts a
-non-canonical but decodable `A`, matching `ed25519-dalek` 2.x
-`verify_strict`. It is therefore inaccurate to call `DalekStrict`
-"Ed25519-LibS" or to cite the paper as a turnkey proof of the exact Narya
-predicate. Establishing such a theorem would require a formal refinement that
-models Narya's permissive `A` decoder, byte-level key prefixing, canonical `R`
-rule, cofactorless equation, and mixed-order acceptance.
+Algorithm 2 in *Taming the many EdDSAs* also is not Narya's exact predicate: it
+requires canonical `A`, uses a cofactored equation, and does not need to reject
+small-order `R` for its binding theorem. Names such as “LibS” or “Algorithm 2”
+must therefore not be used as shorthand for `DalekStrict`.
 
-There is nevertheless a useful monotonicity observation: honest signatures
-use canonical prime-subgroup points, and a cofactorless verifier accepts a
-subset of the signatures accepted by the paper's cofactored equation. This
-makes the paper strong evidence for the design choices, but it is not a
-substitute for spelling out the exact implementation relation.
+## Decoder and alias lemma
 
-## Consequences for Narya
+An Ed25519 compressed point contains a 255-bit little-endian `y` integer and
+one sign bit for `x`. A canonical encoding requires `y < p` and requires the
+sign bit to be zero when `x = 0`. The permissive decoder reduces the `y`
+integer modulo `p` and accepts the redundant sign-one encoding of zero `x`.
 
-### Canonical `S` is load-bearing
-
-Without `S < L`, replacing `S` by `S + mL` preserves the group equation and
-immediately malleates a signature. Every Narya profile checks the exact scalar
-boundary, and the shared preparation tests pin `L-1`, `L`, and `L+1`.
-
-### Hash the original encodings
-
-Ed25519 is key-prefixed: the challenge is
+The round-trip failures are therefore exactly:
 
 ```text
-k = SHA-512(original R bytes || original A bytes || message) mod L.
+low255(bytes) >= p
+or
+decoded x == 0 and sign == 1.
 ```
 
-Narya accepts non-canonical `A` under both current profiles. Decoding and then
-re-encoding `A` before hashing would therefore change the signature scheme and
-discard the byte-level public-key prefix the paper's key-substitution argument
-uses. The original `R` and `A` bytes are retained through every scalar and
-SIMD preparation path, and segment-order tests make that invariant explicit.
+For Edwards25519, `x = 0` in the curve equation implies `y^2 = 1`, so the only
+such points are `(0, 1)` and `(0, -1)`. Both are pure small-order and are
+already rejected by `DalekStrict`. Consequently, after the small-order gate,
 
-### Small-order rejection is an independently meaningful rule
+```text
+A_bytes is canonical  <=>  low255(A_bytes) < p.
+```
 
-The paper gives a direct malicious-key counterexample when low-order elements
-are admitted: choose a low-order public key and a signature satisfying
-`[S]B = R`; the cofactored equation can then verify independently of the
-message. Its MBS and M-S-UEO proofs exclude this by rejecting small-order
-inputs.
+This equivalence is a classification result, not a new production check. The
+tests derive all fourteen accepted encodings of the eight small-order points,
+compare the byte classifier with permissive-decode-plus-`[8]P == O`, exercise
+every one-bit neighbor, and enumerate all nineteen possible unreduced `y`
+aliases. See `ed25519/small_order_agreement_test.go` and
+`ed25519/strict_primitives_test.go`.
 
-`DalekStrict` performs exactly that pure-torsion classification over the
-original compressed bytes, including every accepted non-canonical alias.
-Mixed-order points are not pure small-order points and remain accepted, as the
-profile requires. `StdlibCompat` intentionally does not inherit this rule.
+### Narya refinement: aliases cannot share a signature cheaply
 
-### Cofactor handling is part of the predicate
+Suppose distinct byte strings `A_bytes != A'_bytes` decode to the same point
+`A`, and the same `(R_bytes, S)` verifies for `(A_bytes, M)` and
+`(A'_bytes, M')`. Then
 
-Multiplying the verification equation by eight erases its torsion component.
-It is not an arithmetic refactoring of cofactorless verification. This is why
-Narya reserves a separate future `ZIP215` profile instead of changing an
-existing profile, and why scalar-halving or aggregate transformations need a
-full-group injectivity proof before they can serve `DalekStrict`.
+```text
+[S]B = R + [k]A
+[S]B = R + [k']A
+```
 
-### Batch APIs must preserve the same scheme
+and subtraction gives `[k-k']A = O`. Because pure-small-order `A` was rejected,
+its prime-order component is nonzero. Projection to that component gives
+`k = k' mod L`; since both reduced challenges lie in `[0,L)`, they are equal.
 
-The paper proves properties of one signature's verification relation. Narya's
-public batch APIs evaluate that relation independently per item and retain one
-verdict per signature. A randomized aggregate equation is a different
-construction with its own assumptions and failure semantics; it cannot inherit
-the paper's theorems merely because its inputs are Ed25519 signatures. See
-[`STRICT_AGGREGATE_BATCHING.md`](STRICT_AGGREGATE_BATCHING.md).
+The random-oracle inputs are distinct because `A_bytes != A'_bytes`, and the
+two 32-byte prefixes have fixed lengths. A cross-alias success therefore
+requires a collision *after reduction modulo `L`*. It need not be a raw
+SHA-512 collision: two different 512-bit outputs separated by a nonzero
+multiple of `L` also collide after reduction.
 
-## Proof boundary
+This is why hashing the original bytes is load-bearing. Re-encoding `A` before
+hashing would merge the aliases into one challenge domain and define a
+different signature scheme.
 
-The paper does not establish any of the following for Narya:
+## Exact reduced-random-oracle probabilities
 
-- correctness of radix-51 or radix-43 field arithmetic;
-- equality of the Go, IFMA, cached, and batch implementations;
-- constant-time behavior, fault handling, range safety, or alias safety;
+Let `N = 2^512`, write `N = qL + r` with `0 <= r < L`, and let
+`K = X mod L` for uniform `X` in `[0,N)`. Exactly `r` residues have `q+1`
+preimages and `L-r` residues have `q` preimages. Therefore the largest point
+probability is
+
+```text
+mu_L = (q+1)/N
+     = 1/L + (L-r)/(L*N),
+```
+
+and the collision probability for two independent, distinct oracle inputs is
+
+```text
+rho_L = [r(q+1)^2 + (L-r)q^2] / N^2
+      = 1/L + r(L-r)/(L*N^2).
+```
+
+Both are approximately `1/L`, or about `2^-252`. For `Q` distinct oracle
+inputs, a union bound gives at most `choose(Q,2) * rho_L` for some reduced
+collision. Hitting one already fixed target with `Q` fresh attempts is bounded
+by `Q * mu_L`.
+
+## Full-group decomposition
+
+The Edwards25519 group decomposes as `G_L x T_8`. Write
+
+```text
+A = aB + A_T
+R = rB + R_T,
+```
+
+where `a,r` are modulo `L` and the torsion components are in `T_8`. The
+cofactorless equation is equivalent to the simultaneous relations
+
+```text
+S = r + k*a mod L
+R_T + [k]A_T = O.
+```
+
+The byte classifier's mathematical condition has a useful interpretation:
+
+```text
+[8]A != O  <=>  a != 0
+[8]R != O  <=>  r != 0.
+```
+
+If `A_T` has order `d` dividing eight, the torsion relation depends only on
+`k mod d`. A malicious constructor can select torsion components and search
+for the desired residue in at most about eight random-oracle trials. This does
+not remove the roughly 252-bit prime-order relation; it only shows that the
+torsion half is not itself a cryptographic barrier.
+
+This decomposition also explains why multiplying a verification equation by
+eight is not an arithmetic refactor of `DalekStrict`: it erases the second
+relation. Every scalar-halving, HEEA, and aggregate transformation must remain
+injective on the full `G_L x T_8` group or fall back to the ordinary equation.
+
+## Security-property classification
+
+Let `Q` include every distinct challenge-oracle input relevant to the game,
+including inputs evaluated during final verification.
+
+| Property | Key model | Status for Narya | Bound/status |
+| --- | --- | --- | --- |
+| EUF-CMA | honest target key | direct restriction of published result | no greater than Brendel Theorem 3 |
+| SUF-CMA | honest target key | direct restriction of published result | no greater than the IETF EUF bound |
+| S-UEO | honest target, malicious substitute | published result plus byte-string bookkeeping | published conservative form `2 Q_H mu_L` |
+| MBS | malicious key | **Narya refinement** | `choose(Q_H+2,2) rho_L` proof sketch |
+| M-S-UEO | two malicious keys | **Narya refinement** | `Q^2 mu_L` proof sketch |
+| SBS | malicious keys and messages | **Narya refinement** of *Taming* Theorem 1 | `Q^2 mu_L` proof sketch |
+
+### EUF-CMA and SUF-CMA
+
+The target public key in these games is honestly generated, hence canonical,
+prime-order, and nonidentity. A full-group Narya equation implies the paper's
+cofactored equation, while Narya adds rejections. Every Narya-accepted honest-
+key forgery is therefore also accepted by the paper's IETF verifier.
+
+Brendel Theorem 3 supplies the EUF-CMA reduction under its identification-
+protocol, programmable-random-oracle, and nonce-min-entropy assumptions.
+Theorem 4 shows that the `S < L` rule removes response malleability and reduces
+SUF-CMA to EUF-CMA. Accepting non-canonical public keys is irrelevant to these
+two games because the honest target key is generated canonically and fixed.
+
+### S-UEO
+
+For honest `A = aB` and an accepted substitute `A' = a'B + A'_T`, both
+`a` and `a'` are nonzero. Prime-order projection of one signature accepted by
+both keys gives `k*a = k'*a' mod L`. Once one challenge is known, the other
+must hit one particular scalar, costing at most `mu_L` per fresh oracle input.
+Brendel Theorem 5 gives the conservative `2 Q_H mu_L` bound. An alias of the
+same decoded point is the special case `a = a'`, which requires the reduced
+collision `k = k'` described above.
+
+### Narya refinement: MBS
+
+If one byte-level key and signature verify for distinct messages `M != M'`,
+subtraction gives `[k-k']A = O`. The nonzero prime-order component of `A`
+forces `k = k'`. With at most `Q_H` adversarial queries and two final
+verification evaluations, the direct collision bound is
+
+```text
+Adv_MBS <= choose(Q_H+2, 2) * rho_L.
+```
+
+The proof uses deterministic decoding, original-byte hashing, and rejection
+of pure-small-order `A`. `R` cancels. It does not require canonical `A`,
+canonical `R`, small-order-`R` rejection, or rejection of mixed-order points.
+The simple counterexample without the `A` order check is `A=O`, `R=B`, `S=1`:
+the same signature then verifies for every message.
+
+### Narya refinement: M-S-UEO and SBS
+
+If the same signature verifies for `(A_bytes,M)` and `(A'_bytes,M')`, write
+the nonzero prime coefficients as `a` and `a'`. Prime-order projection gives
+
+```text
+k*a = k'*a' mod L.
+```
+
+For different points, fixing one challenge determines one target value for the
+other. For aliases of the same point, the relation reduces to `k = k'` on
+distinct byte-level oracle inputs. The conservative union-bound form is
+
+```text
+Adv_M-S-UEO <= Q^2 * mu_L
+Adv_SBS     <= Q^2 * mu_L.
+```
+
+*Taming the many EdDSAs* Theorem 1 proves SBS for its Algorithm 2 after
+rejecting small-order public keys and explicitly notes that small-order `R`
+rejection is unnecessary. Narya's non-canonical-`A` acceptance is the part
+requiring the byte-string refinement: key equality in the game must mean
+equality of the original 32-byte public-key strings, and those strings must be
+the ones hashed.
+
+These are algebraically short arguments, but they are not a replacement for a
+machine-checked game proof. Until independently reviewed, describe them as
+proof sketches rather than established Narya theorems.
+
+## What each check contributes
+
+| Check | Principal role in this analysis |
+| --- | --- |
+| `S < L` | load-bearing for SUF-CMA; prevents `(R,S) -> (R,S+L)` malleability |
+| reject pure-small-order `A` | load-bearing for malicious-key message/key binding |
+| reject pure-small-order `R` | exact dalek/consensus predicate; not needed by the binding algebra |
+| canonical `A` | not needed by these byte-identity sketches when original bytes are hashed |
+| canonical `R` | exact predicate, signature-encoding uniqueness, and interoperability |
+| reject mixed-order `A` or `R` | not required by the cited binding arguments; Narya accepts them |
+| hash original `A_bytes` | load-bearing for ownership of byte-level key identities |
+| cofactorless equation | preserves the torsion relation and is stricter than the cofactored equation on honest-key proofs |
+
+This table is not permission to remove checks. `DalekStrict` is a consensus
+contract. A check can be unnecessary for one theorem and still be mandatory
+for compatibility, encoding uniqueness, or the selected acceptance predicate.
+
+## Small-order `R` and almost-correctness
+
+Pure-small-order `R` rejection is not independently required for the MBS,
+M-S-UEO, or SBS arguments because the same `R` cancels from both accepted
+equations. It remains an intentional part of `DalekStrict`.
+
+There is a formal correctness caveat when this verifier is paired with literal
+standard Ed25519 signing. The signer computes `r = H(prefix || M) mod L` and
+`R = [r]B`. The only pure-small-order `R` an honest prime-subgroup signer can
+produce is the identity, which occurs when `r = 0`. In the reduced random-
+oracle model this has probability `mu_L` per fresh nonce-hash input, and Narya
+rejects the resulting otherwise-consistent signature.
+
+Thus literal signing plus `DalekStrict` has negligible correctness error rather
+than perfect correctness:
+
+```text
+Pr[honest signature rejected because R=O] = mu_L.
+```
+
+A scheme definition that needs perfect correctness can specify retry on
+`r = 0`; that changes signing and its distribution proof. Narya is a verifier
+and does not silently impose such a signing rule. This caveat affects formal
+scheme correctness, not unforgeability or implementation consistency.
+
+## Protocol identity boundary
+
+The alias result assumes that public-key identity is the exact original
+32-byte string. A surrounding protocol that deduplicates by decoded point,
+canonicalizes keys in one layer but not another, or derives an account identity
+from a different representation needs a separate identity-semantics analysis.
+The verifier alone cannot make those layers consistent.
+
+This is the practical reason not to summarize the result as “non-canonical
+keys are harmless.” The narrower statement is: under deterministic permissive
+decoding, original-byte challenge hashing, pure-small-order rejection, and
+byte-string key identity, accepting a decodable non-canonical `A` introduces
+only the reduced-random-oracle collision branch described above.
+
+## Proof and implementation boundary
+
+Neither paper, nor the refinements in this note, proves:
+
+- correctness of the radix-51 or radix-43 field arithmetic;
+- equivalence of the Go, IFMA, cached, singleton, and batch implementations;
+- range, carry, alias, fault-fallback, or CPU-dispatch safety;
+- constant-time behavior;
 - security of random-coefficient aggregate verification;
-- security outside its random-oracle and hardness assumptions; or
-- end-to-end security of a protocol that uses Ed25519.
+- security of concrete SHA-512 beyond the random-oracle heuristic; or
+- end-to-end security of a protocol using Narya.
 
-Those are separate obligations. Narya addresses implementation equivalence
-with independent reference predicates, CCTV and Wycheproof vectors,
-differential fuzzing, per-lane invalid tests, range/alias contracts, and native
-hardware tests. It remains experimental and unaudited.
+Narya addresses implementation equivalence with independent reference
+predicates, RFC, CCTV, *Taming*, and Wycheproof vectors, differential fuzzing,
+per-lane invalid tests, and explicit range/alias contracts. Those are evidence,
+not an external audit.
 
-## Practical reading
+## Remaining formal obligations
 
-The paper's most useful lesson for this repository is not that one verifier is
-universally "more secure." It is that small changes to accepted encodings,
-scalar bounds, cofactor handling, and public-key hashing change the formal
-scheme and the properties available to a surrounding protocol. Narya therefore
-names and tests complete predicates rather than exposing a collection of
-independent "strictness" switches.
+1. **Byte-string games.** State EUF/SUF/ownership games with a public key
+   represented as `(A_bytes, Decode(A_bytes))` and equality defined on bytes.
+2. **Decoder theorem.** Tie the alias classification to the exact permissive
+   decoder with a small proof or exhaustive machine-checked boundary lemma.
+3. **Reduction bookkeeping.** Review the adaptive-query counts and the
+   `mu_L`/`rho_L` union bounds in the MBS, M-S-UEO, and SBS refinements.
+4. **Almost-correctness.** State the nonce-zero rejection whenever describing
+   standard signing plus `DalekStrict` as a signature scheme.
+5. **Protocol identity.** Specify how every consumer compares, stores, and
+   canonicalizes public keys.
+6. **Implementation proof.** Keep predicate equivalence separate from the
+   field/group implementation audit.
 
-For provenance, use the [authors' copy][paper], the [CISPA publication
-record][publication], or [IACR ePrint 2020/823][eprint].
+The strongest defensible summary today is therefore:
+
+> Narya directly inherits the honest-key EUF-CMA and SUF-CMA results by
+> restriction. Its original-byte hashing and small-order-`A` rejection support
+> concise byte-string refinements of the published S-UEO, MBS, M-S-UEO, and
+> SBS arguments, with reduced-challenge collision probability approximately
+> `2^-252`. Those refinements are documented proof sketches pending independent
+> formal review, not a claim of a completed proof or audit.
+
+For encoding and signing details, also consult [RFC 8032][rfc8032].

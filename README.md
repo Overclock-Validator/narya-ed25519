@@ -118,7 +118,10 @@ Ed25519 variant, while their additional malicious-key and message-binding
 results rely on rejecting small-order elements. Narya's profiles are not
 identical to the paper's named variants, so the precise correspondence and the
 limits of what can be inferred are recorded in
-[`docs/PROVABLE_SECURITY.md`](docs/PROVABLE_SECURITY.md).
+[`docs/PROVABLE_SECURITY.md`](docs/PROVABLE_SECURITY.md). That note also
+records the byte-string alias proof sketch, exact reduced-challenge collision
+probabilities, and the negligible `R = O` almost-correctness caveat introduced
+by strict small-order-`R` rejection.
 
 ### "Batch" means two different things
 
