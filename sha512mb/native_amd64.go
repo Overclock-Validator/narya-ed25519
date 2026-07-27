@@ -32,6 +32,22 @@ func nativeCompressX8(state *nativeStateX8, block *nativeBlockX8)
 //go:noescape
 func nativeCompressX8Rolling(state *nativeStateX8, block *nativeBlockX8)
 
+// nativeCompress2X8Expanded is the component gate for interlacing two
+// independent x8 SHA-512 waves on a native-512-bit core. Unlike the production
+// rolling kernel, it expands both schedules into memory so the sixteen working
+// state vectors can remain live together. The experiment decides whether
+// latency hidden between the two round chains repays that schedule traffic.
+// stateA and stateB must be distinct. Each state may alias its corresponding
+// block because both blocks are copied before either state is written.
+//
+// The two-wave organization is adapted from tape-sha256's Zen 5 AVX-512
+// interlace experiment (spool-labs/sha256 commit 39c1fea62015a723f19a2ed9e906926b3be770b8).
+// SHA-512 has eight 64-bit lanes per wave rather than SHA-256's sixteen 32-bit
+// lanes, so this entry processes sixteen independent messages.
+//
+//go:noescape
+func nativeCompress2X8Expanded(stateA *nativeStateX8, blockA *nativeBlockX8, stateB *nativeStateX8, blockB *nativeBlockX8)
+
 //go:noescape
 func nativeTransposeCompressX8Rolling(state *nativeStateX8, ptrs *[nativeX8Width]*byte, initial uint64)
 
