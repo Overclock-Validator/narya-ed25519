@@ -155,8 +155,8 @@ func BenchmarkNativeX8(b *testing.B) {
 	if !nativeX8Available() || !nativeX4Available() {
 		b.Skip("requires AVX2, AVX-512F, and AVX-512BW")
 	}
-	for _, messageSize := range []int{0, 64, 200, 1232} {
-		var storage [nativeX8Width][64 + 1232]byte
+	for _, messageSize := range []int{0, 64, 200, 1232, 4096} {
+		var storage [nativeX8Width][64 + 4096]byte
 		var parts [nativeX8Width][3][]byte
 		var msgs [nativeX8Width][][]byte
 		var out [nativeX8Width][64]byte
