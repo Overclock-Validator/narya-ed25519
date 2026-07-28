@@ -1,0 +1,7 @@
+commit: 027e735d2e17537408db11e40ab948a08f3dadc7
+go: go version go1.26.4 linux/amd64
+kernel: Linux 7.0.0-28-generic x86_64
+cpu: Model name: AMD Ryzen 7 9700X 8-Core Processor
+governor: performance
+affinity: taskset -c 2, GOMAXPROCS=1
+smt: cores 0-7 physical, 8-15 siblings; benched on core 2

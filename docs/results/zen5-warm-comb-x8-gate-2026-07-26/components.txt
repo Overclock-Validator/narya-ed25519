@@ -1,0 +1,31 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkWarmCombX8ComponentsExperiment/double         	21396277	        56.05 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/double         	21420426	        56.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/double         	21445682	        56.01 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/double         	21390702	        56.05 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/double         	21392306	        56.07 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/cached-add     	16633017	        72.09 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/cached-add     	16698319	        71.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/cached-add     	16643084	        72.16 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/cached-add     	16691077	        71.96 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/cached-add     	16670152	        72.16 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-A-perkey         	35278825	        33.95 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-A-perkey         	35171584	        33.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-A-perkey         	35416314	        33.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-A-perkey         	35432385	        33.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-A-perkey         	35333619	        33.97 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-B-shared         	86890131	        13.84 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-B-shared         	86915545	        13.81 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-B-shared         	86738612	        13.85 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-B-shared         	86782227	        13.82 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/select-B-shared         	86667379	        13.85 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/recode-only             	 1521326	       798.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/recode-only             	 1509944	       791.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/recode-only             	 1500283	       797.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/recode-only             	 1516729	       796.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ComponentsExperiment/recode-only             	 1532850	       793.8 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	34.999s

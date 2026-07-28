@@ -1,0 +1,56 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r9-B10r5/depth=48/keyKiB=18         	   98718	     12142 ns/op	     19200 B/key	      1518 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r9-B10r5/depth=48/keyKiB=18         	   98749	     12193 ns/op	     19200 B/key	      1524 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r9-B10r5/depth=48/keyKiB=18         	   98948	     12196 ns/op	     19200 B/key	      1524 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r9-B10r5/depth=48/keyKiB=18         	   98984	     12197 ns/op	     19200 B/key	      1525 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r9-B10r5/depth=48/keyKiB=18         	   99002	     12191 ns/op	     19200 B/key	      1524 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r7-B10r5/depth=40/keyKiB=26         	  103564	     11661 ns/op	     26880 B/key	      1458 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r7-B10r5/depth=40/keyKiB=26         	  103344	     11676 ns/op	     26880 B/key	      1460 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r7-B10r5/depth=40/keyKiB=26         	  103400	     11672 ns/op	     26880 B/key	      1459 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r7-B10r5/depth=40/keyKiB=26         	  103244	     11671 ns/op	     26880 B/key	      1459 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r7-B10r5/depth=40/keyKiB=26         	  103293	     11680 ns/op	     26880 B/key	      1460 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r5/depth=40/keyKiB=33         	  103272	     11683 ns/op	     34560 B/key	      1460 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r5/depth=40/keyKiB=33         	  103186	     11695 ns/op	     34560 B/key	      1462 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r5/depth=40/keyKiB=33         	  103222	     11701 ns/op	     34560 B/key	      1463 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r5/depth=40/keyKiB=33         	  102794	     11702 ns/op	     34560 B/key	      1463 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r5/depth=40/keyKiB=33         	  102982	     11701 ns/op	     34560 B/key	      1463 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r3/depth=24/keyKiB=33         	  113764	     10617 ns/op	     34560 B/key	      1327 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r3/depth=24/keyKiB=33         	  113590	     10639 ns/op	     34560 B/key	      1330 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r3/depth=24/keyKiB=33         	  113594	     10634 ns/op	     34560 B/key	      1329 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r3/depth=24/keyKiB=33         	  113389	     10649 ns/op	     34560 B/key	      1331 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r5-B10r3/depth=24/keyKiB=33         	  113613	     10630 ns/op	     34560 B/key	      1329 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r4-B10r3/depth=20/keyKiB=41         	  116692	     10362 ns/op	     42240 B/key	      1295 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r4-B10r3/depth=20/keyKiB=41         	  116505	     10376 ns/op	     42240 B/key	      1297 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r4-B10r3/depth=20/keyKiB=41         	  116344	     10378 ns/op	     42240 B/key	      1297 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r4-B10r3/depth=20/keyKiB=41         	  116422	     10379 ns/op	     42240 B/key	      1297 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r4-B10r3/depth=20/keyKiB=41         	  116472	     10376 ns/op	     42240 B/key	      1297 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r3/depth=20/keyKiB=56         	  116335	     10377 ns/op	     57600 B/key	      1297 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r3/depth=20/keyKiB=56         	  116055	     10399 ns/op	     57600 B/key	      1300 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r3/depth=20/keyKiB=56         	  116216	     10399 ns/op	     57600 B/key	      1300 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r3/depth=20/keyKiB=56         	  116164	     10400 ns/op	     57600 B/key	      1300 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r3/depth=20/keyKiB=56         	  116208	     10403 ns/op	     57600 B/key	      1300 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r2/depth=12/keyKiB=56         	  122726	      9853 ns/op	     57600 B/key	      1232 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r2/depth=12/keyKiB=56         	  122473	      9872 ns/op	     57600 B/key	      1234 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r2/depth=12/keyKiB=56         	  122480	      9875 ns/op	     57600 B/key	      1234 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r2/depth=12/keyKiB=56         	  122424	      9873 ns/op	     57600 B/key	      1234 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r3-B10r2/depth=12/keyKiB=56         	  122350	      9874 ns/op	     57600 B/key	      1234 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r2/depth=10/keyKiB=82         	  124239	      9716 ns/op	     84480 B/key	      1214 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r2/depth=10/keyKiB=82         	  124064	      9739 ns/op	     84480 B/key	      1217 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r2/depth=10/keyKiB=82         	  124033	      9741 ns/op	     84480 B/key	      1218 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r2/depth=10/keyKiB=82         	  123814	      9785 ns/op	     84480 B/key	      1223 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r2/depth=10/keyKiB=82         	  124020	      9732 ns/op	     84480 B/key	      1217 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r1/depth=6/keyKiB=82          	  128576	      9417 ns/op	     84480 B/key	      1177 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r1/depth=6/keyKiB=82          	  128346	      9431 ns/op	     84480 B/key	      1179 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r1/depth=6/keyKiB=82          	  128218	      9429 ns/op	     84480 B/key	      1179 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r1/depth=6/keyKiB=82          	  128266	      9432 ns/op	     84480 B/key	      1179 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r2-B10r1/depth=6/keyKiB=82          	  127914	      9448 ns/op	     84480 B/key	      1181 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r1-B10r1/depth=0/keyKiB=161         	  133567	      9045 ns/op	    165120 B/key	      1131 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r1-B10r1/depth=0/keyKiB=161         	  133432	      9058 ns/op	    165120 B/key	      1132 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r1-B10r1/depth=0/keyKiB=161         	  133358	      9067 ns/op	    165120 B/key	      1133 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r1-B10r1/depth=0/keyKiB=161         	  133413	      9069 ns/op	    165120 B/key	      1134 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8ShapeSweepExperiment/A6r1-B10r1/depth=0/keyKiB=161         	  133434	      9069 ns/op	    165120 B/key	      1134 ns/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	95.482s

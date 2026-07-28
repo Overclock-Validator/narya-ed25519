@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkWarmCombX8WorkingSetExperiment/keys=8/MiB=0         	  199201	     12143 ns/op	         0.1465 MiB-resident	      1518 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=8/MiB=0         	  197503	     12180 ns/op	         0.1465 MiB-resident	      1522 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=8/MiB=0         	  197592	     12184 ns/op	         0.1465 MiB-resident	      1523 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=8/MiB=0         	  197462	     12199 ns/op	         0.1465 MiB-resident	      1525 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=8/MiB=0         	  197509	     12200 ns/op	         0.1465 MiB-resident	      1525 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=64/MiB=1        	  197922	     12203 ns/op	         1.172 MiB-resident	      1525 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=64/MiB=1        	  197674	     12205 ns/op	         1.172 MiB-resident	      1526 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=64/MiB=1        	  197773	     12202 ns/op	         1.172 MiB-resident	      1525 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=64/MiB=1        	  197760	     12206 ns/op	         1.172 MiB-resident	      1526 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=64/MiB=1        	  197650	     12215 ns/op	         1.172 MiB-resident	      1527 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=256/MiB=4       	  192535	     12513 ns/op	         4.688 MiB-resident	      1564 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=256/MiB=4       	  192082	     12550 ns/op	         4.688 MiB-resident	      1569 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=256/MiB=4       	  192237	     12535 ns/op	         4.688 MiB-resident	      1567 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=256/MiB=4       	  192282	     12567 ns/op	         4.688 MiB-resident	      1571 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=256/MiB=4       	  191788	     12584 ns/op	         4.688 MiB-resident	      1573 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=1024/MiB=18     	  190033	     12566 ns/op	        18.75 MiB-resident	      1571 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=1024/MiB=18     	  187060	     12558 ns/op	        18.75 MiB-resident	      1570 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=1024/MiB=18     	  188226	     12542 ns/op	        18.75 MiB-resident	      1568 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=1024/MiB=18     	  187795	     12562 ns/op	        18.75 MiB-resident	      1570 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=1024/MiB=18     	  189670	     12563 ns/op	        18.75 MiB-resident	      1570 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=2048/MiB=37     	  185895	     12613 ns/op	        37.50 MiB-resident	      1577 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=2048/MiB=37     	  183600	     12605 ns/op	        37.50 MiB-resident	      1576 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=2048/MiB=37     	  184630	     12680 ns/op	        37.50 MiB-resident	      1585 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=2048/MiB=37     	  184251	     12663 ns/op	        37.50 MiB-resident	      1583 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=2048/MiB=37     	  180960	     12700 ns/op	        37.50 MiB-resident	      1588 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=4096/MiB=75     	  151562	     15548 ns/op	        75.00 MiB-resident	      1944 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=4096/MiB=75     	  151234	     15429 ns/op	        75.00 MiB-resident	      1929 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=4096/MiB=75     	  152130	     15572 ns/op	        75.00 MiB-resident	      1947 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=4096/MiB=75     	  151040	     15442 ns/op	        75.00 MiB-resident	      1930 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkWarmCombX8WorkingSetExperiment/keys=4096/MiB=75     	  144870	     15474 ns/op	        75.00 MiB-resident	      1934 ns/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	444.467s

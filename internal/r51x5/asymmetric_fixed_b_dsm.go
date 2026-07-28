@@ -96,8 +96,15 @@ func recodeAsymmetricFixedBScalarsX4(
 		half := radix >> 1
 		for round := 0; round < int(out.count); round++ {
 			digit := int32(asymmetricFixedBScalarBitsExperiment(&scalars[lane], round*int(radixBits), radixBits)) + carry
-			carry = (digit + half) / radix
-			digit -= carry * radix
+			// Shift rather than divide. The extractor yields a digit in
+			// [0, radix-1] and the incoming carry is 0 or 1, so digit+half lies
+			// in [half, radix+half] and is never negative. Over a power-of-two
+			// radix an arithmetic shift is then exactly the truncating division
+			// it replaces, without the sign-correction sequence the compiler
+			// must emit for a possibly-negative numerator -- which compiled to a
+			// hardware IDIV in the innermost loop, once per digit per lane.
+			carry = (digit + half) >> radixBits
+			digit -= carry << radixBits
 			if negativeMask&laneMask != 0 {
 				digit = -digit
 			}
