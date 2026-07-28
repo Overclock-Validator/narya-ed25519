@@ -17,3 +17,9 @@ New result directories should include, where applicable:
 3. `commands.txt` with exact invocations;
 4. unedited raw outputs and status files;
 5. `SHA256SUMS` covering the evidence set.
+
+Current predicate evidence:
+
+- [`agave-v4-oracles-2026-07-27`](agave-v4-oracles-2026-07-27/) — exact
+  Agave v4 transaction/precompile dependency pins and a 2,954-case
+  cross-language differential.

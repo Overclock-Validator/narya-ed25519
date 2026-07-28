@@ -1,0 +1,6 @@
+rustup toolchain install 1.89.0 --profile minimal
+env GOCACHE=/tmp/narya-gocache ./scripts/check-agave-v4-oracles.sh
+env GOCACHE=/tmp/narya-gocache go test -count=1 ./...
+env GOCACHE=/tmp/narya-gocache go vet ./...
+cargo +1.89.0 test --locked --manifest-path contrib/agave-v4-oracle/Cargo.toml
+git diff --check

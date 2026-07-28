@@ -1,0 +1,7 @@
+Agave v4 oracle corpus: 2954 cases
+transaction-vs-Narya mismatches: 0
+precompile-vs-transaction differences: 0
+
+Go repository tests: PASS
+Go vet: PASS
+Pinned Rust oracle unit tests: PASS (2 tests)
