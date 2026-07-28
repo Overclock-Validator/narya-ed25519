@@ -1,0 +1,16 @@
+Date: 2026-07-28
+Implementation: Go library github.com/Overclock-Validator/narya-ed25519
+Source: da0d045dae9df86a4a8550620c108913107e664c
+Source status after correctness gate: clean
+CPU: AMD Ryzen 7 9700X 8-Core Processor
+CPUID family/model/stepping: 26/68/0
+Microcode: 0xb40401c
+Architecture: linux/amd64
+OS kernel: 7.0.0-28-generic
+Go: go1.26.4
+Physical cores used: logical CPUs 0--7
+SMT siblings excluded: logical CPUs 8--15
+Governor on logical CPUs 0--7: performance
+Messages: eight distinct valid fixtures, 1232 bytes each
+Benchmark API: SetBackend("r51") plus exported VerifyBatchStrict through RunParallel
+Samples: six one-second samples for n=4 and n=8 at each core count
