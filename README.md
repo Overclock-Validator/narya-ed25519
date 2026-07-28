@@ -353,25 +353,13 @@ These are aggregate **signatures per second** over 1232-byte messages, not
 individual request latency. Values are medians of six one-second samples at
 `da0d045`.
 
-**Four-signature calls**
-
-| physical cores | signatures/second | scaling |
-| ---: | ---: | ---: |
-| 1 | 113,683 | 1.00x |
-| 2 | 227,249 | 2.00x |
-| 4 | 446,454 | 3.93x |
-| 6 | 648,426 | 5.70x |
-| 8 | 817,310 | 7.19x |
-
-**Eight-signature calls**
-
-| physical cores | signatures/second | scaling |
-| ---: | ---: | ---: |
-| 1 | 214,557 | 1.00x |
-| 2 | 428,237 | 2.00x |
-| 4 | 844,757 | 3.94x |
-| 6 | 1,200,035 | 5.59x |
-| 8 | 1,482,474 | 6.91x |
+| physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 113,683 | 1.00x | 214,557 | 1.00x |
+| 2 | 227,249 | 2.00x | 428,237 | 2.00x |
+| 4 | 446,454 | 3.93x | 844,757 | 3.94x |
+| 6 | 648,426 | 5.70x | 1,200,035 | 5.59x |
+| 8 | 817,310 | 7.19x | 1,482,474 | 6.91x |
 
 The eight-core rows correspond to aggregate throughput costs of 1.224
 and 0.675 microseconds per signature. Each worker still verifies complete,
