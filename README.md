@@ -349,42 +349,35 @@ reference.
 **Ryzen 7 9700X · 1232-byte messages · aggregate signatures/second, higher is
 better**
 
-The previous public-API scaling checkpoint, `ac8c1ab`, predates the
-register-resident decoder square chain introduced at `1ac9fde`. The current
-checkpoint reruns the same benchmark protocol at `da0d045`, which includes
-that change and all later production work. The comparison therefore measures
-the complete intervening code change, not the square chain in isolation.
-
 These are aggregate **signatures per second** over 1232-byte messages, not
-individual request latency. Values are medians of six one-second samples.
+individual request latency. Values are medians of six one-second samples at
+`da0d045`.
 
 **Four-signature calls**
 
-| physical cores | previous `ac8c1ab` | current `da0d045` | change | current scaling |
-| ---: | ---: | ---: | ---: | ---: |
-| 1 | 99,120 | **113,683** | **+14.69%** | 1.00x |
-| 2 | 196,862 | **227,249** | **+15.44%** | 2.00x |
-| 4 | 386,848 | **446,454** | **+15.41%** | 3.93x |
-| 6 | 560,078 | **648,426** | **+15.77%** | 5.70x |
-| 8 | 705,648 | **817,310** | **+15.82%** | 7.19x |
+| physical cores | signatures/second | scaling |
+| ---: | ---: | ---: |
+| 1 | 113,683 | 1.00x |
+| 2 | 227,249 | 2.00x |
+| 4 | 446,454 | 3.93x |
+| 6 | 648,426 | 5.70x |
+| 8 | 817,310 | 7.19x |
 
 **Eight-signature calls**
 
-| physical cores | previous `ac8c1ab` | current `da0d045` | change | current scaling |
-| ---: | ---: | ---: | ---: | ---: |
-| 1 | 175,633 | **214,557** | **+22.16%** | 1.00x |
-| 2 | 352,288 | **428,237** | **+21.56%** | 2.00x |
-| 4 | 688,638 | **844,757** | **+22.67%** | 3.94x |
-| 6 | 978,018 | **1,200,035** | **+22.70%** | 5.59x |
-| 8 | 1,216,888 | **1,482,474** | **+21.83%** | 6.91x |
+| physical cores | signatures/second | scaling |
+| ---: | ---: | ---: |
+| 1 | 214,557 | 1.00x |
+| 2 | 428,237 | 2.00x |
+| 4 | 844,757 | 3.94x |
+| 6 | 1,200,035 | 5.59x |
+| 8 | 1,482,474 | 6.91x |
 
-The current eight-core rows correspond to aggregate throughput costs of 1.224
+The eight-core rows correspond to aggregate throughput costs of 1.224
 and 0.675 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
-cryptographic batch verification. Raw current output is in
-[`docs/results/zen5-9700x-parallel-2026-07-28/`](docs/results/zen5-9700x-parallel-2026-07-28/),
-and the previous checkpoint remains in
-[`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/).
+cryptographic batch verification. Raw output is in
+[`docs/results/zen5-9700x-parallel-2026-07-28/`](docs/results/zen5-9700x-parallel-2026-07-28/).
 
 **Hardware scope: AMD only so far.** Every displayed timing above was captured
 on an AMD Ryzen 7 9700X (Zen 5); historical bundles in `docs/results/` also
