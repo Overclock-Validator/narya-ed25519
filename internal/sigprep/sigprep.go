@@ -80,8 +80,9 @@ type Rules struct {
 }
 
 var (
-	// DalekStrict is current Solana mainnet transaction semantics
-	// (ed25519-dalek 2.x verify_strict, reached via solana-signature).
+	// DalekStrict is Agave v4 transaction semantics (solana-signature 3.3.0,
+	// resolving ed25519-dalek 2.2.0). The Agave v4 Ed25519 precompile is a
+	// separate dalek-1.0.1 call path and is not this Rules value's contract.
 	DalekStrict = Rules{
 		RejectSmallOrderA: true,
 		RejectSmallOrderR: true,

@@ -77,8 +77,10 @@ consensus-correct acceptance predicate is itself versioned. An
 accept/reject flip is a fork, so it is a deliberate choice, not an
 implementation detail:
 
-- **`DalekStrict`** (default, and the zero value) matches
-  `ed25519-dalek` 2.x `verify_strict`. This is `crypto/ed25519.Verify` **plus**
+- **`DalekStrict`** (default, and the zero value) matches Agave v4 transaction
+  verification through `solana-signature 3.3.0` and
+  `ed25519-dalek 2.2.0` `verify_strict`. This is
+  `crypto/ed25519.Verify` **plus**
   rejection of small-order public keys A and small-order signature
   points R. The standard library accepts those (it never decodes R); a
   verifying node that used it unmodified could be forked off the
@@ -591,9 +593,13 @@ pinned revisions, and license obligations are recorded in [NOTICE](NOTICE).
 **Specifications and reference implementations.** The acceptance predicate is
 that of [ed25519-dalek 2.2.0 at `8016d6d`](https://github.com/dalek-cryptography/curve25519-dalek/tree/8016d6d9b9cdbaa681f24147e0b9377cc8cef934/ed25519-dalek)
 `verify_strict`, as reached by
-[Agave audit snapshot `7e51da9`](https://github.com/anza-xyz/agave/tree/7e51da963aee49622a395f562386a6bd8ba0e717)
-(Anza) through the `solana-signature` crate; Agave is the reference Narya's
-verdict must match. The reserved `ZIP215` profile name is from Zcash's
+[Agave v4.0.0-rc.0 at `8e3bcf0`](https://github.com/anza-xyz/agave/tree/8e3bcf0ccf43de6fe236a58f04b410f56e233ab4)
+(Anza) through `solana-signature 3.3.0`; Agave v4 transaction verification is
+the reference Narya's verdict must match. Agave v4's Ed25519 precompile is a
+separate direct `ed25519-dalek 1.0.1` path and is retained as a second test
+oracle, not silently conflated with `DalekStrict`. See
+[`docs/audits/AGAVE_V4_ORACLES.md`](docs/audits/AGAVE_V4_ORACLES.md). The
+reserved `ZIP215` profile name is from Zcash's
 [ZIP 215](https://zips.z.cash/zip-0215). `sha512mb` implements FIPS 180-4. The
 square-root-ratio derivation used in `field/fe.go` and `internal/r43x6` follows
 [BoringSSL commit `0fc57bef1821c163ac023a0aa96e4fb2a67c0d82`](https://boringssl.googlesource.com/boringssl/+/0fc57bef1821c163ac023a0aa96e4fb2a67c0d82).

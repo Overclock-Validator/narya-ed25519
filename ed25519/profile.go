@@ -13,7 +13,7 @@ import (
 type Profile uint8
 
 const (
-	// DalekStrict is current Solana mainnet transaction semantics:
+	// DalekStrict is Agave v4 transaction-verification semantics:
 	// StdlibCompat plus rejection of small-order A and small-order R.
 	// This is the default.
 	//
@@ -24,19 +24,13 @@ const (
 	// compares decoded points and so accepts a non-canonically encoded R.
 	// solana-signature took the 2.x dependency at its own 3.0.0.
 	//
-	// Verified against agave v4.2.0-beta.1, whose lockfile resolves
-	// solana-signature 3.4.1 onto ed25519-dalek 2.2.0. Note that lockfile also
-	// contains ed25519-dalek 1.0.1 for other dependents, so reading the version
-	// list alone is not enough to establish which one transaction verification
-	// reaches.
-	//
-	// Releases old enough to pin solana-signature 2.x resolve dalek 1.0.1 and
-	// are therefore marginally more permissive than this profile about
-	// non-canonical R. That divergence is one-directional and is not known to
-	// be constructible: the non-canonical y values that decode are either
-	// small-order, which both sides reject, or of unknown discrete log, so
-	// producing a matching s is not a forgery anyone can perform. Those
-	// releases are out of scope here.
+	// Verified against Agave's v4.0 branch at v4.0.0-rc.0 (8e3bcf0), whose
+	// lockfile resolves solana-signature 3.3.0 onto ed25519-dalek 2.2.0.
+	// The same lockfile also contains ed25519-dalek 1.0.1 for the separate
+	// Ed25519 precompile. Reading the version list alone is therefore not enough:
+	// transaction sigverify reaches 2.2.0 through solana-signature, while the
+	// precompile calls 1.0.1 directly. Narya's DalekStrict contract is the
+	// transaction path. contrib/agave-v4-oracle tests both paths independently.
 	DalekStrict Profile = iota
 
 	// StdlibCompat is exactly crypto/ed25519.Verify: canonical s,
@@ -44,7 +38,7 @@ const (
 	// small-order rejection. Solana accepts a strict subset of this,
 	// so StdlibCompat is for differential testing and for callers who
 	// explicitly want standard-library behavior — not for verifying
-	// mainnet transactions.
+	// Agave v4 transactions.
 	StdlibCompat
 )
 

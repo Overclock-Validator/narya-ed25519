@@ -12,8 +12,8 @@ import (
 
 // referenceVerify is the acceptance oracle for the active profile.
 // StdlibCompat is crypto/ed25519.Verify. DalekStrict is that predicate
-// minus small-order A and small-order R — the current Solana mainnet
-// transaction rule (ed25519-dalek verify_strict). The test oracle deliberately
+// minus small-order A and small-order R — the Agave v4 transaction rule
+// (solana-signature 3.3.0 / ed25519-dalek 2.2.0). The test oracle deliberately
 // does not call smallOrderEncoding or Point.IsSmallOrder: it decodes, performs
 // the three doublings from the mathematical [8]P definition, and compares with
 // the identity. That keeps it independent of the production classifier.

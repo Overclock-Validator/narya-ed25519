@@ -48,6 +48,7 @@ documentation, and may describe older commits or experimental paths.
 ## Audits and validation
 
 - [review notes](audits/REVIEW-NOTES.md)
+- [Agave v4 transaction and precompile oracles](audits/AGAVE_V4_ORACLES.md)
 - [differential fuzz soak](audits/FUZZ_SOAK.md)
 
 ## Reproducibility

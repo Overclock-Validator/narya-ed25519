@@ -333,8 +333,10 @@ sources; they are recorded because the behavior they define is the product.
     internal/edwards25519/smallorder.go mirrors EdwardsPoint::is_small_order.
     https://github.com/dalek-cryptography/curve25519-dalek/tree/8016d6d9b9cdbaa681f24147e0b9377cc8cef934/ed25519-dalek
   * Agave (Anza) — the Solana validator whose verdict Narya must match byte
-    for byte; it reaches verify_strict through the solana-signature crate.
-    https://github.com/anza-xyz/agave/tree/7e51da963aee49622a395f562386a6bd8ba0e717
+    for byte on the v4 transaction path; it reaches ed25519-dalek 2.2.0
+    verify_strict through solana-signature 3.3.0. The v4 Ed25519 precompile's
+    separate direct ed25519-dalek 1.0.1 path is retained as a test oracle.
+    https://github.com/anza-xyz/agave/tree/8e3bcf0ccf43de6fe236a58f04b410f56e233ab4
   * Solana Foundation — SIMD-0376 (proposed verify_strict loosening) and
     SIMD-0152, referenced in docs/audits/REVIEW-NOTES.md.
     https://github.com/solana-foundation/solana-improvement-documents/tree/b13be70e7454144becbe9c474b296d737d72df98

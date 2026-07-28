@@ -36,9 +36,9 @@ Two packages:
 Verification enforces a versioned **`Profile`**, because the
 consensus-correct predicate is itself versioned:
 
-- **`DalekStrict`** (default) — current Solana mainnet transaction
-  semantics: `ed25519-dalek` 2.x `verify_strict`, reached through the
-  `solana-signature` crate. This is `crypto/ed25519.Verify` **plus**
+- **`DalekStrict`** (default) — Agave v4 transaction semantics:
+  `solana-signature 3.3.0` resolving `ed25519-dalek 2.2.0`
+  `verify_strict`. This is `crypto/ed25519.Verify` **plus**
   rejection of small-order public keys A and small-order signature points
   R. The standard library accepts those (it never decodes R); a verifying
   node built on the stdlib alone could be forked off the network by a
@@ -225,7 +225,7 @@ found a latent consensus-divergence in Mithril's ed25519 precompile
 (`pkg/sealevel/ed25519_program.go`), which branches on the
 `Ed25519PrecompileVerifyStrict` feature (SIMD-0152).
 
-- The **strict** branch (feature active = current mainnet) is **correct** —
+- The **strict** branch (feature active in the Agave v4 target) is **correct** —
   it matches dalek 1.0.1 `verify_strict` for all feasible inputs (0
   mismatches over the 768-vector "Taming the many EdDSAs" corpus; the only
   theoretical divergence requires solving a discrete log). **Do not

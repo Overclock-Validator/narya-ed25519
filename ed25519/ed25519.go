@@ -7,7 +7,8 @@
 //
 // The acceptance predicate is the load-bearing contract: in consensus
 // use an accept/reject flip is a fork. The default profile, DalekStrict,
-// is current Solana mainnet semantics (ed25519-dalek verify_strict);
+// matches Agave v4 transaction semantics (ed25519-dalek 2.2.0
+// verify_strict, reached through solana-signature 3.3.0);
 // StdlibCompat is exactly crypto/ed25519.Verify. Equality with the
 // chosen profile is enforced by differential tests across every
 // backend, cached or not.
@@ -20,8 +21,7 @@ import "errors"
 var ErrInvalidPublicKey = errors.New("ed25519: nil public key")
 
 // Verify reports whether sig is a valid signature of message by pub
-// under the default profile (DalekStrict — current Solana mainnet
-// transaction semantics).
+// under the default profile (DalekStrict — Agave v4 transaction semantics).
 func Verify(pub *[32]byte, message, sig []byte) bool {
 	b := active()
 	profile := DefaultProfile()
