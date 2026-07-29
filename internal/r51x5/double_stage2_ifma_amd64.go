@@ -53,3 +53,16 @@ func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4)
 //
 //go:noescape
 func ifmaDoubleStage2X8(workspace *ifmaDoubleStage2WorkspaceX8)
+
+// ifmaDoubleStage2PointFinalX8 is representation-identical to
+// ifmaDoubleStage2X8 followed by ifmaPointFinalProductsUncheckedX8. Its
+// two-pointer ABI permits an assembly tail continuation, removing only the
+// intervening return/call and VZEROUPPER.
+//
+//go:noescape
+func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8, workspace *ifmaDoubleStage2WorkspaceX8)
+
+// ifmaDoubleStage2ProjectiveFinalX8 is the P2-output counterpart.
+//
+//go:noescape
+func ifmaDoubleStage2ProjectiveFinalX8(out *ifmaProjectivePointX8, workspace *ifmaDoubleStage2WorkspaceX8)

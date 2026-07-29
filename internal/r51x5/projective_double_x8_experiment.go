@@ -16,8 +16,7 @@ func ifmaPointDoubleRawSquareP3ToP2ExperimentX8(
 	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
 	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
 	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X8(stage2)
-	ifmaProjectiveFinalProductsUncheckedX8(out, &stage2[0])
+	ifmaDoubleStage2ProjectiveFinalX8(out, stage2)
 }
 
 func ifmaPointDoubleRawSquareP2ToP2ExperimentX8(
@@ -29,10 +28,9 @@ func ifmaPointDoubleRawSquareP2ToP2ExperimentX8(
 	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
 	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
 	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X8(stage2)
 
 	// Stage 1 has consumed q completely, so in-place P2 doubling is safe.
-	ifmaProjectiveFinalProductsUncheckedX8(out, &stage2[0])
+	ifmaDoubleStage2ProjectiveFinalX8(out, stage2)
 }
 
 func ifmaPointDoubleRawSquareP2ToP3ExperimentX8(
@@ -45,8 +43,7 @@ func ifmaPointDoubleRawSquareP2ToP3ExperimentX8(
 	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
 	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
 	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X8(stage2)
-	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
+	ifmaDoubleStage2PointFinalX8(out, stage2)
 }
 
 // EvaluateProjectiveDoubleExperiment preserves EvaluateRawSquareExperiment's

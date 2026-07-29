@@ -1,0 +1,68 @@
+// DOUBLE_STAGE2_X8_BODY executes the exact native-ZMM Stage-2 schedule on the
+// workspace pointer supplied by WORKSPACE. DOUBLE_STAGE2_LINEAR and
+// DOUBLE_STAGE2_NORMALIZE_5 are defined by the including assembly file.
+//
+// Keeping this as one source-level body lets the standalone Stage-2 leaf and
+// the Stage-2-to-final-product continuations share every arithmetic
+// instruction. The continuations change only control flow: after the same
+// carried E/F/G/H values have been stored, they tail-enter the independently
+// tested final-product leaves instead of returning through VZEROUPPER to Go.
+#define DOUBLE_STAGE2_X8_BODY(WORKSPACE) \
+	MOVQ WORKSPACE, DI \
+	VMOVDQU64    0(DI), Z0  \
+	VMOVDQU64   64(DI), Z1  \
+	VMOVDQU64  128(DI), Z2  \
+	VMOVDQU64  192(DI), Z3  \
+	VMOVDQU64  256(DI), Z4  \
+	VMOVDQU64  320(DI), Z5  \
+	VMOVDQU64  384(DI), Z6  \
+	VMOVDQU64  448(DI), Z7  \
+	VMOVDQU64  512(DI), Z8  \
+	VMOVDQU64  576(DI), Z9  \
+	VMOVDQU64  640(DI), Z10 \
+	VMOVDQU64  704(DI), Z11 \
+	VMOVDQU64  768(DI), Z12 \
+	VMOVDQU64  832(DI), Z13 \
+	VMOVDQU64  896(DI), Z14 \
+	VMOVDQU64  960(DI), Z15 \
+	VMOVDQU64 1024(DI), Z16 \
+	VMOVDQU64 1088(DI), Z17 \
+	VMOVDQU64 1152(DI), Z18 \
+	VMOVDQU64 1216(DI), Z19 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias535P0(SB), Z20 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias535PN(SB), Z21 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias1068P0(SB), Z22 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias1068PN(SB), Z23 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias1069P0(SB), Z24 \
+	VPBROADCASTQ ·ifmaDoubleStage2Bias1069PN(SB), Z25 \
+	DOUBLE_STAGE2_LINEAR(Z0, Z5, Z10, Z15, Z20, Z22, Z24, Z26) \
+	DOUBLE_STAGE2_LINEAR(Z1, Z6, Z11, Z16, Z21, Z23, Z25, Z26) \
+	DOUBLE_STAGE2_LINEAR(Z2, Z7, Z12, Z17, Z21, Z23, Z25, Z26) \
+	DOUBLE_STAGE2_LINEAR(Z3, Z8, Z13, Z18, Z21, Z23, Z25, Z26) \
+	DOUBLE_STAGE2_LINEAR(Z4, Z9, Z14, Z19, Z21, Z23, Z25, Z26) \
+	VPBROADCASTQ ·ifmaDoubleStage2Mask51(SB), Z20 \
+	VPBROADCASTQ ·ifmaDoubleStage2Fold19(SB), Z21 \
+	DOUBLE_STAGE2_NORMALIZE_5(Z15, Z16, Z17, Z18, Z19, Z20, Z22, Z23, Z24, Z25, Z26, Z21) \
+	DOUBLE_STAGE2_NORMALIZE_5(Z10, Z11, Z12, Z13, Z14, Z20, Z22, Z23, Z24, Z25, Z26, Z21) \
+	DOUBLE_STAGE2_NORMALIZE_5(Z5, Z6, Z7, Z8, Z9, Z20, Z22, Z23, Z24, Z25, Z26, Z21) \
+	DOUBLE_STAGE2_NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z20, Z22, Z23, Z24, Z25, Z26, Z21) \
+	VMOVDQU64 Z15,    0(DI) \
+	VMOVDQU64 Z16,   64(DI) \
+	VMOVDQU64 Z17,  128(DI) \
+	VMOVDQU64 Z18,  192(DI) \
+	VMOVDQU64 Z19,  256(DI) \
+	VMOVDQU64 Z10,  320(DI) \
+	VMOVDQU64 Z11,  384(DI) \
+	VMOVDQU64 Z12,  448(DI) \
+	VMOVDQU64 Z13,  512(DI) \
+	VMOVDQU64 Z14,  576(DI) \
+	VMOVDQU64 Z5,   640(DI) \
+	VMOVDQU64 Z6,   704(DI) \
+	VMOVDQU64 Z7,   768(DI) \
+	VMOVDQU64 Z8,   832(DI) \
+	VMOVDQU64 Z9,   896(DI) \
+	VMOVDQU64 Z0,   960(DI) \
+	VMOVDQU64 Z1,  1024(DI) \
+	VMOVDQU64 Z2,  1088(DI) \
+	VMOVDQU64 Z3,  1152(DI) \
+	VMOVDQU64 Z4,  1216(DI)

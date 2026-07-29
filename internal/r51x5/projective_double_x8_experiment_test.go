@@ -51,12 +51,18 @@ func TestIFMAProjectiveDoublingFiveRunExactRepresentation(t *testing.T) {
 		if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&want, &want, &wantWorkspace); err != nil {
 			t.Fatal(err)
 		}
+		if gotWorkspace.stage2 != wantWorkspace.stage2 {
+			t.Fatalf("iteration=%d doubling=1 fused/split Stage-2 representation mismatch", iteration)
+		}
 		assertProjectiveMatchesCompleteX8(t, iteration, 1, &projective, &want)
 
 		for doubling := 2; doubling <= 4; doubling++ {
 			ifmaPointDoubleRawSquareP2ToP2ExperimentX8(&projective, &projective, &gotWorkspace)
 			if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&want, &want, &wantWorkspace); err != nil {
 				t.Fatal(err)
+			}
+			if gotWorkspace.stage2 != wantWorkspace.stage2 {
+				t.Fatalf("iteration=%d doubling=%d fused/split Stage-2 representation mismatch", iteration, doubling)
 			}
 			assertProjectiveMatchesCompleteX8(t, iteration, doubling, &projective, &want)
 		}
@@ -65,6 +71,9 @@ func TestIFMAProjectiveDoublingFiveRunExactRepresentation(t *testing.T) {
 		ifmaPointDoubleRawSquareP2ToP3ExperimentX8(&got, &projective, &gotWorkspace)
 		if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&want, &want, &wantWorkspace); err != nil {
 			t.Fatal(err)
+		}
+		if gotWorkspace.stage2 != wantWorkspace.stage2 {
+			t.Fatalf("iteration=%d doubling=5 fused/split Stage-2 representation mismatch", iteration)
 		}
 		if got != want {
 			t.Fatalf("iteration=%d fifth doubling representation mismatch", iteration)

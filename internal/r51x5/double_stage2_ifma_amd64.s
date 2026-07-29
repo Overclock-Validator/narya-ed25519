@@ -39,6 +39,8 @@
 	VPADDQ C3, IN4, IN4                                                                       \
 	VPMADD52LUQ C4, FOLD19, IN0
 
+#include "double_stage2_x8_body.h"
+
 // func ifmaDoubleStage2X4(workspace *ifmaDoubleStage2WorkspaceX4)
 //
 // Entry slots are exact raw [A=X^2, B=Y^2, C=Z^2, E=XY] products. Exit slots
@@ -127,76 +129,32 @@ TEXT ·ifmaDoubleStage2X4(SB), NOSPLIT, $0-8
 // Native-ZMM widening of the x4 schedule above. Slot and limb offsets double;
 // arithmetic order and the proven range bounds are otherwise identical.
 TEXT ·ifmaDoubleStage2X8(SB), NOSPLIT, $0-8
-	MOVQ workspace+0(FP), DI
-
-	// Raw A.
-	VMOVDQU64   0(DI), Z0
-	VMOVDQU64  64(DI), Z1
-	VMOVDQU64 128(DI), Z2
-	VMOVDQU64 192(DI), Z3
-	VMOVDQU64 256(DI), Z4
-	// Raw B.
-	VMOVDQU64 320(DI), Z5
-	VMOVDQU64 384(DI), Z6
-	VMOVDQU64 448(DI), Z7
-	VMOVDQU64 512(DI), Z8
-	VMOVDQU64 576(DI), Z9
-	// Raw C=Z^2.
-	VMOVDQU64 640(DI), Z10
-	VMOVDQU64 704(DI), Z11
-	VMOVDQU64 768(DI), Z12
-	VMOVDQU64 832(DI), Z13
-	VMOVDQU64 896(DI), Z14
-	// Raw E=X*Y.
-	VMOVDQU64  960(DI), Z15
-	VMOVDQU64 1024(DI), Z16
-	VMOVDQU64 1088(DI), Z17
-	VMOVDQU64 1152(DI), Z18
-	VMOVDQU64 1216(DI), Z19
-
-	VPBROADCASTQ ·ifmaDoubleStage2Bias535P0(SB), Z20
-	VPBROADCASTQ ·ifmaDoubleStage2Bias535PN(SB), Z21
-	VPBROADCASTQ ·ifmaDoubleStage2Bias1068P0(SB), Z22
-	VPBROADCASTQ ·ifmaDoubleStage2Bias1068PN(SB), Z23
-	VPBROADCASTQ ·ifmaDoubleStage2Bias1069P0(SB), Z24
-	VPBROADCASTQ ·ifmaDoubleStage2Bias1069PN(SB), Z25
-
-	DOUBLE_STAGE2_LINEAR(Z0, Z5, Z10, Z15, Z20, Z22, Z24, Z26)
-	DOUBLE_STAGE2_LINEAR(Z1, Z6, Z11, Z16, Z21, Z23, Z25, Z26)
-	DOUBLE_STAGE2_LINEAR(Z2, Z7, Z12, Z17, Z21, Z23, Z25, Z26)
-	DOUBLE_STAGE2_LINEAR(Z3, Z8, Z13, Z18, Z21, Z23, Z25, Z26)
-	DOUBLE_STAGE2_LINEAR(Z4, Z9, Z14, Z19, Z21, Z23, Z25, Z26)
-
-	VPBROADCASTQ ·ifmaDoubleStage2Mask51(SB), Z20
-	VPBROADCASTQ ·ifmaDoubleStage2Fold19(SB), Z21
-
-	DOUBLE_STAGE2_NORMALIZE_5(Z15, Z16, Z17, Z18, Z19, Z20, Z22, Z23, Z24, Z25, Z26, Z21)
-	DOUBLE_STAGE2_NORMALIZE_5(Z10, Z11, Z12, Z13, Z14, Z20, Z22, Z23, Z24, Z25, Z26, Z21)
-	DOUBLE_STAGE2_NORMALIZE_5(Z5, Z6, Z7, Z8, Z9, Z20, Z22, Z23, Z24, Z25, Z26, Z21)
-	DOUBLE_STAGE2_NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z20, Z22, Z23, Z24, Z25, Z26, Z21)
-
-	VMOVDQU64 Z15,    0(DI)
-	VMOVDQU64 Z16,   64(DI)
-	VMOVDQU64 Z17,  128(DI)
-	VMOVDQU64 Z18,  192(DI)
-	VMOVDQU64 Z19,  256(DI)
-	VMOVDQU64 Z10,  320(DI)
-	VMOVDQU64 Z11,  384(DI)
-	VMOVDQU64 Z12,  448(DI)
-	VMOVDQU64 Z13,  512(DI)
-	VMOVDQU64 Z14,  576(DI)
-	VMOVDQU64 Z5,   640(DI)
-	VMOVDQU64 Z6,   704(DI)
-	VMOVDQU64 Z7,   768(DI)
-	VMOVDQU64 Z8,   832(DI)
-	VMOVDQU64 Z9,   896(DI)
-	VMOVDQU64 Z0,   960(DI)
-	VMOVDQU64 Z1,  1024(DI)
-	VMOVDQU64 Z2,  1088(DI)
-	VMOVDQU64 Z3,  1152(DI)
-	VMOVDQU64 Z4,  1216(DI)
+	DOUBLE_STAGE2_X8_BODY(workspace+0(FP))
 	VZEROUPPER
 	RET
+
+// func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8,
+//     workspace *ifmaDoubleStage2WorkspaceX8)
+//
+// Execute the exact standalone Stage-2 body and then tail-enter the existing
+// four-product P3 leaf. The two-pointer ABI intentionally matches the final
+// leaf: after Stage 2 stores carried E/F/G/H, out+0(FP) and workspace+8(FP)
+// are already the final leaf's out and operands arguments. The tail jump
+// removes one return/call boundary and one intervening VZEROUPPER; it changes
+// no arithmetic instruction or memory representation.
+TEXT ·ifmaDoubleStage2PointFinalX8(SB), NOSPLIT, $0-16
+	DOUBLE_STAGE2_X8_BODY(workspace+8(FP))
+	JMP ·ifmaPointFinalProductsUncheckedX8(SB)
+
+// func ifmaDoubleStage2ProjectiveFinalX8(out *ifmaProjectivePointX8,
+//     workspace *ifmaDoubleStage2WorkspaceX8)
+//
+// P2 counterpart of ifmaDoubleStage2PointFinalX8. The same two-pointer ABI
+// tail-enters the independently tested three-product leaf, so an incomplete
+// point still cannot acquire a stale T coordinate.
+TEXT ·ifmaDoubleStage2ProjectiveFinalX8(SB), NOSPLIT, $0-16
+	DOUBLE_STAGE2_X8_BODY(workspace+8(FP))
+	JMP ·ifmaProjectiveFinalProductsUncheckedX8(SB)
 
 DATA ·ifmaDoubleStage2Mask51+0(SB)/8, $0x0007ffffffffffff
 GLOBL ·ifmaDoubleStage2Mask51(SB), RODATA|NOPTR, $8

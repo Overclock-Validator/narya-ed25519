@@ -89,3 +89,13 @@ func ifmaDoubleStage2X8(workspace *ifmaDoubleStage2WorkspaceX8) {
 		}
 	}
 }
+
+func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
+	ifmaDoubleStage2X8(workspace)
+	ifmaPointFinalProductsUncheckedX8(out, &workspace[0])
+}
+
+func ifmaDoubleStage2ProjectiveFinalX8(out *ifmaProjectivePointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
+	ifmaDoubleStage2X8(workspace)
+	ifmaProjectiveFinalProductsUncheckedX8(out, &workspace[0])
+}
