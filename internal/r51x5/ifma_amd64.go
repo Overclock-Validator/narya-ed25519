@@ -11,6 +11,18 @@ const nativeIFMAKernelsBuilt = true
 //go:noescape
 func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 
+// ifmaFourRawProductsUncheckedX8 computes four independent exact folded-u61
+// products into four consecutive output slots. Every input must satisfy the
+// same u52 contract as ifmaMulRawX8, and output may not overlap an input. The
+// native leaf is representation-identical to four ifmaMulRawX8 calls while
+// sharing one Go/assembly transition and one VZEROUPPER.
+//
+//go:noescape
+func ifmaFourRawProductsUncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
 // ifmaMulRawX4 is the AVX-512VL/YMM analogue of ifmaMulRawX8.
 //
 //go:noescape

@@ -26,6 +26,12 @@
 	VPADDQ LO, T0, T0                     \
 	VMOVDQU64 T0, OFF(DI)
 
+// Keep the raw x8 multiply in one source-level body. Both the public
+// single-product leaf and compound point-operation leaves expand it, which
+// makes their exact-representation equivalence mechanical rather than a
+// promise that two copied schedules continue to match after later edits.
+#include "ifma_raw_x8_body.h"
+
 // Fold HI into LO in registers using 2^255 = 19 (mod p). T0 and T1 may not
 // alias LO or HI. This is the register-resident counterpart of FOLD_STORE.
 #define FOLD_INTO(LO, HI, T0, T1) \
@@ -162,80 +168,47 @@ TEXT ·ifmaMulRawX8(SB), NOSPLIT, $0-24
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
 
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VMOVDQU64   0(BX), Z5
-	VMOVDQU64  64(BX), Z6
-	VMOVDQU64 128(BX), Z7
-	VMOVDQU64 192(BX), Z8
-	VMOVDQU64 256(BX), Z9
+	MUL_RAW_X8_BODY
 
-	// Z10..Z18 hold low halves for degrees 0..8. Z19..Z27 hold
-	// high halves for degrees 1..9.
-	CLEAR(Z10)
-	CLEAR(Z11)
-	CLEAR(Z12)
-	CLEAR(Z13)
-	CLEAR(Z14)
-	CLEAR(Z15)
-	CLEAR(Z16)
-	CLEAR(Z17)
-	CLEAR(Z18)
-	CLEAR(Z19)
-	CLEAR(Z20)
-	CLEAR(Z21)
-	CLEAR(Z22)
-	CLEAR(Z23)
-	CLEAR(Z24)
-	CLEAR(Z25)
-	CLEAR(Z26)
-	CLEAR(Z27)
+	VZEROUPPER
+	RET
 
-	MUL_PAIR(Z0, Z5, Z10, Z19)
-	MUL_PAIR(Z0, Z6, Z11, Z20)
-	MUL_PAIR(Z0, Z7, Z12, Z21)
-	MUL_PAIR(Z0, Z8, Z13, Z22)
-	MUL_PAIR(Z0, Z9, Z14, Z23)
-	MUL_PAIR(Z1, Z5, Z11, Z20)
-	MUL_PAIR(Z1, Z6, Z12, Z21)
-	MUL_PAIR(Z1, Z7, Z13, Z22)
-	MUL_PAIR(Z1, Z8, Z14, Z23)
-	MUL_PAIR(Z1, Z9, Z15, Z24)
-	MUL_PAIR(Z2, Z5, Z12, Z21)
-	MUL_PAIR(Z2, Z6, Z13, Z22)
-	MUL_PAIR(Z2, Z7, Z14, Z23)
-	MUL_PAIR(Z2, Z8, Z15, Z24)
-	MUL_PAIR(Z2, Z9, Z16, Z25)
-	MUL_PAIR(Z3, Z5, Z13, Z22)
-	MUL_PAIR(Z3, Z6, Z14, Z23)
-	MUL_PAIR(Z3, Z7, Z15, Z24)
-	MUL_PAIR(Z3, Z8, Z16, Z25)
-	MUL_PAIR(Z3, Z9, Z17, Z26)
-	MUL_PAIR(Z4, Z5, Z14, Z23)
-	MUL_PAIR(Z4, Z6, Z15, Z24)
-	MUL_PAIR(Z4, Z7, Z16, Z25)
-	MUL_PAIR(Z4, Z8, Z17, Z26)
-	MUL_PAIR(Z4, Z9, Z18, Z27)
+// func ifmaFourRawProductsUncheckedX8(out *IFMAProductX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+//
+// out points to four consecutive IFMAProductX8 values. Each input pair is an
+// independent u52 multiplication and each result is the exact folded-u61
+// representation produced by ifmaMulRawX8. The leaf deliberately does not
+// accept overlapping output/input storage: point formulas own a separate raw
+// workspace, and retaining that simple contract lets all four bodies stream
+// their stores without preservation logic.
+//
+// The optimization is solely structural. Four expansions of the same
+// MUL_RAW_X8_BODY share one Go/assembly transition and one VZEROUPPER. This is
+// especially useful for Niels additions, whose four A/B/C/D products are
+// independent and immediately consumed by the existing linear stage.
+TEXT ·ifmaFourRawProductsUncheckedX8(SB), NOSPLIT, $0-72
+	MOVQ out+0(FP), AX
 
-	COMBINE_HIGH(Z19, Z11)
-	COMBINE_HIGH(Z20, Z12)
-	COMBINE_HIGH(Z21, Z13)
-	COMBINE_HIGH(Z22, Z14)
-	COMBINE_HIGH(Z23, Z15)
-	COMBINE_HIGH(Z24, Z16)
-	COMBINE_HIGH(Z25, Z17)
-	COMBINE_HIGH(Z26, Z18)
-	VPSLLQ $1, Z27, Z27
+	MOVQ AX, DI
+	MOVQ x0+8(FP), CX
+	MOVQ y0+16(FP), BX
+	MUL_RAW_X8_BODY
 
-	// Fold degrees 5..9 with 2^255 = 19 (mod p).
-	FOLD_STORE(Z10, Z15, Z28, Z29,   0)
-	FOLD_STORE(Z11, Z16, Z28, Z29,  64)
-	FOLD_STORE(Z12, Z17, Z28, Z29, 128)
-	FOLD_STORE(Z13, Z18, Z28, Z29, 192)
-	FOLD_STORE(Z14, Z27, Z28, Z29, 256)
+	LEAQ 320(AX), DI
+	MOVQ x1+24(FP), CX
+	MOVQ y1+32(FP), BX
+	MUL_RAW_X8_BODY
+
+	LEAQ 640(AX), DI
+	MOVQ x2+40(FP), CX
+	MOVQ y2+48(FP), BX
+	MUL_RAW_X8_BODY
+
+	LEAQ 960(AX), DI
+	MOVQ x3+56(FP), CX
+	MOVQ y3+64(FP), BX
+	MUL_RAW_X8_BODY
 
 	VZEROUPPER
 	RET

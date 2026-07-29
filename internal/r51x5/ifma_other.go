@@ -8,6 +8,13 @@ func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8) {
 	panic("r51x5: unreachable x8 IFMA call on non-amd64")
 }
 
+func ifmaFourRawProductsUncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 four-product IFMA call on non-amd64")
+}
+
 func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4) {
 	panic("r51x5: unreachable x4 IFMA call on non-amd64")
 }
