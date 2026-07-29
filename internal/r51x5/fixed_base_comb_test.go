@@ -694,6 +694,30 @@ func BenchmarkExperimentalFixedBaseCombBuild(b *testing.B) {
 	}
 }
 
+var benchmarkFixedBaseDigitsX8 fixedBaseDigitsX8
+
+// BenchmarkExperimentalFixedBaseCombRecodingX8 isolates the fixed-base scalar
+// recoder from table selection and point arithmetic. Keep all eight lanes live:
+// the registered cold r51 backend uses this shape with radix 256, while the
+// smaller widths remain useful comparison points for experimental combs.
+func BenchmarkExperimentalFixedBaseCombRecodingX8(b *testing.B) {
+	rng := rand.New(rand.NewSource(0xb4515ca1))
+	var scalars [X8Lanes][32]byte
+	for lane := range scalars {
+		scalars[lane] = randomCanonicalFixedBaseScalar(b, rng)
+	}
+	for _, width := range []uint{4, 5, 8} {
+		b.Run(fmt.Sprintf("radix=%d", 1<<width), func(b *testing.B) {
+			b.ReportAllocs()
+			var out fixedBaseDigitsX8
+			for iteration := 0; iteration < b.N; iteration++ {
+				recodeFixedBaseScalarsX8(&out, &scalars, 0xff, width)
+			}
+			benchmarkFixedBaseDigitsX8 = out
+		})
+	}
+}
+
 func BenchmarkExperimentalFixedBaseCombSelectionX8(b *testing.B) {
 	base, _ := fixedBaseGenerator(b)
 	rng := rand.New(rand.NewSource(0xb4515e1e))
