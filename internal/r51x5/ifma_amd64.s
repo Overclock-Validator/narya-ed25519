@@ -424,6 +424,11 @@ TEXT ·ifmaMulRawX4(SB), NOSPLIT, $0-24
 // The exact folded u61 product never touches memory. All ten input vectors are
 // loaded before any output store, so out may alias x or y.
 TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+	// Keep the dominant full-x8 IFMA leaf on a cache-line boundary. Without
+	// an explicit entry alignment, unrelated packed-x4 text changes moved the
+	// first instruction between the two 32-byte halves of a line and produced
+	// a repeatable sub-percent complete-verifier delta on Zen 5.
+	PCALIGN $64
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX

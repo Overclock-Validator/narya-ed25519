@@ -395,6 +395,10 @@ TEXT ·ifmaQuadCachedAddFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
 // consumed before any store. Keeping that boundary in registers removes ten
 // temporary vector stores and ten reloads from every packed NAF addition.
 TEXT ·ifmaQuadCachedAddFinalMultiplyUncheckedX4(SB), NOSPLIT, $0-16
+	// This leaf is executed for every nonzero packed NAF digit. Align its first
+	// instruction explicitly so unrelated x8 text padding cannot move it onto
+	// the second half of a cache line.
+	PCALIGN $64
 	MOVQ out+0(FP), DI
 	MOVQ products+8(FP), CX
 
