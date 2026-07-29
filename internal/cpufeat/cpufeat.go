@@ -77,6 +77,13 @@ func PreferNativeScalarReduceX8IFMA() bool { return preferNativeScalarReduceX8IF
 // IFMA CPUs retain the prior shift/add schedule until measured independently.
 func PreferPackedMul19X4IFMA() bool { return preferPackedMul19X4IFMA }
 
+// PreferPackedPairX8IFMA reports whether a two-signature strict tail should
+// place one complete coordinate-parallel verification equation in each
+// 256-bit half of a ZMM register. Complete 200/1,232/4,096-byte measurements
+// select it on AMD family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain two
+// independently measured packed-x4 singleton calls.
+func PreferPackedPairX8IFMA() bool { return preferPackedPairX8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
@@ -102,6 +109,10 @@ func nativeScalarReduceX8ForAMDVersion(ifma bool, family uint32) bool {
 }
 
 func packedMul19X4ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func packedPairX8ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 

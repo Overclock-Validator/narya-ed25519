@@ -54,4 +54,7 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 	if got, want := PreferPackedMul19X4IFMA(), packedMul19X4ForAMDVersion(IFMA(), amdFamily); got != want {
 		t.Errorf("PreferPackedMul19X4IFMA = %v, want %v (family detection)", got, want)
 	}
+	if got, want := PreferPackedPairX8IFMA(), packedPairX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferPackedPairX8IFMA = %v, want %v (family detection)", got, want)
+	}
 }

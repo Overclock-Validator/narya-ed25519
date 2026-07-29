@@ -24,6 +24,7 @@ var preferProjectiveDoubleX8IFMA = projectiveDoubleX8ForAMDVersion(hasIFMA, amdF
 var preferAsymmetricFixedB10X8IFMA = asymmetricFixedB10X8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 var preferNativeScalarReduceX8IFMA = nativeScalarReduceX8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 var preferPackedMul19X4IFMA = packedMul19X4ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
+var preferPackedPairX8IFMA = packedPairX8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 
 func detectAMDFamily() uint32 {
 	_, ebx, ecx, edx := cpuid(0, 0)
