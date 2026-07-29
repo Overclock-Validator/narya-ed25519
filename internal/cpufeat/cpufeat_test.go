@@ -28,8 +28,10 @@ func TestRawSquareForAMDVersion(t *testing.T) {
 		want   bool
 	}{
 		{name: "zen4", ifma: true, family: 0x19, want: true},
-		{name: "zen5", ifma: true, family: 0x1a, want: false},
+		{name: "zen5", ifma: true, family: 0x1a, want: true},
 		{name: "zen4-without-ifma", ifma: false, family: 0x19, want: false},
+		{name: "zen5-without-ifma", ifma: false, family: 0x1a, want: false},
+		{name: "unmeasured-future-family", ifma: true, family: 0x1b, want: false},
 		{name: "non-amd", ifma: true, family: 0, want: false},
 	} {
 		t.Run(test.name, func(t *testing.T) {

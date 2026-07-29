@@ -29,10 +29,10 @@ func PreferWarmX8IFMA() bool { return preferWarmX8IFMA }
 
 // PreferRawSquareIFMA reports whether the x8 cold verifier should use the
 // symmetry-aware raw-square doubling schedule. Complete-verifier measurements
-// select it only on AMD family 19h (Zen 4); native-width family 1Ah (Zen 5)
-// remains faster with the general-multiply schedule. This is deliberately a
-// separate policy bit so a future width decision cannot silently change the
-// arithmetic schedule.
+// select it on AMD families 19h (Zen 4) and 1Ah (Zen 5). This is deliberately
+// a separate policy bit so a future width decision cannot silently change the
+// arithmetic schedule, and unmeasured future families retain the reviewed
+// general-multiply default.
 func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
 
 // PreferWideHashX4IFMA reports whether a cold x4/tail group should retain x4
@@ -43,7 +43,7 @@ func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
 func PreferWideHashX4IFMA() bool { return preferWideHashX4IFMA }
 
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
-	return ifma && family == 0x19
+	return ifma && (family == 0x19 || family == 0x1a)
 }
 
 func wideHashX4ForAMDVersion(ifma bool, family uint32) bool {
