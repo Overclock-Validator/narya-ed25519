@@ -48,4 +48,7 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 	if got, want := PreferAsymmetricFixedB10X8IFMA(), asymmetricFixedB10X8ForAMDVersion(IFMA(), amdFamily); got != want {
 		t.Errorf("PreferAsymmetricFixedB10X8IFMA = %v, want %v (family detection)", got, want)
 	}
+	if got, want := PreferNativeScalarReduceX8IFMA(), nativeScalarReduceX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferNativeScalarReduceX8IFMA = %v, want %v (family detection)", got, want)
+	}
 }

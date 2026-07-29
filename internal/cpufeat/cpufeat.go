@@ -63,6 +63,13 @@ func PreferProjectiveDoubleX8IFMA() bool { return preferProjectiveDoubleX8IFMA }
 // current projective schedule is measured there independently.
 func PreferAsymmetricFixedB10X8IFMA() bool { return preferAsymmetricFixedB10X8IFMA }
 
+// PreferNativeScalarReduceX8IFMA reports whether eight 512-bit Ed25519
+// challenges should use the structure-of-arrays AVX-512DQ reducer instead of
+// eight lane-serial Go reductions. Complete cold-verifier measurements select
+// it on AMD family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the portable
+// reducer until the complete gate is repeated there.
+func PreferNativeScalarReduceX8IFMA() bool { return preferNativeScalarReduceX8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
@@ -80,6 +87,10 @@ func projectiveDoubleX8ForAMDVersion(ifma bool, family uint32) bool {
 }
 
 func asymmetricFixedB10X8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func nativeScalarReduceX8ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 

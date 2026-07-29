@@ -3,6 +3,8 @@ package r51x5
 import (
 	"encoding/binary"
 	"math/bits"
+
+	"github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
 )
 
 // scalarBarrettMu is floor(2^512/l), where l is the prime order of the
@@ -50,6 +52,19 @@ func ExperimentalReduceUniformScalarsX4(out *[X4Lanes][32]byte, in *[X4Lanes][64
 // ExperimentalReduceUniformScalarsX8 is the eight-lane counterpart of
 // ExperimentalReduceUniformScalarsX4.
 func ExperimentalReduceUniformScalarsX8(out *[X8Lanes][32]byte, in *[X8Lanes][64]byte, active uint8) uint8 {
+	if cpufeat.PreferNativeScalarReduceX8IFMA() {
+		if reduced, ok := reduceUniformScalarsIFMAX8(out, in, active); ok {
+			return reduced
+		}
+	}
+	return reduceUniformScalarsScalarX8(out, in, active)
+}
+
+// reduceUniformScalarsScalarX8 is the portable lane-serial oracle and fallback
+// for ExperimentalReduceUniformScalarsX8. Keep it directly callable by the
+// native differential so the candidate can never accidentally compare against
+// itself through the exported dispatch seam.
+func reduceUniformScalarsScalarX8(out *[X8Lanes][32]byte, in *[X8Lanes][64]byte, active uint8) uint8 {
 	*out = [X8Lanes][32]byte{}
 	for lane := 0; lane < X8Lanes; lane++ {
 		if active&(1<<lane) != 0 {

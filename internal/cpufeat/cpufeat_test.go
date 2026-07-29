@@ -124,3 +124,24 @@ func TestAsymmetricFixedB10X8ForAMDVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestNativeScalarReduceX8ForAMDVersion(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		ifma   bool
+		family uint32
+		want   bool
+	}{
+		{name: "zen4", ifma: true, family: 0x19, want: false},
+		{name: "zen5", ifma: true, family: 0x1a, want: true},
+		{name: "zen5-without-ifma", ifma: false, family: 0x1a, want: false},
+		{name: "unmeasured-future-family", ifma: true, family: 0x1b, want: false},
+		{name: "non-amd", ifma: true, family: 0, want: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := nativeScalarReduceX8ForAMDVersion(test.ifma, test.family); got != test.want {
+				t.Fatalf("native-scalar-reduce-x8=%v want=%v ifma=%v family=%#x", got, test.want, test.ifma, test.family)
+			}
+		})
+	}
+}

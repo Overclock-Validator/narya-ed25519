@@ -280,10 +280,29 @@ func BenchmarkExperimentalUniformScalarReduction(b *testing.B) {
 			scalarReductionMaskSink = ExperimentalReduceUniformScalarsX4(&scalarReductionSinkX4, &input4[0], 0x0f)
 		}
 	})
-	b.Run("x8/full", func(b *testing.B) {
+	b.Run("x8-scalar/full", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			scalarReductionMaskSink = reduceUniformScalarsScalarX8(&scalarReductionSinkX8, &input8, 0xff)
+		}
+	})
+	b.Run("x8-dispatch/full", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			scalarReductionMaskSink = ExperimentalReduceUniformScalarsX8(&scalarReductionSinkX8, &input8, 0xff)
+		}
+	})
+	b.Run("x8-ifma-candidate/full", func(b *testing.B) {
+		if !ExperimentalIFMAAvailable() {
+			b.Skip("AVX-512 IFMA unavailable")
+		}
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			var ok bool
+			scalarReductionMaskSink, ok = reduceUniformScalarsIFMAX8(&scalarReductionSinkX8, &input8, 0xff)
+			if !ok {
+				b.Fatal("native x8 reduction became unavailable")
+			}
 		}
 	})
 	b.Run("two-x4/full", func(b *testing.B) {
@@ -315,6 +334,64 @@ func BenchmarkExperimentalUniformScalarReduction(b *testing.B) {
 				scalarReductionMaskSink = ExperimentalReduceUniformScalarsX8(&scalarReductionSinkX8, &input8, mask)
 			}
 		})
+	}
+}
+
+func TestExperimentalUniformScalarReductionIFMAX8MatchesScalar(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("AVX-512 IFMA unavailable")
+	}
+
+	rng := rand.New(rand.NewSource(0x51_21_08_51))
+	for iteration := 0; iteration < 2_048; iteration++ {
+		var input [X8Lanes][64]byte
+		for lane := range input {
+			_, _ = rng.Read(input[lane][:])
+		}
+		if iteration < 512 {
+			// Exercise carry-heavy byte patterns alongside random digests.
+			fill := byte(iteration)
+			for lane := range input {
+				for index := range input[lane] {
+					input[lane][index] = fill ^ byte(lane*0x33+index)
+				}
+			}
+		}
+		before := input
+		active := uint8(iteration)
+		var want, got [X8Lanes][32]byte
+		wantMask := reduceUniformScalarsScalarX8(&want, &input, active)
+		gotMask, ok := reduceUniformScalarsIFMAX8(&got, &input, active)
+		if !ok {
+			t.Fatal("native x8 reduction became unavailable")
+		}
+		if gotMask != wantMask || got != want {
+			t.Fatalf("iteration=%d active=%02x native reduction differs", iteration, active)
+		}
+		if input != before {
+			t.Fatalf("iteration=%d active=%02x input mutated", iteration, active)
+		}
+	}
+}
+
+func TestExperimentalUniformScalarReductionIFMAX8ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("AVX-512 IFMA unavailable")
+	}
+	var input [X8Lanes][64]byte
+	for lane := range input {
+		for index := range input[lane] {
+			input[lane][index] = byte(lane*17 + index)
+		}
+	}
+	var out [X8Lanes][32]byte
+	allocations := testing.AllocsPerRun(1_000, func() {
+		if _, ok := reduceUniformScalarsIFMAX8(&out, &input, 0xff); !ok {
+			t.Fatal("native x8 reduction became unavailable")
+		}
+	})
+	if allocations != 0 {
+		t.Fatalf("allocations=%v want=0", allocations)
 	}
 }
 
