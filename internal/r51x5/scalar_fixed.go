@@ -61,8 +61,11 @@ func (d *FixedRadixDigitsX8) Round(index int) *RadixRoundX8 {
 // recoding. The returned mask contains active lanes whose input is less than
 // the group order; invalid and inactive lanes remain all-zero digits.
 func RecodeCanonicalScalarsX4(out *FixedRadixDigitsX4, scalars *[X4Lanes][32]byte, negativeMask, active uint8, radixBits uint) uint8 {
-	*out = FixedRadixDigitsX4{}
-	out.count = uint8(fixedScalarRoundCount(radixBits))
+	rounds := fixedScalarRoundCount(radixBits)
+	for round := 0; round < rounds; round++ {
+		out.rounds[round] = RadixRoundX4{}
+	}
+	out.count = uint8(rounds)
 	out.radixBits = uint8(radixBits)
 	active &= 0x0f
 	var valid uint8
@@ -80,8 +83,11 @@ func RecodeCanonicalScalarsX4(out *FixedRadixDigitsX4, scalars *[X4Lanes][32]byt
 // RecodeCanonicalScalarsX8 is the eight-lane counterpart of
 // RecodeCanonicalScalarsX4.
 func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byte, negativeMask, active uint8, radixBits uint) uint8 {
-	*out = FixedRadixDigitsX8{}
-	out.count = uint8(fixedScalarRoundCount(radixBits))
+	rounds := fixedScalarRoundCount(radixBits)
+	for round := 0; round < rounds; round++ {
+		out.rounds[round] = RadixRoundX8{}
+	}
+	out.count = uint8(rounds)
 	out.radixBits = uint8(radixBits)
 	var valid uint8
 	for lane := 0; lane < X8Lanes; lane++ {

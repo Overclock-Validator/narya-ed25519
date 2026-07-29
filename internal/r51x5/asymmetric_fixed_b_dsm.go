@@ -102,8 +102,11 @@ func recodeAsymmetricFixedBScalarsX4(
 	negativeMask, active uint8,
 	radixBits uint,
 ) uint8 {
-	*out = asymmetricFixedBDigitsX4{}
-	out.count = uint8(asymmetricFixedBRoundCount(radixBits))
+	rounds := asymmetricFixedBRoundCount(radixBits)
+	for round := 0; round < rounds; round++ {
+		out.rounds[round] = asymmetricFixedBRoundX4{}
+	}
+	out.count = uint8(rounds)
 	out.radixBits = uint8(radixBits)
 	active &= 0x0f
 	var valid uint8
