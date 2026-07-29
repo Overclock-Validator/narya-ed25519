@@ -30,16 +30,22 @@ therefore retained only in the warm asymmetric recoder.
 
 | public strict path, 1232-byte messages | baseline | retained | change |
 |---|---:|---:|---:|
+| cold n=1 | 31.909 | 31.837 | -0.23% |
+| cold n=2 | 31.971 | 31.851 | -0.38% |
 | cold n=4 | 8.682 | 8.575 | -1.24% |
 | cold n=8 | 4.604 | 4.590 | -0.31% |
 | cold n=64 | 4.405 | 4.382 | -0.51% |
+| cache API n=1 (warm tables bypassed) | 32.477 | 32.206 | -0.84% |
+| cache API n=2 (warm tables bypassed) | 32.496 | 32.042 | -1.40% |
 | warm n=4 | 4.149 | 4.050 | -2.37% |
 | warm n=8 | 3.910 | 3.814 | -2.47% |
 | warm n=64 | 3.755 | 3.665 | -2.42% |
 
-Each row used ten one-second samples. `benchstat` reported `p=0.000` for all
-six comparisons. Every sample reported zero allocations and zero internal
-fault fallbacks.
+Each row used ten one-second samples. `benchstat` reported `p=0.000` for the
+n=4/8/64 comparisons. The narrow rows report medians; an initial n=2 cache
+run contained a transient twofold timing discontinuity and was discarded in
+favor of a clean isolated rerun. Every retained sample reported zero
+allocations and zero internal fault fallbacks.
 
 The warm-only word preload changed the isolated x4 recoders as follows:
 
@@ -78,7 +84,7 @@ Complete public APIs:
 
 ```sh
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
-  -bench '^(BenchmarkPublicR51VerifyBatchStrict|BenchmarkPublicR51CacheVerifyBatchStrict)$/^msg=1232$/^n=(4|8|64)$' \
+  -bench '^(BenchmarkPublicR51VerifyBatchStrict|BenchmarkPublicR51CacheVerifyBatchStrict)$/^msg=1232$/^n=(1|2|4|8|64)$' \
   -benchmem -benchtime=1s -count=10 ./ed25519
 ```
 
