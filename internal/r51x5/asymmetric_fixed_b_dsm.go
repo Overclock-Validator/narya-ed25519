@@ -92,12 +92,13 @@ func recodeAsymmetricFixedBScalarsX4(
 		}
 		valid |= laneMask
 		carry := int32(0)
-		radix := int32(1) << radixBits
-		half := radix >> 1
+		half := int32(1) << (radixBits - 1)
 		for round := 0; round < int(out.count); round++ {
 			digit := int32(asymmetricFixedBScalarBitsExperiment(&scalars[lane], round*int(radixBits), radixBits)) + carry
-			carry = (digit + half) / radix
-			digit -= carry * radix
+			// The extractor is nonnegative and carry is zero or one, so this
+			// is exact power-of-two division without a hardware IDIV.
+			carry = (digit + half) >> radixBits
+			digit -= carry << radixBits
 			if negativeMask&laneMask != 0 {
 				digit = -digit
 			}

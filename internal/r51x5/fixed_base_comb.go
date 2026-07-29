@@ -353,7 +353,7 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 		}
 		valid |= laneMask
 	}
-	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
+	half := int16(1) << (out.radixBits - 1)
 	var carries [X8Lanes]int16
 	for round := 0; round < int(out.count); round++ {
 		bit := round * int(out.radixBits)
@@ -363,8 +363,12 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 				continue
 			}
 			digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
-			carries[lane] = (digit + half) / radix
-			digit -= carries[lane] * radix
+			// fixedScalarBits is in [0, 2^w-1] and the incoming carry is
+			// zero or one, so digit+half is nonnegative. For the power-of-two
+			// radix the shifts are therefore exactly the signed division and
+			// multiplication they replace, without an IDIV in every lane.
+			carries[lane] = (digit + half) >> out.radixBits
+			digit -= carries[lane] << out.radixBits
 			setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
 		}
 	}
@@ -378,11 +382,11 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
 	carry := int16(0)
-	radix, half := int16(1)<<out.radixBits, int16(1)<<(out.radixBits-1)
+	half := int16(1) << (out.radixBits - 1)
 	for round := 0; round < int(out.count); round++ {
 		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
-		carry = (digit + half) / radix
-		digit -= carry * radix
+		carry = (digit + half) >> out.radixBits
+		digit -= carry << out.radixBits
 		setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
 	}
 	if carry != 0 {

@@ -96,8 +96,7 @@ func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byt
 	// matching the consumer's layout, this computes the public bit offset once
 	// per round instead of once per lane and keeps the current output record
 	// hot while all eight lane digits are installed.
-	radix := int16(1 << out.radixBits)
-	half := radix >> 1
+	half := int16(1) << (out.radixBits - 1)
 	var carries [X8Lanes]int16
 	for round := 0; round < int(out.count); round++ {
 		bit := round * int(out.radixBits)
@@ -107,8 +106,11 @@ func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byt
 				continue
 			}
 			digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
-			carries[lane] = (digit + half) / radix
-			digit -= carries[lane] * radix
+			// The extracted digit is nonnegative and the incoming carry is
+			// zero or one. Division by this power-of-two radix is therefore
+			// exactly a shift, without an IDIV in the per-lane inner loop.
+			carries[lane] = (digit + half) >> out.radixBits
+			digit -= carries[lane] << out.radixBits
 			if negativeMask&laneMask != 0 {
 				digit = -digit
 			}
@@ -150,12 +152,11 @@ func canonicalScalarBytes(x *[32]byte) bool {
 
 func recodeFixedScalarX4(out *FixedRadixDigitsX4, lane int, scalar *[32]byte, negative bool) {
 	carry := int16(0)
-	radix := int16(1 << out.radixBits)
-	half := radix >> 1
+	half := int16(1) << (out.radixBits - 1)
 	for round := 0; round < int(out.count); round++ {
 		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
-		carry = (digit + half) / radix
-		digit -= carry * radix
+		carry = (digit + half) >> out.radixBits
+		digit -= carry << out.radixBits
 		if negative {
 			digit = -digit
 		}
@@ -167,6 +168,9 @@ func recodeFixedScalarX4(out *FixedRadixDigitsX4, lane int, scalar *[32]byte, ne
 }
 
 func fixedScalarBits(scalar *[32]byte, bit int, width uint) uint16 {
+	// This extractor reads at most 16 source bits. Its callers restrict width
+	// so shift+width never exceeds 16 (fixed scalar: 4/5/6; fixed comb:
+	// 4/5/8). A future wider recoder must use a three-byte or wider extractor.
 	byteIndex := bit >> 3
 	shift := uint(bit & 7)
 	word := uint16(scalar[byteIndex])
