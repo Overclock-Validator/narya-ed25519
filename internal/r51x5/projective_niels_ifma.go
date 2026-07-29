@@ -78,7 +78,7 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
-	ifmaPointFinalProductsExperimentUncheckedX8(out, &stage2[0])
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }
 

@@ -16,6 +16,6 @@ func ifmaPointDoubleRawSquareStage2ExperimentX8(out, q *IFMAPointX8, workspace *
 	ifmaDoubleStage2X8(stage2)
 
 	// Stage 1 consumed q completely, so writing through out is alias-safe.
-	ifmaPointFinalProductsExperimentUncheckedX8(out, &stage2[0])
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }

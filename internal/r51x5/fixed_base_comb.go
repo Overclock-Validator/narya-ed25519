@@ -847,6 +847,6 @@ func addFixedBaseIFMACachedWorkspaceX8(
 	// point and cached are dead after A/B/C and Z have been captured. Direct
 	// output is therefore safe for out==point and avoids a 1,280-byte result
 	// temporary and copy.
-	ifmaPointFinalProductsExperimentUncheckedX8(out, &stage2[0])
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }

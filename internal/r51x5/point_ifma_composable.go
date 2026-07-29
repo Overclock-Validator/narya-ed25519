@@ -290,7 +290,7 @@ func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *
 	// result directly is therefore safe even when out==q, and avoids zeroing a
 	// temporary 1,280-byte point followed by a full point copy. The unchecked
 	// field kernels used here have no error path after the boundary gate.
-	ifmaPointFinalProductsExperimentUncheckedX8(out, &stage2[0])
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }
 
