@@ -120,7 +120,7 @@ func IFMAAsymmetricFixedB10EvaluateX8(
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&variable.digits, k, active, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&variable.digits, k, active, active)
 	var bDigits asymmetricFixedB10DigitsX8
 	usable &= recodeAsymmetricFixedB10ScalarsX8(&bDigits, s, active)
 	acc := identityIFMAPointX8Value()
