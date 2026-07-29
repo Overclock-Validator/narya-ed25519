@@ -199,7 +199,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8)
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
@@ -240,7 +240,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
@@ -285,7 +285,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
