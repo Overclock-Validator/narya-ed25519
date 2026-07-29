@@ -129,30 +129,42 @@ func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var aAddWorkspace ifmaPointAddProjectiveNielsScratchX8
 	var bAddWorkspace fixedBaseIFMAAddScratchX8
-	for exponent := 250; exponent >= 0; exponent-- {
-		if exponent != 250 {
+	for block := 25; block >= 0; block-- {
+		bRound := &bDigits.rounds[block]
+		if bRound.NonzeroMask&usable != 0 {
+			var selected fixedBaseIFMACachedX8
+			selectAsymmetricFixedB10SignedX8Experiment(&selected, fixed, bRound, usable)
+			if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &bAddWorkspace); err != nil {
+				return 0, err
+			}
+		}
+		aEven := variable.digits.Round(block * 2)
+		if aEven.NonzeroMask&usable != 0 {
+			var selected IFMAProjectiveNielsX8
+			selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &variable.table, aEven, usable)
+			if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &aAddWorkspace); err != nil {
+				return 0, err
+			}
+		}
+		if block == 0 {
+			break
+		}
+		for range 5 {
 			if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
 				return 0, err
 			}
 		}
-		if exponent%10 == 0 {
-			round := &bDigits.rounds[exponent/10]
-			if round.NonzeroMask&usable != 0 {
-				var selected fixedBaseIFMACachedX8
-				selectAsymmetricFixedB10SignedX8Experiment(&selected, fixed, round, usable)
-				if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &bAddWorkspace); err != nil {
-					return 0, err
-				}
+		aOdd := variable.digits.Round(block*2 - 1)
+		if aOdd.NonzeroMask&usable != 0 {
+			var selected IFMAProjectiveNielsX8
+			selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &variable.table, aOdd, usable)
+			if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &aAddWorkspace); err != nil {
+				return 0, err
 			}
 		}
-		if exponent%5 == 0 {
-			round := variable.digits.Round(exponent / 5)
-			if round.NonzeroMask&usable != 0 {
-				var selected IFMAProjectiveNielsX8
-				selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &variable.table, round, usable)
-				if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &aAddWorkspace); err != nil {
-					return 0, err
-				}
+		for range 5 {
+			if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
+				return 0, err
 			}
 		}
 	}
