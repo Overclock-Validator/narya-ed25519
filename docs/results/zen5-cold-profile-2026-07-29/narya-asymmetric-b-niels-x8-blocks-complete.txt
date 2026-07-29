@@ -1,0 +1,30 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   69140	     34736 ns/op	         4.342 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   69055	     34751 ns/op	         4.344 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   69043	     34773 ns/op	         4.347 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   68998	     34786 ns/op	         4.348 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   68976	     34795 ns/op	         4.349 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=8/msg=1232         	   68950	     34800 ns/op	         4.350 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   68404	     35110 ns/op	         4.389 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   68208	     35211 ns/op	         4.401 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   68092	     35209 ns/op	         4.401 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   67984	     35280 ns/op	         4.410 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   68174	     35189 ns/op	         4.399 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=8/msg=1232                     	   68173	     35203 ns/op	         4.400 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9078	    264225 ns/op	         4.129 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9079	    264123 ns/op	         4.127 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9078	    264129 ns/op	         4.127 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9079	    264216 ns/op	         4.128 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9082	    264127 ns/op	         4.127 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb/n=64/msg=1232        	    9082	    264150 ns/op	         4.127 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8970	    267060 ns/op	         4.173 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8982	    267076 ns/op	         4.173 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8980	    267110 ns/op	         4.174 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8979	    267109 ns/op	         4.174 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8974	    267077 ns/op	         4.173 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment/implementation=merged-B10/n=64/msg=1232                    	    8984	    267033 ns/op	         4.172 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	62.191s

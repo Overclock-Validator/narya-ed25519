@@ -1,0 +1,18 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97258	     24686 ns/op	      3086 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97177	     24701 ns/op	      3088 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97129	     24711 ns/op	      3089 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97126	     24718 ns/op	      3090 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97087	     24724 ns/op	      3091 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=separate-radix256-comb         	   97102	     24731 ns/op	      3091 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100437	     23855 ns/op	      2982 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100576	     23876 ns/op	      2984 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100516	     23863 ns/op	      2983 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100430	     23848 ns/op	      2981 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100537	     23860 ns/op	      2983 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBNielsX8Experiment/implementation=merged-B10                     	  100700	     23884 ns/op	      2986 ns/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	31.786s

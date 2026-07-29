@@ -1,0 +1,60 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99807	     24084 ns/op	      6021 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99640	     24098 ns/op	      6024 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99578	     24105 ns/op	      6026 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99549	     24117 ns/op	      6029 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99510	     24126 ns/op	      6032 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=current-micro-aos-B6-projective         	   99516	     24130 ns/op	      6032 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   97857	     24544 ns/op	      6136 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   98175	     24501 ns/op	      6125 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   97958	     24490 ns/op	      6122 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   97978	     24484 ns/op	      6121 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   98044	     24511 ns/op	      6128 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B6                        	   98077	     24476 ns/op	      6119 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101474	     23646 ns/op	      5912 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101485	     23647 ns/op	      5912 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101460	     23655 ns/op	      5914 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101295	     23669 ns/op	      5917 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101421	     23676 ns/op	      5919 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B6                         	  101379	     23674 ns/op	      5918 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  103417	     23226 ns/op	      5806 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  102607	     23579 ns/op	      5895 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  102268	     23447 ns/op	      5862 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  102304	     23429 ns/op	      5857 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  102442	     23435 ns/op	      5859 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B8                        	  102405	     23432 ns/op	      5858 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106341	     22607 ns/op	      5652 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106113	     22603 ns/op	      5651 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106144	     22602 ns/op	      5650 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106125	     22588 ns/op	      5647 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106357	     22567 ns/op	      5642 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B8                         	  106324	     22569 ns/op	      5642 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104872	     22877 ns/op	      5719 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104908	     22885 ns/op	      5721 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104828	     22890 ns/op	      5723 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104836	     22901 ns/op	      5725 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104752	     22893 ns/op	      5723 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B9                        	  104865	     22898 ns/op	      5725 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106828	     22466 ns/op	      5616 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106890	     22454 ns/op	      5614 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106806	     22462 ns/op	      5616 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106768	     22469 ns/op	      5617 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106741	     22465 ns/op	      5616 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B9                         	  106831	     22457 ns/op	      5614 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  106488	     22694 ns/op	      5673 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  105661	     22701 ns/op	      5675 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  105757	     22708 ns/op	      5677 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  105648	     22729 ns/op	      5682 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  105637	     22708 ns/op	      5677 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=shared-affine-B10                       	  105836	     22704 ns/op	      5676 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108254	     22165 ns/op	      5541 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108262	     22170 ns/op	      5542 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108294	     22150 ns/op	      5538 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108241	     22163 ns/op	      5541 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108272	     22158 ns/op	      5539 ns/signature	       0 B/op	       0 allocs/op
+BenchmarkAsymmetricFixedBPreparedRadix64DSMX4/implementation=dense-affine-B10                        	  108314	     22157 ns/op	      5539 ns/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	142.303s
