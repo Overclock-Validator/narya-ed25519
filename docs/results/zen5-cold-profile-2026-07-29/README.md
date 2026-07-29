@@ -304,8 +304,24 @@ measured:
 
 The gain is modest but repeatable, has no predicate or arithmetic change, and
 reported zero allocations and zero internal fault fallbacks in every sample.
-The full native repository suite passed at `13a6179`. Exact measurements are
-in `narya-four-raw-products.alternating.txt`.
+The full native repository suite passed at `13a6179`.
+
+The registered x8 doubling had the same four-call structure for `X^2`, `Y^2`,
+`Z^2`, and `X*Y`, but executes it about 252 times per scalar loop. Commit
+`5c773f3` applies the already-proven leaf there as well. Five more alternating
+exported-verifier pairs measured:
+
+| batch width | four raw calls, us/signature | one raw leaf, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.300 | 4.277 | -0.53% |
+| 64 | 4.086 | 4.061 | -0.61% |
+
+The full native repository suite passed again at `5c773f3`. The Niels and
+doubling gains compose to approximately 0.8--1.0% of cold x8 verification.
+The x4 kernels remain unchanged: a YMM compound leaf is a recorded future
+regime candidate, not an inferred result. Exact measurements are in
+`narya-four-raw-products.alternating.txt` and
+`narya-four-raw-products-doubling.alternating.txt`.
 
 ## Tested candidate: pooled x8 variable-base scratch
 
