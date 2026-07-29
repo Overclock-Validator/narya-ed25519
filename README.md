@@ -265,107 +265,121 @@ staging. Design details and historical measurements are kept in
 
 Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
-The release headline uses **cold Zen 5 measurements only**: an AMD Ryzen 7
-9700X, Go 1.26.4, one pinned physical core, the performance governor, and
-`GOMAXPROCS=1`. The singleton/pair rows were measured after packed-tail fusion
-at `b7d8acb`; the n=4/8/64 rows were measured after fixed-base pre-signing at
-`afe5c65`. Both commits are ancestors of the current release branch. The table
-identifies the exact recorded checkpoints rather than implying that current
-`main` was rebenchmarked after every subsequent follow-up commit. Every timed
-Narya row reported 0 B/op, 0 allocs/op, and zero
-internal-fault fallbacks.
+The release snapshot uses **cold Zen 5 measurements only** for its headline:
+an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
+governor, and `GOMAXPROCS=1`. Every table below was rerun at exact commit
+`2880e1fa52738d07b49735547fbca8e715df2a58`; it does not combine results from
+different code checkpoints. Every timed Narya row reported 0 B/op,
+0 allocs/op, and zero internal-fault fallbacks.
 
 **Units:** every numeric timing cell in the tables below is **microseconds per
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
 not per-batch latencies.
 
-### Cold verification
+### Cold verification across message sizes
 
-**Ryzen 7 9700X · 1232-byte messages · arbitrary keys with no retained key
-state · µs/signature, lower is better**
+**Ryzen 7 9700X · arbitrary keys with no retained key state · µs/signature,
+lower is better**
 
-| batch size | µs/signature | signatures/second/core | speedup over Go stdlib |
+| batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 15.085 | 66,291 | 1.83x |
-| 2 | 14.960 | 66,845 | 1.81x |
-| 4 | 9.139 | 109,421 | 2.99x |
-| 8 | 4.850 | 206,186 | 5.65x |
-| 64 | **4.673** | **213,996** | **5.87x** |
+| 1 | 14.175 | 15.010 | 17.065 |
+| 2 | 14.180 | 15.025 | 17.180 |
+| 4 | 7.736 | 8.753 | 11.530 |
+| 8 | 4.002 | 4.257 | 5.003 |
+| 64 | **3.796** | **4.039** | **4.772** |
 
-The stdlib control was measured on the same Zen 5 host at 27.60, 27.14,
-27.31, 27.39, and 27.45 µs/signature for n=1/2/4/8/64 respectively. The
-speedup column uses those width-matched controls rather than one rounded
-baseline.
+These are medians of ten three-second samples. At 1,232 bytes, the n=8 and
+n=64 rows correspond to approximately 234,900 and 247,600
+signatures/second/core. Batch width matters because n=1 and n=2 use the packed
+tail path, n=4 fills one x4 group, and n=8 or larger can fill native x8 groups.
 
 ### Warm-cache reference
 
-**Ryzen 7 9700X · 1232-byte messages · 64 promoted keys · µs/signature,
+**Ryzen 7 9700X · 1,232-byte messages · 64 promoted keys · µs/signature,
 lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 15.085 | 14.980 | 1.01x |
-| 2 | 14.960 | 14.900 | 1.00x |
-| 4 | 9.139 | 4.179 | 2.19x |
-| 8 | 4.850 | 3.940 | 1.23x |
-| 64 | 4.673 | **3.776** | **1.24x** |
+| 1 | 15.010 | 15.185 | 0.99x |
+| 2 | 15.025 | 15.045 | 1.00x |
+| 4 | 8.753 | 4.119 | 2.13x |
+| 8 | 4.257 | 3.875 | 1.10x |
+| 64 | 4.039 | **3.734** | **1.08x** |
 
-The warm reference is the complete exported-cache snapshot at `fd117ae8`,
-also on the Ryzen 7 9700X. It is intentionally separate from the cold headline:
-the cache bypasses prepared tables below n=4, and its wider-batch result depends
-on key population and locality.
+The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
+cache deliberately bypasses prepared tables below n=4, so lookup overhead can
+make the singleton row marginally slower. Its wider-batch result depends on
+key population and locality; this small hot fixture is a reference, not a
+universal hit-rate claim.
+
+The warm path is also not unconditionally faster for every message size. The
+complete measured matrix is:
+
+**Ryzen 7 9700X · 64 promoted keys · µs/signature, lower is better**
+
+| batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
+| ---: | ---: | ---: | ---: |
+| 1 | 14.145 | 15.185 | 17.115 |
+| 2 | 14.220 | 15.045 | 17.105 |
+| 4 | 3.378 | 4.119 | 6.212 |
+| 8 | 3.141 | 3.875 | 5.968 |
+| 64 | **2.961** | **3.734** | **5.821** |
+
+At 4,096 bytes, cold x8 is faster than the current warm x4-oriented path at
+n=8 and n=64. The two paths schedule hashing differently, and hashing is a
+larger fraction of a long-message warm verification. Cache population,
+message size, and width must therefore be reported together.
 
 These numbers describe the explicitly forced backend, not automatic dispatch;
-the portable `generic` backend remains the default. Batch width matters because
-r51 maps independent signatures onto SIMD lanes: n=1 and n=2 use dedicated tail
-paths, n=4 fills one x4 group with projective-Niels variable-base tables, and
-n=8 or larger can use native x8 groups. The
-cache deliberately bypasses its prepared tables for n<4, so the cold and warm
-singleton/pair rows are effectively the same path.
-
-At n>=4, the fully promoted 64-key fixture is faster on this CPU. This is not a
-universal hit-rate claim: table population, recurrence, and memory locality
-remain part of the warm-path result.
+the portable `generic` backend remains the default.
 
 ### Cross-library comparison
 
 **Ryzen 7 9700X · 1232-byte messages · µs/signature, lower is better**
 
-The comparison below uses the same Zen 5 host and 1232-byte fixture shape.
-The stdlib and Voi controls are medians of six one-second samples at
-`fd117ae8`; the Narya row is the later retained cold result above. Voi's
-expanded-key row excludes expansion cost and is included as a warm-key
-reference.
+The comparison below uses one binary, the same Zen 5 host, and 1,232-byte
+messages. Values are medians of six two-second samples. Every candidate runs
+ordinary per-signature verification and returns one verdict per input; no
+aggregate batch equation is used. Voi's expanded-key row excludes expansion
+cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 15.085 | 14.960 | 9.139 | 4.850 | 4.673 |
-| Go `crypto/ed25519` | 27.600 | 27.140 | 27.310 | 27.390 | 27.450 |
-| curve25519-voi, cold strict | 21.750 | 21.560 | 21.750 | 21.830 | 21.900 |
-| curve25519-voi, expanded key | 18.940 | 18.740 | 18.930 | 19.000 | 19.070 |
+| Narya r51, cold strict | 15.090 | 14.940 | 8.722 | 4.393 | 4.171 |
+| Go `crypto/ed25519` | 27.640 | 27.520 | 27.585 | 27.530 | 27.630 |
+| curve25519-voi, cold strict | 22.060 | 21.890 | 21.930 | 22.025 | 22.145 |
+| curve25519-voi, expanded key | 19.245 | 19.060 | 19.130 | 19.255 | 19.360 |
+
+Within that comparison binary, Narya is 1.83x faster than Go at n=1, 3.16x
+at n=4, 6.27x at n=8, and 6.62x at n=64. The comparison binary includes the
+opt-in Voi dependency and has a different link layout from the release binary,
+so use this table for library ratios and the cold table above for Narya's
+release latency.
 
 ### Multicore scaling
 
 **Ryzen 7 9700X · 1232-byte messages · aggregate signatures/second, higher is
 better**
 
-These are aggregate **signatures per second** over 1232-byte messages, not
-individual request latency. Values are medians of six one-second samples at
-`da0d045`.
+These are aggregate **signatures per second** over 1,232-byte messages, not
+individual request latency. Values are medians of six two-second samples at
+the exact benchmark commit above. Each row pins only distinct physical cores;
+SMT siblings are excluded.
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 113,683 | 1.00x | 214,557 | 1.00x |
-| 2 | 227,249 | 2.00x | 428,237 | 2.00x |
-| 4 | 446,454 | 3.93x | 844,757 | 3.94x |
-| 6 | 648,426 | 5.70x | 1,200,035 | 5.59x |
-| 8 | 817,310 | 7.19x | 1,482,474 | 6.91x |
+| 1 | 114,774 | 1.00x | 237,490 | 1.00x |
+| 2 | 229,436 | 2.00x | 472,369 | 1.99x |
+| 4 | 448,942 | 3.91x | 930,732 | 3.92x |
+| 6 | 651,252 | 5.67x | 1,329,275 | 5.60x |
+| 8 | 819,306 | 7.14x | 1,638,712 | 6.90x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.224
-and 0.675 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.221
+and 0.610 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification. Raw output is in
-[`docs/results/zen5-9700x-parallel-2026-07-28/`](docs/results/zen5-9700x-parallel-2026-07-28/).
+[`docs/results/zen5-release-2026-07-29/`](docs/results/zen5-release-2026-07-29/).
 
 **Hardware scope: AMD only so far.** Every displayed timing above was captured
 on an AMD Ryzen 7 9700X (Zen 5); historical bundles in `docs/results/` also
@@ -379,15 +393,11 @@ characterizing consumer Zen 5 and nothing else. Intel and EPYC
 measurement is outstanding work, not a completed check.
 
 Historical measurements and their exact environments remain in
-[`docs/results/`](docs/results/); they are intentionally not stacked into this
-table because code, CPU generation, and cache population materially change the
-result. Raw output, exact commands, environment details, and checksums for the
-displayed snapshots are in
-[`docs/results/zen5-packed-singleton-final-fusion-2026-07-26/`](docs/results/zen5-packed-singleton-final-fusion-2026-07-26/),
-[`docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/`](docs/results/zen5-fixed-base-presigned-t2d-2026-07-26/),
-[`docs/results/zen5-fixed-base-affine-stage2-2026-07-26/`](docs/results/zen5-fixed-base-affine-stage2-2026-07-26/),
-[`docs/results/zen5-9700x-parallel-2026-07-26/`](docs/results/zen5-9700x-parallel-2026-07-26/),
-and [`docs/results/zen5-9700x-parallel-2026-07-28/`](docs/results/zen5-9700x-parallel-2026-07-28/).
+[`docs/results/`](docs/results/); they are intentionally not stacked into the
+current tables because code, CPU generation, and cache population materially
+change the result. Raw outputs, exact commands, medians, environment details,
+and checksums for every displayed table are in
+[`docs/results/zen5-release-2026-07-29/`](docs/results/zen5-release-2026-07-29/).
 
 ### Cold and warm verification
 
@@ -417,8 +427,8 @@ accidentally measure a private implementation seam:
 ```sh
 taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench \
   -run '^$' \
-  -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' \
-  -benchmem -benchtime=1s -count=10 ./ed25519
+  -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$/^msg=(200|1232|4096)$/^n=(1|2|4|8|64)$' \
+  -benchmem -benchtime=3s -count=10 ./ed25519
 ```
 
 The 1232-byte comparison table comes from the isolated Voi module:
@@ -427,7 +437,7 @@ The 1232-byte comparison table comes from the isolated Voi module:
 taskset -c 2 env GOMAXPROCS=1 go test \
   -modfile=go.oasis.mod -tags oasis_compare -run '^$' \
   -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' \
-  -benchmem -benchtime=1s -count=6 ./ed25519
+  -benchmem -benchtime=2s -count=6 ./ed25519
 ```
 
 The accelerated backends require AVX512-IFMA and must be selected explicitly
