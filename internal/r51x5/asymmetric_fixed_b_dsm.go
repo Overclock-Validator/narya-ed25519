@@ -91,10 +91,11 @@ func recodeAsymmetricFixedBScalarsX4(
 			continue
 		}
 		valid |= laneMask
+		words := fixedScalarWords(&scalars[lane])
 		carry := int32(0)
 		half := int32(1) << (radixBits - 1)
 		for round := 0; round < int(out.count); round++ {
-			digit := int32(asymmetricFixedBScalarBitsExperiment(&scalars[lane], round*int(radixBits), radixBits)) + carry
+			digit := int32(fixedScalarWordBits(&words, round*int(radixBits), radixBits)) + carry
 			// The extractor is nonnegative and carry is zero or one, so this
 			// is exact power-of-two division without a hardware IDIV.
 			carry = (digit + half) >> radixBits
