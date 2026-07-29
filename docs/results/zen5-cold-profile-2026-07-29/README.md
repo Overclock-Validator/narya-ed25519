@@ -129,6 +129,14 @@ the sampled negation cost was partly a symbol-boundary artifact. Revert
 history as a regime-tagged result rather than being rebuilt or mistaken for a
 5% opportunity later.
 
+Native code-generation inspection supplies a second reason to reject it. The
+packed singleton verifier's frame grew from 2,968 bytes (`SUBQ $0xb98, SP`) at
+`1972c5b` to 4,248 bytes (`SUBQ $0x1098, SP`) at `e29aa08`: exactly the 1,280
+bytes occupied by the extra eight-entry A-sign table. The process-shared
+64-entry B table also grew by 10,240 bytes. Those costs were not separated in
+the original timing gate, but they reinforce the measured rejection and are
+recorded in `narya-packed-presign-frame.txt`.
+
 ## Tested candidate: asymmetric fixed-B injection
 
 The ordinary cold x8 path evaluates `[s]B` with a separate radix-256 comb,

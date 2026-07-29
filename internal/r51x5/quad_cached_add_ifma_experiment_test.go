@@ -186,6 +186,55 @@ func TestIFMAQuadCachedAddFirstOperandX4MatchesPortable(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadCachedAddFirstOperandX4TableBuildRange(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	// Table preparation is a distinct source of inputs for the unchecked
+	// transform: after the first entry, points come from repeated additions
+	// rather than directly from SetReduced. Walk the longest in-tree packed
+	// NAF table (1A, 3A, ..., 127A) and pin every intermediate against the
+	// portable transform. This complements the full-u52 random envelope above
+	// with the exact correlations and loose representations production emits.
+	fixture := newQuadDSMFixtureX4(t)
+	ops := quadDSMOperationsX4{hardware: true}
+	current := new(quadPackedPointX4).setReduced(&fixture.a)
+
+	check := func(entry int, point *quadPackedPointX4) {
+		t.Helper()
+		if !isIFMAElementX4(&point.coordinates) {
+			t.Fatalf("entry %d: table-build point escaped u52", entry)
+		}
+		var want, got IFMAElementX4
+		quadCachedAddFirstOperandX4(&want, point)
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&got.limbs, &point.coordinates.limbs)
+		if got != want {
+			t.Fatalf("entry %d: native table-build transform differs from portable oracle", entry)
+		}
+	}
+
+	check(0, current)
+	twice := *current
+	var doubleWorkspace quadPointDoubleWorkspaceX4
+	if err := ops.doubleWorkspace(&twice, &twice, &doubleWorkspace); err != nil {
+		t.Fatal(err)
+	}
+	check(-1, &twice)
+	var twiceCached quadPackedCachedPointX4
+	if err := quadCachePackedPointX4(&twiceCached, &twice, ops); err != nil {
+		t.Fatal(err)
+	}
+
+	var addWorkspace quadPointAddCachedWorkspaceX4
+	for entry := 1; entry < 64; entry++ {
+		if err := ops.addCachedWorkspace(current, current, &twiceCached, &addWorkspace); err != nil {
+			t.Fatalf("entry %d: repeated add: %v", entry, err)
+		}
+		check(entry, current)
+	}
+}
+
 func TestIFMAQuadCachedAddFirstOperandX4ZeroAllocations(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return

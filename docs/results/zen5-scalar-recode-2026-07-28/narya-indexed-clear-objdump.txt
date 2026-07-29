@@ -1,0 +1,3 @@
+TEXT github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeAsymmetricFixedBScalarsX4(SB) /tmp/narya-recode-final-20260728/internal/r51x5/asymmetric_fixed_b_dsm.go
+TEXT github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeFixedBaseScalarsX8(SB) /tmp/narya-recode-final-20260728/internal/r51x5/fixed_base_comb.go
+TEXT github.com/Overclock-Validator/narya-ed25519/internal/r51x5.RecodeCanonicalScalarsX8(SB) /tmp/narya-recode-final-20260728/internal/r51x5/scalar_fixed.go

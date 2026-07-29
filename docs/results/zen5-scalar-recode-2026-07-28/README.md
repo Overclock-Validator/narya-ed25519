@@ -30,21 +30,23 @@ therefore retained only in the warm asymmetric recoder.
 
 | public strict path, 1232-byte messages | baseline | retained | change |
 |---|---:|---:|---:|
-| cold n=1 | 31.909 | 31.837 | -0.23% |
-| cold n=2 | 31.971 | 31.851 | -0.38% |
+| cold n=1 | 16.172 | 15.842 | -2.04% |
+| cold n=2 | 16.065 | 15.896 | -1.05% |
 | cold n=4 | 8.682 | 8.575 | -1.24% |
 | cold n=8 | 4.604 | 4.590 | -0.31% |
 | cold n=64 | 4.405 | 4.382 | -0.51% |
-| cache API n=1 (warm tables bypassed) | 32.477 | 32.206 | -0.84% |
-| cache API n=2 (warm tables bypassed) | 32.496 | 32.042 | -1.40% |
+| cache API n=1 (warm tables bypassed) | 16.333 | 16.196 | -0.84% |
+| cache API n=2 (warm tables bypassed) | 16.228 | 16.099 | -0.80% |
 | warm n=4 | 4.149 | 4.050 | -2.37% |
 | warm n=8 | 3.910 | 3.814 | -2.47% |
 | warm n=64 | 3.755 | 3.665 | -2.42% |
 
-Each row used ten one-second samples. `benchstat` reported `p=0.000` for the
-n=4/8/64 comparisons. The narrow rows report medians; an initial n=2 cache
-run contained a transient twofold timing discontinuity and was discarded in
-favor of a clean isolated rerun. Every retained sample reported zero
+The n=4/8/64 rows used ten one-second samples; `benchstat` reported `p=0.000`
+for those comparisons. The n=1/n=2 rows are medians from an isolated rerun of
+the exact documented commits, with six two-second samples. That rerun corrected
+four previously published narrow rows that contained an approximately twofold
+timing discontinuity from CPU contention. The raw correction runs are committed
+as `narya-scalar-recode-narrow-*-rerun.txt`. Every retained sample reported zero
 allocations and zero internal fault fallbacks.
 
 The warm-only word preload changed the isolated x4 recoders as follows:
@@ -58,10 +60,17 @@ The warm-only word preload changed the isolated x4 recoders as follows:
 
 ## Rejected variants
 
-- Clearing only the live digit rounds caused Go to replace an inline
-  Duff-zero sequence with a call to `runtime.memclrNoHeapPointers`. Relative
-  to shift-only it regressed cold n=4/n=8 and warm n=4/n=8, so `c80a6f7` was
-  reverted by `a83f56d`.
+- Clearing only the live digit rounds with `clear(out.rounds[:rounds])` caused
+  Go to replace an inline Duff-zero sequence with a call to
+  `runtime.memclrNoHeapPointers`. Relative to shift-only it regressed cold
+  n=4/n=8 and warm n=4/n=8, so `c80a6f7` was reverted by `a83f56d`.
+- An indexed loop assigning `RadixRoundX8{}` to each live round was retested at
+  `ee4606f`. Go 1.26.4 kept all three recoder loops inline, with no `memclr` or
+  `duffzero` in the hot symbols. Complete verification nevertheless regressed:
+  cold n=1/n=2 by about 1.1--1.3% and cold n=8/n=64 by about 0.6--0.7%; warm
+  results were flat or slightly slower. It was reverted by `8ff9976`. The
+  stale-output reuse tests remain, because clearing every used round is a
+  correctness property independent of the rejected implementation.
 - Preloading words in `RecodeCanonicalScalarsX8` reduced its isolated
   radix-32 time from about 872 to 807 ns/group, but increased its frame from
   32 to 368 bytes and regressed complete cold n=8/n=64 by about 0.6%. The
@@ -91,3 +100,6 @@ taskset -c 2 env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
 The old division-based scalar recoder remains in `RecodeRegularRadix`, which
 the differential tests use as an implementation-independent oracle for the
 fixed-storage recoders.
+
+`SHA256SUMS` authenticates the committed correction, indexed-loop A/B, and
+code-generation evidence.
