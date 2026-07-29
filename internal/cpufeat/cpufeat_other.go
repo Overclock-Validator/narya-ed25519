@@ -10,3 +10,4 @@ var preferRawSquareIFMA = false
 var preferWideHashX4IFMA = false
 var preferBatchEncodeX8IFMA = false
 var preferProjectiveDoubleX8IFMA = false
+var preferAsymmetricFixedB10X8IFMA = false

@@ -1,34 +1,34 @@
 package r51x5
 
-// ExperimentalIFMAAsymmetricFixedB10TableX8 is a one-row, process-shared
-// signed table for a public fixed point. Unlike the production two-row comb,
+// IFMAAsymmetricFixedB10TableX8 is a one-row, process-shared signed table for
+// a public fixed point. Unlike the separate two-row radix-256 comb,
 // it uses the 250 doublings already required by the radix-32 variable-base
 // term. Width ten therefore needs only 26 fixed-base additions and no
 // separate fixed-base doubling chain or final point addition.
 //
-// Regime tag: this is an x8 cold-verification experiment. A 2026-07-29 Zen 5
-// arithmetic-core gate measured about 3.4% over the separate radix-256 comb.
-// It is not reachable from registered dispatch pending a complete-verifier
-// gate and broader differential coverage.
-type ExperimentalIFMAAsymmetricFixedB10TableX8 struct {
+// Regime tag: complete 200-, 1,232-, and 4,096-byte cold-verifier A/B gates on
+// AMD family 1Ah (Zen 5) measured a consistent win over the separate comb.
+// Registered dispatch enables this table only under that measured CPU policy;
+// Zen 4 and unknown IFMA CPUs retain the separate-comb control.
+type IFMAAsymmetricFixedB10TableX8 struct {
 	points [512]fixedBaseIFMASignedAffineCached
 }
 
-type asymmetricFixedBRoundX8Experiment struct {
+type asymmetricFixedB10RoundX8 struct {
 	Magnitude    [X8Lanes]uint16
 	NonzeroMask  uint8
 	NegativeMask uint8
 }
 
-type asymmetricFixedBDigitsX8Experiment struct {
-	rounds [26]asymmetricFixedBRoundX8Experiment
+type asymmetricFixedB10DigitsX8 struct {
+	rounds [26]asymmetricFixedB10RoundX8
 }
 
-// BuildExperimentalIFMAAsymmetricFixedB10TableX8 prepares both public signs
+// BuildIFMAAsymmetricFixedB10TableX8 prepares both public signs
 // of multiples 1..512 of base. The resulting 120-KiB table is immutable and
 // safe for concurrent evaluation after construction.
-func BuildExperimentalIFMAAsymmetricFixedB10TableX8(base *Point) *ExperimentalIFMAAsymmetricFixedB10TableX8 {
-	table := new(ExperimentalIFMAAsymmetricFixedB10TableX8)
+func BuildIFMAAsymmetricFixedB10TableX8(base *Point) *IFMAAsymmetricFixedB10TableX8 {
+	table := new(IFMAAsymmetricFixedB10TableX8)
 	multiple := *base
 	for entry := range table.points {
 		var cached fixedBaseAffineCached
@@ -41,12 +41,12 @@ func BuildExperimentalIFMAAsymmetricFixedB10TableX8(base *Point) *ExperimentalIF
 	return table
 }
 
-func recodeAsymmetricFixedB10ScalarsX8Experiment(
-	out *asymmetricFixedBDigitsX8Experiment,
+func recodeAsymmetricFixedB10ScalarsX8(
+	out *asymmetricFixedB10DigitsX8,
 	scalars *[X8Lanes][32]byte,
 	active uint8,
 ) uint8 {
-	*out = asymmetricFixedBDigitsX8Experiment{}
+	*out = asymmetricFixedB10DigitsX8{}
 	var usable uint8
 	for lane := 0; lane < X8Lanes; lane++ {
 		laneMask := uint8(1 << lane)
@@ -79,10 +79,10 @@ func recodeAsymmetricFixedB10ScalarsX8Experiment(
 	return usable
 }
 
-func selectAsymmetricFixedB10SignedX8Experiment(
+func selectAsymmetricFixedB10SignedX8(
 	out *fixedBaseIFMACachedX8,
-	table *ExperimentalIFMAAsymmetricFixedB10TableX8,
-	round *asymmetricFixedBRoundX8Experiment,
+	table *IFMAAsymmetricFixedB10TableX8,
+	round *asymmetricFixedB10RoundX8,
 	active uint8,
 ) {
 	lookupMask := round.NonzeroMask & active
@@ -104,13 +104,16 @@ func selectAsymmetricFixedB10SignedX8Experiment(
 	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
 }
 
-// ExperimentalIFMAAsymmetricFixedB10EvaluateX8 computes [s]B-[k]A on one
+// IFMAAsymmetricFixedB10EvaluateX8 computes [s]B-[k]A on one
 // shared 250-doubling chain. variable must already be prepared for A at radix
 // 32. B is fixed and public; s and k retain independent per-lane verdicts.
-func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
+// Each five-doubling block uses the same dedicated-square P3 -> P2 -> P3
+// schedule as the registered standalone A term: T is omitted from the first
+// four results and restored before either A or B can consume the point.
+func IFMAAsymmetricFixedB10EvaluateX8(
 	out *IFMAPointX8,
 	variable *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8,
-	fixed *ExperimentalIFMAAsymmetricFixedB10TableX8,
+	fixed *IFMAAsymmetricFixedB10TableX8,
 	s, k *[X8Lanes][32]byte,
 	active uint8,
 ) (uint8, error) {
@@ -118,8 +121,8 @@ func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
 		return 0, ErrIFMAUnavailable
 	}
 	usable := RecodeCanonicalScalarsX8(&variable.digits, k, active, active, 5)
-	var bDigits asymmetricFixedBDigitsX8Experiment
-	usable &= recodeAsymmetricFixedB10ScalarsX8Experiment(&bDigits, s, active)
+	var bDigits asymmetricFixedB10DigitsX8
+	usable &= recodeAsymmetricFixedB10ScalarsX8(&bDigits, s, active)
 	acc := identityIFMAPointX8Value()
 	if usable == 0 {
 		*out = acc
@@ -127,13 +130,14 @@ func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
 	}
 
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var projective ifmaProjectivePointX8
 	var aAddWorkspace ifmaPointAddProjectiveNielsScratchX8
 	var bAddWorkspace fixedBaseIFMAAddScratchX8
 	for block := 25; block >= 0; block-- {
 		bRound := &bDigits.rounds[block]
 		if bRound.NonzeroMask&usable != 0 {
 			var selected fixedBaseIFMACachedX8
-			selectAsymmetricFixedB10SignedX8Experiment(&selected, fixed, bRound, usable)
+			selectAsymmetricFixedB10SignedX8(&selected, fixed, bRound, usable)
 			if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &bAddWorkspace); err != nil {
 				return 0, err
 			}
@@ -149,11 +153,11 @@ func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
 		if block == 0 {
 			break
 		}
-		for range 5 {
-			if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
-				return 0, err
-			}
+		ifmaPointDoubleRawSquareP3ToP2ExperimentX8(&projective, &acc, &doubleWorkspace)
+		for doubling := 1; doubling < 4; doubling++ {
+			ifmaPointDoubleRawSquareP2ToP2ExperimentX8(&projective, &projective, &doubleWorkspace)
 		}
+		ifmaPointDoubleRawSquareP2ToP3ExperimentX8(&acc, &projective, &doubleWorkspace)
 		aOdd := variable.digits.Round(block*2 - 1)
 		if aOdd.NonzeroMask&usable != 0 {
 			var selected IFMAProjectiveNielsX8
@@ -162,11 +166,11 @@ func ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
 				return 0, err
 			}
 		}
-		for range 5 {
-			if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
-				return 0, err
-			}
+		ifmaPointDoubleRawSquareP3ToP2ExperimentX8(&projective, &acc, &doubleWorkspace)
+		for doubling := 1; doubling < 4; doubling++ {
+			ifmaPointDoubleRawSquareP2ToP2ExperimentX8(&projective, &projective, &doubleWorkspace)
 		}
+		ifmaPointDoubleRawSquareP2ToP3ExperimentX8(&acc, &projective, &doubleWorkspace)
 	}
 	*out = acc
 	return usable, nil

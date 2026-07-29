@@ -55,6 +55,14 @@ func PreferBatchEncodeX8IFMA() bool { return preferBatchEncodeX8IFMA }
 // the distinct-P2 schedule on AMD family 1Ah (Zen 5) only.
 func PreferProjectiveDoubleX8IFMA() bool { return preferProjectiveDoubleX8IFMA }
 
+// PreferAsymmetricFixedB10X8IFMA reports whether the cold x8 verifier should
+// inject width-10 generator digits into the variable-base doubling chain
+// instead of evaluating a separate radix-256 generator comb. Complete
+// 200/1,232/4,096-byte measurements select the merged schedule on AMD family
+// 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the separate comb until the
+// current projective schedule is measured there independently.
+func PreferAsymmetricFixedB10X8IFMA() bool { return preferAsymmetricFixedB10X8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
@@ -68,6 +76,10 @@ func batchEncodeX8ForAMDVersion(ifma bool, family uint32) bool {
 }
 
 func projectiveDoubleX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func asymmetricFixedB10X8ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 

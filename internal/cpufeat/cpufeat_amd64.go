@@ -21,6 +21,7 @@ var preferRawSquareIFMA = rawSquareForAMDVersion(hasIFMA, amdFamily) || (hasIFMA
 var preferWideHashX4IFMA = wideHashX4ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 var preferBatchEncodeX8IFMA = batchEncodeX8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 var preferProjectiveDoubleX8IFMA = projectiveDoubleX8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
+var preferAsymmetricFixedB10X8IFMA = asymmetricFixedB10X8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 
 func detectAMDFamily() uint32 {
 	_, ebx, ecx, edx := cpuid(0, 0)

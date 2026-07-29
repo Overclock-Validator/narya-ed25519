@@ -149,6 +149,9 @@ func (*r51Backend) newBatchWorker() *r51BatchWorker {
 		if err == nil {
 			pipeline.experimentalRawSquareX8 = cpufeat.PreferRawSquareIFMA()
 			pipeline.experimentalProjectiveDoubleX8 = cpufeat.PreferProjectiveDoubleX8IFMA()
+			if cpufeat.PreferAsymmetricFixedB10X8IFMA() {
+				pipeline.asymmetricFixedB10X8 = sharedR51AsymmetricFixedB10X8()
+			}
 			pipeline.wideHashX4Tail = cpufeat.PreferWideHashX4IFMA()
 			pipeline.experimentalBatchEncodeX8 = cpufeat.PreferBatchEncodeX8IFMA()
 			pipeline.projectiveNielsX4 = true

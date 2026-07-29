@@ -11,8 +11,10 @@ import (
 // r51IFMABatchQPipeline is the complete two-x4 r51 path selected by the forced
 // r51 backend. It decodes A only, retains ready DSM outputs, and canonical-
 // encodes up to 64 Q points with one cross-group x4 inversion. The registered
-// core uses a radix-32 A table and one process-shared radix-256 B comb; the
-// earlier radix-64 two-term DSM remains a differential and benchmark reference.
+// core uses a radix-32 A table. Measured Zen 5 x8 groups inject width-10 B
+// digits into A's doubling chain; other groups retain the process-shared
+// radix-256 B comb. The earlier radix-64 two-term DSM remains a differential
+// and benchmark reference.
 //
 // The ordinary r51IFMAPipeline remains the paired A/R-decode baseline, and
 // newR51IFMAEncodedQReferencePipeline remains the literal per-group encoding
@@ -45,11 +47,12 @@ type r51IFMABatchQPipeline struct {
 	// registered worker until a CPU-specific public gate admits it.
 	experimentalRawSquareX4 bool
 
-	// experimentalAsymmetricFixedB10X8 merges the fixed generator term into
+	// asymmetricFixedB10X8 merges the fixed generator term into
 	// the x8 variable-base Niels doubling chain. It removes the separate comb
-	// evaluation and final point addition, but is a complete-pipeline
-	// measurement seam only; registered construction leaves it nil.
-	experimentalAsymmetricFixedB10X8 *r51x5.ExperimentalIFMAAsymmetricFixedB10TableX8
+	// evaluation and final point addition. Registered construction enables it
+	// only on microarchitectures where the complete all-message gate passed;
+	// explicit constructors retain the nil control for differential tests.
+	asymmetricFixedB10X8 *r51x5.IFMAAsymmetricFixedB10TableX8
 
 	// experimentalPartialX8Tail evaluates a four-to-seven-signature cold tail
 	// in one partially active x8 group instead of one or two x4 groups. It is a
@@ -199,14 +202,16 @@ func newR51IFMABatchQX8RuntimeSignPipelineWithFinalizer(finalizer r51IFMABatchQF
 }
 
 // newR51IFMABatchQX8AsymmetricFixedB10PipelineWithFinalizer is the complete
-// verifier gate for merging B10 into the x8 A-term doubling chain. It retains
-// the ordinary x4 comb tail and is not used by registered construction.
+// verifier constructor for merging B10 into the x8 A-term doubling chain. It
+// retains the ordinary x4 comb tail. Registered construction selects the same
+// field only through the measured CPU policy; tests use this constructor to
+// compare both schedules in one binary.
 func newR51IFMABatchQX8AsymmetricFixedB10PipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
 	pipeline, err := newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer)
 	if err != nil {
 		return nil, err
 	}
-	pipeline.experimentalAsymmetricFixedB10X8 = sharedR51AsymmetricFixedB10X8()
+	pipeline.asymmetricFixedB10X8 = sharedR51AsymmetricFixedB10X8()
 	return pipeline, nil
 }
 
@@ -577,14 +582,11 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 	}
 	var combined r51x5.IFMAPointX8
 	var usable uint8
-	if pipeline.experimentalAsymmetricFixedB10X8 != nil {
-		if pipeline.experimentalRawSquareX8 {
-			panic("ed25519: asymmetric fixed B10 x8 does not support the raw-square experiment")
-		}
-		usable, err = r51x5.ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
+	if pipeline.asymmetricFixedB10X8 != nil {
+		usable, err = r51x5.IFMAAsymmetricFixedB10EvaluateX8(
 			&combined,
 			pipeline.wideCore.variableX8,
-			pipeline.experimentalAsymmetricFixedB10X8,
+			pipeline.asymmetricFixedB10X8,
 			&s,
 			&k,
 			live,

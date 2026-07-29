@@ -72,31 +72,33 @@ func TestR51IFMAAsymmetricFixedBNielsX8ZeroAllocations(t *testing.T) {
 }
 
 func BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment(b *testing.B) {
-	for _, count := range []int{8, 64} {
-		fixture := makeBatchFixture(b, count, 1232)
-		for _, implementation := range []struct {
-			name string
-			new  func(testing.TB) *r51IFMABatchQPipeline
-		}{
-			{name: "separate-radix256-comb", new: requireR51IFMABatchQX8CombPipeline},
-			{name: "merged-B10", new: requireR51IFMABatchQX8AsymmetricFixedB10Pipeline},
-		} {
-			implementation := implementation
-			b.Run(fmt.Sprintf("implementation=%s/n=%d/msg=1232", implementation.name, count), func(b *testing.B) {
-				pipeline := implementation.new(b)
-				b.ReportAllocs()
-				b.ResetTimer()
-				var result bool
-				for range b.N {
-					var err error
-					result, err = pipeline.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
-					if err != nil || !result {
-						b.Fatalf("verify=(%v,%v)", result, err)
+	for _, messageSize := range []int{200, 1232, 4096} {
+		for _, count := range []int{8, 64} {
+			fixture := makeBatchFixture(b, count, messageSize)
+			for _, implementation := range []struct {
+				name string
+				new  func(testing.TB) *r51IFMABatchQPipeline
+			}{
+				{name: "separate-radix256-comb", new: requireR51IFMABatchQX8CombPipeline},
+				{name: "merged-B10", new: requireR51IFMABatchQX8AsymmetricFixedB10Pipeline},
+			} {
+				implementation := implementation
+				b.Run(fmt.Sprintf("implementation=%s/n=%d/msg=%d", implementation.name, count, messageSize), func(b *testing.B) {
+					pipeline := implementation.new(b)
+					b.ReportAllocs()
+					b.ResetTimer()
+					var result bool
+					for range b.N {
+						var err error
+						result, err = pipeline.VerifyBatch(DalekStrict, fixture.pubs, fixture.msgs, fixture.sigs, fixture.ok)
+						if err != nil || !result {
+							b.Fatalf("verify=(%v,%v)", result, err)
+						}
 					}
-				}
-				benchmarkR51IFMAPipelineResult = result
-				b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
-			})
+					benchmarkR51IFMAPipelineResult = result
+					b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*count)/1000, "us/signature")
+				})
+			}
 		}
 	}
 }
