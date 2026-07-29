@@ -359,6 +359,29 @@ verifier verdict. The full native repository suite passed at `c995f4e`; exact
 output and fixed-work counters are in
 `narya-niels-stage2-tail.alternating.txt`.
 
+The fixed-base affine addition has a related but distinct shape: three raw
+products followed by a direct copy of the carried-u52 point `Z` into Stage-2
+slot D. Commit `b2f40c8` adds a dedicated leaf for that provenance contract,
+then tail-enters the same Niels Stage-2 symbol. A 10,000-case exact differential
+covering zero, maximum-u52, and random inputs passed, as did a 512-fixture full-
+comb differential over public active masks.
+
+The isolated affine/Niels operation improved from about 28.3 to 23.3 ns. More
+importantly, an allocation-free same-binary full radix-256 comb gate measured:
+
+| fixed-base x8 comb | median ns/group | change |
+|---|---:|---:|
+| separate raw calls/copy/Stage 2 | 3,211 | -- |
+| compound tail-linked leaf | 3,072 | -4.33% |
+
+An earlier cross-binary public A/B claimed roughly 9%; it is rejected because
+that exceeds the entire measured fixed-add share and therefore cannot come
+from this change. The same-binary result holds unrelated code layout constant
+and is the authoritative retention gate. At the fixed-base comb's current
+whole-verifier share, the expected complete gain is approximately 0.5%. The
+full native repository suite passed at `98df2bc`; exact results are in
+`narya-fixed-base-stage2-tail.same-binary.txt`.
+
 ## Tested candidate: pooled x8 variable-base scratch
 
 The registered pre-signed variable-base workspace previously kept its transient
