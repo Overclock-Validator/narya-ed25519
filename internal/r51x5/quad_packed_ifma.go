@@ -313,29 +313,20 @@ func quadNegateCachedPointX4(out *quadPackedCachedPointX4, positive *quadPackedC
 	conditionalNegateIFMAElementX4(&out.coordinates, 1<<2)
 }
 
-// quadNAFTable5X4 holds both signs of the eight odd multiples required by a
-// width-5 NAF variable-base scalar multiplication. The extra 1,280 bytes are
-// private to one cold singleton verification. Preparing both signs once
-// avoids rebuilding the same cached-point negation for every negative NAF
-// digit in the 255-bit evaluation loop.
+// quadNAFTable5X4 holds the eight positive odd multiples required by a
+// width-5 NAF variable-base scalar multiplication.
 type quadNAFTable5X4 struct {
 	positive [8]quadPackedCachedPointX4
-	negative [8]quadPackedCachedPointX4
 }
 
-// quadNAFTable8X4 holds both signs of the fixed generator's 64 odd multiples.
-// This table is process-shared and constructed once.
+// quadNAFTable8X4 holds the fixed generator's 64 positive odd multiples.
 type quadNAFTable8X4 struct {
 	positive [64]quadPackedCachedPointX4
-	negative [64]quadPackedCachedPointX4
 }
 
-func buildQuadNAFEntriesX4(positive, negative []quadPackedCachedPointX4, base *Point, ops quadDSMOperationsX4) error {
+func buildQuadNAFEntriesX4(positive []quadPackedCachedPointX4, base *Point, ops quadDSMOperationsX4) error {
 	if len(positive) == 0 {
 		panic("r51x5: invalid quad NAF table storage")
-	}
-	if len(negative) != len(positive) {
-		panic("r51x5: mismatched signed quad NAF table storage")
 	}
 	current := new(quadPackedPointX4).setReduced(base)
 	if err := quadCachePackedPointX4(&positive[0], current, ops); err != nil {
@@ -360,21 +351,18 @@ func buildQuadNAFEntriesX4(positive, negative []quadPackedCachedPointX4, base *P
 			return err
 		}
 	}
-	for entry := range positive {
-		quadNegateCachedPointX4(&negative[entry], &positive[entry])
-	}
 	return nil
 }
 
 func buildQuadNAFTable5X4(out *quadNAFTable5X4, base *Point, ops quadDSMOperationsX4) error {
-	return buildQuadNAFEntriesX4(out.positive[:], out.negative[:], base, ops)
+	return buildQuadNAFEntriesX4(out.positive[:], base, ops)
 }
 
 func buildQuadNAFTable8X4(out *quadNAFTable8X4, base *Point, ops quadDSMOperationsX4) error {
-	return buildQuadNAFEntriesX4(out.positive[:], out.negative[:], base, ops)
+	return buildQuadNAFEntriesX4(out.positive[:], base, ops)
 }
 
-func selectQuadNAFEntryX4(positive, negative []quadPackedCachedPointX4, digit int8) *quadPackedCachedPointX4 {
+func selectQuadNAFEntryX4(negative *quadPackedCachedPointX4, positive []quadPackedCachedPointX4, digit int8) *quadPackedCachedPointX4 {
 	if digit == 0 || digit&1 == 0 {
 		panic("r51x5: invalid quad NAF digit")
 	}
@@ -387,7 +375,8 @@ func selectQuadNAFEntryX4(positive, negative []quadPackedCachedPointX4, digit in
 		panic("r51x5: quad NAF digit exceeds table")
 	}
 	if digit < 0 {
-		return &negative[index]
+		quadNegateCachedPointX4(negative, &positive[index])
+		return negative
 	}
 	return &positive[index]
 }
@@ -458,13 +447,15 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 			return false, err
 		}
 		if aNAF[bit] != 0 {
-			selected := selectQuadNAFEntryX4(aTable.positive[:], aTable.negative[:], -aNAF[bit])
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, aTable.positive[:], -aNAF[bit])
 			if err := ops.addCachedWorkspace(&acc, &acc, selected, &addWorkspace); err != nil {
 				return false, err
 			}
 		}
 		if bNAF[bit] != 0 {
-			selected := selectQuadNAFEntryX4(bTable.positive[:], bTable.negative[:], bNAF[bit])
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, bTable.positive[:], bNAF[bit])
 			if err := ops.addCachedWorkspace(&acc, &acc, selected, &addWorkspace); err != nil {
 				return false, err
 			}

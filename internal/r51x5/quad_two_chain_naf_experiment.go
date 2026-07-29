@@ -57,13 +57,14 @@ func evaluateQuadTwoChainNAFVerifyX8Experiment(
 			continue
 		}
 
+		var aNegative, bNegative quadPackedCachedPointX4
 		aSelected := &cachedIdentity
 		bSelected := &cachedIdentity
 		if aDigit != 0 {
-			aSelected = selectQuadNAFEntryX4(aTable.positive[:], aTable.negative[:], aDigit)
+			aSelected = selectQuadNAFEntryX4(&aNegative, aTable.positive[:], aDigit)
 		}
 		if bDigit != 0 {
-			bSelected = selectQuadNAFEntryX4(bTable.positive[:], bTable.negative[:], bDigit)
+			bSelected = selectQuadNAFEntryX4(&bNegative, bTable.positive[:], bDigit)
 		}
 		cached := packQuadTwoChainCachedX8(aSelected, bSelected)
 		if err := quadTwoChainCachedAddHardwareWorkspaceUncheckedX8(&packed, &packed, &cached, &addWorkspace); err != nil {
