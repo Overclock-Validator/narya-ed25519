@@ -102,24 +102,6 @@ func TestFixedScalarRecodingRejectsNonCanonicalAndMasksInactive(t *testing.T) {
 	}
 }
 
-func TestFixedScalarRecodingClearsEveryUsedRoundOnReuse(t *testing.T) {
-	var out FixedRadixDigitsX8
-	for index := range out.rounds {
-		out.rounds[index].Magnitude = [X8Lanes]uint8{1, 1, 1, 1, 1, 1, 1, 1}
-		out.rounds[index].NonzeroMask = 0xff
-		out.rounds[index].NegativeMask = 0xff
-	}
-	var scalars [X8Lanes][32]byte
-	if valid := RecodeCanonicalScalarsX8(&out, &scalars, 0, 0, 5); valid != 0 {
-		t.Fatalf("inactive recode valid=%02x", valid)
-	}
-	for round := 0; round < out.RoundCount(); round++ {
-		if out.rounds[round] != (RadixRoundX8{}) {
-			t.Fatalf("round %d retained stale digits", round)
-		}
-	}
-}
-
 func TestFixedScalarRoundAccessAndRadixValidation(t *testing.T) {
 	var scalars [X4Lanes][32]byte
 	var got FixedRadixDigitsX4

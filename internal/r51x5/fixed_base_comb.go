@@ -325,8 +325,8 @@ func fixedBaseCombShape(radixBits uint) (rounds, positions, entries int) {
 }
 
 func recodeFixedBaseScalarsX4(out *fixedBaseDigitsX4, scalars *[X4Lanes][32]byte, active uint8, radixBits uint) uint8 {
+	*out = fixedBaseDigitsX4{}
 	rounds, _, _ := fixedBaseCombShape(radixBits)
-	clear(out.rounds[:rounds])
 	out.count, out.radixBits = uint8(rounds), uint8(radixBits)
 	active &= 0x0f
 	var valid uint8
@@ -342,8 +342,8 @@ func recodeFixedBaseScalarsX4(out *fixedBaseDigitsX4, scalars *[X4Lanes][32]byte
 }
 
 func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte, active uint8, radixBits uint) uint8 {
+	*out = fixedBaseDigitsX8{}
 	rounds, _, _ := fixedBaseCombShape(radixBits)
-	clear(out.rounds[:rounds])
 	out.count, out.radixBits = uint8(rounds), uint8(radixBits)
 	var valid uint8
 	for lane := 0; lane < X8Lanes; lane++ {
