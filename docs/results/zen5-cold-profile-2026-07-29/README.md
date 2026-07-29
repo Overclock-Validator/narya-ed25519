@@ -323,6 +323,25 @@ regime candidate, not an inferred result. Exact measurements are in
 `narya-four-raw-products.alternating.txt` and
 `narya-four-raw-products-doubling.alternating.txt`.
 
+Commit `22d3a68` removes the remaining boundary between the compound raw
+products and the existing double Stage-2 transition. The raw leaf tail-jumps
+to `ifmaDoubleStage2X8`: both functions use the same workspace as ABI0 argument
+zero, Stage 2 retains its own independently tested symbol and exact instruction
+sequence, and it performs the sole `VZEROUPPER` before returning to Go. Exact
+separate-leaf versus tail-linked representation, input immutability, and
+zero-allocation gates passed on native hardware.
+
+| batch width | separate Stage 2, us/signature | tail-linked Stage 2, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.333 | 4.283 | -1.15% |
+| 64 | 4.121 | 4.068 | -1.29% |
+
+The full native repository suite passed at `22d3a68`. The analogous Niels
+tail-link exists as a separately testable candidate but was not routed into
+production by this result; its isolated benchmark was flat to slightly worse,
+so it requires its own complete-verifier gate. Exact output is in
+`narya-double-stage2-tail.alternating.txt`.
+
 ## Tested candidate: pooled x8 variable-base scratch
 
 The registered pre-signed variable-base workspace previously kept its transient
