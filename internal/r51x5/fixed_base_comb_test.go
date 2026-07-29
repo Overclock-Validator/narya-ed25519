@@ -31,6 +31,24 @@ func TestExperimentalFixedBaseCombShapeAndPayload(t *testing.T) {
 	}
 }
 
+func TestExperimentalFixedBaseCombRecodingClearsUsedRoundsOnReuse(t *testing.T) {
+	var out fixedBaseDigitsX8
+	for index := range out.rounds {
+		out.rounds[index].Magnitude = [X8Lanes]uint8{1, 1, 1, 1, 1, 1, 1, 1}
+		out.rounds[index].NonzeroMask = 0xff
+		out.rounds[index].NegativeMask = 0xff
+	}
+	var scalars [X8Lanes][32]byte
+	if valid := recodeFixedBaseScalarsX8(&out, &scalars, 0, 8); valid != 0 {
+		t.Fatalf("inactive recode valid=%02x", valid)
+	}
+	for round := 0; round < int(out.count); round++ {
+		if out.rounds[round] != (RadixRoundX8{}) {
+			t.Fatalf("round %d retained stale digits", round)
+		}
+	}
+}
+
 func TestExperimentalFixedBaseCombPrecomputedSigns(t *testing.T) {
 	base, _ := fixedBaseGenerator(t)
 	for _, width := range []uint{4, 5, 8} {
