@@ -765,6 +765,27 @@ func BenchmarkExperimentalFixedBaseCombBuild(b *testing.B) {
 
 var benchmarkFixedBaseDigitsX8 fixedBaseDigitsX8
 
+func TestFixedBaseRadix256FullRecodingMatchesGeneric(t *testing.T) {
+	rng := rand.New(rand.NewSource(0xb451_256f))
+	for iteration := 0; iteration < 10_000; iteration++ {
+		var scalars [X8Lanes][32]byte
+		for lane := range scalars {
+			scalars[lane] = randomCanonicalFixedBaseScalar(t, rng)
+		}
+		if iteration%127 == 0 {
+			scalars[iteration%X8Lanes] = scalarOrderBytes
+		}
+		var want, got fixedBaseDigitsX8
+		want.rounds[63].NonzeroMask = 0xff
+		got.rounds[63].NonzeroMask = 0xff
+		wantValid := recodeFixedBaseScalarsX8(&want, &scalars, 0xff, 8)
+		gotValid := recodeFixedBaseRadix256FullX8(&got, &scalars)
+		if gotValid != wantValid || got != want {
+			t.Fatalf("iteration %d: specialized radix-256 recoding differs from generic", iteration)
+		}
+	}
+}
+
 // BenchmarkExperimentalFixedBaseCombRecodingX8 isolates the fixed-base scalar
 // recoder from table selection and point arithmetic. Keep all eight lanes live:
 // the registered cold r51 backend uses this shape with radix 256, while the
@@ -785,6 +806,22 @@ func BenchmarkExperimentalFixedBaseCombRecodingX8(b *testing.B) {
 			benchmarkFixedBaseDigitsX8 = out
 		})
 	}
+	b.Run("radix=256-full/generic", func(b *testing.B) {
+		b.ReportAllocs()
+		var out fixedBaseDigitsX8
+		for iteration := 0; iteration < b.N; iteration++ {
+			recodeFixedBaseScalarsX8(&out, &scalars, 0xff, 8)
+		}
+		benchmarkFixedBaseDigitsX8 = out
+	})
+	b.Run("radix=256-full/specialized", func(b *testing.B) {
+		b.ReportAllocs()
+		var out fixedBaseDigitsX8
+		for iteration := 0; iteration < b.N; iteration++ {
+			recodeFixedBaseRadix256FullX8(&out, &scalars)
+		}
+		benchmarkFixedBaseDigitsX8 = out
+	})
 }
 
 func BenchmarkExperimentalFixedBaseCombSelectionX8(b *testing.B) {

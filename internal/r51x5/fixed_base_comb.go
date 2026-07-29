@@ -270,7 +270,12 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 		return 0, ErrIFMAUnavailable
 	}
 	var digits fixedBaseDigitsX8
-	usable := recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
+	var usable uint8
+	if active == 0xff && table.radixBits == 8 {
+		usable = recodeFixedBaseRadix256FullX8(&digits, scalars)
+	} else {
+		usable = recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
+	}
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace fixedBaseIFMAAddScratchX8
@@ -395,6 +400,52 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 		}
 	}
 	return valid
+}
+
+// recodeFixedBaseRadix256FullX8 specializes the process-shared generator comb
+// regime used by complete cold x8 groups. All scalar encodings remain checked;
+// a noncanonical input re-enters the generic recoder so its per-lane
+// fail-closed output is preserved exactly. The all-valid path has byte-aligned
+// radix-256 digits and assigns every used round directly, avoiding dynamic
+// shape and active-lane work in the inner loop.
+func recodeFixedBaseRadix256FullX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte) uint8 {
+	for lane := 0; lane < X8Lanes; lane++ {
+		if !canonicalScalarBytes(&scalars[lane]) {
+			return recodeFixedBaseScalarsX8(out, scalars, 0xff, 8)
+		}
+	}
+
+	*out = fixedBaseDigitsX8{}
+	out.count = 32
+	out.radixBits = 8
+	var carries [X8Lanes]int16
+	for round := 0; round < 32; round++ {
+		record := &out.rounds[round]
+		var nonzeroMask, negativeMask uint8
+		for lane := 0; lane < X8Lanes; lane++ {
+			digit := int16(scalars[lane][round]) + carries[lane]
+			carries[lane] = (digit + 128) >> 8
+			digit -= carries[lane] << 8
+			laneMask := uint8(1 << lane)
+			if digit < 0 {
+				record.Magnitude[lane] = uint8(-digit)
+				negativeMask |= laneMask
+			} else {
+				record.Magnitude[lane] = uint8(digit)
+			}
+			if digit != 0 {
+				nonzeroMask |= laneMask
+			}
+		}
+		record.NonzeroMask = nonzeroMask
+		record.NegativeMask = negativeMask
+	}
+	for lane := 0; lane < X8Lanes; lane++ {
+		if carries[lane] != 0 {
+			panic("r51x5: canonical x8 scalar exceeded fixed-base recoding width")
+		}
+	}
+	return 0xff
 }
 
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
