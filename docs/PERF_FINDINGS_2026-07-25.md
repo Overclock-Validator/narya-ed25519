@@ -1279,6 +1279,30 @@ Raw output and checksums are under
 **Regime tag:** cold x8 signature-parallel batches on measured Zen 4 and Zen 5
 AMD families. The packed singleton/pair and x4-tail routes are unaffected.
 
+### 5.32 Packed doubling leaf continuation — retained negative
+
+The packed singleton doubler now consists of two native leaves: a fused input
+permutation plus normalized multiplication, followed by a fused linear layer
+plus final multiplication. A continuation candidate kept the exact five-vector
+intermediate product store, but tail-entered the second leaf to remove one
+return/call and the intervening `VZEROUPPER`. Both leaves expanded the same
+first-multiply source body, so no arithmetic instruction differed.
+
+Eight alternating two-second public-verifier phases at 1,232 bytes measured a
+14.175 us/signature baseline median and 14.185 us/signature candidate median
+at n=1. The sample distributions overlapped completely. This boundary is
+therefore already hidden by the much larger packed arithmetic schedule; unlike
+the x8 Stage-2 continuation, removing it produces no complete-verifier gain.
+The prototype was removed rather than retaining extra native ABI surface.
+
+Raw per-phase values and the exact candidate shape are recorded under
+`docs/results/zen5-packed-double-tail-negative-2026-07-29/`.
+
+**Regime tag:** cold packed-x4 singleton verification on Zen 5, 1,232-byte
+messages. This does not reject a future single-leaf arithmetic fusion that
+also eliminates the five intermediate stores/reloads; it rejects only the
+control-flow continuation measured here.
+
 ---
 
 ## 6. Smaller observations
