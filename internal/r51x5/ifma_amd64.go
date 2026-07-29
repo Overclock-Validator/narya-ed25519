@@ -41,6 +41,20 @@ func ifmaFourRawProductsNielsStage2UncheckedX8(
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
+// ifmaPointLinearFourRawNielsStage2ExperimentX8 computes normalized point-side
+// Y-X/Y+X, the four projective-Niels raw products, and the existing Niels
+// Stage-2 transition in one native leaf. It is retained only as a measured
+// regime experiment: the leaf is faster in isolation but regresses the full
+// Zen 5 verifier. No production path calls it. out points to a four-slot Niels
+// workspace and must not overlap point or cached. Inputs remain unchanged.
+//
+//go:noescape
+func ifmaPointLinearFourRawNielsStage2ExperimentX8(
+	out *IFMAProductX8,
+	point *IFMAPointX8,
+	cached *IFMAProjectiveNielsX8,
+)
+
 // ifmaThreeRawProductsNielsStage2UncheckedX8 is the affine-cached
 // specialization. It writes three exact raw products plus one copied u52 D
 // coordinate, then tail-enters the existing Niels Stage-2 leaf. out must point

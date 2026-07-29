@@ -1003,6 +1003,43 @@ Raw output is under
 groups already used projective Niels, while prepared warm tables follow a
 different comb schedule.
 
+### 5.24 x8 point-linear/Niels compound leaf — retained negative
+
+The registered x8 projective-Niels addition computes point-side `Y-X` and
+`Y+X` through two normalized element leaves, then enters the fused four-raw-
+product/Niels-Stage-2 leaf. A narrower compound experiment moved those two
+linear operations into the latter leaf. It used the first two Stage-2 slots as
+temporary carried-u52 storage, overwrote them alias-safely with raw A/B
+products, formed C/D, and tail-entered the unchanged Stage-2 symbol. Shared
+assembly macros make its add/sub and raw-multiply schedules source-identical
+to the standalone leaves.
+
+The native differential covers zero, maximum-u52, and 10,000 deterministic
+random arbitrary-u52 point/cached inputs in exact redundant representation,
+checks input immutability, and records zero allocations. On a pinned Ryzen 7
+9700X core the isolated boundary improved from about 37.8 to 32.2 ns (-15%).
+That leaf result did **not** survive the complete verifier. A back-to-back
+six-sample public 1,232-byte gate measured these medians:
+
+| width | separate linear leaves (us/sig) | compound leaf (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.247 | 4.310 | +1.5% |
+| 64 | 4.031 | 4.096 | +1.6% |
+
+Both binaries contained the experimental assembly symbol, so this was not a
+simple code-placement comparison against a binary lacking the candidate. The
+remaining difference is the hot-loop call/scratch schedule; the exact cause
+of the inversion has not been established. The production helper therefore
+retains the separate linear leaves. The compound leaf and its direct tests
+remain named as an experiment so a later microarchitecture or scheduling
+change can remeasure it instead of rebuilding it or assuming its isolated win
+transfers end to end.
+
+**Regime tag:** Zen 5, cold complete x8 groups, Go 1.26.4. This result says
+nothing about the x4 projective-Niels path, whose retained result is recorded
+above, or about a future selector-to-first-product fusion that avoids a
+different memory boundary.
+
 ---
 
 ## 6. Smaller observations

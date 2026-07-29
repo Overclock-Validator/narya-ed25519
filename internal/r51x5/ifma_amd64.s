@@ -74,6 +74,59 @@
 	VPADDQ C3, IN4, IN4                                                    \
 	VPMADD52LUQ C4, FOLD19, IN0
 
+// Add or subtract the u52 values addressed by CX and BX, normalize the
+// redundant result, and store it through DI. These bodies are shared by the
+// standalone element leaves and the compound projective-Niels leaf below.
+// Keeping one source-level schedule makes the compound leaf's point-side
+// Y-X/Y+X representations mechanically identical to the separately tested
+// element operations.
+#define ADD_NORMALIZED_X8_BODY \
+	VMOVDQU64   0(CX), Z0 \
+	VMOVDQU64  64(CX), Z1 \
+	VMOVDQU64 128(CX), Z2 \
+	VMOVDQU64 192(CX), Z3 \
+	VMOVDQU64 256(CX), Z4 \
+	VPADDQ   0(BX), Z0, Z0 \
+	VPADDQ  64(BX), Z1, Z1 \
+	VPADDQ 128(BX), Z2, Z2 \
+	VPADDQ 192(BX), Z3, Z3 \
+	VPADDQ 256(BX), Z4, Z4 \
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5 \
+	VPBROADCASTQ ·ifmaFold19(SB), Z11 \
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11) \
+	VMOVDQU64 Z0,   0(DI) \
+	VMOVDQU64 Z1,  64(DI) \
+	VMOVDQU64 Z2, 128(DI) \
+	VMOVDQU64 Z3, 192(DI) \
+	VMOVDQU64 Z4, 256(DI)
+
+#define SUBTRACT_NORMALIZED_X8_BODY \
+	VMOVDQU64   0(CX), Z0 \
+	VMOVDQU64  64(CX), Z1 \
+	VMOVDQU64 128(CX), Z2 \
+	VMOVDQU64 192(CX), Z3 \
+	VMOVDQU64 256(CX), Z4 \
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z9 \
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z10 \
+	VPADDQ Z9, Z0, Z0 \
+	VPADDQ Z10, Z1, Z1 \
+	VPADDQ Z10, Z2, Z2 \
+	VPADDQ Z10, Z3, Z3 \
+	VPADDQ Z10, Z4, Z4 \
+	VPSUBQ   0(BX), Z0, Z0 \
+	VPSUBQ  64(BX), Z1, Z1 \
+	VPSUBQ 128(BX), Z2, Z2 \
+	VPSUBQ 192(BX), Z3, Z3 \
+	VPSUBQ 256(BX), Z4, Z4 \
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5 \
+	VPBROADCASTQ ·ifmaFold19(SB), Z11 \
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11) \
+	VMOVDQU64 Z0,   0(DI) \
+	VMOVDQU64 Z1,  64(DI) \
+	VMOVDQU64 Z2, 128(DI) \
+	VMOVDQU64 Z3, 192(DI) \
+	VMOVDQU64 Z4, 256(DI)
+
 // Multiply the u52 values addressed by CX and BX and store one normalized
 // u52 result through DI. The four-point-final-product leaf below expands this
 // body four times so the independent Edwards output products share one
@@ -211,6 +264,62 @@ TEXT ·ifmaFourRawProductsDoubleStage2UncheckedX8(SB), NOSPLIT, $0-72
 //     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
 TEXT ·ifmaFourRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-72
 	FOUR_RAW_PRODUCTS_X8_BODY
+	JMP ·ifmaNielsStage2X8(SB)
+
+// func ifmaPointLinearFourRawNielsStage2ExperimentX8(out *IFMAProductX8,
+//     point *IFMAPointX8, cached *IFMAProjectiveNielsX8)
+//
+// Fuse only the point-side linear terms and the already-proven four-product
+// continuation. Slot A temporarily holds normalized Y-X and slot B holds
+// normalized Y+X. MUL_RAW_X8_BODY loads every input limb before its first
+// store, so overwriting each temporary with its raw product is alias-safe.
+// C and D then consume T/2dT and Z/Z directly. The tail jump preserves the
+// independently tested Niels Stage-2 boundary and leaves the final-product
+// leaf separate and profiler-visible.
+//
+// IFMAPointX8 layout: X=0, Y=320, Z=640, T=960.
+// IFMAProjectiveNielsX8 layout: Y+X=0, Y-X=320, Z=640, 2dT=960.
+TEXT ·ifmaPointLinearFourRawNielsStage2ExperimentX8(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), AX
+	MOVQ point+8(FP), R12
+	MOVQ cached+16(FP), DX
+
+	// A temporary = point.Y - point.X.
+	MOVQ AX, DI
+	LEAQ 320(R12), CX
+	MOVQ R12, BX
+	SUBTRACT_NORMALIZED_X8_BODY
+
+	// B temporary = point.Y + point.X.
+	LEAQ 320(AX), DI
+	LEAQ 320(R12), CX
+	MOVQ R12, BX
+	ADD_NORMALIZED_X8_BODY
+
+	// A = (Y-X)*(cached.Y-X), overwriting the fully loaded A temporary.
+	MOVQ AX, DI
+	MOVQ AX, CX
+	LEAQ 320(DX), BX
+	MUL_RAW_X8_BODY
+
+	// B = (Y+X)*(cached.Y+X), likewise overwriting its temporary.
+	LEAQ 320(AX), DI
+	LEAQ 320(AX), CX
+	MOVQ DX, BX
+	MUL_RAW_X8_BODY
+
+	// C = point.T*cached.2dT.
+	LEAQ 640(AX), DI
+	LEAQ 960(R12), CX
+	LEAQ 960(DX), BX
+	MUL_RAW_X8_BODY
+
+	// D = point.Z*cached.Z.
+	LEAQ 960(AX), DI
+	LEAQ 640(R12), CX
+	LEAQ 640(DX), BX
+	MUL_RAW_X8_BODY
+
 	JMP ·ifmaNielsStage2X8(SB)
 
 // func ifmaThreeRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
@@ -693,25 +802,7 @@ TEXT ·ifmaAddNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
-
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VPADDQ   0(BX), Z0, Z0
-	VPADDQ  64(BX), Z1, Z1
-	VPADDQ 128(BX), Z2, Z2
-	VPADDQ 192(BX), Z3, Z3
-	VPADDQ 256(BX), Z4, Z4
-	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
-	VPBROADCASTQ ·ifmaFold19(SB), Z11
-	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
-	VMOVDQU64 Z0,   0(DI)
-	VMOVDQU64 Z1,  64(DI)
-	VMOVDQU64 Z2, 128(DI)
-	VMOVDQU64 Z3, 192(DI)
-	VMOVDQU64 Z4, 256(DI)
+	ADD_NORMALIZED_X8_BODY
 	VZEROUPPER
 	RET
 
@@ -720,32 +811,7 @@ TEXT ·ifmaSubtractNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
-
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VPBROADCASTQ ·ifmaSubBias0(SB), Z9
-	VPBROADCASTQ ·ifmaSubBiasN(SB), Z10
-	VPADDQ Z9, Z0, Z0
-	VPADDQ Z10, Z1, Z1
-	VPADDQ Z10, Z2, Z2
-	VPADDQ Z10, Z3, Z3
-	VPADDQ Z10, Z4, Z4
-	VPSUBQ   0(BX), Z0, Z0
-	VPSUBQ  64(BX), Z1, Z1
-	VPSUBQ 128(BX), Z2, Z2
-	VPSUBQ 192(BX), Z3, Z3
-	VPSUBQ 256(BX), Z4, Z4
-	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
-	VPBROADCASTQ ·ifmaFold19(SB), Z11
-	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
-	VMOVDQU64 Z0,   0(DI)
-	VMOVDQU64 Z1,  64(DI)
-	VMOVDQU64 Z2, 128(DI)
-	VMOVDQU64 Z3, 192(DI)
-	VMOVDQU64 Z4, 256(DI)
+	SUBTRACT_NORMALIZED_X8_BODY
 	VZEROUPPER
 	RET
 
