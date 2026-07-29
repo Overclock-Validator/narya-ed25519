@@ -1408,6 +1408,77 @@ Evidence is under
 **Regime tag:** cold complete x8 groups on Zen 5 using merged B10. Singleton,
 pair, x4 tail, Zen 4 separate-comb, and warm-cache routes are unchanged.
 
+### 5.36 Current-tree audit of the older recoder recommendations
+
+The later recoder review was based on an older checkpoint, so each item was
+re-checked against `a3188cf` before changing code:
+
+- balanced carry division and radix multiplication were already shifts in the
+  cold `RecodeCanonicalScalarsX8`, fixed-base comb, and asymmetric B10 paths;
+- the full radix-32 and radix-256 specializations already assign magnitude and
+  sign/nonzero masks directly rather than calling `setRadixRoundDigitX8`;
+- B10 already loads each scalar into a guarded five-word window and uses the
+  three-byte-safe width-10 extractor;
+- the two-byte `fixedScalarBits` helper is explicitly constrained to widths
+  whose `shift+width` is at most 16;
+- the remaining allocating/IDIV-based `RecodeRegularRadix` route is not called
+  by the registered cold x8 verifier.
+
+The one current defect was the merged-B10 call-site bypass recorded in 5.35.
+The proposed bounded-clear rewrite is not treated as proven by the older
+`clear(slice)` result: a counted assignment loop is a distinct code shape and
+remains a small measurement candidate. It is also constrained by the existing
+poisoned-output differentials, which compare the complete digit structure and
+therefore require unused rounds to be deterministically cleared.
+
+**Regime tag:** source and call-graph audit at `a3188cf`. This section records
+which historical recommendations are already present or non-hot; it is not a
+performance result for an unmeasured rewrite.
+
+### 5.37 Native x8 scalar challenge reduction — retained
+
+After the recoder bypass was fixed, current Zen 5 profiles still assigned
+roughly 2--3% of full-width cold verification to reducing eight 64-byte SHA-512
+digests modulo the Ed25519 scalar order. Production performed the same signed
+radix-`2^21` ref10 schedule eight times in Go.
+
+Commit `54d6430` uses one structure-of-arrays AVX-512DQ leaf on measured AMD
+family 1Ah. All 24 signed coefficients remain in ZMM registers through the 14
+folds, 23 centered carries, and 23 ordinary carries. The byte parser and packer
+remain in Go and publish through a local result, preserving inactive-zero and
+output-atomicity behavior. Zen 4, unknown IFMA CPUs, pure-Go builds, and other
+architectures retain the lane-serial reducer until measured independently.
+
+This schedule is a source-level translation of the project-owned standalone
+Narya reducer at `571f224057b11faa1f0fd968d6d282d515a4a7bf`. A new Go test
+pins all 60 macro calls by exact register/radix position plus the seven
+constant broadcasts. The standalone 389-intermediate range certificate and
+Lean canonical-tail theorem therefore apply to the algebraic transcript, but
+not automatically to the Go ABI or emitted object bytes; the production tree
+keeps its original reducer callable as a separate oracle.
+
+Native gates include 2,048 exact differentials cycling all 256 active masks,
+carry-heavy and random digests, input immutability, zero allocations, the
+existing `SetUniformBytes` differential, x8-versus-two-x4 comparison, ordinary
+and SDE-policy-tagged dispatch tests, and the complete native repository suite.
+
+On the pinned Ryzen 7 9700X, six one-second direct samples moved the eight-
+scalar group from about 535 ns to about 225 ns (-58%). Exact-parent public
+ABBA runs show a 0.025--0.046 us/signature absolute saving at n=8/n=64 across
+200-, 1,232-, and 4,096-byte messages, about 0.6--1.2% end to end. At the
+1,232-byte promotion size both n=8 and n=64 improve by about 0.85%.
+The exact-commit release matrix at 1,232 bytes is 3.899 us/signature for n=8
+and 3.683 for n=64. Every public sample remained zero-allocation with zero
+internal-fault fallbacks.
+
+Evidence is under
+`docs/results/zen5-native-scalar-reduce-x8-2026-07-29/`.
+
+**Regime tag:** cold full-width and four-active-lane hash groups on Zen 5,
+Go 1.26.4. The assembly is directly testable on any supported IFMA CPU, but
+performance dispatch remains Zen-5-only until other microarchitectures pass a
+complete gate.
+
 ---
 
 ## 6. Smaller observations

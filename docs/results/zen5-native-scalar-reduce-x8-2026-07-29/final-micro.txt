@@ -1,0 +1,25 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2246901	       531.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2256108	       532.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2253722	       532.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2254119	       533.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2239219	       535.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-scalar/full         	 2236750	       536.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5324188	       230.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5338478	       224.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5233334	       226.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5338441	       224.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5335062	       224.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-dispatch/full       	 5333590	       224.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5347798	       224.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5340033	       224.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5349554	       227.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5254051	       229.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5245666	       229.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalUniformScalarReduction/x8-ifma-candidate/full 	 5313141	       225.6 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	27.609s
+exit_status=0

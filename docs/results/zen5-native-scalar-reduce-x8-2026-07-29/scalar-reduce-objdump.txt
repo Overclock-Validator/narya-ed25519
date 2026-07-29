@@ -1,0 +1,1311 @@
+TEXT github.com/Overclock-Validator/narya-ed25519/internal/r51x5.scalarReduceRadix21IFMAX8.abi0(SB) /tmp/narya-reducer-final/internal/r51x5/scalar_reduce_ifma_x8_amd64.s
+  scalar_reduce_ifma_x8_amd64.s:42	0x60c140		488b442408		MOVQ 0x8(SP), AX		
+  scalar_reduce_ifma_x8_amd64.s:43	0x60c145		62			?				
+  scalar_reduce_ifma_x8_amd64.s:43	0x60c146		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:43	0x60c147		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:43	0x60c14a		0062f1			ADDB AH, -0xf(DX)		
+  scalar_reduce_ifma_x8_amd64.s:44	0x60c14d		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:44	0x60c150		480162f1		ADDQ SP, -0xf(DX)		
+  scalar_reduce_ifma_x8_amd64.s:45	0x60c154		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:45	0x60c157		50			PUSHQ AX			
+  scalar_reduce_ifma_x8_amd64.s:45	0x60c158		0262f1			ADDB -0xf(DX), AH		
+  scalar_reduce_ifma_x8_amd64.s:46	0x60c15b		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:46	0x60c15e		58			POPQ AX				
+  scalar_reduce_ifma_x8_amd64.s:46	0x60c15f		0362f1			ADDL -0xf(DX), SP		
+  scalar_reduce_ifma_x8_amd64.s:47	0x60c162		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:47	0x60c165		60			?				
+  scalar_reduce_ifma_x8_amd64.s:47	0x60c166		0462			ADDL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:48	0x60c168		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:48	0x60c169		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:48	0x60c16c		680562f1fe		PUSHL $-0x10e9dfb		
+  scalar_reduce_ifma_x8_amd64.s:49	0x60c171		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:49	0x60c173		7006			JO 0x60c17b			
+  scalar_reduce_ifma_x8_amd64.s:50	0x60c175		62			?				
+  scalar_reduce_ifma_x8_amd64.s:50	0x60c176		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:50	0x60c177		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:50	0x60c17a		7807			JS 0x60c183			
+  scalar_reduce_ifma_x8_amd64.s:51	0x60c17c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:51	0x60c17d		71fe			JNO 0x60c17d			
+  scalar_reduce_ifma_x8_amd64.s:51	0x60c17f		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:51	0x60c181		40086271		ORB SP, 0x71(DX)		
+  scalar_reduce_ifma_x8_amd64.s:52	0x60c185		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:52	0x60c188		48096271		ORQ SP, 0x71(DX)		
+  scalar_reduce_ifma_x8_amd64.s:53	0x60c18c		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:53	0x60c18f		50			PUSHQ AX			
+  scalar_reduce_ifma_x8_amd64.s:53	0x60c190		0a6271			ORB 0x71(DX), AH		
+  scalar_reduce_ifma_x8_amd64.s:54	0x60c193		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:54	0x60c196		58			POPQ AX				
+  scalar_reduce_ifma_x8_amd64.s:54	0x60c197		0b6271			ORL 0x71(DX), SP		
+  scalar_reduce_ifma_x8_amd64.s:55	0x60c19a		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:55	0x60c19d		60			?				
+  scalar_reduce_ifma_x8_amd64.s:55	0x60c19e		0c62			ORL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:56	0x60c1a0		71fe			JNO 0x60c1a0			
+  scalar_reduce_ifma_x8_amd64.s:56	0x60c1a2		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:56	0x60c1a4		680d6271fe		PUSHL $-0x18e9df3		
+  scalar_reduce_ifma_x8_amd64.s:57	0x60c1a9		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:57	0x60c1ab		700e			JO 0x60c1bb			
+  scalar_reduce_ifma_x8_amd64.s:58	0x60c1ad		62			?				
+  scalar_reduce_ifma_x8_amd64.s:58	0x60c1ae		71fe			JNO 0x60c1ae			
+  scalar_reduce_ifma_x8_amd64.s:58	0x60c1b0		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:58	0x60c1b2		780f			JS 0x60c1c3			
+  scalar_reduce_ifma_x8_amd64.s:59	0x60c1b4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:59	0x60c1b5		e1fe			LOOPE 0x60c1b5			
+  scalar_reduce_ifma_x8_amd64.s:59	0x60c1b7		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:59	0x60c1b9		401062e1		ADCB SP, -0x1f(DX)		
+  scalar_reduce_ifma_x8_amd64.s:60	0x60c1bd		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:60	0x60c1c0		481162e1		ADCQ SP, -0x1f(DX)		
+  scalar_reduce_ifma_x8_amd64.s:61	0x60c1c4		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:61	0x60c1c7		50			PUSHQ AX			
+  scalar_reduce_ifma_x8_amd64.s:61	0x60c1c8		1262e1			ADCB -0x1f(DX), AH		
+  scalar_reduce_ifma_x8_amd64.s:62	0x60c1cb		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:62	0x60c1ce		58			POPQ AX				
+  scalar_reduce_ifma_x8_amd64.s:62	0x60c1cf		1362e1			ADCL -0x1f(DX), SP		
+  scalar_reduce_ifma_x8_amd64.s:63	0x60c1d2		fe486f			DECB 0x6f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:63	0x60c1d5		60			?				
+  scalar_reduce_ifma_x8_amd64.s:63	0x60c1d6		1462			ADCL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:64	0x60c1d8		e1fe			LOOPE 0x60c1d8			
+  scalar_reduce_ifma_x8_amd64.s:64	0x60c1da		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:64	0x60c1dc		681562e1fe		PUSHL $-0x11e9deb		
+  scalar_reduce_ifma_x8_amd64.s:65	0x60c1e1		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:65	0x60c1e3		7016			JO 0x60c1fb			
+  scalar_reduce_ifma_x8_amd64.s:66	0x60c1e5		62			?				
+  scalar_reduce_ifma_x8_amd64.s:66	0x60c1e6		e1fe			LOOPE 0x60c1e6			
+  scalar_reduce_ifma_x8_amd64.s:66	0x60c1e8		486f			OUTSD DS:0(SI), DX		
+  scalar_reduce_ifma_x8_amd64.s:66	0x60c1ea		7817			JS 0x60c203			
+  scalar_reduce_ifma_x8_amd64.s:68	0x60c1ec		62			?				
+  scalar_reduce_ifma_x8_amd64.s:68	0x60c1ed		62			?				
+  scalar_reduce_ifma_x8_amd64.s:68	0x60c1ee		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:68	0x60c1ef		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:68	0x60c1f1		05aad43700		ADDL $0x37d4aa, AX		
+  scalar_reduce_ifma_x8_amd64.s:69	0x60c1f6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:69	0x60c1f7		62			?				
+  scalar_reduce_ifma_x8_amd64.s:69	0x60c1f8		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:69	0x60c1f9		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:69	0x60c1fb		0da8d43700		ORL $0x37d4a8, AX		
+  scalar_reduce_ifma_x8_amd64.s:70	0x60c200		62			?				
+  scalar_reduce_ifma_x8_amd64.s:70	0x60c201		62			?				
+  scalar_reduce_ifma_x8_amd64.s:70	0x60c202		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:70	0x60c203		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:70	0x60c205		15a6d43700		ADCL $0x37d4a6, AX		
+  scalar_reduce_ifma_x8_amd64.s:71	0x60c20a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:71	0x60c20b		62			?				
+  scalar_reduce_ifma_x8_amd64.s:71	0x60c20c		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:71	0x60c20d		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:71	0x60c20f		1da4d43700		SBBL $0x37d4a4, AX		
+  scalar_reduce_ifma_x8_amd64.s:72	0x60c214		62			?				
+  scalar_reduce_ifma_x8_amd64.s:72	0x60c215		62			?				
+  scalar_reduce_ifma_x8_amd64.s:72	0x60c216		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:72	0x60c217		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:72	0x60c219		25a2d43700		ANDL $0x37d4a2, AX		
+  scalar_reduce_ifma_x8_amd64.s:73	0x60c21e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:73	0x60c21f		62			?				
+  scalar_reduce_ifma_x8_amd64.s:73	0x60c220		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:73	0x60c221		4859			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:73	0x60c223		2da0d43700		SUBL $0x37d4a0, AX		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c228		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c229		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c22b		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c22c		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c22d		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c22e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c22f		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c235		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c237		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c238		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c23a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c23b		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c241		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c243		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c244		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c245		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c246		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c247		119548d4ee62		ADCL DX, 0x62eed448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c24d		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c24f		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c250		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c251		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c252		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c253		118d48fbf662		ADCL CX, 0x62f6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c259		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c25b		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c25c		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c25e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c25f		118548d4fe62		ADCL AX, 0x62fed448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c265		02c5			ADDL CH, AL			
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c267		40			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c268		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c26a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c26b		81fd40fbc662		CMPL BP, $0x62c6fb40		
+  scalar_reduce_ifma_x8_amd64.s:75	0x60c271		a1c540efff6202cd40	MOVL 0x40cd0262ffef40c5, AX	
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c27a		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c27b		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c27c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c27d		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c283		02cd			ADDL CH, CL			
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c285		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c286		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c288		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c289		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c28f		02cd			ADDL CH, CL			
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c291		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c292		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c293		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c294		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c295		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c29b		02cd			ADDL CH, CL			
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c29d		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c29e		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c29f		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2a0		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2a1		119548fbee62		ADCL DX, 0x62eefb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2a7		02cd			ADDL CH, CL			
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2a9		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2aa		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2ac		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2ad		118d48d4f662		ADCL CX, 0x62f6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2b3		02cd			ADDL CH, CL			
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2b5		40			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2b6		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2b8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2b9		118548fbfe62		ADCL AX, 0x62fefb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:76	0x60c2bf		a1cd40eff66202d540	MOVL 0x40d50262f6ef40cd, AX	
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2c8		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2c9		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2ca		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2cb		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2d1		02d5			ADDL CH, DL			
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2d3		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2d4		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2d6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2d7		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2dd		02d5			ADDL CH, DL			
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2df		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2e0		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2e1		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2e2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2e3		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2e9		02d5			ADDL CH, DL			
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2eb		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2ec		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2ed		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2ee		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2ef		119d48fbe662		ADCL BX, 0x62e6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2f5		02d5			ADDL CH, DL			
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2f7		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2f8		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2fa		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c2fb		119548d4ee62		ADCL DX, 0x62eed448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c301		02d5			ADDL CH, DL			
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c303		40			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c304		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c306		62			?				
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c307		118d48fbf662		ADCL CX, 0x62f6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:77	0x60c30d		a1d540efed6202dd40	MOVL 0x40dd0262edef40d5, AX	
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c316		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c317		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c318		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c319		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c31f		02dd			ADDL CH, BL			
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c321		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c322		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c324		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c325		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c32b		02dd			ADDL CH, BL			
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c32d		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c32e		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c32f		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c330		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c331		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c337		02dd			ADDL CH, BL			
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c339		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c33a		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c33b		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c33c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c33d		11a548fbde62		ADCL SP, 0x62defb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c343		02dd			ADDL CH, BL			
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c345		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c346		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c348		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c349		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c34f		02dd			ADDL CH, BL			
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c351		40			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c352		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c354		62			?				
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c355		119548fbee62		ADCL DX, 0x62eefb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:78	0x60c35b		a1dd40efe46202e540	MOVL 0x40e50262e4ef40dd, AX	
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c364		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c365		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c366		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c367		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c368		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c369		48			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c36a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c36b		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c36c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c36d		02e5			ADDL CH, AH			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c36f		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c370		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c372		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c373		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c379		02e5			ADDL CH, AH			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c37b		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c37c		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c37d		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c37e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c37f		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c385		02e5			ADDL CH, AH			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c387		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c388		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c389		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c38a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c38b		11ad48fbd662		ADCL BP, 0x62d6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c391		02e5			ADDL CH, AH			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c393		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c394		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c396		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c397		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c39d		02e5			ADDL CH, AH			
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c39f		40			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c3a0		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c3a2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c3a3		119d48fbe662		ADCL BX, 0x62e6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:79	0x60c3a9		a1e540efdb6202ed40	MOVL 0x40ed0262dbef40e5, AX	
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b2		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b3		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b5		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b6		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b8		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3b9		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3bc		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3bd		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3be		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c0		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c2		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c3		48			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c4		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c5		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c7		02ed			ADDL CH, CH			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3c9		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3ca		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3cb		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3cc		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3cd		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d3		02ed			ADDL CH, CH			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d5		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d6		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d7		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3d9		11b548fbce62		ADCL SI, 0x62cefb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3df		02ed			ADDL CH, CH			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3e1		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3e2		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3e4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3e5		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3eb		02ed			ADDL CH, CH			
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3ed		40			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3ee		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3f0		62			?				
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3f1		11a548fbde62		ADCL SP, 0x62defb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:80	0x60c3f7		a1ed40efd26262fd48	MOVL 0x48fd6262d2ef40ed, AX	
+  scalar_reduce_ifma_x8_amd64.s:82	0x60c400		59			POPQ CX				
+  scalar_reduce_ifma_x8_amd64.s:82	0x60c401		3dcad23700		CMPL AX, $0x37d2ca		
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c406		62			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c407		01cd			ADDL CX, BP			
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c409		48			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c40a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c40b		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c40e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c411		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c413		62			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c414		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c415		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c416		48			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c417		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c418		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c419		62			?				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c41a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c41b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c41e		f6156291cd48		NOTB 0x48cd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c424		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:83	0x60c425		f66201			MULB 0x1(DX)			
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c428		bd48d4f762		MOVL $0x62f7d448, BP		
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c42d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c42e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c431		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c433		62			?				
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c434		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c43a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c43b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c43e		f6156211bd48		NOTB 0x48bd1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c444		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:84	0x60c445		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c446		62			?				
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c447		01ad48d4f762		ADDL BP, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c44d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c44e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c451		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c453		62			?				
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c454		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c45a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c45b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c45e		f6156211ad48		NOTB 0x48ad1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c464		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:85	0x60c465		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c466		62			?				
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c467		019d48d4f762		ADDL BX, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c46d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c46e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c471		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c473		62			?				
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c474		119548d4ee62		ADCL DX, 0x62eed448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c47a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c47b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c47e		f61562119d48		NOTB 0x489d1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c484		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:86	0x60c485		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c487		018d48d4f762		ADDL CX, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c48d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c48e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c491		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c493		62			?				
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c494		118548d4fe62		ADCL AX, 0x62fed448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c49a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c49b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c49e		f61562118d48		NOTB 0x488d1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c4a4		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:87	0x60c4a5		f66201			MULB 0x1(DX)			
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4a8		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4a9		40			?				
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4aa		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4ab		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4ae		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4b1		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4b3		62			?				
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4b4		81f540d4ce62		XORL $0x62ced440, BP		
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4ba		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4bb		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4be		f6156281fd40		NOTB 0x40fd8162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4c4		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:88	0x60c4c5		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4c6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4c7		01c5			ADDL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4c9		48			?				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4ca		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4cb		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4ce		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4d1		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4d3		62			?				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4d4		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4da		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4db		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4de		f6156291c548		NOTB 0x48c59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4e4		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:89	0x60c4e5		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4e6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4e7		01b548d4f762		ADDL SI, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4ed		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4ee		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4f1		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4f3		62			?				
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4f4		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4fa		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4fb		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c4fe		f6156211b548		NOTB 0x48b51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c504		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:90	0x60c505		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c506		62			?				
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c507		01a548d4f762		ADDL SP, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c50d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c50e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c511		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c513		62			?				
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c514		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c51a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c51b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c51e		f6156211a548		NOTB 0x48a51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c524		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:91	0x60c525		de6201			FISUB 0x1(DX)			
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c528		95			XCHGL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c529		48			?				
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c52a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c52b		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c52e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c531		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c533		62			?				
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c534		118d48d4f662		ADCL CX, 0x62f6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c53a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c53b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c53e		f61562119548		NOTB 0x48951162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c544		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:92	0x60c545		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c546		62			?				
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c547		018548d4f762		ADDL AX, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c54d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c54e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c551		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c553		62			?				
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c554		81fd40d4c662		CMPL BP, $0x62c6d440		
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c55a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c55b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c55e		f61562118548		NOTB 0x48851162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c564		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:93	0x60c565		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c566		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c567		02f5			ADDL CH, DH			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c569		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56a		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56b		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56e		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c56f		48			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c570		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c571		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c572		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c573		02f5			ADDL CH, DH			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c575		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c576		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c578		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c579		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c57a		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c57c		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c57d		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c580		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c581		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c582		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c583		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c584		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c585		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c586		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c587		48			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c588		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c589		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c58a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c58b		02f5			ADDL CH, DH			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c58d		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c58e		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c58f		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c590		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c591		11bd48fbc662		ADCL DI, 0x62c6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c597		02f5			ADDL CH, DH			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c599		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c59a		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c59c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c59d		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5a3		02f5			ADDL CH, DH			
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5a5		40			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5a6		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5a8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5a9		11ad48fbd662		ADCL BP, 0x62d6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:95	0x60c5af		a1f540efc96202fd40	MOVL 0x40fd0262c9ef40f5, AX	
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5b8		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5b9		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5ba		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5bb		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5bc		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5bf		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c1		02fd			ADDL CH, BH			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c3		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c4		40f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c7		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c8		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5c9		48			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5ca		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5cb		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5cc		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5cd		02fd			ADDL CH, BH			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5cf		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d0		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d1		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d3		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d4		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d6		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5d7		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5da		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5db		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5dc		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5dd		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5de		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5df		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e0		c548fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e3		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e5		02fd			ADDL CH, BH			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e7		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5e8		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5ea		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5eb		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5f1		02fd			ADDL CH, BH			
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5f3		40			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5f4		40f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5f6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5f7		11b548fbce62		ADCL SI, 0x62cefb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:96	0x60c5fd		a1fd40efc062028548	MOVL 0x48850262c0ef40fd, AX	
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c606		40			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c607		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c608		62			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c609		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c60a		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c60c		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c60d		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c610		854840			TESTL CX, 0x40(AX)		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c613		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c614		62			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c615		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c616		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c619		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c61b		02854840f262		ADDB 0x62f24048(BP), AL		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c621		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c622		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c623		48			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c624		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c625		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c626		62			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c627		02854840f362		ADDB 0x62f34048(BP), AL		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c62d		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c62e		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c630		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c631		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c634		854840			TESTL CX, 0x40(AX)		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c637		f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c638		62			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c639		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63a		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63b		48			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63c		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63d		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c63f		02854840f562		ADDB 0x62f54048(BP), AL		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c645		11bd48fbc662		ADCL DI, 0x62c6fb48(BP)		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c64b		51			PUSHQ CX			
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c64c		8548ef			TESTL CX, -0x11(AX)		
+  scalar_reduce_ifma_x8_amd64.s:97	0x60c64f		ff6202			JMP 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c652		8d4840			LEAL 0x40(AX), CX		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c655		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c656		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c657		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c658		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c659		48			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c65a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c65b		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c65c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c65d		028d4840f162		ADDB 0x62f14048(BP), CL		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c663		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c664		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c666		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c667		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c66a		8d4840			LEAL 0x40(AX), CX		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c66d		f2			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c66e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c66f		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c670		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c673		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c675		028d4840f362		ADDB 0x62f34048(BP), CL		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c67b		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c67c		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c67d		48fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c67f		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c680		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c681		028d4840f462		ADDB 0x62f44048(BP), CL		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c687		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c688		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c68a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c68b		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c68e		8d4840			LEAL 0x40(AX), CX		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c691		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c692		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c693		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c694		c548fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c697		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c698		62			?				
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c699		51			PUSHQ CX			
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c69a		8d48ef			LEAL -0x11(AX), CX		
+  scalar_reduce_ifma_x8_amd64.s:98	0x60c69d		f66202			MULB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a0		95			XCHGL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a1		48			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a2		40			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a3		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a5		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a6		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a7		48			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a8		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6a9		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6aa		62			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6ab		02954840f162		ADDB 0x62f14048(BP), DL		
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b2		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b3		48			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b4		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b5		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6b7		02954840f262		ADDB 0x62f24048(BP), DL		
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6bd		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6be		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c0		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c1		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c4		95			XCHGL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c5		48			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c6		40			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c7		f3			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6c9		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6ca		dd48fb			FISTTP -0x5(AX)			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6cd		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6cf		02954840f462		ADDB 0x62f44048(BP), DL		
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6d5		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6d6		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6d7		48			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6d8		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6d9		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6da		62			?				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6db		02954840f562		ADDB 0x62f54048(BP), DL		
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e2		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e4		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e5		f66251			MULB 0x51(DX)			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e8		95			XCHGL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6e9		48ef			OUTQ AX, DX			
+  scalar_reduce_ifma_x8_amd64.s:99	0x60c6eb		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6ec		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6ed		029d4840f062		ADDB 0x62f04048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f3		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f4		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f5		48			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f6		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f7		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6f9		029d4840f162		ADDB 0x62f14048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c6ff		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c700		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c701		48			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c702		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c703		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c704		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c705		029d4840f262		ADDB 0x62f24048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c70b		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c70c		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c70d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c70e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c70f		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c710		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c711		029d4840f362		ADDB 0x62f34048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c717		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c718		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c71a		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c71b		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c71e		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c71f		48			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c720		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c722		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c723		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c724		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c727		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c729		029d4840f562		ADDB 0x62f54048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c72f		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c730		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c731		48fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c733		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c734		62			?				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c735		51			PUSHQ CX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c736		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c737		48ef			OUTQ AX, DX			
+  scalar_reduce_ifma_x8_amd64.s:100	0x60c739		e462			INL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c73b		01fd			ADDL DI, BP			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c73d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c73e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c73f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c742		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c745		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c747		62			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c748		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c749		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74a		48			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74c		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c74f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c752		f6156291fd48		NOTB 0x48fd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c758		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:102	0x60c759		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c75a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c75b		01ed			ADDL BP, BP			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c75d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c75e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c75f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c762		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c765		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c767		62			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c768		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c769		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c76b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c76c		de6291			FISUB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c76f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c772		f6156291ed48		NOTB 0x48ed9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c778		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:103	0x60c779		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c77a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c77b		01dd			ADDL BX, BP			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c77d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c77e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c77f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c782		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c785		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c787		62			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c788		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c789		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78a		48			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78c		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c78f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c792		f6156291dd48		NOTB 0x48dd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c798		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:104	0x60c799		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c79b		01cd			ADDL CX, BP			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c79d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c79e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c79f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7a2		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7a5		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7a7		62			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7a8		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7a9		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7aa		48			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7ab		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7ac		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7ad		62			?				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7ae		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7af		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7b2		f6156291cd48		NOTB 0x48cd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7b8		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:105	0x60c7b9		f66201			MULB 0x1(DX)			
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7bc		bd48d4f762		MOVL $0x62f7d448, BP		
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7c1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7c2		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7c5		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7c7		62			?				
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7c8		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7ce		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7cf		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7d2		f6156211bd48		NOTB 0x48bd1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7d8		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:106	0x60c7d9		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7da		62			?				
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7db		01ad48d4f762		ADDL BP, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7e1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7e2		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7e5		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7e7		62			?				
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7e8		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7ee		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7ef		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7f2		f6156211ad48		NOTB 0x48ad1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7f8		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:107	0x60c7f9		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c7fa		62			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c7fb		01f5			ADDL SI, BP			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c7fd		48			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c7fe		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c7ff		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c802		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c805		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c807		62			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c808		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c809		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80a		48			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80c		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c80f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c812		f6156291f548		NOTB 0x48f59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c818		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:108	0x60c819		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c81a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c81b		01e5			ADDL SP, BP			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c81d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c81e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c81f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c822		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c825		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c827		62			?				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c828		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c829		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c82c		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c82e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c82f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c832		f6156291e548		NOTB 0x48e59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c838		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:109	0x60c839		de6201			FISUB 0x1(DX)			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c83c		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c83d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c83e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c83f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c842		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c845		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c847		62			?				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c848		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c849		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c84b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c84c		f66291			MULB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c84f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c852		f6156291d548		NOTB 0x48d59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c858		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:110	0x60c859		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c85a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c85b		01c5			ADDL AX, BP			
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c85d		48			?				
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c85e		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c85f		f76291			MULL -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c862		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c865		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c867		62			?				
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c868		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c86e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c86f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c872		f6156291c548		NOTB 0x48c59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c878		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:111	0x60c879		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c87a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c87b		01b548d4f762		ADDL SI, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c881		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c882		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c885		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c887		62			?				
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c888		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c88e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c88f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c892		f6156211b548		NOTB 0x48b51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c898		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:112	0x60c899		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c89a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c89b		01a548d4f762		ADDL SP, 0x62f7d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8a1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8a2		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8a5		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8a7		62			?				
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8a8		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8ae		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8af		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8b2		f6156211a548		NOTB 0x48a51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8b8		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:113	0x60c8b9		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8bc		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8bd		48			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8be		40			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8bf		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c0		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c2		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c3		48			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c4		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c5		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c6		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8c7		029d4840f162		ADDB 0x62f14048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8cd		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8ce		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8cf		48			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8d0		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8d1		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8d2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8d3		029d4840f262		ADDB 0x62f24048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8d9		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8da		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8db		48			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8dc		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8dd		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8de		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8df		029d4840f362		ADDB 0x62f34048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8e5		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8e6		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8e8		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8e9		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8ec		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8ed		48			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8ee		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8f0		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8f1		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8f2		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8f5		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8f7		029d4840f562		ADDB 0x62f54048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8fd		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8fe		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c8ff		48fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c901		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c902		62			?				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c903		51			PUSHQ CX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c904		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c905		48ef			OUTQ AX, DX			
+  scalar_reduce_ifma_x8_amd64.s:115	0x60c907		e462			INL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c909		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c90a		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c90d		e015			LOOPNE 0x60c924			
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c90f		62			?				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c910		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c911		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c912		48			?				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c913		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c914		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c915		62			?				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c916		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c917		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c91a		f6156291fd48		NOTB 0x48fd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c920		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:116	0x60c921		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c922		62			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c923		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c924		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c927		e115			LOOPE 0x60c93e			
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c929		62			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92b		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92c		48			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92d		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92e		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c92f		62			?				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c930		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c931		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c934		f6156291f548		NOTB 0x48f59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c93a		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:117	0x60c93b		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c93c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c93d		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c93e		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c941		e215			LOOP 0x60c958			
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c943		62			?				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c944		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c945		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c947		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c948		de6291			FISUB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c94b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c94e		f6156291ed48		NOTB 0x48ed9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c954		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:118	0x60c955		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c956		62			?				
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c957		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c958		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c95b		e315			JRCXZ 0x60c972			
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c95d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c95e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c95f		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c962		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c964		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c965		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c968		f6156291e548		NOTB 0x48e59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c96e		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:119	0x60c96f		de62f1			FISUB -0xf(DX)			
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c972		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c975		e415			INL $0x15, AL			
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c977		62			?				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c978		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c979		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97a		48			?				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97c		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97e		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c97f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c982		f6156291dd48		NOTB 0x48dd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c988		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:120	0x60c989		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c98b		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c98c		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c98f		e515			INL $0x15, AX			
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c991		62			?				
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c992		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c993		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c995		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c996		f66291			MULB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c999		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c99c		f6156291d548		NOTB 0x48d59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c9a2		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:121	0x60c9a3		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9a4		62			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9a5		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9a6		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9a9		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9ab		62			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9ac		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9ad		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9ae		48			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9af		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9b0		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9b1		62			?				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9b2		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9b3		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9b6		f6156291cd48		NOTB 0x48cd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9bc		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:122	0x60c9bd		f662f1			MULB -0xf(DX)			
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9c0		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9c3		e715			OUTL AX, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9c5		62			?				
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9c6		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9cc		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9cd		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9d0		f6156291c548		NOTB 0x48c59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9d6		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:123	0x60c9d7		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9d8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9d9		d18d4072e015		RORL $0x1, 0x15e07240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9df		62			?				
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9e0		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9e6		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9e7		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9ea		f6156211bd48		NOTB 0x48bd1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9f0		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:124	0x60c9f1		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:125	0x60c9f2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:125	0x60c9f3		d18d4072e115		RORL $0x1, 0x15e17240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:125	0x60c9f9		62			?				
+  scalar_reduce_ifma_x8_amd64.s:125	0x60c9fa		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:125	0x60ca00		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:125	0x60ca01		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:125	0x60ca04		f6156211b548		NOTB 0x48b51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:125	0x60ca0a		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:125	0x60ca0b		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca0c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca0d		d18d4072e215		RORL $0x1, 0x15e27240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca13		62			?				
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca14		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca1a		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca1b		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca1e		f6156211ad48		NOTB 0x48ad1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca24		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:126	0x60ca25		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca26		62			?				
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca27		d18d4072e315		RORL $0x1, 0x15e37240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca2d		62			?				
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca2e		119d48d4e662		ADCL BX, 0x62e6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca34		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca35		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca38		f6156211a548		NOTB 0x48a51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca3e		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:127	0x60ca3f		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca42		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca43		48			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca44		40			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca45		f0			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca46		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca47		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca48		fd			STD				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca49		48			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca4a		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca4b		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca4c		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca4d		029d4840f162		ADDB 0x62f14048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca53		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca54		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca55		48			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca56		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca57		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca58		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca59		029d4840f262		ADDB 0x62f24048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca5f		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca60		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca61		48			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca62		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca63		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca64		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca65		029d4840f362		ADDB 0x62f34048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca6b		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca6c		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca6e		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca6f		de6202			FISUB 0x2(DX)			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca72		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca73		48			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca74		40f4			HLT				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca76		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca77		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca78		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca7b		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca7d		029d4840f562		ADDB 0x62f54048(BP), BL		
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca83		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca84		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca85		48fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca87		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca88		62			?				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca89		51			PUSHQ CX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca8a		9d			POPFQ				
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca8b		48ef			OUTQ AX, DX			
+  scalar_reduce_ifma_x8_amd64.s:128	0x60ca8d		e462			INL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca8f		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca90		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca93		e015			LOOPNE 0x60caaa			
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca95		62			?				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca96		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca97		f5			CMC				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca98		48			?				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca99		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca9a		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca9b		62			?				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca9c		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:129	0x60ca9d		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:129	0x60caa0		f6156291fd48		NOTB 0x48fd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:129	0x60caa6		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:129	0x60caa7		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caa8		62			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caa9		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caaa		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caad		e115			LOOPE 0x60cac4			
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caaf		62			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab0		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab1		ed			INL DX, AX			
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab2		48			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab3		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab4		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab5		62			?				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab6		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cab7		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:130	0x60caba		f6156291f548		NOTB 0x48f59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cac0		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:130	0x60cac1		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cac2		62			?				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cac3		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cac4		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cac7		e215			LOOP 0x60cade			
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cac9		62			?				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60caca		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cacb		e548			INL $0x48, AX			
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cacd		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cace		de6291			FISUB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cad1		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cad4		f6156291ed48		NOTB 0x48ed9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cada		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:131	0x60cadb		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cadc		62			?				
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cadd		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cade		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cae1		e315			JRCXZ 0x60caf8			
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cae3		62			?				
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cae4		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cae5		dd48d4			FISTTP -0x2c(AX)		
+  scalar_reduce_ifma_x8_amd64.s:132	0x60cae8		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:132	0x60caea		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:132	0x60caeb		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:132	0x60caee		f6156291e548		NOTB 0x48e59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:132	0x60caf4		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:132	0x60caf5		de62f1			FISUB -0xf(DX)			
+  scalar_reduce_ifma_x8_amd64.s:133	0x60caf8		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cafb		e415			INL $0x15, AL			
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cafd		62			?				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cafe		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:133	0x60caff		d5			?				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb00		48			?				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb01		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb02		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb03		62			?				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb04		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb05		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb08		f6156291dd48		NOTB 0x48dd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb0e		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:133	0x60cb0f		e662			OUTL AL, $0x62			
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb11		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb12		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb15		e515			INL $0x15, AX			
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb17		62			?				
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb18		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb19		cd48			INT $0x48			
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb1b		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb1c		f66291			MULB -0x6f(DX)			
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb1f		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb22		f6156291d548		NOTB 0x48d59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb28		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:134	0x60cb29		ee			OUTL AL, DX			
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb2a		62			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb2b		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb2c		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb2f		e615			OUTL AL, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb31		62			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb32		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb33		c5			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb34		48			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb35		d4			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb36		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb37		62			?				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb38		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb39		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb3c		f6156291cd48		NOTB 0x48cd9162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb42		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:135	0x60cb43		f662f1			MULB -0xf(DX)			
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb46		8d4072			LEAL 0x72(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb49		e715			OUTL AX, $0x15			
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb4b		62			?				
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb4c		11bd48d4c662		ADCL DI, 0x62c6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb52		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb53		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb56		f6156291c548		NOTB 0x48c59162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb5c		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:136	0x60cb5d		fe			?				
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb5e		62			?				
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb5f		d18d4072e015		RORL $0x1, 0x15e07240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb65		62			?				
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb66		11b548d4ce62		ADCL SI, 0x62ced448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb6c		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb6d		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb70		f6156211bd48		NOTB 0x48bd1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb76		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:137	0x60cb77		c6			?				
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb78		62			?				
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb79		d18d4072e115		RORL $0x1, 0x15e17240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb7f		62			?				
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb80		11ad48d4d662		ADCL BP, 0x62d6d448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb86		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb87		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb8a		f6156211b548		NOTB 0x48b51162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb90		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:138	0x60cb91		ce			?				
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cb92		62			?				
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cb93		d18d4072e215		RORL $0x1, 0x15e27240(BP)	
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cb99		62			?				
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cb9a		11a548d4de62		ADCL SP, 0x62ded448(BP)		
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cba0		91			XCHGL AX, CX			
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cba1		8d4073			LEAL 0x73(AX), AX		
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cba4		f6156211ad48		NOTB 0x48ad1162(IP)		
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cbaa		fb			STI				
+  scalar_reduce_ifma_x8_amd64.s:139	0x60cbab		d6			?				
+  scalar_reduce_ifma_x8_amd64.s:141	0x60cbac		62			?				
+  scalar_reduce_ifma_x8_amd64.s:141	0x60cbad		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:141	0x60cbae		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:141	0x60cbb1		0062f1			ADDB AH, -0xf(DX)		
+  scalar_reduce_ifma_x8_amd64.s:142	0x60cbb4		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:142	0x60cbb7		480162f1		ADDQ SP, -0xf(DX)		
+  scalar_reduce_ifma_x8_amd64.s:143	0x60cbbb		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:143	0x60cbbe		50			PUSHQ AX			
+  scalar_reduce_ifma_x8_amd64.s:143	0x60cbbf		0262f1			ADDB -0xf(DX), AH		
+  scalar_reduce_ifma_x8_amd64.s:144	0x60cbc2		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:144	0x60cbc5		58			POPQ AX				
+  scalar_reduce_ifma_x8_amd64.s:144	0x60cbc6		0362f1			ADDL -0xf(DX), SP		
+  scalar_reduce_ifma_x8_amd64.s:145	0x60cbc9		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:145	0x60cbcc		60			?				
+  scalar_reduce_ifma_x8_amd64.s:145	0x60cbcd		0462			ADDL $0x62, AL			
+  scalar_reduce_ifma_x8_amd64.s:146	0x60cbcf		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:146	0x60cbd0		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:146	0x60cbd3		680562f1fe		PUSHL $-0x10e9dfb		
+  scalar_reduce_ifma_x8_amd64.s:147	0x60cbd8		487f70			JG 0x60cc4b			
+  scalar_reduce_ifma_x8_amd64.s:147	0x60cbdb		06			?				
+  scalar_reduce_ifma_x8_amd64.s:148	0x60cbdc		62			?				
+  scalar_reduce_ifma_x8_amd64.s:148	0x60cbdd		f1			ICEBP				
+  scalar_reduce_ifma_x8_amd64.s:148	0x60cbde		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:148	0x60cbe1		7807			JS 0x60cbea			
+  scalar_reduce_ifma_x8_amd64.s:149	0x60cbe3		62			?				
+  scalar_reduce_ifma_x8_amd64.s:149	0x60cbe4		71fe			JNO 0x60cbe4			
+  scalar_reduce_ifma_x8_amd64.s:149	0x60cbe6		487f40			JG 0x60cc29			
+  scalar_reduce_ifma_x8_amd64.s:149	0x60cbe9		086271			ORB AH, 0x71(DX)		
+  scalar_reduce_ifma_x8_amd64.s:150	0x60cbec		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:150	0x60cbef		48096271		ORQ SP, 0x71(DX)		
+  scalar_reduce_ifma_x8_amd64.s:151	0x60cbf3		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:151	0x60cbf6		50			PUSHQ AX			
+  scalar_reduce_ifma_x8_amd64.s:151	0x60cbf7		0a6271			ORB 0x71(DX), AH		
+  scalar_reduce_ifma_x8_amd64.s:152	0x60cbfa		fe487f			DECB 0x7f(AX)			
+  scalar_reduce_ifma_x8_amd64.s:152	0x60cbfd		58			POPQ AX				
+  scalar_reduce_ifma_x8_amd64.s:152	0x60cbfe		0bc5			ORL BP, AX			
+  scalar_reduce_ifma_x8_amd64.s:153	0x60cc00		f8			CLC				
+  scalar_reduce_ifma_x8_amd64.s:153	0x60cc01		77c3			JA 0x60cbc6			
