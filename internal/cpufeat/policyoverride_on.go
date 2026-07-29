@@ -6,14 +6,15 @@ package cpufeat
 // true on any IFMA-capable machine, instead of only on the measured AMD parts.
 //
 // Why this exists. PreferWideIFMA, PreferDecodedAIFMA, PreferWarmX8IFMA,
-// PreferRawSquareIFMA, PreferWideHashX4IFMA and PreferBatchEncodeX8IFMA all
-// require an AuthenticAMD vendor string and a family check. Intel SDE, which
-// is how CI executes the AVX-512 kernels at all, emulates Intel parts.
+// PreferRawSquareIFMA, PreferWideHashX4IFMA, PreferBatchEncodeX8IFMA and
+// PreferProjectiveDoubleX8IFMA all require an AuthenticAMD vendor string and a
+// family check. Intel SDE, which is how CI executes the AVX-512 kernels at all,
+// emulates Intel parts.
 // Every one of those policies therefore reports false under emulation, so the
 // x8/ZMM groups, decoded-A cache tier, warm x4 pairing, raw-square schedule,
-// wide-hash x4 tail and x8 finalizer have no automated coverage anywhere: they
-// run only on contributors' own hardware. A regression in the library's
-// headline path merges green.
+// wide-hash x4 tail, x8 finalizer and projective-doubling schedule have no
+// automated coverage anywhere: they run only on contributors' own hardware. A
+// regression in the library's headline path merges green.
 //
 // Why a build tag rather than an environment variable or a settable var. This
 // changes which arithmetic a consensus-critical verifier executes. A tag is

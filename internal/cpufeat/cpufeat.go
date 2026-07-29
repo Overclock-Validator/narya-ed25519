@@ -49,6 +49,12 @@ func PreferWideHashX4IFMA() bool { return preferWideHashX4IFMA }
 // x4 encoder until measured on those parts.
 func PreferBatchEncodeX8IFMA() bool { return preferBatchEncodeX8IFMA }
 
+// PreferProjectiveDoubleX8IFMA reports whether radix-32 x8 variable-base
+// multiplication should omit the extended T coordinate on the first four
+// outputs of each five-doubling run. Complete cold-verifier measurements select
+// the distinct-P2 schedule on AMD family 1Ah (Zen 5) only.
+func PreferProjectiveDoubleX8IFMA() bool { return preferProjectiveDoubleX8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
@@ -58,6 +64,10 @@ func wideHashX4ForAMDVersion(ifma bool, family uint32) bool {
 }
 
 func batchEncodeX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func projectiveDoubleX8ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 

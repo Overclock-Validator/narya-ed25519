@@ -34,6 +34,12 @@ type r51IFMABatchQPipeline struct {
 	// to compare both schedules in one binary.
 	experimentalRawSquareX8 bool
 
+	// experimentalProjectiveDoubleX8 keeps the first four results of each
+	// five-doubling radix-32 run in the distinct P2 (X,Y,Z) type and computes T
+	// only at the addition boundary. It depends on the dedicated raw-square
+	// schedule and remains a complete-pipeline measurement seam.
+	experimentalProjectiveDoubleX8 bool
+
 	// experimentalRawSquareX4 is the four-signature/tail counterpart. It is a
 	// same-binary complete-pipeline measurement seam and remains false in the
 	// registered worker until a CPU-specific public gate admits it.
@@ -594,6 +600,11 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 				panic("ed25519: runtime-sign x8 does not support the raw-square experiment")
 			}
 			usableA, err = pipeline.wideCore.variableX8RuntimeSign.Evaluate(&aTerm, &k, live, live)
+		} else if pipeline.experimentalProjectiveDoubleX8 {
+			if !pipeline.experimentalRawSquareX8 {
+				panic("ed25519: projective x8 doubling requires the raw-square schedule")
+			}
+			usableA, err = pipeline.wideCore.variableX8.EvaluateProjectiveDoubleExperiment(&aTerm, &k, live, live)
 		} else if pipeline.experimentalRawSquareX8 {
 			usableA, err = pipeline.wideCore.variableX8.EvaluateRawSquareExperiment(&aTerm, &k, live, live)
 		} else {

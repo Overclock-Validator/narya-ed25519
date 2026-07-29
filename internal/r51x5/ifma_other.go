@@ -56,6 +56,10 @@ func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8
 	panic("r51x5: unreachable x8 final-product IFMA call on non-amd64")
 }
 
+func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8, operands *IFMAProductX8) {
+	panic("r51x5: unreachable x8 projective final-product IFMA call on non-amd64")
+}
+
 func ifmaMulNormalizedMul19ExperimentX8(out, x, y *LimbsX8) {
 	ifmaMulNormalizedUncheckedX8(out, x, y)
 }

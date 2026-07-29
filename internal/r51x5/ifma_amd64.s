@@ -564,6 +564,44 @@ TEXT ·ifmaPointFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
 	VZEROUPPER
 	RET
 
+// func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8,
+//     operands *IFMAProductX8)
+//
+// This is the deliberately incomplete P2 boundary used only between
+// consecutive point doublings. operands has the same carried-u52 E,F,G,H
+// layout as ifmaPointFinalProductsUncheckedX8, but out physically contains
+// only X/Y/Z. Omitting T=E*H therefore cannot leave a stale extended
+// coordinate that a later addition might consume. A separate P2-to-P3 leaf
+// computes all four products before every addition boundary.
+//
+// The three remaining products are byte-for-byte the same
+// MUL_NORMALIZED_X8_BODY invocations and store offsets as the complete leaf:
+// X=E*F at 0, Y=G*H at 320, Z=F*G at 640. Input and output must not overlap.
+TEXT ·ifmaProjectiveFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), AX
+	MOVQ operands+8(FP), DX
+
+	// X = E*F.
+	MOVQ AX, DI
+	MOVQ DX, CX
+	LEAQ 320(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Y = G*H.
+	LEAQ 320(AX), DI
+	LEAQ 640(DX), CX
+	LEAQ 960(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Z = F*G.
+	LEAQ 640(AX), DI
+	LEAQ 320(DX), CX
+	LEAQ 640(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	VZEROUPPER
+	RET
+
 // func ifmaMulNormalizedMul19ExperimentX8(out, x, y *LimbsX8)
 //
 // Exact copy of the fused x8 multiply above except that the five radix folds

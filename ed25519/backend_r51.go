@@ -148,6 +148,7 @@ func (*r51Backend) newBatchWorker() *r51BatchWorker {
 		pipeline, err = newR51IFMABatchQX8CombPipelineWithFinalizer(r51IFMABatchQFinalizerLiteral)
 		if err == nil {
 			pipeline.experimentalRawSquareX8 = cpufeat.PreferRawSquareIFMA()
+			pipeline.experimentalProjectiveDoubleX8 = cpufeat.PreferProjectiveDoubleX8IFMA()
 			pipeline.wideHashX4Tail = cpufeat.PreferWideHashX4IFMA()
 			pipeline.experimentalBatchEncodeX8 = cpufeat.PreferBatchEncodeX8IFMA()
 			pipeline.projectiveNielsX4 = true

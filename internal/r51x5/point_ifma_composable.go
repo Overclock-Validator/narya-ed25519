@@ -18,6 +18,17 @@ type IFMAPointX8 struct {
 	T IFMAElementX8
 }
 
+// ifmaProjectivePointX8 is an intentionally distinct P2 representation. It
+// carries exactly X/Y/Z and therefore cannot be passed to any addition leaf,
+// all of which require a complete extended point with T. Consecutive-doubling
+// experiments use it to make "T has not been computed" a type property rather
+// than a stale-coordinate flag on IFMAPointX8.
+type ifmaProjectivePointX8 struct {
+	X IFMAElementX8
+	Y IFMAElementX8
+	Z IFMAElementX8
+}
+
 // The composable point-add formulas only read 2d. Keep the lane broadcasts in
 // read-only package storage so the hot loop does not rebuild and re-import the
 // same reduced constant for every selected digit.

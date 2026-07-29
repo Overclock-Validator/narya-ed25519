@@ -42,4 +42,7 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 	if got, want := PreferBatchEncodeX8IFMA(), batchEncodeX8ForAMDVersion(IFMA(), amdFamily); got != want {
 		t.Errorf("PreferBatchEncodeX8IFMA = %v, want %v (family detection)", got, want)
 	}
+	if got, want := PreferProjectiveDoubleX8IFMA(), projectiveDoubleX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferProjectiveDoubleX8IFMA = %v, want %v (family detection)", got, want)
+	}
 }

@@ -88,6 +88,13 @@ func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8)
 //go:noescape
 func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
 
+// ifmaProjectiveFinalProductsUncheckedX8 is the P2-only counterpart. It
+// computes X=E*F, Y=G*H and Z=F*G but deliberately has no storage for T=E*H.
+// Its input, output and non-overlap contracts match the complete leaf above.
+//
+//go:noescape
+func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8, operands *IFMAProductX8)
+
 // ifmaMulNormalizedMul19ExperimentX8 replaces each shift/add multiplication
 // by 19 in the x8 pre-carry fold with one AVX-512DQ VPMULLQ. It is kept
 // separate until exact-representation and complete-verifier gates pass.
