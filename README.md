@@ -268,12 +268,12 @@ Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
 The release snapshot uses **cold Zen 5 measurements only** for its headline:
 an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
-governor, and `GOMAXPROCS=1`. The cold matrix was rerun for exact branch
-commit `985a3b8`; its evidence is under
-[`docs/results/zen5-packed-x4-mul19-2026-07-29/`](docs/results/zen5-packed-x4-mul19-2026-07-29/).
-The warm, cross-library, and multicore reference tables remain pinned to exact
-commit `f0a1bbbc9561d4204965cd4668c69c6409acdf70` and say so below. Every timed
-Narya row reported 0 B/op, 0 allocs/op, and zero internal-fault fallbacks.
+governor, and `GOMAXPROCS=1`. Every table below was rerun from exact branch
+commit `3f7b6885876520f2434e0a89248e106ed144985a`; raw output, commands, host
+details, and checksums are under
+[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
+Every timed Narya row reported 0 B/op, 0 allocs/op, and zero internal-fault
+fallbacks. Displayed values are medians of six two-second samples.
 
 **Units:** every numeric timing cell in the tables below is **microseconds per
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
@@ -286,15 +286,14 @@ lower is better**
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 13.170 | 13.900 | 15.950 |
-| 2 | 13.100 | 13.860 | 15.790 |
-| 4 | 7.524 | 7.983 | 9.366 |
-| 8 | 3.655 | 3.913 | 4.646 |
-| 64 | **3.437** | **3.712** | **4.411** |
+| 1 | 12.990 | 13.875 | 16.035 |
+| 2 | 13.020 | 13.830 | 15.940 |
+| 4 | 7.558 | 8.024 | 9.381 |
+| 8 | 3.653 | 3.904 | 4.632 |
+| 64 | **3.447** | **3.690** | **4.413** |
 
-These are medians of three one-second samples. At 1,232 bytes, the n=8 and
-n=64 rows correspond to approximately 255,600 and 269,400
-signatures/second/core. Batch width matters because n=1 and n=2 use the packed
+At 1,232 bytes, the n=8 and n=64 rows correspond to approximately 256,100 and
+271,000 signatures/second/core. Batch width matters because n=1 and n=2 use the packed
 tail path, n=4 fills one x4 curve group and uses x8 hashing on Zen 5, and n=8
 or larger can fill native x8 groups.
 
@@ -305,20 +304,19 @@ lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 13.900 | 14.910 | 0.93x |
-| 2 | 13.860 | 14.910 | 0.93x |
-| 4 | 7.983 | 4.141 | 1.93x |
-| 8 | 3.913 | **3.896** | **1.00x** |
-| 64 | **3.712** | 3.747 | 0.99x |
+| 1 | 13.875 | 13.890 | 1.00x |
+| 2 | 13.830 | 13.950 | 0.99x |
+| 4 | 8.024 | **4.113** | **1.95x** |
+| 8 | 3.904 | 3.884 | 1.01x |
+| 64 | **3.690** | 3.737 | 0.99x |
 
 The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
 cache deliberately bypasses prepared tables below n=4, so lookup overhead can
 make the singleton row marginally slower. Its wider-batch result depends on
 key population and locality; this small hot fixture is a reference, not a
-universal hit-rate claim. Warm timings are from `f0a1bbb`; the cold column uses
-the newer `985a3b8` matrix. Current cold x8 now matches the old hot-fixture
-warm path at n=8 and exceeds it at n=64, so this cross-check is not a
-claim that a cache hit necessarily helps the present cold implementation.
+universal hit-rate claim. Current cold x8 now approximately matches the
+hot-fixture warm path at n=8 and exceeds it at n=64, so this cross-check is not
+a claim that a cache hit necessarily helps every current width.
 
 The warm path is also not unconditionally faster for every message size. The
 complete measured matrix is:
@@ -327,11 +325,11 @@ complete measured matrix is:
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 14.230 | 14.910 | 16.840 |
-| 2 | 14.260 | 14.910 | 16.880 |
-| 4 | 3.368 | 4.141 | 6.213 |
-| 8 | 3.141 | 3.896 | 5.967 |
-| 64 | **2.975** | **3.747** | **5.831** |
+| 1 | 13.120 | 13.890 | 15.920 |
+| 2 | 13.080 | 13.950 | 15.930 |
+| 4 | 3.362 | 4.113 | 6.201 |
+| 8 | 3.122 | 3.884 | 5.976 |
+| 64 | **2.971** | **3.737** | **5.823** |
 
 At 4,096 bytes, cold x8 is faster than the current warm x4-oriented path at
 n=8 and n=64. The two paths schedule hashing differently, and hashing is a
@@ -343,52 +341,49 @@ the portable `generic` backend remains the default.
 
 ### Cross-library comparison
 
-**Ryzen 7 9700X · 1232-byte messages · µs/signature, lower is better**
+**Ryzen 7 9700X · 1,232-byte messages · µs/signature, lower is better**
 
 The comparison below uses one binary, the same Zen 5 host, and 1,232-byte
-messages. Values are medians of six two-second samples. Every candidate runs
+messages. Every candidate runs
 ordinary per-signature verification and returns one verdict per input; no
 aggregate batch equation is used. Voi's expanded-key row excludes expansion
-cost and is included as a warm-key reference. This comparison remains pinned
-to `f0a1bbb`; in particular, its Narya n=4 row predates the newer Zen 5 x8-hash
-tail dispatch.
+cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 15.095 | 15.050 | 8.746 | 4.299 | 4.095 |
-| Go `crypto/ed25519` | 27.785 | 27.635 | 27.660 | 27.690 | 27.680 |
-| curve25519-voi, cold strict | 22.110 | 22.055 | 22.050 | 22.160 | 22.160 |
-| curve25519-voi, expanded key | 19.320 | 19.250 | 19.230 | 19.345 | 19.360 |
+| Narya r51, cold strict | 13.845 | 13.925 | 7.974 | 3.836 | 3.622 |
+| Go `crypto/ed25519` | 27.680 | 27.855 | 27.690 | 27.600 | 27.615 |
+| curve25519-voi, cold strict | 22.050 | 22.170 | 21.990 | 22.090 | 22.105 |
+| curve25519-voi, expanded key | 19.240 | 19.380 | 19.180 | 19.270 | 19.300 |
 
-Within that comparison binary, Narya is 1.84x faster than Go at n=1, 3.16x
-at n=4, 6.44x at n=8, and 6.76x at n=64. The comparison binary includes the
+Within that comparison binary, Narya is 2.00x faster than Go at n=1, 3.47x
+at n=4, 7.19x at n=8, and 7.63x at n=64. The comparison binary includes the
 opt-in Voi dependency and has a different link layout from the release binary,
 so use this table for library ratios and the cold table above for Narya's
 release latency.
 
 ### Multicore scaling
 
-**Ryzen 7 9700X · 1232-byte messages · aggregate signatures/second, higher is
+**Ryzen 7 9700X · 1,232-byte messages · aggregate signatures/second, higher is
 better**
 
 These are aggregate **signatures per second** over 1,232-byte messages, not
-individual request latency. Values are medians of six two-second samples at
-`f0a1bbb`. Each row pins only distinct physical cores;
+individual request latency. Each row pins only distinct physical cores;
 SMT siblings are excluded.
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 115,422 | 1.00x | 242,381 | 1.00x |
-| 2 | 228,694 | 1.98x | 483,292 | 1.99x |
-| 4 | 450,808 | 3.91x | 948,642 | 3.91x |
-| 6 | 652,385 | 5.65x | 1,353,448 | 5.58x |
-| 8 | 822,218 | 7.12x | 1,674,807 | 6.91x |
+| 1 | 125,100 | 1.00x | 260,104 | 1.00x |
+| 2 | 248,807 | 1.99x | 524,739 | 2.02x |
+| 4 | 488,958 | 3.91x | 1,029,362 | 3.96x |
+| 6 | 702,317 | 5.61x | 1,476,064 | 5.68x |
+| 8 | 891,736 | 7.13x | 1,821,228 | 7.00x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.216
-and 0.597 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.121
+and 0.549 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification. Raw output is in
-[`docs/results/zen5-release-2026-07-29/`](docs/results/zen5-release-2026-07-29/).
+[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
 
 **Hardware scope: AMD only so far.** Every displayed timing above was captured
 on an AMD Ryzen 7 9700X (Zen 5); historical bundles in `docs/results/` also
@@ -404,10 +399,9 @@ measurement is outstanding work, not a completed check.
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into the
 current tables because code, CPU generation, and cache population materially
-change the result. The current cold output is in
-[`docs/results/zen5-native-scalar-reduce-x8-2026-07-29/`](docs/results/zen5-native-scalar-reduce-x8-2026-07-29/).
-Warm, cross-library, and multicore reference outputs remain in
-[`docs/results/zen5-release-2026-07-29/`](docs/results/zen5-release-2026-07-29/).
+change the result. Current cold, warm, cross-library, and multicore outputs are
+all in
+[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
 
 ### Cold and warm verification
 

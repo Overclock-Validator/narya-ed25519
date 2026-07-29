@@ -1,0 +1,6 @@
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' -benchmem -benchtime=2s -count=6 ./ed25519
+
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test -modfile=go.oasis.mod -tags oasis_compare -run '^$' -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' -benchmem -benchtime=2s -count=6 ./ed25519
+
+For each N in 1, 2, 4, 6, 8:
+taskset -c 0-(N-1) env GOMAXPROCS=N /usr/local/go/bin/go test -tags r51_release_bench -run '^$' -bench '^BenchmarkPublicR51VerifyBatchStrictParallel$' -benchmem -benchtime=2s -count=6 ./ed25519
