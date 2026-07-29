@@ -51,4 +51,7 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 	if got, want := PreferNativeScalarReduceX8IFMA(), nativeScalarReduceX8ForAMDVersion(IFMA(), amdFamily); got != want {
 		t.Errorf("PreferNativeScalarReduceX8IFMA = %v, want %v (family detection)", got, want)
 	}
+	if got, want := PreferPackedMul19X4IFMA(), packedMul19X4ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferPackedMul19X4IFMA = %v, want %v (family detection)", got, want)
+	}
 }

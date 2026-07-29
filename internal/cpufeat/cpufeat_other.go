@@ -12,3 +12,4 @@ var preferBatchEncodeX8IFMA = false
 var preferProjectiveDoubleX8IFMA = false
 var preferAsymmetricFixedB10X8IFMA = false
 var preferNativeScalarReduceX8IFMA = false
+var preferPackedMul19X4IFMA = false

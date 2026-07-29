@@ -1163,6 +1163,14 @@ loop at about 10.23 us and the ordinary two-chain ZMM loop at about 10.77 us,
 or 5.2% slower. Both paths were zero-allocation and the two-chain result was
 differentially checked against the existing strict integer-scalar equation.
 
+The recommendation was rechecked after the later packed-x4 fusion and cold
+x8 work rather than extrapolated from that older checkpoint. At exact code
+commit `54d6430`, eight two-second samples put the shared x4 loop at
+9.535--9.559 us and the two-chain ZMM loop at about 10.77 us: now roughly 13%
+slower. The ZMM doubling component is still efficient; identity-half cached
+adds, selections, and final term combination are the surviving cost. This
+current-tree rerun strengthens rather than reopens the negative verdict.
+
 This closes the ordinary two-chain loop on the measured Zen 5 regime. The
 component kernel remains useful evidence rather than dead code: a future
 scalar transformation may expose two chains while also removing enough rounds
@@ -1425,11 +1433,11 @@ re-checked against `a3188cf` before changing code:
   by the registered cold x8 verifier.
 
 The one current defect was the merged-B10 call-site bypass recorded in 5.35.
-The proposed bounded-clear rewrite is not treated as proven by the older
-`clear(slice)` result: a counted assignment loop is a distinct code shape and
-remains a small measurement candidate. It is also constrained by the existing
-poisoned-output differentials, which compare the complete digit structure and
-therefore require unused rounds to be deterministically cleared.
+The proposed bounded-clear rewrite was not treated as proven by the older
+`clear(slice)` result: a counted assignment loop is a distinct code shape. It
+was measured separately and closed in 5.38. The existing poisoned-output
+differentials compare the complete digit structure, so unused rounds still
+have to be cleared deterministically.
 
 **Regime tag:** source and call-graph audit at `a3188cf`. This section records
 which historical recommendations are already present or non-hot; it is not a
@@ -1478,6 +1486,83 @@ Evidence is under
 Go 1.26.4. The assembly is directly testable on any supported IFMA CPU, but
 performance dispatch remains Zen-5-only until other microarchitectures pass a
 complete gate.
+
+### 5.38 Counted bounded-tail clearing — negative
+
+The old bounded-clearing experiment used `clear(out.rounds[:rounds])`, which
+the compiler lowered to `runtime.memclrNoHeapPointers`. The follow-up tested
+the materially different counted-assignment shape suggested in review. For
+the two full-lane specializations, every used record is overwritten in full,
+so the safe candidate cleared only the unused tail: rounds 51--63 for the
+radix-32 variable scalar and rounds 32--63 for the radix-256 base scalar.
+Invalid inputs still re-entered the generic full-clear path. Existing
+10,000-case poisoned-output differentials passed unchanged.
+
+On the pinned Ryzen 7 9700X, six alternating one-second samples put the
+radix-256 recoder near 225 ns before and 229 ns after, about 2% slower. The
+radix-32 recoder was approximately flat to slightly faster, but the complete
+1,232-byte verifier consistently regressed: roughly 3.891 to 3.905
+us/signature at n=8 and 3.673 to 3.689 at n=64 (+0.3--0.5%). The candidate was
+removed.
+
+**Regime tag:** current specialized cold x8 radix-32 A plus radix-256 B
+recoders on Zen 5 at `804e66b`. This closes both `clear(slice)` and counted
+tail-assignment forms for the present output layout; it does not reject a
+future recoder whose type contains only the live rounds.
+
+### 5.39 Packed-x4 high-coefficient fold on Zen 5 — retained
+
+A current-tree profile of the cold singleton and pair paths found that three
+packed-x4 product leaves still folded each high coefficient with a three-add
+shift sequence for multiplication by 19. The registered x8 path had already
+retained a `VPMULLQ` fold after its own hardware A/B, so the old general advice
+to prefer shifts in dense IFMA streams could not be applied mechanically.
+
+The packed coefficients entering this fold are below 2^56, making `19 * high`
+an exact unsigned 64-bit product. A candidate therefore replaced four vector
+instructions per limb with `VPMULLQ` plus `VPADDQ`. The choice is immutable at
+package initialization and enabled only for AMD family 1Ah (Zen 5); Zen 4 and
+unknown IFMA CPUs keep the previously measured shift/add sequence.
+
+Direct leaf differentials covered zero, maximum-u52 operands, 512 random exact
+redundant representations, aliasing, mixed-order point chains, and the existing
+zero-allocation gates. Six alternating one-second Zen 5 samples measured:
+
+| packed operation | shift/add | `VPMULLQ` | change |
+| --- | ---: | ---: | ---: |
+| cached addition | about 31.86 ns | about 31.31 ns | -1.7% |
+| doubling | about 28.20 ns | about 27.00 ns | -4.3% |
+
+At the complete public API, alternating measurements improved 1,232-byte cold
+verification by about 2.8% at n=1 and 2.4% at n=2. The 200-byte and 4,096-byte
+cases also improved, by roughly 2--3%, so the change does not trade the primary
+1,232-byte workload for a longer-message-only win. Wider groups are unaffected
+because they use the x8 field layer.
+
+**Regime tag:** registered packed-x4 cold path on a Ryzen 7 9700X, Go 1.26.4,
+based on exact code commit `804e66b`. The final exact-commit release matrix is
+recorded with the retained implementation's reproducibility artifacts.
+
+### 5.40 Revalidation rule for historical recommendations
+
+Performance recommendations from older commits are treated as hypotheses, not
+as current-tree facts. Before implementation, each recommendation is checked
+against the registered dispatch path, the generated assembly, and a fresh
+native benchmark on the target CPU. This pass produced three different
+outcomes that are useful to retain:
+
+- balanced-recoder division and direct digit stores were already removed from
+  the registered cold path;
+- counted bounded-tail clearing remained semantically valid but regressed the
+  complete verifier and was removed;
+- the ordinary two-chain ZMM loop became about 13% slower than the current
+  shared packed-x4 loop, invalidating its older priority ranking;
+- packed-x4 multiplication-by-19 was still live and improved every tested
+  message size, so it was retained behind a Zen-5-specific policy.
+
+This rule is intentionally stricter than source inspection alone because a
+recommendation can become stale through compiler changes, dispatch changes, or
+an optimization landing in only one of several SIMD orientations.
 
 ---
 

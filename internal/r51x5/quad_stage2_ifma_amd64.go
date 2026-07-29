@@ -2,6 +2,13 @@
 
 package r51x5
 
+import "github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
+
+// preferPackedMul19X4 is immutable after package initialization. The assembly
+// leaves read it once per product to retain the reviewed shift/add schedule on
+// unmeasured IFMA CPUs without duplicating three large arithmetic kernels.
+var preferPackedMul19X4 = cpufeat.PreferPackedMul19X4IFMA()
+
 // ifmaQuadDoubleFirstOperandsUncheckedX4 permutes packed [X,Y,T,Z] lanes into
 // U=[X,Y,Z,X] and V=[X,Y,Z,Y] for the first doubling multiplication. u and v
 // must be distinct; q may alias either output because every input vector is

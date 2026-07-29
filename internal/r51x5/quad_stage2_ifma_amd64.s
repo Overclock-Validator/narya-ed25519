@@ -76,6 +76,12 @@
 	VPADDQ HI, T0, T0                    \
 	VPADDQ T0, LO, LO
 
+// The combined high coefficients are below 2^56, so 19*HI fits in uint64.
+// This is the packed-x4 counterpart of the retained x8 fold experiment.
+#define QUAD_FOLD_INTO_MUL19(LO, HI, T0, FOLD19) \
+	VPMULLQ FOLD19, HI, T0                         \
+	VPADDQ T0, LO, LO
+
 // General u61 product carry. Unlike QUAD_DOUBLE_NORMALIZE_5, each carry can
 // be as large as 1023; 19*C4 still fits wholly in VPMADD52LUQ's low half.
 #define QUAD_PRODUCT_NORMALIZE_5(IN0, IN1, IN2, IN3, IN4, MASK, C0, C1, C2, C3, C4, FOLD19) \
@@ -319,15 +325,26 @@ TEXT ·ifmaQuadDoubleFinalMultiplyUncheckedX4(SB), NOSPLIT, $0-16
 	QUAD_COMBINE_HIGH(Y26, Y18)
 	VPSLLQ $1, Y27, Y27
 
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_double_final_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_double_final_fold_done
+quad_double_final_shift_fold:
 	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
 	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
 	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
 	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
 	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_double_final_fold_done:
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
-	VPBROADCASTQ ·ifmaFold19(SB), Y20
-	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y20)
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
 
 	VMOVDQU64 Y10,   0(DI)
 	VMOVDQU64 Y11,  32(DI)
@@ -491,15 +508,26 @@ TEXT ·ifmaQuadCachedAddFinalMultiplyUncheckedX4(SB), NOSPLIT, $0-16
 	QUAD_COMBINE_HIGH(Y26, Y18)
 	VPSLLQ $1, Y27, Y27
 
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_cached_add_final_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_cached_add_final_fold_done
+quad_cached_add_final_shift_fold:
 	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
 	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
 	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
 	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
 	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_cached_add_final_fold_done:
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
-	VPBROADCASTQ ·ifmaFold19(SB), Y20
-	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y20)
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
 
 	VMOVDQU64 Y10,   0(DI)
 	VMOVDQU64 Y11,  32(DI)
@@ -597,15 +625,26 @@ TEXT ·ifmaQuadDoubleFirstMultiplyUncheckedX4(SB), NOSPLIT, $0-16
 	QUAD_COMBINE_HIGH(Y26, Y18)
 	VPSLLQ $1, Y27, Y27
 
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_double_first_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_double_first_fold_done
+quad_double_first_shift_fold:
 	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
 	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
 	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
 	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
 	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_double_first_fold_done:
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
-	VPBROADCASTQ ·ifmaFold19(SB), Y20
-	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y20)
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
 
 	VMOVDQU64 Y10,   0(DI)
 	VMOVDQU64 Y11,  32(DI)

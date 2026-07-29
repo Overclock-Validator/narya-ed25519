@@ -70,6 +70,13 @@ func PreferAsymmetricFixedB10X8IFMA() bool { return preferAsymmetricFixedB10X8IF
 // reducer until the complete gate is repeated there.
 func PreferNativeScalarReduceX8IFMA() bool { return preferNativeScalarReduceX8IFMA }
 
+// PreferPackedMul19X4IFMA reports whether coordinate-parallel packed x4
+// products should fold their high coefficients with AVX-512DQ VPMULLQ rather
+// than shifts and adds. Complete 200/1,232/4,096-byte singleton and pair
+// measurements select VPMULLQ on AMD family 1Ah (Zen 5). Zen 4 and unknown
+// IFMA CPUs retain the prior shift/add schedule until measured independently.
+func PreferPackedMul19X4IFMA() bool { return preferPackedMul19X4IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
@@ -91,6 +98,10 @@ func asymmetricFixedB10X8ForAMDVersion(ifma bool, family uint32) bool {
 }
 
 func nativeScalarReduceX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func packedMul19X4ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 
