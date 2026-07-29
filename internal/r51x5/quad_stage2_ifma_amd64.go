@@ -10,6 +10,17 @@ package r51x5
 //go:noescape
 func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4)
 
+// ifmaQuadDoubleFirstMultiplyUncheckedX4 fuses the packed doubling input
+// permutations with the normalized field multiplication that consumes them.
+// For each radix-2^51 limb, q contains [X,Y,T,Z]; the fused leaf constructs
+// [X,Y,Z,X] and [X,Y,Z,Y] in registers and returns the exact normalized
+// [X^2,Y^2,Z^2,XY] representation produced by the split helpers. q must be
+// u52. out may alias q because all five q vectors are consumed before the
+// first output store. The caller owns the IFMA gate.
+//
+//go:noescape
+func ifmaQuadDoubleFirstMultiplyUncheckedX4(out, q *LimbsX4)
+
 // ifmaQuadCachedAddFirstOperandUncheckedX4 transforms packed [X,Y,T,Z] lanes
 // into the normalized [Y-X,Y+X,T,Z] operand for cached addition. q must be u52.
 // Adding 4p to Y-X makes every pre-carry limb non-negative and below 6*2^51;

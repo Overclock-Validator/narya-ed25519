@@ -63,12 +63,12 @@ type quadDSMOperationsX4 struct {
 	hardware bool
 }
 
-// quadPointDoubleWorkspaceX4 keeps the three fully-overwritten packed
-// temporaries outside the dependent doubling loop. The hardware operation
-// writes every limb of every field before reading it; callers may therefore
-// reuse one workspace without clearing it between doublings.
+// quadPointDoubleWorkspaceX4 keeps the fully-overwritten packed product
+// outside the dependent doubling loop. The hardware operation writes every
+// limb before reading it; callers may therefore reuse one workspace without
+// clearing it between doublings.
 type quadPointDoubleWorkspaceX4 struct {
-	u, v, products IFMAElementX4
+	products IFMAElementX4
 }
 
 // quadPointAddCachedWorkspaceX4 is the cached-add counterpart of
@@ -173,10 +173,7 @@ func quadPointDoubleHardwareUncheckedX4(out, q *quadPackedPointX4) error {
 }
 
 func quadPointDoubleHardwareWorkspaceUncheckedX4(out, q *quadPackedPointX4, workspace *quadPointDoubleWorkspaceX4) error {
-	ifmaQuadDoubleFirstOperandsUncheckedX4(&workspace.u.limbs, &workspace.v.limbs, &q.coordinates.limbs)
-	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
-		return err
-	}
+	ifmaQuadDoubleFirstMultiplyUncheckedX4(&workspace.products.limbs, &q.coordinates.limbs)
 	// q is no longer live after the first packed permutation, so this final
 	// linear layer and multiply may write directly through out even when
 	// out == q.

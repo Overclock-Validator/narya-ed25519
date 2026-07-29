@@ -266,6 +266,68 @@ func TestIFMAQuadDoubleFirstOperandsX4ZeroAllocations(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadDoubleFirstMultiplyX4MatchesSplit(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 514)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x5144464d))
+	for sample := 0; sample < 512; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		var u, v, want IFMAElementX4
+		ifmaQuadDoubleFirstOperandsUncheckedX4(&u.limbs, &v.limbs, &input.limbs)
+		ifmaMulNormalizedUncheckedX4(&want.limbs, &u.limbs, &v.limbs)
+
+		var got IFMAElementX4
+		ifmaQuadDoubleFirstMultiplyUncheckedX4(&got.limbs, &input.limbs)
+		if got != want {
+			t.Fatalf("input %d: fused first multiply differs from split native oracle", index)
+		}
+
+		aliased := input
+		ifmaQuadDoubleFirstMultiplyUncheckedX4(&aliased.limbs, &aliased.limbs)
+		if aliased != want {
+			t.Fatalf("input %d: fused input/output alias differs from split native oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadDoubleFirstMultiplyX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, output IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadDoubleFirstMultiplyUncheckedX4(&output.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestIFMAQuadDoubleFinalOperandsX4MatchesPortable(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return
@@ -470,11 +532,9 @@ func TestExperimentalCoordinateParallelDoubleWorkspaceX4IgnoresPriorScratch(t *t
 	clean := new(quadPackedPointX4).setReduced(&point)
 	poisoned := *clean
 	var cleanWorkspace, poisonedWorkspace quadPointDoubleWorkspaceX4
-	for limb := range poisonedWorkspace.u.limbs {
-		for lane := range poisonedWorkspace.u.limbs[limb] {
+	for limb := range poisonedWorkspace.products.limbs {
+		for lane := range poisonedWorkspace.products.limbs[limb] {
 			value := uint64(0xa5a5_0000_0000_0000 | uint64(limb<<8|lane))
-			poisonedWorkspace.u.limbs[limb][lane] = value
-			poisonedWorkspace.v.limbs[limb][lane] = ^value
 			poisonedWorkspace.products.limbs[limb][lane] = value ^ 0x1111
 		}
 	}
@@ -506,6 +566,22 @@ var (
 	benchmarkQuadPackedPointX4Sink quadPackedPointX4
 	benchmarkQuadLanePointX4Sink   IFMAPointX4
 )
+
+type quadPointDoubleSplitFirstWorkspaceX4 struct {
+	u, v, products IFMAElementX4
+}
+
+func quadPointDoubleHardwareWorkspaceSplitFirstX4(
+	out, q *quadPackedPointX4,
+	workspace *quadPointDoubleSplitFirstWorkspaceX4,
+) error {
+	ifmaQuadDoubleFirstOperandsUncheckedX4(&workspace.u.limbs, &workspace.v.limbs, &q.coordinates.limbs)
+	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
+		return err
+	}
+	ifmaQuadDoubleFinalMultiplyUncheckedX4(&out.coordinates.limbs, &workspace.products.limbs)
+	return nil
+}
 
 func BenchmarkExperimentalCoordinateParallelDoubleX4(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {
@@ -553,6 +629,19 @@ func BenchmarkExperimentalCoordinateParallelDoubleX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := quadPointDoubleHardwareWorkspaceUncheckedX4(state, state, &workspace); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkQuadPackedPointX4Sink = *state
+	})
+
+	b.Run("chained/quad-packed-split-first-control", func(b *testing.B) {
+		state := new(quadPackedPointX4).setReduced(&point)
+		var workspace quadPointDoubleSplitFirstWorkspaceX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := quadPointDoubleHardwareWorkspaceSplitFirstX4(state, state, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}

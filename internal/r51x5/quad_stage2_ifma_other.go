@@ -10,6 +10,12 @@ func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4) {
 	*v = vElement.limbs
 }
 
+func ifmaQuadDoubleFirstMultiplyUncheckedX4(out, q *LimbsX4) {
+	var u, v LimbsX4
+	ifmaQuadDoubleFirstOperandsUncheckedX4(&u, &v, q)
+	ifmaMulNormalizedUncheckedX4(out, &u, &v)
+}
+
 func ifmaQuadCachedAddFirstOperandUncheckedX4(out, q *LimbsX4) {
 	point := quadPackedPointX4{coordinates: IFMAElementX4{limbs: *q}}
 	var outElement IFMAElementX4
