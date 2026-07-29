@@ -188,30 +188,30 @@ TEXT ·ifmaMulRawX8(SB), NOSPLIT, $0-24
 // especially useful for Niels additions, whose four A/B/C/D products are
 // independent and immediately consumed by the existing linear stage.
 TEXT ·ifmaFourRawProductsUncheckedX8(SB), NOSPLIT, $0-72
-	MOVQ out+0(FP), AX
-
-	MOVQ AX, DI
-	MOVQ x0+8(FP), CX
-	MOVQ y0+16(FP), BX
-	MUL_RAW_X8_BODY
-
-	LEAQ 320(AX), DI
-	MOVQ x1+24(FP), CX
-	MOVQ y1+32(FP), BX
-	MUL_RAW_X8_BODY
-
-	LEAQ 640(AX), DI
-	MOVQ x2+40(FP), CX
-	MOVQ y2+48(FP), BX
-	MUL_RAW_X8_BODY
-
-	LEAQ 960(AX), DI
-	MOVQ x3+56(FP), CX
-	MOVQ y3+64(FP), BX
-	MUL_RAW_X8_BODY
+	FOUR_RAW_PRODUCTS_X8_BODY
 
 	VZEROUPPER
 	RET
+
+// The following two leaves execute the identical four raw products above and
+// tail-jump into the existing independently tested Stage-2 transitions. Their
+// first ABI0 argument is the same workspace pointer that Stage 2 expects, so
+// the jump changes neither its stack layout nor its range/provenance contract.
+// Stage 2 performs the sole VZEROUPPER and returns directly to the Go caller.
+// This retains the profiler-visible Stage-2 symbol and avoids a monolithic
+// point kernel while removing the intervening return/call boundary.
+
+// func ifmaFourRawProductsDoubleStage2UncheckedX8(out *IFMAProductX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+TEXT ·ifmaFourRawProductsDoubleStage2UncheckedX8(SB), NOSPLIT, $0-72
+	FOUR_RAW_PRODUCTS_X8_BODY
+	JMP ·ifmaDoubleStage2X8(SB)
+
+// func ifmaFourRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+TEXT ·ifmaFourRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-72
+	FOUR_RAW_PRODUCTS_X8_BODY
+	JMP ·ifmaNielsStage2X8(SB)
 
 // func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //

@@ -23,6 +23,24 @@ func ifmaFourRawProductsUncheckedX8(
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
+// The Stage-2 continuations compute the same four products as
+// ifmaFourRawProductsUncheckedX8 and then tail-enter the existing double or
+// Niels linear/carry leaf. Their output pointer must refer to the corresponding
+// four-slot workspace. Input, output, range, and non-overlap contracts are the
+// conjunction of the raw-product and named Stage-2 contracts.
+//
+//go:noescape
+func ifmaFourRawProductsDoubleStage2UncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
+//go:noescape
+func ifmaFourRawProductsNielsStage2UncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
 // ifmaMulRawX4 is the AVX-512VL/YMM analogue of ifmaMulRawX8.
 //
 //go:noescape

@@ -76,3 +76,26 @@
 	FOLD_STORE(Z12, Z17, Z28, Z29, 128) \
 	FOLD_STORE(Z13, Z18, Z28, Z29, 192) \
 	FOLD_STORE(Z14, Z27, Z28, Z29, 256)
+
+// Expand four independent raw products from the common nine-pointer Go ABI0
+// signature. Keeping argument loads here as well as MUL_RAW_X8_BODY means the
+// raw-only, double-Stage-2, and Niels-Stage-2 leaves cannot drift in their
+// product order. The caller chooses only the continuation after this macro.
+#define FOUR_RAW_PRODUCTS_X8_BODY \
+	MOVQ out+0(FP), AX      \
+	MOVQ AX, DI             \
+	MOVQ x0+8(FP), CX       \
+	MOVQ y0+16(FP), BX      \
+	MUL_RAW_X8_BODY         \
+	LEAQ 320(AX), DI        \
+	MOVQ x1+24(FP), CX      \
+	MOVQ y1+32(FP), BX      \
+	MUL_RAW_X8_BODY         \
+	LEAQ 640(AX), DI        \
+	MOVQ x2+40(FP), CX      \
+	MOVQ y2+48(FP), BX      \
+	MUL_RAW_X8_BODY         \
+	LEAQ 960(AX), DI        \
+	MOVQ x3+56(FP), CX      \
+	MOVQ y3+64(FP), BX      \
+	MUL_RAW_X8_BODY
