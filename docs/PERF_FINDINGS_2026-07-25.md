@@ -1343,6 +1343,41 @@ Evidence is under
 earlier negative is not deleted; it documents why point-kernel changes require
 old algorithmic experiments to be remeasured rather than trusted forever.
 
+### 5.34 Selector-to-first-product fusion — retained negative
+
+A fresh profile after merged B10 still attributed about 3.2% of n=8/n=64
+time to the variable-base micro-AoS selector. The registered selector is newer
+than the original fusion proposal: it already chooses a pre-signed entry and
+transposes all four Niels coordinates together. It performs no online sign
+swap or conditional negation.
+
+Two native candidates checked the remaining store/reload boundary. The naive
+form transposed each coordinate independently and was immediately rejected
+because it repeated the complete shuffle network four times. The corrected
+form transposed all coordinates once, retained cached Y-X in ZMM registers,
+and used the existing product workspace only for Y+X, 2dT, and Z. It reused
+the exact raw-multiply instruction body and tail-entered the existing Niels
+Stage-2 leaf. An exact native differential covered all 256 active masks times
+all 256 public sign masks, distinct magnitudes spanning 1 through 16, input
+immutability, and zero allocations.
+
+On a pinned Ryzen 7 9700X core, five one-second samples measured:
+
+| implementation | median ns/add | range ns/add | change |
+|---|---:|---:|---:|
+| separate pre-signed selector + current add | 69.88 | 69.67--69.92 | baseline |
+| single-pass selector/first-products fusion | 86.30 | 86.26--86.34 | +23.5% |
+
+The insert/shuffle and live-register pressure cost more than the five cached
+coordinate stores and reloads removed. Because the candidate already loses at
+the exact leaf boundary, it was not promoted to a complete-verifier A/B and
+the added assembly was removed.
+
+**Regime tag:** cold pre-signed micro-AoS x8 A tables on Zen 5 after merged
+B10. This closes only fusion for the present four-coordinate transpose layout;
+it does not reject a future table layout that emits multiply-ready limb vectors
+without an in-loop transpose.
+
 ---
 
 ## 6. Smaller observations
