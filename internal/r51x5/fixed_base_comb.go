@@ -838,11 +838,13 @@ func addFixedBaseIFMACachedWorkspaceX8(
 	ifmaAddComposableUncheckedX8(&workspace.yPlusX, &point.Y, &point.X)
 
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &workspace.yMinusX.limbs, &cached.YMinusX.limbs)
-	ifmaMulRawX8(&stage2[1], &workspace.yPlusX.limbs, &cached.YPlusX.limbs)
-	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
-	stage2[3] = IFMAProductX8(point.Z.limbs)
-	ifmaNielsStage2X8(stage2)
+	ifmaThreeRawProductsNielsStage2UncheckedX8(
+		&stage2[0],
+		&workspace.yMinusX.limbs, &cached.YMinusX.limbs,
+		&workspace.yPlusX.limbs, &cached.YPlusX.limbs,
+		&point.T.limbs, &cached.T2D.limbs,
+		&point.Z.limbs,
+	)
 
 	// point and cached are dead after A/B/C and Z have been captured. Direct
 	// output is therefore safe for out==point and avoids a 1,280-byte result
