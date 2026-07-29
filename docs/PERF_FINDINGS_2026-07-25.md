@@ -1539,9 +1539,14 @@ cases also improved, by roughly 2--3%, so the change does not trade the primary
 1,232-byte workload for a longer-message-only win. Wider groups are unaffected
 because they use the x8 field layer.
 
+The exact retained commit measured 13.90 and 13.86 us/signature at n=1 and
+n=2 for 1,232-byte messages. Its unaffected controls were 7.983, 3.913, and
+3.712 us/signature at n=4, n=8, and n=64.
+
 **Regime tag:** registered packed-x4 cold path on a Ryzen 7 9700X, Go 1.26.4,
-based on exact code commit `804e66b`. The final exact-commit release matrix is
-recorded with the retained implementation's reproducibility artifacts.
+exact code commit `985a3b8`. Raw A/B, complete-matrix, environment, and
+validation output are under
+`docs/results/zen5-packed-x4-mul19-2026-07-29/`.
 
 ### 5.40 Revalidation rule for historical recommendations
 
