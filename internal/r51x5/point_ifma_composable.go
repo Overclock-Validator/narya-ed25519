@@ -284,14 +284,13 @@ func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *
 	// expands the same multiply body as four standalone calls, but the
 	// 252-doubling scalar loop pays one transition and one VZEROUPPER per
 	// doubling instead of four.
-	ifmaFourRawProductsUncheckedX8(
+	ifmaFourRawProductsDoubleStage2UncheckedX8(
 		&stage2[0],
 		&q.X.limbs, &q.X.limbs,
 		&q.Y.limbs, &q.Y.limbs,
 		&q.Z.limbs, &q.Z.limbs,
 		&q.X.limbs, &q.Y.limbs,
 	)
-	ifmaDoubleStage2X8(stage2)
 
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a
