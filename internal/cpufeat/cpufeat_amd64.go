@@ -19,6 +19,7 @@ var preferDecodedAIFMA = hasIFMA && amdFamily19OrNewer
 var preferWarmX8IFMA = hasIFMA && amdFamily19OrNewer
 var preferRawSquareIFMA = rawSquareForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 var preferWideHashX4IFMA = wideHashX4ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
+var preferBatchEncodeX8IFMA = batchEncodeX8ForAMDVersion(hasIFMA, amdFamily) || (hasIFMA && forceAMDPolicy)
 
 func detectAMDFamily() uint32 {
 	_, ebx, ecx, edx := cpuid(0, 0)

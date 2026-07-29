@@ -96,6 +96,27 @@ func splitIFMAElementX8(low, high *IFMAElementX4, source *IFMAElementX8) {
 	}
 }
 
+// SetX4Halves joins two four-lane composable points into the low and high
+// halves of p. It is the exact inverse layout operation of SplitX4: no field
+// arithmetic or normalization occurs, and every u52 limb is copied bit for
+// bit. The x8 batch encoder uses this boundary after an x4 evaluation path.
+func (p *IFMAPointX8) SetX4Halves(low, high *IFMAPointX4) *IFMAPointX8 {
+	joinIFMAElementX4(&p.X, &low.X, &high.X)
+	joinIFMAElementX4(&p.Y, &low.Y, &high.Y)
+	joinIFMAElementX4(&p.Z, &low.Z, &high.Z)
+	joinIFMAElementX4(&p.T, &low.T, &high.T)
+	return p
+}
+
+func joinIFMAElementX4(out *IFMAElementX8, low, high *IFMAElementX4) {
+	for limb := range out.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			out.limbs[limb][lane] = low.limbs[limb][lane]
+			out.limbs[limb][lane+X4Lanes] = high.limbs[limb][lane]
+		}
+	}
+}
+
 type ifmaComposableMulX4 func(out, x, y *IFMAElementX4) error
 type ifmaComposableMulX8 func(out, x, y *IFMAElementX8) error
 

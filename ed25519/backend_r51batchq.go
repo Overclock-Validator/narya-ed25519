@@ -30,9 +30,8 @@ type r51IFMABatchQPipeline struct {
 
 	// experimentalRawSquareX8 changes only the x8 variable-base doubling leaf
 	// to the exact folded-u61 dedicated-square schedule. The registered worker
-	// enables it on Zen 4, where complete verification is faster, and leaves it
-	// off on Zen 5, where the general-multiply schedule remains faster. Tests
-	// also use this field to compare both schedules in one binary.
+	// enables it on measured Zen 4 and Zen 5 families. Tests also use this field
+	// to compare both schedules in one binary.
 	experimentalRawSquareX8 bool
 
 	// experimentalRawSquareX4 is the four-signature/tail counterpart. It is a
@@ -66,11 +65,29 @@ type r51IFMABatchQPipeline struct {
 	// constructors leave it false so tests can retain the former extended table.
 	projectiveNielsX4 bool
 
+	// experimentalBatchEncodeX8 joins the existing x4 finalizer groups into
+	// native-wide groups before the literal batch-Q encoder. It preserves the
+	// single inversion per <=64-signature chunk and remains a same-binary
+	// measurement seam. The registered worker enables it on measured Zen 5
+	// parts. The finalizer keeps x4 below r51BatchEncodeX8MinCount, where native-
+	// wide setup does not repay itself.
+	experimentalBatchEncodeX8 bool
+	// batchEncodeX8Active is derived anew for every <=64-signature chunk. Store
+	// sites use it so a sub-threshold chunk cannot write a buffer owned by the
+	// inactive x8 finalizer.
+	batchEncodeX8Active bool
+
 	encoder r51x5.ExperimentalIFMABatchEncodeWorkspaceX4
 	points  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]r51x5.IFMAPointX4
 	active  [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
 	encoded [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups][r51x5.X4Lanes][32]byte
 	final   [r51x5.ExperimentalIFMABatchEncodeMaxX4Groups]uint8
+
+	encoderX8 r51x5.ExperimentalIFMABatchEncodeWorkspaceX8
+	pointsX8  [r51x5.ExperimentalIFMABatchEncodeMaxX8Groups]r51x5.IFMAPointX8
+	activeX8  [r51x5.ExperimentalIFMABatchEncodeMaxX8Groups]uint8
+	encodedX8 [r51x5.ExperimentalIFMABatchEncodeMaxX8Groups][r51x5.X8Lanes][32]byte
+	directX8  uint8
 
 	// decodedA* is fixed scratch for cold A preparation and the private decoded-
 	// point measurement seam. Misses are packed across the entire <=64-signature
@@ -102,6 +119,11 @@ type r51DecodedAEntry struct {
 }
 
 const r51BatchQMaxChunk = r51x5.ExperimentalIFMABatchEncodeMaxX4Groups * r51x5.X4Lanes
+
+// r51BatchEncodeX8MinCount is the measured Zen 5 crossover for the literal-Q
+// finalizer. At 1,232 bytes, x8 was neutral at n=8 and 0.38-0.48% faster at
+// n=16/32; n=64 also won across 200-, 1,232- and 4,096-byte messages.
+const r51BatchEncodeX8MinCount = 16
 
 type r51IFMABatchQFinalizer uint8
 
@@ -259,6 +281,18 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 		pipeline.encoded[group] = [r51x5.X4Lanes][32]byte{}
 		pipeline.final[group] = 0
 	}
+	pipeline.batchEncodeX8Active = pipeline.experimentalBatchEncodeX8 && count >= r51BatchEncodeX8MinCount
+	if pipeline.experimentalBatchEncodeX8 {
+		pipeline.directX8 = 0
+	}
+	if pipeline.batchEncodeX8Active {
+		groupsX8 := (groups + 1) / 2
+		for group := 0; group < groupsX8; group++ {
+			pipeline.pointsX8[group] = r51x5.IFMAPointX8{}
+			pipeline.activeX8[group] = 0
+			pipeline.encodedX8[group] = [r51x5.X8Lanes][32]byte{}
+		}
+	}
 
 	if pipeline.wideCore != nil && compactMisses {
 		if decoded == nil {
@@ -333,6 +367,39 @@ func (pipeline *r51IFMABatchQPipeline) verifyChunk(profile Profile, pubs []*[32]
 	}
 	switch pipeline.finalizer {
 	case r51IFMABatchQFinalizerLiteral:
+		if pipeline.batchEncodeX8Active {
+			groupsX8 := (groups + 1) / 2
+			for group := 0; group < groupsX8; group++ {
+				if pipeline.directX8&(1<<group) != 0 {
+					continue
+				}
+				low := 2 * group
+				high := low + 1
+				if high < groups {
+					pipeline.pointsX8[group].SetX4Halves(&pipeline.points[low], &pipeline.points[high])
+					pipeline.activeX8[group] = pipeline.active[low]&0x0f | (pipeline.active[high]&0x0f)<<r51x5.X4Lanes
+				} else {
+					var empty r51x5.IFMAPointX4
+					pipeline.pointsX8[group].SetX4Halves(&pipeline.points[low], &empty)
+					pipeline.activeX8[group] = pipeline.active[low] & 0x0f
+				}
+			}
+			if err := pipeline.encoderX8.Encode(&pipeline.encodedX8, &pipeline.pointsX8, &pipeline.activeX8, groupsX8); err != nil {
+				return err
+			}
+			for group := 0; group < groupsX8; group++ {
+				mask := pipeline.activeX8[group]
+				for lane := 0; lane < r51x5.X8Lanes; lane++ {
+					relative := group*r51x5.X8Lanes + lane
+					if relative >= count || mask&(1<<lane) == 0 {
+						continue
+					}
+					index := offset + relative
+					ok[index] = bytes.Equal(pipeline.encodedX8[group][lane][:], sigs[index][:32])
+				}
+			}
+			return nil
+		}
 		if err := pipeline.encoder.Encode(&pipeline.encoded, &pipeline.points, &pipeline.active, groups); err != nil {
 			return err
 		}
@@ -545,14 +612,28 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 		usable = usableA & usableB
 	}
 	live &= usable
+	pipeline.storeWideFinalizerPoint(&combined, live, outputGroup)
+	return nil
+}
+
+func (pipeline *r51IFMABatchQPipeline) storeWideFinalizerPoint(point *r51x5.IFMAPointX8, active uint8, outputGroup int) {
+	if pipeline.batchEncodeX8Active {
+		if outputGroup%2 != 0 {
+			panic("ed25519: x8 finalizer point is not aligned to two x4 groups")
+		}
+		group := outputGroup / 2
+		pipeline.pointsX8[group] = *point
+		pipeline.activeX8[group] = active
+		pipeline.directX8 |= 1 << group
+		return
+	}
 	var split [2]r51x5.IFMAPointX4
-	combined.SplitX4(&split)
+	point.SplitX4(&split)
 	for half := range split {
 		group := outputGroup + half
 		pipeline.points[group] = split[half]
-		pipeline.active[group] = uint8(live>>(half*r51x5.X4Lanes)) & 0x0f
+		pipeline.active[group] = uint8(active>>(half*r51x5.X4Lanes)) & 0x0f
 	}
-	return nil
 }
 
 func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4Group(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, offset, count, outputGroup int) error {
@@ -919,13 +1000,7 @@ func (pipeline *r51IFMABatchQPipeline) evaluatePreparedX8Group(
 		return err
 	}
 	live &= usableA & usableB
-	var split [2]r51x5.IFMAPointX4
-	combined.SplitX4(&split)
-	for half := range split {
-		group := outputGroup + half
-		pipeline.points[group] = split[half]
-		pipeline.active[group] = uint8(live>>(half*r51x5.X4Lanes)) & 0x0f
-	}
+	pipeline.storeWideFinalizerPoint(&combined, live, outputGroup)
 	return nil
 }
 

@@ -27,6 +27,7 @@ func TestAMDPolicyOverrideReachesTheGatedPaths(t *testing.T) {
 		{"PreferWarmX8IFMA", PreferWarmX8IFMA()},
 		{"PreferRawSquareIFMA", PreferRawSquareIFMA()},
 		{"PreferWideHashX4IFMA", PreferWideHashX4IFMA()},
+		{"PreferBatchEncodeX8IFMA", PreferBatchEncodeX8IFMA()},
 	} {
 		if !policy.got {
 			t.Errorf("%s = false under the override; the gated path stays unreachable", policy.name)

@@ -42,11 +42,22 @@ func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
 // measured independently.
 func PreferWideHashX4IFMA() bool { return preferWideHashX4IFMA }
 
+// PreferBatchEncodeX8IFMA reports whether literal-Q finalization should batch
+// its projective-to-affine conversion across eight signatures. Complete-path
+// measurements select the x8 encoder from 16 signatures onward on AMD family
+// 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the independently reviewed
+// x4 encoder until measured on those parts.
+func PreferBatchEncodeX8IFMA() bool { return preferBatchEncodeX8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && (family == 0x19 || family == 0x1a)
 }
 
 func wideHashX4ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func batchEncodeX8ForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x1a
 }
 
