@@ -169,6 +169,11 @@ var r51SharedCombTables [3]struct {
 	table *r51x5.ExperimentalFixedBaseCombTable
 }
 
+var r51SharedAsymmetricFixedB10X8 struct {
+	once  sync.Once
+	table *r51x5.ExperimentalIFMAAsymmetricFixedB10TableX8
+}
+
 func r51IFMAPipelineAvailable(kind r51IFMAPipelineKind) bool {
 	return r51x5.ExperimentalIFMAAvailable() && sha512mb.ExperimentalNativeAvailable(kind.shaWidth())
 }
@@ -332,6 +337,18 @@ func sharedR51FixedBaseComb(radixBits uint) *r51x5.ExperimentalFixedBaseCombTabl
 		entry.table = r51x5.BuildExperimentalFixedBaseCombTable(&generator, radixBits)
 	})
 	return entry.table
+}
+
+func sharedR51AsymmetricFixedB10X8() *r51x5.ExperimentalIFMAAsymmetricFixedB10TableX8 {
+	r51SharedAsymmetricFixedB10X8.once.Do(func() {
+		generatorEncoding := edwards25519.NewGeneratorPoint().Bytes()
+		var generator r51x5.Point
+		if _, err := generator.SetBytes(generatorEncoding); err != nil {
+			panic(fmt.Sprintf("ed25519: r51 generator decode: %v", err))
+		}
+		r51SharedAsymmetricFixedB10X8.table = r51x5.BuildExperimentalIFMAAsymmetricFixedB10TableX8(&generator)
+	})
+	return r51SharedAsymmetricFixedB10X8.table
 }
 
 func (pipeline *r51IFMAPipeline) fixedBaseLabel() string {

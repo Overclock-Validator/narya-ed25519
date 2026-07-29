@@ -40,6 +40,12 @@ type r51IFMABatchQPipeline struct {
 	// registered worker until a CPU-specific public gate admits it.
 	experimentalRawSquareX4 bool
 
+	// experimentalAsymmetricFixedB10X8 merges the fixed generator term into
+	// the x8 variable-base Niels doubling chain. It removes the separate comb
+	// evaluation and final point addition, but is a complete-pipeline
+	// measurement seam only; registered construction leaves it nil.
+	experimentalAsymmetricFixedB10X8 *r51x5.ExperimentalIFMAAsymmetricFixedB10TableX8
+
 	// projectiveNielsX4 changes the four-lane cold A table from
 	// extended coordinates to projective Niels coordinates. It reuses the same
 	// micro-AoS footprint and the proven x4 Stage-2 leaf, but remains a
@@ -136,6 +142,18 @@ func newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer r51IFMABatchQFinalize
 		return nil, err
 	}
 	pipeline.wideCore = wideCore
+	return pipeline, nil
+}
+
+// newR51IFMABatchQX8AsymmetricFixedB10PipelineWithFinalizer is the complete
+// verifier gate for merging B10 into the x8 A-term doubling chain. It retains
+// the ordinary x4 comb tail and is not used by registered construction.
+func newR51IFMABatchQX8AsymmetricFixedB10PipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
+	pipeline, err := newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer)
+	if err != nil {
+		return nil, err
+	}
+	pipeline.experimentalAsymmetricFixedB10X8 = sharedR51AsymmetricFixedB10X8()
 	return pipeline, nil
 }
 
@@ -434,25 +452,44 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 			return err
 		}
 	}
-	var aTerm, bTerm r51x5.IFMAPointX8
-	var usableA uint8
-	if pipeline.experimentalRawSquareX8 {
-		usableA, err = pipeline.wideCore.variableX8.EvaluateRawSquareExperiment(&aTerm, &k, live, live)
-	} else {
-		usableA, err = pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
-	}
-	if err != nil {
-		return err
-	}
-	usableB, err := r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8(&bTerm, pipeline.wideCore.fixedBaseComb, &s, live)
-	if err != nil {
-		return err
-	}
 	var combined r51x5.IFMAPointX8
-	if err := r51x5.ExperimentalIFMAPointAddComposableX8(&combined, &aTerm, &bTerm); err != nil {
-		return err
+	var usable uint8
+	if pipeline.experimentalAsymmetricFixedB10X8 != nil {
+		if pipeline.experimentalRawSquareX8 {
+			panic("ed25519: asymmetric fixed B10 x8 does not support the raw-square experiment")
+		}
+		usable, err = r51x5.ExperimentalIFMAAsymmetricFixedB10EvaluateX8(
+			&combined,
+			pipeline.wideCore.variableX8,
+			pipeline.experimentalAsymmetricFixedB10X8,
+			&s,
+			&k,
+			live,
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		var aTerm, bTerm r51x5.IFMAPointX8
+		var usableA uint8
+		if pipeline.experimentalRawSquareX8 {
+			usableA, err = pipeline.wideCore.variableX8.EvaluateRawSquareExperiment(&aTerm, &k, live, live)
+		} else {
+			usableA, err = pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)
+		}
+		if err != nil {
+			return err
+		}
+		usableB, err := r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8(&bTerm, pipeline.wideCore.fixedBaseComb, &s, live)
+		if err != nil {
+			return err
+		}
+		if err := r51x5.ExperimentalIFMAPointAddComposableX8(&combined, &aTerm, &bTerm); err != nil {
+			return err
+		}
+		usable = usableA & usableB
 	}
-	live &= usableA & usableB
+	live &= usable
 	var split [2]r51x5.IFMAPointX4
 	combined.SplitX4(&split)
 	for half := range split {
