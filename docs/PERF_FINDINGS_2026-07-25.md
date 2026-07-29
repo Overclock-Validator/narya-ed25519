@@ -1080,6 +1080,44 @@ x8 variable-base evaluation with negated radix-32 digits. It does not change
 the packed singleton, x4 tail, fixed-base comb recoder, warm-table recoder, or
 acceptance predicate.
 
+### 5.26 Full-x8 radix-256 fixed-base recoding specialization — retained
+
+The process-shared generator comb has another public full-x8 shape that the
+generic recoder need not rediscover on every group: eight active canonical
+scalars, radix 256, and 32 byte-aligned rounds. Commit `f0a1bbb` adds a private
+specialization for only that case. Canonicality is still checked in every
+lane; any failure re-enters the generic recoder, preserving its exact
+per-lane fail-closed output. Partial groups and the radix-16/radix-32 shapes
+remain generic.
+
+The all-valid loop reads one scalar byte per digit, replaces the balanced
+power-of-two divide/multiply with shifts, and assigns all used rounds
+directly. A 10,000-case exact differential includes periodic noncanonical
+scalars and poisoned output reuse. Both the direct recoder and complete
+public verifier report zero allocations.
+
+On the pinned Ryzen 7 9700X core, nine two-second direct samples changed from
+342.1 to 238.1 ns per eight scalars (-30.4% by median). Because that leaf is
+small, complete gains are deliberately reported as sub-percent. Ten
+three-second forward-order public samples at 1,232 bytes measured:
+
+| width | generic recoder (us/sig) | specialized recoder (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.176 | 4.165 | -0.28% (p=0.041) |
+| 64 | 3.975 | 3.952 | -0.59% (p=0.021) |
+
+A second ten-sample run reversed binary order. It reproduced n=8 at -0.33%
+(p=0.013); n=64 remained directionally -0.33% but was not significant in the
+shorter run (p=0.133). The optimization is retained because it removes about
+104 ns of deterministic work per complete x8 group, is exact by differential,
+and has no allocation or predicate cost. The n=64 end-to-end magnitude should
+therefore be read as roughly 0.3-0.6%, not as a larger headline result.
+
+**Regime tag:** Zen 5, full x8 fixed-base radix-256 comb evaluation, Go 1.26.4.
+This does not claim a gain for n=1/n=2/n=4, x4 tails, alternate comb widths,
+or any warm per-key table. Re-measure on a different fixed-base shape or
+microarchitecture rather than generalizing the result.
+
 ---
 
 ## 6. Smaller observations

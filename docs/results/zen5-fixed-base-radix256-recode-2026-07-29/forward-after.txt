@@ -1,0 +1,35 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108585	     33591 ns/op	 293.41 MB/s	         0 internal-fault-fallbacks	    238160 signatures/s	         4.199 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  107030	     33646 ns/op	 292.93 MB/s	         0 internal-fault-fallbacks	    237766 signatures/s	         4.206 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108117	     33302 ns/op	 295.96 MB/s	         0 internal-fault-fallbacks	    240227 signatures/s	         4.163 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108106	     33310 ns/op	 295.88 MB/s	         0 internal-fault-fallbacks	    240165 signatures/s	         4.164 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108063	     33302 ns/op	 295.96 MB/s	         0 internal-fault-fallbacks	    240224 signatures/s	         4.163 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108099	     33308 ns/op	 295.90 MB/s	         0 internal-fault-fallbacks	    240182 signatures/s	         4.164 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108079	     33306 ns/op	 295.92 MB/s	         0 internal-fault-fallbacks	    240197 signatures/s	         4.163 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108032	     33328 ns/op	 295.73 MB/s	         0 internal-fault-fallbacks	    240039 signatures/s	         4.166 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  108008	     33328 ns/op	 295.73 MB/s	         0 internal-fault-fallbacks	    240041 signatures/s	         4.166 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  107984	     33328 ns/op	 295.72 MB/s	         0 internal-fault-fallbacks	    240035 signatures/s	         4.166 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14239	    252853 ns/op	 311.83 MB/s	         0 internal-fault-fallbacks	    253112 signatures/s	         3.951 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14244	    252729 ns/op	 311.99 MB/s	         0 internal-fault-fallbacks	    253235 signatures/s	         3.949 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14065	    255851 ns/op	 308.18 MB/s	         0 internal-fault-fallbacks	    250145 signatures/s	         3.998 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14065	    255978 ns/op	 308.03 MB/s	         0 internal-fault-fallbacks	    250021 signatures/s	         4.000 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14234	    252907 ns/op	 311.77 MB/s	         0 internal-fault-fallbacks	    253057 signatures/s	         3.952 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14229	    253005 ns/op	 311.65 MB/s	         0 internal-fault-fallbacks	    252960 signatures/s	         3.953 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14229	    252971 ns/op	 311.69 MB/s	         0 internal-fault-fallbacks	    252994 signatures/s	         3.953 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14235	    252838 ns/op	 311.85 MB/s	         0 internal-fault-fallbacks	    253127 signatures/s	         3.951 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14240	    252811 ns/op	 311.89 MB/s	         0 internal-fault-fallbacks	    253154 signatures/s	         3.950 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   14241	    252787 ns/op	 311.91 MB/s	         0 internal-fault-fallbacks	    253177 signatures/s	         3.950 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108070	     33303 ns/op	 295.95 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240217 signatures/s	         4.163 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108115	     33289 ns/op	 296.07 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240319 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108110	     33284 ns/op	 296.11 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240353 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108112	     33295 ns/op	 296.02 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240276 signatures/s	         4.162 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108180	     33285 ns/op	 296.11 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240347 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108138	     33294 ns/op	 296.03 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240280 signatures/s	         4.162 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108126	     33289 ns/op	 296.07 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240319 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108084	     33285 ns/op	 296.11 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240352 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108121	     33284 ns/op	 296.12 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240354 signatures/s	         4.161 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrictParallel/msg=1232/n=8 	  108112	     33281 ns/op	 296.14 MB/s	         1.000 GOMAXPROCS	         0 internal-fault-fallbacks	    240375 signatures/s	         4.160 us/signature	       0 B/op	       0 allocs/op
+PASS

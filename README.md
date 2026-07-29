@@ -268,7 +268,7 @@ Narya's accelerated path is measured through the exported
 The release snapshot uses **cold Zen 5 measurements only** for its headline:
 an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
 governor, and `GOMAXPROCS=1`. Every table below was rerun at exact commit
-`2880e1fa52738d07b49735547fbca8e715df2a58`; it does not combine results from
+`f0a1bbbc9561d4204965cd4668c69c6409acdf70`; it does not combine results from
 different code checkpoints. Every timed Narya row reported 0 B/op,
 0 allocs/op, and zero internal-fault fallbacks.
 
@@ -283,14 +283,14 @@ lower is better**
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 14.175 | 15.010 | 17.065 |
-| 2 | 14.180 | 15.025 | 17.180 |
-| 4 | 7.736 | 8.753 | 11.530 |
-| 8 | 4.002 | 4.257 | 5.003 |
-| 64 | **3.796** | **4.039** | **4.772** |
+| 1 | 14.220 | 15.010 | 16.970 |
+| 2 | 14.310 | 15.000 | 17.010 |
+| 4 | 7.724 | 8.718 | 11.500 |
+| 8 | 3.921 | 4.182 | 4.899 |
+| 64 | **3.705** | **3.972** | **4.688** |
 
 These are medians of ten three-second samples. At 1,232 bytes, the n=8 and
-n=64 rows correspond to approximately 234,900 and 247,600
+n=64 rows correspond to approximately 239,100 and 251,800
 signatures/second/core. Batch width matters because n=1 and n=2 use the packed
 tail path, n=4 fills one x4 group, and n=8 or larger can fill native x8 groups.
 
@@ -301,11 +301,11 @@ lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 15.010 | 15.185 | 0.99x |
-| 2 | 15.025 | 15.045 | 1.00x |
-| 4 | 8.753 | 4.119 | 2.13x |
-| 8 | 4.257 | 3.875 | 1.10x |
-| 64 | 4.039 | **3.734** | **1.08x** |
+| 1 | 15.010 | 14.910 | 1.01x |
+| 2 | 15.000 | 14.910 | 1.01x |
+| 4 | 8.718 | 4.141 | 2.11x |
+| 8 | 4.182 | 3.896 | 1.07x |
+| 64 | 3.972 | **3.747** | **1.06x** |
 
 The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
 cache deliberately bypasses prepared tables below n=4, so lookup overhead can
@@ -320,11 +320,11 @@ complete measured matrix is:
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 14.145 | 15.185 | 17.115 |
-| 2 | 14.220 | 15.045 | 17.105 |
-| 4 | 3.378 | 4.119 | 6.212 |
-| 8 | 3.141 | 3.875 | 5.968 |
-| 64 | **2.961** | **3.734** | **5.821** |
+| 1 | 14.230 | 14.910 | 16.840 |
+| 2 | 14.260 | 14.910 | 16.880 |
+| 4 | 3.368 | 4.141 | 6.213 |
+| 8 | 3.141 | 3.896 | 5.967 |
+| 64 | **2.975** | **3.747** | **5.831** |
 
 At 4,096 bytes, cold x8 is faster than the current warm x4-oriented path at
 n=8 and n=64. The two paths schedule hashing differently, and hashing is a
@@ -346,13 +346,13 @@ cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 15.090 | 14.940 | 8.722 | 4.393 | 4.171 |
-| Go `crypto/ed25519` | 27.640 | 27.520 | 27.585 | 27.530 | 27.630 |
-| curve25519-voi, cold strict | 22.060 | 21.890 | 21.930 | 22.025 | 22.145 |
-| curve25519-voi, expanded key | 19.245 | 19.060 | 19.130 | 19.255 | 19.360 |
+| Narya r51, cold strict | 15.095 | 15.050 | 8.746 | 4.299 | 4.095 |
+| Go `crypto/ed25519` | 27.785 | 27.635 | 27.660 | 27.690 | 27.680 |
+| curve25519-voi, cold strict | 22.110 | 22.055 | 22.050 | 22.160 | 22.160 |
+| curve25519-voi, expanded key | 19.320 | 19.250 | 19.230 | 19.345 | 19.360 |
 
-Within that comparison binary, Narya is 1.83x faster than Go at n=1, 3.16x
-at n=4, 6.27x at n=8, and 6.62x at n=64. The comparison binary includes the
+Within that comparison binary, Narya is 1.84x faster than Go at n=1, 3.16x
+at n=4, 6.44x at n=8, and 6.76x at n=64. The comparison binary includes the
 opt-in Voi dependency and has a different link layout from the release binary,
 so use this table for library ratios and the cold table above for Narya's
 release latency.
@@ -369,14 +369,14 @@ SMT siblings are excluded.
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 114,774 | 1.00x | 237,490 | 1.00x |
-| 2 | 229,436 | 2.00x | 472,369 | 1.99x |
-| 4 | 448,942 | 3.91x | 930,732 | 3.92x |
-| 6 | 651,252 | 5.67x | 1,329,275 | 5.60x |
-| 8 | 819,306 | 7.14x | 1,638,712 | 6.90x |
+| 1 | 115,422 | 1.00x | 242,381 | 1.00x |
+| 2 | 228,694 | 1.98x | 483,292 | 1.99x |
+| 4 | 450,808 | 3.91x | 948,642 | 3.91x |
+| 6 | 652,385 | 5.65x | 1,353,448 | 5.58x |
+| 8 | 822,218 | 7.12x | 1,674,807 | 6.91x |
 
-The eight-core rows correspond to aggregate throughput costs of 1.221
-and 0.610 microseconds per signature. Each worker still verifies complete,
+The eight-core rows correspond to aggregate throughput costs of 1.216
+and 0.597 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
 cryptographic batch verification. Raw output is in
 [`docs/results/zen5-release-2026-07-29/`](docs/results/zen5-release-2026-07-29/).
