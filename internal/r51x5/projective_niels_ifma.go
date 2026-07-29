@@ -74,14 +74,13 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	// one assembly leaf so the hot Niels loop pays one Go/assembly transition
 	// and one VZEROUPPER, while expanding the same source-level multiply body
 	// as four standalone ifmaMulRawX8 calls.
-	ifmaFourRawProductsUncheckedX8(
+	ifmaFourRawProductsNielsStage2UncheckedX8(
 		&stage2[0],
 		&yMinusX.limbs, &cached.YMinusX.limbs,
 		&yPlusX.limbs, &cached.YPlusX.limbs,
 		&point.T.limbs, &cached.T2D.limbs,
 		&point.Z.limbs, &cached.Z.limbs,
 	)
-	ifmaNielsStage2X8(stage2)
 
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
