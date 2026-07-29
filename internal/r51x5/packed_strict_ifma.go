@@ -26,19 +26,21 @@ var errExperimentalPackedStrictVerifierUninitialized = errors.New("r51x5: experi
 // one instance per goroutine. Its zero value is invalid; construct it with
 // NewExperimentalPackedStrictVerifierX4.
 type ExperimentalPackedStrictVerifierX4 struct {
-	ops    quadDSMOperationsX4
-	bTable *quadNAFTable8X4
-	hash   hash.Hash
-	digest [sha512.Size]byte
+	ops          quadDSMOperationsX4
+	bTable       *quadNAFTable8X4
+	pairedBTable *quadPairedNAFTable8X8
+	hash         hash.Hash
+	digest       [sha512.Size]byte
 }
 
 // The generator table is immutable after construction. Sharing it keeps every
 // verifier worker on the same 10 KiB read-only working set instead of building
 // and retaining an allocator-dependent copy per worker.
 var packedStrictGeneratorTableX4 struct {
-	once  sync.Once
-	table quadNAFTable8X4
-	err   error
+	once        sync.Once
+	table       quadNAFTable8X4
+	pairedTable quadPairedNAFTable8X8
+	err         error
 }
 
 // NewExperimentalPackedStrictVerifierX4 prepares the process-wide generator
@@ -63,15 +65,22 @@ func NewExperimentalPackedStrictVerifierX4() (*ExperimentalPackedStrictVerifierX
 			return
 		}
 		packedStrictGeneratorTableX4.err = buildQuadNAFTable8X4(&packedStrictGeneratorTableX4.table, &generator, ops)
+		if packedStrictGeneratorTableX4.err == nil {
+			packQuadPairedGeneratorTableX8(
+				&packedStrictGeneratorTableX4.pairedTable,
+				&packedStrictGeneratorTableX4.table,
+			)
+		}
 	})
 	if packedStrictGeneratorTableX4.err != nil {
 		return nil, packedStrictGeneratorTableX4.err
 	}
 
 	return &ExperimentalPackedStrictVerifierX4{
-		ops:    ops,
-		bTable: &packedStrictGeneratorTableX4.table,
-		hash:   sha512.New(),
+		ops:          ops,
+		bTable:       &packedStrictGeneratorTableX4.table,
+		pairedBTable: &packedStrictGeneratorTableX4.pairedTable,
+		hash:         sha512.New(),
 	}, nil
 }
 
