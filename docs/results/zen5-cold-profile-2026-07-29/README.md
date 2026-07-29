@@ -279,6 +279,34 @@ The full native repository suite passed at `a238847`. Raw alternating output,
 counters, benchmark companions, and profile tops are in the files prefixed
 `narya-final-products`.
 
+## Retained optimization: shared x8 raw-product leaf
+
+Each projective-Niels addition begins with four independent folded-u61
+products, `(Y-X)*(Y-X)`, `(Y+X)*(Y+X)`, `T*(2dT)`, and `Z*Z`. Production made
+four separate calls to the exact raw multiply before its already-fused linear
+stage. Commits `e518f54` and `13a6179` factor the existing multiply schedule
+into one assembly source macro and expand it four times in one leaf. Both the
+single-product and compound entry points therefore execute the same 25
+`VPMADD52LUQ/HUQ` pairs, high-half combination, and radix fold; only three
+transitions and three `VZEROUPPER` instructions disappear.
+
+The native hardware differential compared exact loose representations for
+10,000 sets of four products, including all-zero, maximum-u52, and random
+operands. It also proved the input workspace unchanged and the leaf
+allocation-free. The isolated boundary improved about 1.8%, from a median
+21.79 to 21.38 ns. Five alternating fresh-process exported-verifier pairs
+measured:
+
+| batch width | four raw calls, us/signature | one raw leaf, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.324 | 4.308 | -0.37% |
+| 64 | 4.101 | 4.091 | -0.24% |
+
+The gain is modest but repeatable, has no predicate or arithmetic change, and
+reported zero allocations and zero internal fault fallbacks in every sample.
+The full native repository suite passed at `13a6179`. Exact measurements are
+in `narya-four-raw-products.alternating.txt`.
+
 ## Tested candidate: pooled x8 variable-base scratch
 
 The registered pre-signed variable-base workspace previously kept its transient

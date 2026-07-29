@@ -1,0 +1,63 @@
+Zen 5 compound raw-product gate
+================================
+
+CPU: AMD Ryzen 7 9700X
+Go: 1.26.4
+Governor: performance
+Affinity: taskset -c 6
+GOMAXPROCS: 1
+Message: 1,232 bytes
+Profile: DalekStrict
+Inputs: cold, distinct public keys; no retained per-key table
+Baseline: e518f54 (four separate ifmaMulRawX8 calls in each Niels add)
+Candidate: 13a6179 (one ifmaFourRawProductsUncheckedX8 leaf)
+Build tag: r51_release_bench
+Allocations: zero in every sample
+Internal fault fallbacks: zero in every sample
+
+Focused native gates
+--------------------
+
+TestIFMAFourRawProductsX8MatchesFourCalls: PASS (10,000 cases)
+TestIFMAFourRawProductsX8ZeroAllocations: PASS
+internal/r51x5 and ed25519 candidate suites: PASS
+full repository native candidate suite: PASS
+
+Isolated primitive, ten 3-second samples
+----------------------------------------
+
+four-calls ns/op:
+21.83 21.79 21.75 21.74 21.79 21.71 21.81 21.77 21.78 21.82
+
+one-leaf ns/op:
+21.38 21.38 21.38 21.38 21.37 21.37 21.37 21.38 21.37 21.38
+
+Alternating exported public-API verifier pairs
+----------------------------------------------
+
+pair 1 baseline:  n=8 4.319 us/signature; n=64 4.098 us/signature
+pair 1 candidate: n=8 4.301 us/signature; n=64 4.083 us/signature
+
+pair 2 baseline:  n=8 4.324 us/signature; n=64 4.123 us/signature
+pair 2 candidate: n=8 4.314 us/signature; n=64 4.092 us/signature
+
+pair 3 baseline:  n=8 4.330 us/signature; n=64 4.120 us/signature
+pair 3 candidate: n=8 4.304 us/signature; n=64 4.091 us/signature
+
+pair 4 baseline:  n=8 4.317 us/signature; n=64 4.101 us/signature
+pair 4 candidate: n=8 4.310 us/signature; n=64 4.087 us/signature
+
+pair 5 baseline:  n=8 4.325 us/signature; n=64 4.100 us/signature
+pair 5 candidate: n=8 4.308 us/signature; n=64 4.099 us/signature
+
+Medians
+-------
+
+n=8:  4.324 -> 4.308 us/signature (-0.37%)
+n=64: 4.101 -> 4.091 us/signature (-0.24%)
+
+The compound leaf expands the identical MUL_RAW_X8_BODY source macro used by
+the standalone ifmaMulRawX8 entry point. It changes no multiply, fold, range,
+or loose-representation semantics; the gain comes only from sharing three
+call transitions and VZEROUPPER instructions for the four independent raw
+products in each projective-Niels addition.
