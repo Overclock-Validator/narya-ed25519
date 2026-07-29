@@ -137,6 +137,32 @@ bytes occupied by the extra eight-entry A-sign table. The process-shared
 the original timing gate, but they reinforce the measured rejection and are
 recorded in `narya-packed-presign-frame.txt`.
 
+## Retained optimization: native pre-signed table store
+
+The profile attributed 2.69% of n=64 time to storing the freshly constructed
+pre-signed A table. The x8 arithmetic point is SoA, while the selector consumes
+eight per-key micro-AoS entries. Production previously performed that layout
+conversion with a scalar Go lane/limb loop even though the repository already
+contained a native transpose-store differential candidate.
+
+Commit `e6370a5` uses that native data-movement leaf after the same composable
+T-coordinate negation. It changes neither table contents nor scalar arithmetic.
+The direct store fell from about 64.0 to 28.1 ns (56%), and the cold
+table-build-plus-evaluate seam improved by approximately 2.5%.
+
+The exported public cold verifier, six two-second samples, measured:
+
+| batch width | scalar store, us/signature | native transpose, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.666 | 4.592 | -1.6% |
+| 64 | 4.448 | 4.374 | -1.7% |
+
+Widths 1, 2, and 4 do not use the x8 table and remained effectively flat.
+Every sample reported zero allocations and zero internal fault fallbacks. The
+all-entry store oracle, mixed-order evaluation, and layout differential passed
+on native IFMA hardware. Raw output is in `narya-transpose-store.before.txt`
+and `narya-transpose-store.after.txt`.
+
 ## Tested candidate: asymmetric fixed-B injection
 
 The ordinary cold x8 path evaluates `[s]B` with a separate radix-256 comb,
