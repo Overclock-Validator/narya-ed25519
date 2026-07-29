@@ -447,6 +447,56 @@ func TestExperimentalIFMAFixedBaseCombZeroAllocations(t *testing.T) {
 	}
 }
 
+func TestFixedBaseIFMACachedUncheckedSelectorsMatchChecked(t *testing.T) {
+	rng := rand.New(rand.NewSource(0xb4515e1f))
+	base, _ := fixedBaseGenerator(t)
+	var scalars8 [X8Lanes][32]byte
+	for lane := range scalars8 {
+		scalars8[lane] = randomCanonicalFixedBaseScalar(t, rng)
+	}
+	var scalars4 [X4Lanes][32]byte
+	copy(scalars4[:], scalars8[:X4Lanes])
+
+	for _, width := range []uint{4, 5, 8} {
+		table := BuildExperimentalFixedBaseCombTable(&base, width)
+		for _, active := range []uint8{0, 1, 3, 5, 0x0f, 0x33, 0x55, 0xaa, 0xff} {
+			var digits8 fixedBaseDigitsX8
+			usable8 := recodeFixedBaseScalarsX8(&digits8, &scalars8, active, width)
+			for position := 0; position < int(table.positions); position++ {
+				for parity := 0; parity < 2; parity++ {
+					round := 2*position + parity
+					if round >= int(digits8.count) {
+						continue
+					}
+					var want, got fixedBaseIFMACachedX8
+					selectFixedBaseIFMACachedX8(&want, table, position, &digits8.rounds[round], usable8)
+					selectFixedBaseIFMACachedUncheckedX8(&got, table, position, &digits8.rounds[round], usable8)
+					if got != want {
+						t.Fatalf("x8 width=%d active=%02x position=%d parity=%d", width, active, position, parity)
+					}
+				}
+			}
+
+			var digits4 fixedBaseDigitsX4
+			usable4 := recodeFixedBaseScalarsX4(&digits4, &scalars4, active, width)
+			for position := 0; position < int(table.positions); position++ {
+				for parity := 0; parity < 2; parity++ {
+					round := 2*position + parity
+					if round >= int(digits4.count) {
+						continue
+					}
+					var want, got fixedBaseIFMACachedX4
+					selectFixedBaseIFMACachedX4(&want, table, position, &digits4.rounds[round], usable4)
+					selectFixedBaseIFMACachedUncheckedX4(&got, table, position, &digits4.rounds[round], usable4)
+					if got != want {
+						t.Fatalf("x4 width=%d active=%02x position=%d parity=%d", width, active, position, parity)
+					}
+				}
+			}
+		}
+	}
+}
+
 func addFixedBaseIFMACachedReferenceX8(out, point *IFMAPointX8, cached *fixedBaseIFMACachedX8) {
 	p := *point
 	var yMinusX, yPlusX, A, B, C, D, E, F, G, H IFMAElementX8
@@ -692,6 +742,7 @@ var (
 	benchmarkFixedBaseCombIFMAPointX4 IFMAPointX4
 	benchmarkFixedBaseCombIFMAPointX8 IFMAPointX8
 	benchmarkFixedBaseCachedX8        fixedBaseCachedX8
+	benchmarkFixedBaseIFMACachedX8    fixedBaseIFMACachedX8
 	benchmarkFixedBaseCombMask        uint8
 	benchmarkFixedBaseCombTable       *ExperimentalFixedBaseCombTable
 )
@@ -757,6 +808,43 @@ func BenchmarkExperimentalFixedBaseCombSelectionX8(b *testing.B) {
 			}
 			b.ReportMetric(float64(table.NominalPayloadBytes()), "table-bytes")
 			b.ReportMetric(float64(table.NominalPayloadBytes())/1024, "table-KiB")
+		})
+	}
+}
+
+func BenchmarkExperimentalFixedBaseCombIFMASelectionX8(b *testing.B) {
+	if !ExperimentalIFMAAvailable() {
+		b.Skip("requires AVX-512 IFMA")
+	}
+	base, _ := fixedBaseGenerator(b)
+	rng := rand.New(rand.NewSource(0xb4515e1f))
+	var scalars [X8Lanes][32]byte
+	for lane := range scalars {
+		scalars[lane] = randomCanonicalFixedBaseScalar(b, rng)
+	}
+	for _, width := range []uint{4, 5, 8} {
+		table := BuildExperimentalFixedBaseCombTable(&base, width)
+		var digits fixedBaseDigitsX8
+		usable := recodeFixedBaseScalarsX8(&digits, &scalars, 0xff, width)
+		b.Run(fmt.Sprintf("radix=%d/checked", 1<<width), func(b *testing.B) {
+			var out fixedBaseIFMACachedX8
+			b.ReportAllocs()
+			for iteration := 0; iteration < b.N; iteration++ {
+				position := iteration % table.PositionCount()
+				round := 2 * position
+				selectFixedBaseIFMACachedX8(&out, table, position, &digits.rounds[round], usable)
+			}
+			benchmarkFixedBaseIFMACachedX8 = out
+		})
+		b.Run(fmt.Sprintf("radix=%d/unchecked", 1<<width), func(b *testing.B) {
+			var out fixedBaseIFMACachedX8
+			b.ReportAllocs()
+			for iteration := 0; iteration < b.N; iteration++ {
+				position := iteration % table.PositionCount()
+				round := 2 * position
+				selectFixedBaseIFMACachedUncheckedX8(&out, table, position, &digits.rounds[round], usable)
+			}
+			benchmarkFixedBaseIFMACachedX8 = out
 		})
 	}
 }

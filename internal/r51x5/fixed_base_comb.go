@@ -238,7 +238,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX4
-		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX4(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -254,7 +254,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX4
-		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX4(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -285,7 +285,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX8
-		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -301,7 +301,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX8
-		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -571,6 +571,60 @@ func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *Experimental
 			p6 = source
 		case 7:
 			p7 = source
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
+}
+
+// selectFixedBaseIFMACachedUncheckedX4 is the hot comb counterpart of the
+// checked selector above. round must come from recodeFixedBaseScalarsX4 for
+// table.radixBits. That provenance guarantees consistent masks and in-range
+// nonzero magnitudes, so complete groups can select their four pointers
+// directly instead of repeating validation and a lane switch in every round.
+func selectFixedBaseIFMACachedUncheckedX4(out *fixedBaseIFMACachedX4, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX4, active uint8) {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
+	base := position * int(table.entries)
+	if lookupMask == 0x0f {
+		p0 = &table.signedPoints[base+int(round.Magnitude[0])-1][(round.NegativeMask>>0)&1]
+		p1 = &table.signedPoints[base+int(round.Magnitude[1])-1][(round.NegativeMask>>1)&1]
+		p2 = &table.signedPoints[base+int(round.Magnitude[2])-1][(round.NegativeMask>>2)&1]
+		p3 = &table.signedPoints[base+int(round.Magnitude[3])-1][(round.NegativeMask>>3)&1]
+	} else {
+		pointers := [X4Lanes]**ifmaAffine3MicroAoSEntryExperiment{&p0, &p1, &p2, &p3}
+		for lane := 0; lane < X4Lanes; lane++ {
+			if lookupMask&(1<<lane) != 0 {
+				*pointers[lane] = &table.signedPoints[base+int(round.Magnitude[lane])-1][(round.NegativeMask>>lane)&1]
+			}
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+}
+
+// selectFixedBaseIFMACachedUncheckedX8 is the native-wide analogue. The
+// overwhelmingly common all-nonzero case is deliberately straight-line;
+// zero digits and tail masks retain an identity-filled fallback.
+func selectFixedBaseIFMACachedUncheckedX8(out *fixedBaseIFMACachedX8, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX8, active uint8) {
+	lookupMask := round.NonzeroMask & active
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3, p4, p5, p6, p7 := p0, p0, p0, p0, p0, p0, p0
+	base := position * int(table.entries)
+	if lookupMask == 0xff {
+		p0 = &table.signedPoints[base+int(round.Magnitude[0])-1][(round.NegativeMask>>0)&1]
+		p1 = &table.signedPoints[base+int(round.Magnitude[1])-1][(round.NegativeMask>>1)&1]
+		p2 = &table.signedPoints[base+int(round.Magnitude[2])-1][(round.NegativeMask>>2)&1]
+		p3 = &table.signedPoints[base+int(round.Magnitude[3])-1][(round.NegativeMask>>3)&1]
+		p4 = &table.signedPoints[base+int(round.Magnitude[4])-1][(round.NegativeMask>>4)&1]
+		p5 = &table.signedPoints[base+int(round.Magnitude[5])-1][(round.NegativeMask>>5)&1]
+		p6 = &table.signedPoints[base+int(round.Magnitude[6])-1][(round.NegativeMask>>6)&1]
+		p7 = &table.signedPoints[base+int(round.Magnitude[7])-1][(round.NegativeMask>>7)&1]
+	} else {
+		pointers := [X8Lanes]**ifmaAffine3MicroAoSEntryExperiment{&p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7}
+		for lane := 0; lane < X8Lanes; lane++ {
+			if lookupMask&(1<<lane) != 0 {
+				*pointers[lane] = &table.signedPoints[base+int(round.Magnitude[lane])-1][(round.NegativeMask>>lane)&1]
+			}
 		}
 	}
 	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
