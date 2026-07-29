@@ -246,6 +246,9 @@ func TestR51DecodedAPrecomputedDispatch(t *testing.T) {
 }
 
 func TestR51BackendDecodedACacheHitZeroAllocations(t *testing.T) {
+	if raceDetectorEnabled {
+		t.Skip("race instrumentation allocates around the measured call")
+	}
 	backend := requireR51DecodedACache(t)
 	for _, count := range []int{4, 8, 64} {
 		fixture := makeBatchFixture(t, count, 1232)
@@ -429,6 +432,9 @@ func TestR51BackendConcurrentWorkers(t *testing.T) {
 }
 
 func TestR51BackendSteadyStateZeroAllocations(t *testing.T) {
+	if raceDetectorEnabled {
+		t.Skip("race instrumentation allocates around the measured call")
+	}
 	b := requireR51Backend(t)
 	for _, count := range []int{2, 64} {
 		bf := makeBatchFixture(t, count, 200)
