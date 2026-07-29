@@ -238,7 +238,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX4
-		selectFixedBaseIFMACachedUncheckedX4(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -254,7 +254,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX4(out *IFMAPointX4, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX4
-		selectFixedBaseIFMACachedUncheckedX4(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedX4(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX4(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -576,11 +576,11 @@ func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *Experimental
 	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
 }
 
-// selectFixedBaseIFMACachedUncheckedX4 is the hot comb counterpart of the
-// checked selector above. round must come from recodeFixedBaseScalarsX4 for
-// table.radixBits. That provenance guarantees consistent masks and in-range
-// nonzero magnitudes, so complete groups can select their four pointers
-// directly instead of repeating validation and a lane switch in every round.
+// selectFixedBaseIFMACachedUncheckedX4 is a retained measurement counterpart
+// of the checked selector above. round must come from
+// recodeFixedBaseScalarsX4 for table.radixBits. The straight-line selector is
+// faster in isolation, but a Zen 5 complete n=4 gate at 7b22c5b regressed by
+// about 0.2%, so the registered x4 route deliberately remains checked.
 func selectFixedBaseIFMACachedUncheckedX4(out *fixedBaseIFMACachedX4, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX4, active uint8) {
 	lookupMask := round.NonzeroMask & active & 0x0f
 	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment

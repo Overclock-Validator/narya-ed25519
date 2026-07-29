@@ -163,6 +163,30 @@ all-entry store oracle, mixed-order evaluation, and layout differential passed
 on native IFMA hardware. Raw output is in `narya-transpose-store.before.txt`
 and `narya-transpose-store.after.txt`.
 
+## Retained optimization: unchecked full-lane fixed-base selection
+
+The radix-256 generator comb consumes digits produced by Narya's own validated
+recoder, but its x8 selector still repeated public-digit validation plus a lane
+loop and switch in every round. Candidate `7b22c5b` kept the checked selector
+as its oracle and added a straight-line all-nonzero path for internally recoded
+complete groups. Partial masks and zero digits retain an identity-filled
+fallback.
+
+The isolated x8 selection fell from about 21.1 to 14.65 ns (30%). The exported
+public cold gate, six two-second samples, measured:
+
+| batch width | checked, us/signature | specialized, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.587 | 4.552 | -0.8% |
+| 64 | 4.363 | 4.335 | -0.6% |
+
+The analogous x4 specialization was faster in isolation but regressed the
+complete n=4 path from 8.729 to 8.747 us/signature (about 0.2%). Production
+therefore retains checked x4 selection while keeping the x4 candidate and its
+all-radix/all-mask differential as a regime-tagged measurement. Every public
+sample reported zero allocations and zero internal fault fallbacks. Raw output
+is in `narya-fixed-selector.before.txt` and `narya-fixed-selector.after.txt`.
+
 ## Tested candidate: asymmetric fixed-B injection
 
 The ordinary cold x8 path evaluates `[s]B` with a separate radix-256 comb,
