@@ -41,6 +41,17 @@ func ifmaFourRawProductsNielsStage2UncheckedX8(
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
+// ifmaThreeRawProductsNielsStage2UncheckedX8 is the affine-cached
+// specialization. It writes three exact raw products plus one copied u52 D
+// coordinate, then tail-enters the existing Niels Stage-2 leaf. out must point
+// to a four-slot Niels workspace and may not overlap any input.
+//
+//go:noescape
+func ifmaThreeRawProductsNielsStage2UncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, d *LimbsX8,
+)
+
 // ifmaMulRawX4 is the AVX-512VL/YMM analogue of ifmaMulRawX8.
 //
 //go:noescape

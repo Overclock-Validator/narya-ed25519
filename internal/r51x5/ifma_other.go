@@ -29,6 +29,13 @@ func ifmaFourRawProductsNielsStage2UncheckedX8(
 	panic("r51x5: unreachable x8 four-product Niels-Stage-2 IFMA call on non-amd64")
 }
 
+func ifmaThreeRawProductsNielsStage2UncheckedX8(
+	out *IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, d *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 three-product Niels-Stage-2 IFMA call on non-amd64")
+}
+
 func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4) {
 	panic("r51x5: unreachable x4 IFMA call on non-amd64")
 }

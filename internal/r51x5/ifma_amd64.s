@@ -213,6 +213,17 @@ TEXT ·ifmaFourRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-72
 	FOUR_RAW_PRODUCTS_X8_BODY
 	JMP ·ifmaNielsStage2X8(SB)
 
+// func ifmaThreeRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
+//     x0, y0, x1, y1, x2, y2, d *LimbsX8)
+//
+// Affine-cached specialization: A/B/C are exact raw products while D is the
+// carried-u52 point Z coordinate. Niels Stage 2 explicitly permits this
+// tighter fourth-slot contract. The copy and tail jump replace three raw
+// returns, a Go-level 320-byte assignment, and a separate Stage-2 transition.
+TEXT ·ifmaThreeRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-64
+	THREE_RAW_PRODUCTS_AND_D_X8_BODY
+	JMP ·ifmaNielsStage2X8(SB)
+
 // func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //
 // This is intentionally a real four-lane AVX-512VL schedule using YMM

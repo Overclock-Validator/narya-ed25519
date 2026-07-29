@@ -99,3 +99,33 @@
 	MOVQ x3+56(FP), CX      \
 	MOVQ y3+64(FP), BX      \
 	MUL_RAW_X8_BODY
+
+// Three raw products followed by one already-composable D slot is the affine
+// cached/Niels shape used by fixed-base addition. D is copied bit-for-bit into
+// the fourth workspace slot after the raw multipliers are finished, so the
+// same Niels Stage-2 provenance contract remains valid.
+#define THREE_RAW_PRODUCTS_AND_D_X8_BODY \
+	MOVQ out+0(FP), AX         \
+	MOVQ AX, DI                \
+	MOVQ x0+8(FP), CX          \
+	MOVQ y0+16(FP), BX         \
+	MUL_RAW_X8_BODY            \
+	LEAQ 320(AX), DI           \
+	MOVQ x1+24(FP), CX         \
+	MOVQ y1+32(FP), BX         \
+	MUL_RAW_X8_BODY            \
+	LEAQ 640(AX), DI           \
+	MOVQ x2+40(FP), CX         \
+	MOVQ y2+48(FP), BX         \
+	MUL_RAW_X8_BODY            \
+	MOVQ d+56(FP), CX          \
+	VMOVDQU64   0(CX), Z0      \
+	VMOVDQU64  64(CX), Z1      \
+	VMOVDQU64 128(CX), Z2      \
+	VMOVDQU64 192(CX), Z3      \
+	VMOVDQU64 256(CX), Z4      \
+	VMOVDQU64 Z0,  960(AX)     \
+	VMOVDQU64 Z1, 1024(AX)     \
+	VMOVDQU64 Z2, 1088(AX)     \
+	VMOVDQU64 Z3, 1152(AX)     \
+	VMOVDQU64 Z4, 1216(AX)
