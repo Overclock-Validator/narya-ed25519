@@ -217,18 +217,6 @@ func identityIFMAPointX8Value() IFMAPointX8 {
 	return result
 }
 
-// setIdentityIFMAPointX8 initializes an existing point in place. It is useful
-// for pooled/workspace-owned storage: assigning identityIFMAPointX8Value there
-// otherwise makes the compiler construct a 1,280-byte stack temporary and
-// copy it into the destination.
-func setIdentityIFMAPointX8(out *IFMAPointX8) {
-	*out = IFMAPointX8{}
-	for lane := 0; lane < X8Lanes; lane++ {
-		out.Y.limbs[0][lane] = 1
-		out.Z.limbs[0][lane] = 1
-	}
-}
-
 func gatherIFMAPointLaneX4(out, source *IFMAPointX4, lane int) {
 	for limb := range modulusLimbs {
 		out.X.limbs[limb][lane] = source.X.limbs[limb][lane]
