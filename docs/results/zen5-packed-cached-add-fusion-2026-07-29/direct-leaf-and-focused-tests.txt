@@ -1,0 +1,26 @@
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37860158	        31.70 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37812182	        31.72 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37756603	        31.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37819022	        31.74 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37809486	        31.75 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37810820	        31.75 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37770949	        31.76 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37802086	        31.76 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37752067	        31.76 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace         	37710918	        31.76 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35529678	        33.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35507410	        33.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35556975	        33.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35457871	        33.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35504569	        33.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35522144	        33.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35526093	        33.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35500581	        33.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35468266	        33.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control            	35522607	        33.78 ns/op	       0 B/op	       0 allocs/op
+PASS

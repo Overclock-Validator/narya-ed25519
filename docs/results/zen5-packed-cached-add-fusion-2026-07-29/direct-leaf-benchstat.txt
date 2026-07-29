@@ -1,0 +1,23 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+                                                                                      │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/direct-leaf-and-focused-tests.txt │
+                                                                                      │                                         sec/op                                          │
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace                                                                               31.75n ± 0%
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control                                                                                  33.78n ± 0%
+geomean                                                                                                                                                             32.75n
+
+                                                                                      │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/direct-leaf-and-focused-tests.txt │
+                                                                                      │                                          B/op                                           │
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace                                                                              0.000 ± 0%
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control                                                                                 0.000 ± 0%
+geomean                                                                                                                                                                       ¹
+¹ summaries must be >0 to compute geomean
+
+                                                                                      │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/direct-leaf-and-focused-tests.txt │
+                                                                                      │                                        allocs/op                                        │
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-reused-workspace                                                                              0.000 ± 0%
+ExperimentalCoordinateParallelCachedAddX4/chained/quad-packed-cached-split-control                                                                                 0.000 ± 0%
+geomean                                                                                                                                                                       ¹
+¹ summaries must be >0 to compute geomean

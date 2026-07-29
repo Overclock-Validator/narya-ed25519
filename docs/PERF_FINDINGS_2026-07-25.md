@@ -1149,6 +1149,75 @@ on native Zen 5 hardware. Evidence is under
 Zen 5. Complete x8 groups already hash at x8 width; n=1/n=2 retain their prior
 path. This is independent of warm-key state.
 
+### 5.28 Ordinary two-chain ZMM singleton loop — retained negative
+
+The component result in section 5.17 showed that two independent packed point
+doublings can occupy the low and high halves of one ZMM register for nearly
+the cost of one YMM chain. That did not establish that the ordinary
+double-scalar multiplication benefits: it also needs two table selections,
+two cached-add inputs, and a final term combination.
+
+The complete prepared-loop experiment was therefore run on a pinned Ryzen 7
+9700X core. Ten two-second samples measured the existing shared-accumulator x4
+loop at about 10.23 us and the ordinary two-chain ZMM loop at about 10.77 us,
+or 5.2% slower. Both paths were zero-allocation and the two-chain result was
+differentially checked against the existing strict integer-scalar equation.
+
+This closes the ordinary two-chain loop on the measured Zen 5 regime. The
+component kernel remains useful evidence rather than dead code: a future
+scalar transformation may expose two chains while also removing enough rounds
+to pay for the extra selection and final combination. Such a transform must be
+benchmarked as a complete verifier and cannot inherit the component result as
+a claimed speedup.
+
+**Regime tag:** Zen 5, prepared ordinary singleton DSM, width-5 variable-base
+NAF and width-8 generator NAF. This is not a verdict on a future exact HEEA or
+other half-length two-chain transform.
+
+### 5.29 Packed cached-add final-stage fusion — retained
+
+The packed singleton cached addition still materialized two normalized
+five-vector operands and immediately reloaded them for the final field
+multiplication. Commit `4dc12a6` adds a fused leaf that keeps the cached-add
+linear layer, carry/fold, operand expansion, and normalized multiplication in
+registers until the output store. It removes ten temporary vector stores and
+ten reloads per nonzero NAF digit. The now-unused final-operand fields were
+also removed from the reusable packed workspaces.
+
+The native differential compares the fused result byte-for-byte in redundant
+u52 representation with the split assembly oracle for zero, maximum-u52, and
+512 deterministic random product vectors. It separately checks in-place
+aliasing and zero allocations. Table-build inputs, complete mixed-order point
+tests, the full native repository suite, and `go vet ./...` remained green.
+
+On a pinned Ryzen 7 9700X core, a same-binary ten-sample leaf comparison moved
+from 33.78 to 31.75 ns (-6.0%). The exported cold n=1 verifier changed at every
+message size without allocations or fault fallbacks:
+
+| message bytes | parent (us/signature) | fused (us/signature) | change |
+|---:|---:|---:|---:|
+| 200 | 14.20 | 13.98 | -1.51% |
+| 1,232 | 15.05 | 14.85 | -1.33% |
+| 4,096 | 17.03 | 16.79 | -1.41% |
+
+Adding text for a packed-only kernel initially moved the dominant x8 multiply
+between cache-line halves, making otherwise-unaffected n=8/n=64 comparisons
+appear 0.2--0.5% slower. Commit `90384db` explicitly aligns both the x8 field
+multiply and the new packed cached-add leaf to 64-byte boundaries. An ABBA-
+ordered parent/candidate control then showed both binaries following the same
+host-frequency drift at n=8/n=64 rather than a candidate-specific regression.
+The alignment is part of the retained implementation, not a benchmark-only
+build condition.
+
+The 1,232-byte row was the hard promotion gate. The 4,096-byte gain was not
+accepted at its expense. Raw output, the ABBA control, exact commands, and
+checksums are under
+`docs/results/zen5-packed-cached-add-fusion-2026-07-29/`.
+
+**Regime tag:** cold packed x4 singleton and pair tails on Zen 5. Full x4/x8
+signature-parallel groups do not call the fused leaf; their control result is
+used only to guard code-layout regressions.
+
 ---
 
 ## 6. Smaller observations
