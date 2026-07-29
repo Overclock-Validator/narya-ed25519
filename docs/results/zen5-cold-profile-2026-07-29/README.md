@@ -244,6 +244,41 @@ Raw outputs:
 - `narya-asymmetric-b-niels-x8-blocks-core.txt` — isolated x8 core A/B;
 - `narya-asymmetric-b-niels-x8-blocks-complete.txt` — complete x8 verifier A/B.
 
+## Retained optimization: shared x8 final-product leaf
+
+Every x8 point doubling and Niels addition ends with the same four independent
+products, `(E*F, G*H, E*H, F*G)`. The repository already carried an exact
+assembly leaf that executes those products through one Go/assembly transition
+and one `VZEROUPPER`, but the registered kernels still made four separate
+calls. Its old sub-0.5% complete verdict came from Zen 4 and predated the
+current native-ZMM loop.
+
+Commit `a238847` uses the leaf in the ordinary and raw-square x8 doublings,
+projective-Niels addition, and affine fixed-base addition. The leaf preserves
+the exact loose representation of four independent normalized multiplications;
+its 10,000-case hardware differential includes zero, maximum-u52, and random
+operands, and separately asserts that the input workspace is unchanged.
+
+Five alternating fresh-process pairs on the exported cold verifier measured:
+
+| batch width | four calls, us/signature | one leaf, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.566 | 4.346 | -4.8% |
+| 64 | 4.344 | 4.135 | -4.8% |
+
+The isolated four-product boundary improved only about 1.2% (22.75 to 22.49
+ns), so the complete gain is principally a call/code-shape result repeated
+across roughly 300 point operations, not cheaper field arithmetic. Normalized
+`perf` counts were approximately 3--4% lower in retired instructions and
+6--7% lower in cycles per benchmark iteration. In the CPU profile, point
+doubling fell from about 44.5% to 39.3% cumulative while the combined final
+products became one 24.4%-flat leaf.
+
+All measurements reported zero allocations and zero internal fault fallbacks.
+The full native repository suite passed at `a238847`. Raw alternating output,
+counters, benchmark companions, and profile tops are in the files prefixed
+`narya-final-products`.
+
 ## Tested candidate: pooled x8 variable-base scratch
 
 The registered pre-signed variable-base workspace previously kept its transient
