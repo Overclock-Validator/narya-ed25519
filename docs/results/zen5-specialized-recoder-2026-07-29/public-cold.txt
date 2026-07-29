@@ -1,0 +1,25 @@
+Exact branch SHA: 1023e7e
+Units: microseconds per signature; lower is better
+All rows: 0 B/op, 0 allocs/op, 0 internal-fault-fallbacks
+
+message=200
+n=1:  13.47 13.47 13.48; median 13.470
+n=2:  13.42 13.42 13.42; median 13.420
+n=4:  7.536 7.539 7.541; median 7.539
+n=8:  3.705 3.708 3.707; median 3.707
+n=64: 3.459 3.462 3.463; median 3.462
+
+message=1232
+n=1:  14.24 14.25 14.26; median 14.250
+n=2:  14.32 14.33 14.34; median 14.330
+n=4:  8.026 8.026 8.029; median 8.026
+n=8:  3.936 3.936 3.938; median 3.936
+n=64: 3.707 3.716 3.718; median 3.716
+
+message=4096
+n=1:  16.29 16.31 16.32; median 16.310
+n=2:  16.26 16.26 16.28; median 16.260
+n=4:  9.440 9.440 9.411; median 9.440
+n=8:  4.681 4.678 4.677; median 4.678
+n=64: 4.439 4.439 4.439; median 4.439
+

@@ -1378,6 +1378,36 @@ B10. This closes only fusion for the present four-coordinate transpose layout;
 it does not reject a future table layout that emits multiply-ready limb vectors
 without an in-loop transpose.
 
+### 5.35 Merged-B10 specialized radix-32 recoder — retained
+
+The ordinary pre-signed x8 A evaluator already dispatched full active,
+all-negated radix-32 groups to `recodeCanonicalNegatedRadix32FullX8`. Merged
+B10 was added later and called the generic `RecodeCanonicalScalarsX8` directly,
+silently bypassing that specialization for every complete x8 group. The
+division-to-shift rewrite and round-major layout from the older recoder work
+were therefore already present; the live defect was one stale call site in the
+new evaluator.
+
+Commit `db0a239` routes merged B10 through the existing dispatch helper. All
+partial masks and any non-canonical lane still fall back to the generic
+recoder, preserving its exact fail-closed digits. The existing 10,000-case
+specialized/generic and dispatch/generic differentials cover random canonical
+and non-canonical scalars, masks, signs, and stale-output reuse.
+
+Prebuilt baseline/candidate binaries in ABBA order measured 1,232-byte cold
+verification at 3.994 to 3.946 us/signature for n=8 (-1.2%) and 3.767 to 3.712
+for n=64 (-1.5%). Compact ABBA checks at 200 and 4,096 bytes showed the same
+roughly 0.05-us absolute saving. The exact `1023e7e` public matrix, rerun in
+short isolated phases after rejecting a twofold host-contention artifact, is
+the current README table. Every row remained zero-allocation with zero native
+fault fallbacks; full native tests and vet passed.
+
+Evidence is under
+`docs/results/zen5-specialized-recoder-2026-07-29/`.
+
+**Regime tag:** cold complete x8 groups on Zen 5 using merged B10. Singleton,
+pair, x4 tail, Zen 4 separate-comb, and warm-cache routes are unchanged.
+
 ---
 
 ## 6. Smaller observations
