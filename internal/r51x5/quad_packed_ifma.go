@@ -292,7 +292,15 @@ var quadCachedScaleX4 = func() IFMAElementX4 {
 
 func quadCachePackedPointX4(out *quadPackedCachedPointX4, point *quadPackedPointX4, ops quadDSMOperationsX4) error {
 	var coordinates IFMAElementX4
-	quadCachedAddFirstOperandX4(&coordinates, point)
+	if ops.hardware {
+		// Keep the model oracle independent of native normalization without
+		// making production table construction pay for the portable carry/fold.
+		// This is the same packed first-operand transform used by the hardware
+		// cached-add path, and it is exact for in-place table preparation too.
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&coordinates.limbs, &point.coordinates.limbs)
+	} else {
+		quadCachedAddFirstOperandX4(&coordinates, point)
+	}
 	return ops.multiply(&out.coordinates, &coordinates, &quadCachedScaleX4)
 }
 
