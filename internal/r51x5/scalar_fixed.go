@@ -1,7 +1,5 @@
 package r51x5
 
-import "encoding/binary"
-
 const maxFixedScalarRounds = 64
 
 var scalarOrderBytes = [32]byte{
@@ -86,14 +84,12 @@ func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byt
 	out.count = uint8(fixedScalarRoundCount(radixBits))
 	out.radixBits = uint8(radixBits)
 	var valid uint8
-	var words [X8Lanes][5]uint64
 	for lane := 0; lane < X8Lanes; lane++ {
 		laneMask := uint8(1 << lane)
 		if active&laneMask == 0 || !canonicalScalarBytes(&scalars[lane]) {
 			continue
 		}
 		valid |= laneMask
-		words[lane] = fixedScalarWords(&scalars[lane])
 	}
 
 	// Build the round-major representation in round-major order. Besides
@@ -109,7 +105,7 @@ func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byt
 			if valid&laneMask == 0 {
 				continue
 			}
-			digit := int16(fixedScalarWordBits(&words[lane], bit, uint(out.radixBits))) + carries[lane]
+			digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
 			// The extracted digit is nonnegative and the incoming carry is
 			// zero or one. Division by this power-of-two radix is therefore
 			// exactly a shift, without an IDIV in the per-lane inner loop.
@@ -157,9 +153,8 @@ func canonicalScalarBytes(x *[32]byte) bool {
 func recodeFixedScalarX4(out *FixedRadixDigitsX4, lane int, scalar *[32]byte, negative bool) {
 	carry := int16(0)
 	half := int16(1) << (out.radixBits - 1)
-	words := fixedScalarWords(scalar)
 	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarWordBits(&words, round*int(out.radixBits), uint(out.radixBits))) + carry
+		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
 		carry = (digit + half) >> out.radixBits
 		digit -= carry << out.radixBits
 		if negative {
@@ -170,26 +165,6 @@ func recodeFixedScalarX4(out *FixedRadixDigitsX4, lane int, scalar *[32]byte, ne
 	if carry != 0 {
 		panic("r51x5: canonical x4 scalar exceeded fixed recoding width")
 	}
-}
-
-func fixedScalarWords(scalar *[32]byte) [5]uint64 {
-	return [5]uint64{
-		binary.LittleEndian.Uint64(scalar[0:8]),
-		binary.LittleEndian.Uint64(scalar[8:16]),
-		binary.LittleEndian.Uint64(scalar[16:24]),
-		binary.LittleEndian.Uint64(scalar[24:32]),
-		0, // Guard word for a final digit that straddles bit 255.
-	}
-}
-
-func fixedScalarWordBits(words *[5]uint64, bit int, width uint) uint16 {
-	wordIndex := bit >> 6
-	shift := uint(bit & 63)
-	value := words[wordIndex] >> shift
-	if shift+width > 64 {
-		value |= words[wordIndex+1] << (64 - shift)
-	}
-	return uint16(value & ((uint64(1) << width) - 1))
 }
 
 func fixedScalarBits(scalar *[32]byte, bit int, width uint) uint16 {

@@ -8,6 +8,8 @@
 
 package r51x5
 
+import "encoding/binary"
+
 // asymmetricFixedBTableExperiment is a deliberately test-only, one-row
 // positive table for a public fixed base. Unlike ExperimentalFixedBaseCombTable
 // this is an ordinary signed-window table: entry i is [(i+1)]B. It is stored
@@ -16,6 +18,26 @@ type asymmetricFixedBTableExperiment struct {
 	points      []fixedBaseAffineCached
 	densePoints []ifmaAffine3MicroAoSEntryExperiment
 	radixBits   uint
+}
+
+func asymmetricFixedBScalarWords(scalar *[32]byte) [5]uint64 {
+	return [5]uint64{
+		binary.LittleEndian.Uint64(scalar[0:8]),
+		binary.LittleEndian.Uint64(scalar[8:16]),
+		binary.LittleEndian.Uint64(scalar[16:24]),
+		binary.LittleEndian.Uint64(scalar[24:32]),
+		0, // Guard word for a final digit that straddles bit 255.
+	}
+}
+
+func asymmetricFixedBScalarWordBits(words *[5]uint64, bit int, width uint) uint16 {
+	wordIndex := bit >> 6
+	shift := uint(bit & 63)
+	value := words[wordIndex] >> shift
+	if shift+width > 64 {
+		value |= words[wordIndex+1] << (64 - shift)
+	}
+	return uint16(value & ((uint64(1) << width) - 1))
 }
 
 // asymmetricFixedBRoundX4 is local to this experiment because widths 9 and 10
@@ -91,11 +113,11 @@ func recodeAsymmetricFixedBScalarsX4(
 			continue
 		}
 		valid |= laneMask
-		words := fixedScalarWords(&scalars[lane])
+		words := asymmetricFixedBScalarWords(&scalars[lane])
 		carry := int32(0)
 		half := int32(1) << (radixBits - 1)
 		for round := 0; round < int(out.count); round++ {
-			digit := int32(fixedScalarWordBits(&words, round*int(radixBits), radixBits)) + carry
+			digit := int32(asymmetricFixedBScalarWordBits(&words, round*int(radixBits), radixBits)) + carry
 			// The extractor is nonnegative and carry is zero or one, so this
 			// is exact power-of-two division without a hardware IDIV.
 			carry = (digit + half) >> radixBits
