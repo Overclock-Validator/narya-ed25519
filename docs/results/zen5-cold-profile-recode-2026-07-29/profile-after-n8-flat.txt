@@ -1,0 +1,59 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 12K of event 'cpu/cycles/P'
+# Event count (approx.): 66168049821
+#
+# Overhead  Symbol                                                                                                                                               IPC   [IPC Coverage]
+# ........  ...................................................................................................................................................  ....................
+#
+    26.67%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointFinalProductsUncheckedX8.abi0                                               -      -            
+    14.94%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaFourRawProductsDoubleStage2UncheckedX8.abi0                                      -      -            
+     8.07%  [.] nativeCompressX8RollingRounds                                                                                                                    -      -            
+     5.41%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaDoubleStage2X8.abi0                                                              -      -            
+     5.34%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaRepeatedSquareNormalizedX4.abi0                                                  -      -            
+     5.21%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaRepeatedSquareNormalizedX8.abi0                                                  -      -            
+     4.91%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaFourRawProductsNielsStage2UncheckedX8.abi0                                       -      -            
+     2.08%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaNielsStage2X8.abi0                                                               -      -            
+     2.03%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaThreeRawProductsNielsStage2UncheckedX8.abi0                                      -      -            
+     1.75%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceUniformScalar                                                                  -      -            
+     1.60%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.selectIFMAProjectiveNielsPreSignedMicroAoSX8                                         -      -            
+     1.52%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeCanonicalNegatedRadix32FullX8                                                  -      -            
+     1.34%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceAccumulators                                                                   -      -            
+     1.28%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*IFMAElementX8).Reduced                                                             -      -            
+     1.24%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8).Evaluate  -      -            
+     0.97%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeFixedBaseScalarsX8                                                             -      -            
+     0.85%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMulNormalizedUncheckedX8.abi0                                                    -      -            
+     0.85%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointDoubleComposableWorkspaceStaticX8                                           -      -            
+     0.83%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaAddNormalizedUncheckedX8.abi0                                                    -      -            
+     0.69%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsMicroAoSTransposeX8.abi0                                          -      -            
+     0.62%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8.abi0                            -      -            
+     0.62%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.selectFixedBaseIFMACachedUncheckedX8                                                 -      -            
+     0.60%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeIFMAX8                                                                         -      -            
+     0.60%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointAddProjectiveNielsWorkspaceX8                                               -      -            
+     0.53%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.sqrtRatioIFMAX8                                                                      -      -            
+     0.52%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMulNormalizedUncheckedX4.abi0                                                    -      -            
+     0.52%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*IFMAElementX4).Reduced                                                             -      -            
+     0.52%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaSubtractNormalizedUncheckedX8.abi0                                               -      -            
+     0.51%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8                                            -      -            
+     0.48%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaAffine3MicroAoSTransposeSelectExperimentX8.abi0                                  -      -            
+     0.47%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.batchInvertPointZX4                                                                  -      -            
+     0.44%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.checkIFMAComposablePointsX8                                                          -      -            
+     0.41%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.encodeAffineIFMAX4                                                                   -      -            
+     0.39%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.batchEncodeIFMAX4                                                                    -      -            
+     0.37%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeOneIFMAX8                                                                      -      -            
+     0.37%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ElementX8).Negate                                                                  -      -            
+     0.33%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsFromPointX8                                                       -      -            
+     0.33%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8).Prepare   -      -            
+     0.32%  [.] github.com/Overclock-Validator/narya-ed25519/sha512mb.sum512NativeFixed3X8                                                                       -      -            
+     0.30%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.addFixedBaseIFMACachedWorkspaceX8                                                    -      -            
+     0.25%  [.] github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).evaluateX8Group                                                    -      -            
+     0.21%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*decode2IFMAOpsX8).validateOneImports                                               -      -            
+     0.20%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.conditionalNegateX8                                                                  -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

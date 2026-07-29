@@ -1,0 +1,43 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 12K of event 'cpu/cycles/P'
+# Event count (approx.): 67101769469
+#
+# Overhead  Symbol                                                                                                           IPC   [IPC Coverage]
+# ........  ...............................................................................................................  ....................
+#
+    31.73%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaQuadDoubleFinalMultiplyUncheckedX4.abi0      -      -            
+    24.42%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMulNormalizedUncheckedX4.abi0                -      -            
+    10.68%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaRepeatedSquareNormalizedX4.abi0              -      -            
+     7.30%  [.] crypto/internal/fips140/sha512.blockAVX2.abi0                                                                -      -            
+     4.67%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaQuadCachedAddFinalOperandsUncheckedX4.abi0   -      -            
+     2.07%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadPointDoubleHardwareWorkspaceUncheckedX4      -      -            
+     2.00%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaQuadCachedAddFirstOperandUncheckedX4.abi0    -      -            
+     1.87%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*IFMAElementX4).Reduced                         -      -            
+     1.85%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.evaluateQuadNAFVerifyX4                          -      -            
+     1.81%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceAccumulators                               -      -            
+     1.28%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaQuadDoubleFirstOperandsUncheckedX4.abi0      -      -            
+     0.93%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeQuadCanonicalNAFX4                         -      -            
+     0.88%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadPointAddCachedHardwareWorkspaceUncheckedX4   -      -            
+     0.79%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeIFMAX4                                     -      -            
+     0.71%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaConditionalNegateNormalizedUncheckedX4.abi0  -      -            
+     0.67%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.sqrtRatioIFMAX4                                  -      -            
+     0.67%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadDSMOperationsX4.doubleWorkspace              -      -            
+     0.57%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadNegateCachedPointX4                          -      -            
+     0.48%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.selectQuadNAFEntryX4                             -      -            
+     0.45%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceUniformScalar                              -      -            
+     0.40%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeOneIFMAX4                                  -      -            
+     0.35%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ElementX4).Negate                              -      -            
+     0.34%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*decode2IFMAOpsX4).validateOneImports           -      -            
+     0.28%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadPackedEqualDecodedAffineLaneX4               -      -            
+     0.25%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.conditionalNegateX4                              -      -            
+     0.22%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.quadDSMOperationsX4.addCachedWorkspace           -      -            
+     0.22%  [.] github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ExperimentalPackedStrictVerifierX4).Verify     -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

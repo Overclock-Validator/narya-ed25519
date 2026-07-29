@@ -1040,6 +1040,46 @@ nothing about the x4 projective-Niels path, whose retained result is recorded
 above, or about a future selector-to-first-product fusion that avoids a
 different memory boundary.
 
+### 5.25 Full-x8 radix-32 scalar recoding specialization — retained
+
+A fresh cold profile at `dc6fb0e` separated the packed singleton and full-x8
+regimes. At n=1, the packed-x4 final multiply, general multiply, and repeated
+square leaves accounted for 31.73%, 24.42%, and 10.68% flat respectively. At
+n=8/n=64, `RecodeCanonicalScalarsX8` alone accounted for 2.94%/3.30% even
+though the registered variable-base path always supplies the same public
+shape: eight active reduced challenges, radix 32, and a negative sign in every
+lane.
+
+Commit `b1c1ccc` adds a private specialization for that exact shape. It still
+checks all eight scalar encodings for canonicality and re-enters the generic
+recoder on any failure. The all-valid loop uses a constant five-bit width,
+applies the negative sign unconditionally, omits per-digit active-lane tests,
+and directly assigns each round's magnitudes and masks. Partial groups,
+different sign masks, and every other caller retain the generic implementation.
+
+Direct differentials cover 10,000 deterministic full-lane cases, periodic
+noncanonical scalars, another 10,000 randomized active/sign-mask dispatch
+cases, poisoned output reuse, and zero allocations. On a pinned Ryzen 7 9700X
+core the six-sample direct median changed from 909.9 to 467.8 ns per eight
+scalars (-48.6%). Ten two-second public 1,232-byte samples gave:
+
+| width | generic recoder (us/sig) | specialized recoder (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.239 | 4.188 | -1.2% |
+| 64 | 4.031 | 3.970 | -1.5% |
+
+Post-change profiles place the new helper at 1.52% for n=8 and 1.55% for
+n=64. Separate n=1/n=2/n=4 binaries stayed within 0.4% in either direction;
+those paths do not call the specialization. Every public row reported zero
+allocations and zero internal-fault fallbacks, and the complete native suite
+passed. Raw A/B and flat-profile text is under
+`docs/results/zen5-cold-profile-recode-2026-07-29/`.
+
+**Regime tag:** the retained optimization is deliberately narrow: cold full
+x8 variable-base evaluation with negated radix-32 digits. It does not change
+the packed singleton, x4 tail, fixed-base comb recoder, warm-table recoder, or
+acceptance predicate.
+
 ---
 
 ## 6. Smaller observations
