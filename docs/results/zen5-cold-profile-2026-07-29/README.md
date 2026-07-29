@@ -244,6 +244,34 @@ Raw outputs:
 - `narya-asymmetric-b-niels-x8-blocks-core.txt` — isolated x8 core A/B;
 - `narya-asymmetric-b-niels-x8-blocks-complete.txt` — complete x8 verifier A/B.
 
+## Tested candidate: pooled x8 variable-base scratch
+
+The registered pre-signed variable-base workspace previously kept its transient
+point, cached point, selection, add, and double storage on the stack. Static
+amd64 inspection measured 5.8 KiB for `PrepareComposable` and 7.1 KiB for
+`Evaluate`. Candidate `0a4294d` moved that scratch into the already pooled
+workspace and initialized the accumulator in place. The frames fell to 80 and
+88 bytes respectively, with no change to the equation or output-atomicity
+boundary.
+
+The isolated seam improved, but the exported verifier did not:
+
+| measurement | stack-local scratch | pooled scratch | change |
+|---|---:|---:|---:|
+| prepared A evaluation, ns/signature | 2,649 | 2,563 | -3.2% |
+| cold A table + evaluation, ns/signature | 2,867 | 2,765 | -3.6% |
+| public n=8, us/signature | 4.536 | 4.553 | +0.4% |
+| public n=64, us/signature | 4.327 | 4.318 | -0.2% |
+
+Five alternating fresh-process n=8 pairs were effectively flat (4.549 versus
+4.548 us/signature by median). The pooled workspace also grew from 41,608 to
+48,656 bytes. The large stack frames therefore describe capacity paid once by
+a reused worker stack, not recurring zero/copy work; moving them trades that
+capacity for a larger hot worker without an end-to-end win. Revert `8ef43bf`
+keeps the stack-local layout. Raw outputs are in
+`narya-scratch-hoist.{before,after}.txt` and
+`narya-scratch-hoist.micro.{before,after}.txt`.
+
 ## Retested candidate: x8 runtime sign handling
 
 The current cold x8 A table stores both public signs while it is built. The
