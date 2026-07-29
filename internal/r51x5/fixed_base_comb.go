@@ -355,21 +355,38 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 	}
 	half := int16(1) << (out.radixBits - 1)
 	var carries [X8Lanes]int16
-	for round := 0; round < int(out.count); round++ {
-		bit := round * int(out.radixBits)
-		for lane := 0; lane < X8Lanes; lane++ {
-			laneMask := uint8(1 << lane)
-			if valid&laneMask == 0 {
-				continue
+	if out.radixBits == 8 {
+		// The registered basepoint comb uses radix 256. Its round boundaries
+		// are byte-aligned, so the general two-byte bit extractor is needless.
+		for round := 0; round < int(out.count); round++ {
+			for lane := 0; lane < X8Lanes; lane++ {
+				laneMask := uint8(1 << lane)
+				if valid&laneMask == 0 {
+					continue
+				}
+				digit := int16(scalars[lane][round]) + carries[lane]
+				carries[lane] = (digit + half) >> 8
+				digit -= carries[lane] << 8
+				setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
 			}
-			digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
-			// fixedScalarBits is in [0, 2^w-1] and the incoming carry is
-			// zero or one, so digit+half is nonnegative. For the power-of-two
-			// radix the shifts are therefore exactly the signed division and
-			// multiplication they replace, without an IDIV in every lane.
-			carries[lane] = (digit + half) >> out.radixBits
-			digit -= carries[lane] << out.radixBits
-			setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
+		}
+	} else {
+		for round := 0; round < int(out.count); round++ {
+			bit := round * int(out.radixBits)
+			for lane := 0; lane < X8Lanes; lane++ {
+				laneMask := uint8(1 << lane)
+				if valid&laneMask == 0 {
+					continue
+				}
+				digit := int16(fixedScalarBits(&scalars[lane], bit, uint(out.radixBits))) + carries[lane]
+				// fixedScalarBits is in [0, 2^w-1] and the incoming carry is
+				// zero or one, so digit+half is nonnegative. For the power-of-two
+				// radix the shifts are therefore exactly the signed division and
+				// multiplication they replace, without an IDIV in every lane.
+				carries[lane] = (digit + half) >> out.radixBits
+				digit -= carries[lane] << out.radixBits
+				setRadixRoundDigitX8(&out.rounds[round], lane, int8(digit))
+			}
 		}
 	}
 	for lane := 0; lane < X8Lanes; lane++ {
@@ -383,11 +400,20 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
 	carry := int16(0)
 	half := int16(1) << (out.radixBits - 1)
-	for round := 0; round < int(out.count); round++ {
-		digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
-		carry = (digit + half) >> out.radixBits
-		digit -= carry << out.radixBits
-		setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
+	if out.radixBits == 8 {
+		for round := 0; round < int(out.count); round++ {
+			digit := int16(scalar[round]) + carry
+			carry = (digit + half) >> 8
+			digit -= carry << 8
+			setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
+		}
+	} else {
+		for round := 0; round < int(out.count); round++ {
+			digit := int16(fixedScalarBits(scalar, round*int(out.radixBits), uint(out.radixBits))) + carry
+			carry = (digit + half) >> out.radixBits
+			digit -= carry << out.radixBits
+			setRadixRoundDigitX4(&out.rounds[round], lane, int8(digit))
+		}
 	}
 	if carry != 0 {
 		panic("r51x5: canonical x4 scalar exceeded fixed-base comb width")
