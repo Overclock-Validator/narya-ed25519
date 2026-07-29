@@ -321,10 +321,11 @@ func (verifier *ExperimentalPackedStrictVerifierX4) VerifyPair(
 		_, _ = verifier.hash.Write(signatures[half][:32])
 		_, _ = verifier.hash.Write(pubs[half][:])
 		_, _ = verifier.hash.Write(messages[half])
-		sum := verifier.hash.Sum(wide[half][:0])
+		sum := verifier.hash.Sum(verifier.digest[:0])
 		if len(sum) != sha512.Size {
 			panic("r51x5: SHA-512 returned an invalid digest length")
 		}
+		wide[half] = verifier.digest
 	}
 	var reducedWide [X8Lanes][32]byte
 	if ExperimentalReduceUniformScalarsX8(&reducedWide, &wide, live)&live != live {
