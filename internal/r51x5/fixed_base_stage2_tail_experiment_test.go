@@ -6,12 +6,6 @@ import (
 	"testing"
 )
 
-type fixedBaseAddX8Func func(
-	out, point *IFMAPointX8,
-	cached *fixedBaseIFMACachedX8,
-	workspace *fixedBaseIFMAAddScratchX8,
-) error
-
 func TestExperimentalFixedBaseStage2TailX8Differential(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		t.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -26,11 +20,11 @@ func TestExperimentalFixedBaseStage2TailX8Differential(t *testing.T) {
 		}
 		active := uint8(rng.Uint32())
 		var want, got IFMAPointX8
-		wantMask, err := fixedBaseCombScalarMultWithAddX8(&want, table, &scalars, active, addFixedBaseIFMACachedWorkspaceSeparateX8)
+		wantMask, err := fixedBaseCombScalarMultSeparateX8(&want, table, &scalars, active)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotMask, err := fixedBaseCombScalarMultWithAddX8(&got, table, &scalars, active, addFixedBaseIFMACachedWorkspaceX8)
+		gotMask, err := ExperimentalIFMAFixedBaseCombScalarMultX8(&got, table, &scalars, active)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,7 +51,7 @@ func BenchmarkExperimentalFixedBaseStage2TailX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if _, err := fixedBaseCombScalarMultWithAddX8(&out, table, &scalars, 0xff, addFixedBaseIFMACachedWorkspaceSeparateX8); err != nil {
+			if _, err := fixedBaseCombScalarMultSeparateX8(&out, table, &scalars, 0xff); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -68,7 +62,7 @@ func BenchmarkExperimentalFixedBaseStage2TailX8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if _, err := fixedBaseCombScalarMultWithAddX8(&out, table, &scalars, 0xff, addFixedBaseIFMACachedWorkspaceX8); err != nil {
+			if _, err := ExperimentalIFMAFixedBaseCombScalarMultX8(&out, table, &scalars, 0xff); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -93,12 +87,11 @@ func addFixedBaseIFMACachedWorkspaceSeparateX8(
 	return nil
 }
 
-func fixedBaseCombScalarMultWithAddX8(
+func fixedBaseCombScalarMultSeparateX8(
 	out *IFMAPointX8,
 	table *ExperimentalFixedBaseCombTable,
 	scalars *[X8Lanes][32]byte,
 	active uint8,
-	add fixedBaseAddX8Func,
 ) (uint8, error) {
 	var digits fixedBaseDigitsX8
 	usable := recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
@@ -116,7 +109,7 @@ func fixedBaseCombScalarMultWithAddX8(
 		}
 		var selected fixedBaseIFMACachedX8
 		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
-		if err := add(&acc, &acc, &selected, &addWorkspace); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceSeparateX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
@@ -132,7 +125,7 @@ func fixedBaseCombScalarMultWithAddX8(
 		}
 		var selected fixedBaseIFMACachedX8
 		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
-		if err := add(&acc, &acc, &selected, &addWorkspace); err != nil {
+		if err := addFixedBaseIFMACachedWorkspaceSeparateX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
 	}
