@@ -70,10 +70,17 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	ifmaAddComposableUncheckedX8(yPlusX, &point.Y, &point.X)
 
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &yMinusX.limbs, &cached.YMinusX.limbs)
-	ifmaMulRawX8(&stage2[1], &yPlusX.limbs, &cached.YPlusX.limbs)
-	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
-	ifmaMulRawX8(&stage2[3], &point.Z.limbs, &cached.Z.limbs)
+	// A/B/C/D are four independent exact raw products. Compute them through
+	// one assembly leaf so the hot Niels loop pays one Go/assembly transition
+	// and one VZEROUPPER, while expanding the same source-level multiply body
+	// as four standalone ifmaMulRawX8 calls.
+	ifmaFourRawProductsUncheckedX8(
+		&stage2[0],
+		&yMinusX.limbs, &cached.YMinusX.limbs,
+		&yPlusX.limbs, &cached.YPlusX.limbs,
+		&point.T.limbs, &cached.T2D.limbs,
+		&point.Z.limbs, &cached.Z.limbs,
+	)
 	ifmaNielsStage2X8(stage2)
 
 	// point and cached are both dead after A/B/C/D have been formed, so
