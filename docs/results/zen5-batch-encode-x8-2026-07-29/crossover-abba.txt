@@ -1,0 +1,72 @@
+ORDER path=x8-encode
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18895	     63632 ns/op	         3.977 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18873	     63610 ns/op	         3.976 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18862	     63629 ns/op	         3.977 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18850	     63678 ns/op	         3.980 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18842	     63681 ns/op	         3.980 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18843	     63689 ns/op	         3.981 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9570	    125539 ns/op	         3.923 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9571	    125366 ns/op	         3.918 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9564	    125500 ns/op	         3.922 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9561	    125458 ns/op	         3.921 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9512	    126075 ns/op	         3.940 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9567	    125584 ns/op	         3.924 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=x4-encode
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18722	     64104 ns/op	         4.007 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18763	     63933 ns/op	         3.996 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18775	     63930 ns/op	         3.996 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18765	     63953 ns/op	         3.997 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18776	     63885 ns/op	         3.993 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18776	     63932 ns/op	         3.996 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9558	    125663 ns/op	         3.927 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9553	    125694 ns/op	         3.928 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9542	    125681 ns/op	         3.928 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9541	    125811 ns/op	         3.932 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9534	    125809 ns/op	         3.932 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9487	    126434 ns/op	         3.951 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=x4-encode
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18765	     63938 ns/op	         3.996 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18753	     63986 ns/op	         3.999 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18750	     64012 ns/op	         4.001 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18758	     63969 ns/op	         3.998 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18747	     64023 ns/op	         4.001 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=16/msg=1232         	   18745	     63994 ns/op	         4.000 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9516	    126234 ns/op	         3.945 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9454	    126925 ns/op	         3.966 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9519	    126124 ns/op	         3.941 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9454	    126851 ns/op	         3.964 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9458	    126842 ns/op	         3.964 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x4-encode/n=32/msg=1232         	    9523	    126067 ns/op	         3.940 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=x8-encode
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18825	     63770 ns/op	         3.986 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18818	     63749 ns/op	         3.984 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18825	     63754 ns/op	         3.985 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18816	     63785 ns/op	         3.987 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18825	     63750 ns/op	         3.984 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=16/msg=1232         	   18824	     63771 ns/op	         3.986 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9571	    125537 ns/op	         3.923 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9572	    125449 ns/op	         3.920 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9562	    125481 ns/op	         3.921 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9536	    125849 ns/op	         3.933 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9565	    125403 ns/op	         3.919 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8BatchEncodeCompletePipeline/path=x8-encode/n=32/msg=1232         	    9570	    125434 ns/op	         3.920 µs/sig	       0 B/op	       0 allocs/op
+PASS

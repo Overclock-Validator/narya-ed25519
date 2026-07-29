@@ -1,0 +1,14 @@
+# Run from the repository root on an idle Zen 5 host with Go 1.26.4.
+
+taskset -c CORE env GOMAXPROCS=1 go test -count=1 ./...
+go vet ./...
+
+# Candidate/control complete-path crossover and message-size gates.
+taskset -c CORE env GOMAXPROCS=1 go test -run '^$' \
+  -bench '^BenchmarkR51IFMAX8BatchEncodeCompletePipeline$' \
+  -benchmem -benchtime=1s -count=6 ./ed25519
+
+# Registered public API, restricted to the rows retained in this bundle.
+taskset -c CORE env GOMAXPROCS=1 go test -tags r51_release_bench -run '^$' \
+  -bench '^BenchmarkPublicR51VerifyBatchStrict$/msg=1232/n=(8|64)$' \
+  -benchmem -benchtime=2s -count=10 ./ed25519
