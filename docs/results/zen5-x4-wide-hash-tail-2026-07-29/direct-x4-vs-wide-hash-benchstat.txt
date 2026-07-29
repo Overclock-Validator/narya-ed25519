@@ -1,0 +1,47 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+                                                  │     x4      │            x4-wide-hash             │
+                                                  │   sec/op    │   sec/op     vs base                │
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=200    29.89µ ± 0%   29.95µ ± 0%   +0.18% (p=0.001 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    30.96µ ± 0%   30.20µ ± 0%   -2.47% (p=0.000 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=1232   33.95µ ± 0%   33.97µ ± 0%        ~ (p=0.127 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   34.99µ ± 0%   32.20µ ± 0%   -7.99% (p=0.000 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=4096   44.71µ ± 0%   44.70µ ± 0%        ~ (p=0.093 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   45.91µ ± 0%   37.47µ ± 0%  -18.40% (p=0.000 n=10)
+geomean                                             36.22µ        34.40µ        -5.03%
+
+                                                  │      x4      │             x4-wide-hash             │
+                                                  │ us/signature │ us/signature  vs base                │
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=200      14.95 ± 0%     14.97 ± 0%   +0.17% (p=0.001 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200      7.740 ± 0%     7.550 ± 0%   -2.46% (p=0.000 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=1232     16.98 ± 0%     16.98 ± 0%        ~ (p=0.367 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232     8.748 ± 0%     8.050 ± 0%   -7.99% (p=0.000 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=4096     22.36 ± 0%     22.35 ± 0%        ~ (p=0.189 n=10)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096    11.480 ± 0%     9.367 ± 0%  -18.41% (p=0.000 n=10)
+geomean                                               12.81          12.16        -5.04%
+
+                                                  │      x4      │            x4-wide-hash             │
+                                                  │     B/op     │    B/op     vs base                 │
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+geomean                                                        ²               +0.00%                ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean
+
+                                                  │      x4      │            x4-wide-hash             │
+                                                  │  allocs/op   │ allocs/op   vs base                 │
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=2/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=10) ¹
+geomean                                                        ²               +0.00%                ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean

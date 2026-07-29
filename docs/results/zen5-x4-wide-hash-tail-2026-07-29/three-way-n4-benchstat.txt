@@ -1,0 +1,35 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+                                                  │     x4      │            x4-wide-hash            │             partial-x8             │
+                                                  │   sec/op    │   sec/op     vs base               │   sec/op     vs base               │
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    30.80µ ± 0%   30.10µ ± 0%   -2.28% (p=0.002 n=6)   30.94µ ± 1%   +0.46% (p=0.041 n=6)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   35.01µ ± 0%   32.18µ ± 0%   -8.08% (p=0.002 n=6)   32.81µ ± 0%   -6.27% (p=0.002 n=6)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   46.03µ ± 0%   37.60µ ± 0%  -18.30% (p=0.002 n=6)   38.33µ ± 0%  -16.73% (p=0.002 n=6)
+geomean                                             36.75µ        33.15µ        -9.80%                 33.89µ        -7.79%
+
+                                                  │      x4      │            x4-wide-hash             │             partial-x8              │
+                                                  │ us/signature │ us/signature  vs base               │ us/signature  vs base               │
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200      7.700 ± 0%     7.524 ± 0%   -2.28% (p=0.002 n=6)     7.736 ± 1%   +0.47% (p=0.041 n=6)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232     8.753 ± 0%     8.046 ± 0%   -8.08% (p=0.002 n=6)     8.204 ± 0%   -6.27% (p=0.002 n=6)
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096    11.510 ± 0%     9.401 ± 0%  -18.32% (p=0.002 n=6)     9.582 ± 0%  -16.75% (p=0.002 n=6)
+geomean                                               9.188          8.287        -9.81%                   8.472        -7.80%
+
+                                                  │      x4      │            x4-wide-hash            │             partial-x8             │
+                                                  │     B/op     │    B/op     vs base                │    B/op     vs base                │
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+geomean                                                        ²               +0.00%               ²               +0.00%               ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean
+
+                                                  │      x4      │            x4-wide-hash            │             partial-x8             │
+                                                  │  allocs/op   │ allocs/op   vs base                │ allocs/op   vs base                │
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=200    0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=1232   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+R51IFMAPartialX8TailCompletePipeline/n=4/msg=4096   0.000 ± 0%     0.000 ± 0%       ~ (p=1.000 n=6) ¹   0.000 ± 0%       ~ (p=1.000 n=6) ¹
+geomean                                                        ²               +0.00%               ²               +0.00%               ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean

@@ -1118,6 +1118,37 @@ This does not claim a gain for n=1/n=2/n=4, x4 tails, alternate comb widths,
 or any warm per-key table. Re-measure on a different fixed-base shape or
 microarchitecture rather than generalizing the result.
 
+### 5.27 Zen 5 x4-curve / x8-hash cold tails — retained
+
+A four-signature tail has two independent width choices: the curve arithmetic
+and the segmented SHA-512 plus digest reduction. Sending the entire tail
+through a half-active x8 curve group conflates them. The retained composition
+keeps the faster full x4 curve group while hashing its four compacted
+challenges with the native x8 kernel.
+
+In a pinned same-binary ten-sample comparison, n=4 improved by 2.46% at 200
+bytes, 7.99% at 1,232 bytes, and 18.41% at 4,096 bytes. N=2 was statistically
+flat at 1,232 and 4,096 bytes, so production requires at least four active
+lanes. Every row allocated zero bytes. The 1,232-byte result was a hard gate:
+the larger-message gain was not accepted at its expense.
+
+A separate three-way gate showed why the split matters. Four-active-lane x8
+curve arithmetic measured 7.736/8.204/9.582 us/signature at 200/1,232/4,096
+bytes. The retained x4-curve/x8-hash composition measured
+7.524/8.046/9.401 and therefore dominated it at every size. The half-active x8
+seam remains test-only evidence rather than production dispatch.
+
+Commit `45da721` selects the composition only on AMD family 1Ah (Zen 5).
+Family 19h (Zen 4) and unknown IFMA CPUs retain x4 hashing until the complete
+gate is repeated there. Both public profiles, mixed invalid lanes, partial
+tails, zero allocations, the full repository suite, and `go vet ./...` passed
+on native Zen 5 hardware. Evidence is under
+`docs/results/zen5-x4-wide-hash-tail-2026-07-29/`.
+
+**Regime tag:** cold x4 tails with four through seven active signatures on
+Zen 5. Complete x8 groups already hash at x8 width; n=1/n=2 retain their prior
+path. This is independent of warm-key state.
+
 ---
 
 ## 6. Smaller observations
@@ -1127,11 +1158,9 @@ microarchitecture rather than generalizing the result.
 - **Multicore scaling is 93-98%**, far above the usual 80-85%. Zero allocations
   means no GC pressure, and warm tables are shared read-only. Six cores reach
   ~1.25M sig/s warm and ~509k cold at max transaction size.
-- **Hashing matters more as point arithmetic gets faster.** Going 200 -> 1232
-  bytes costs the cold path +6% but the warm path +21%, because SHA-512 is a
-  larger fraction of a 4.5 us verify than of a 12 us one. So multi-buffer SHA-512
-  is worth *more* after the warm path lands, not less — and it is the only win
-  that is independent of cache hit rate, since every signature hashes regardless.
+- **Hash width is independently dispatchable from curve width.** Zen 5 n=4
+  keeps x4 curve arithmetic but uses x8 SHA-512, gaining about 8% at 1,232
+  bytes. This is a cold-path result and does not depend on cache hit rate.
 - **narya's strict path is faster than stdlib** (25.79 vs 26.48 us) while doing
   strictly more work, on both Zen 5 and arm64. That is the honest shipping claim.
 

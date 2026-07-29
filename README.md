@@ -230,7 +230,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu`, never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 for the tail; unknown IFMA CPUs retain the reviewed x4 default. The x8 doubler selects a symmetry-aware raw-square schedule on Zen 4 and the faster general-multiply schedule on Zen 5. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, one process-shared radix-256 B comb, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 curve arithmetic for the tail. Zen 5 hashes four-to-seven-item cold tails through the x8 SHA/reduction path; Zen 4 and unknown IFMA CPUs retain x4 hashing. The x8 doubler selects a symmetry-aware raw-square schedule on Zen 4 and the faster general-multiply schedule on Zen 5. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -242,8 +242,9 @@ operator intent and must not silently fall back.
 `sha512mb`'s public `Lanes()` and `Sum512Batch` surface remains the portable
 scalar implementation. Its AVX2 and AVX-512 kernels are hardware-gated behind
 the `Experimental*` entry points; the forced `r51` backend calls the x8 native
-entry for complete groups on measured AMD family 19h+ IFMA parts and retains
-x4 for tails and unknown IFMA CPUs. Automatic
+entry for complete groups on measured AMD family 19h+ IFMA parts. Zen 5 also
+uses x8 hashing for four-to-seven-item cold x4 curve tails; Zen 4, smaller
+tails, and unknown IFMA CPUs retain x4 hashing. Automatic
 backend selection never reaches either kernel.
 
 **Unclaimed AVX2 path.** The x4 kernel gates on AVX2 alone, with no AVX-512
@@ -267,10 +268,12 @@ Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
 The release snapshot uses **cold Zen 5 measurements only** for its headline:
 an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
-governor, and `GOMAXPROCS=1`. Every table below was rerun at exact commit
-`f0a1bbbc9561d4204965cd4668c69c6409acdf70`; it does not combine results from
-different code checkpoints. Every timed Narya row reported 0 B/op,
-0 allocs/op, and zero internal-fault fallbacks.
+governor, and `GOMAXPROCS=1`. The cold matrix was rerun for implementation
+commit `45da721d8b98d59e16be7a225c15c367ee88bf4a`; its evidence is under
+[`docs/results/zen5-x4-wide-hash-tail-2026-07-29/`](docs/results/zen5-x4-wide-hash-tail-2026-07-29/).
+The warm, cross-library, and multicore reference tables remain pinned to exact
+commit `f0a1bbbc9561d4204965cd4668c69c6409acdf70` and say so below. Every timed
+Narya row reported 0 B/op, 0 allocs/op, and zero internal-fault fallbacks.
 
 **Units:** every numeric timing cell in the tables below is **microseconds per
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
@@ -283,16 +286,17 @@ lower is better**
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 14.220 | 15.010 | 16.970 |
-| 2 | 14.310 | 15.000 | 17.010 |
-| 4 | 7.724 | 8.718 | 11.500 |
-| 8 | 3.921 | 4.182 | 4.899 |
-| 64 | **3.705** | **3.972** | **4.688** |
+| 1 | 14.040 | 15.070 | 17.120 |
+| 2 | 14.160 | 15.070 | 17.180 |
+| 4 | 7.502 | 8.014 | 9.354 |
+| 8 | 3.938 | 4.188 | 4.904 |
+| 64 | **3.710** | **3.971** | **4.706** |
 
-These are medians of ten three-second samples. At 1,232 bytes, the n=8 and
-n=64 rows correspond to approximately 239,100 and 251,800
+These are medians of ten two-second samples. At 1,232 bytes, the n=8 and
+n=64 rows correspond to approximately 238,800 and 251,800
 signatures/second/core. Batch width matters because n=1 and n=2 use the packed
-tail path, n=4 fills one x4 group, and n=8 or larger can fill native x8 groups.
+tail path, n=4 fills one x4 curve group and uses x8 hashing on Zen 5, and n=8
+or larger can fill native x8 groups.
 
 ### Warm-cache reference
 
@@ -301,17 +305,18 @@ lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 15.010 | 14.910 | 1.01x |
-| 2 | 15.000 | 14.910 | 1.01x |
-| 4 | 8.718 | 4.141 | 2.11x |
-| 8 | 4.182 | 3.896 | 1.07x |
-| 64 | 3.972 | **3.747** | **1.06x** |
+| 1 | 15.070 | 14.910 | 1.01x |
+| 2 | 15.070 | 14.910 | 1.01x |
+| 4 | 8.014 | 4.141 | 1.94x |
+| 8 | 4.188 | 3.896 | 1.08x |
+| 64 | 3.971 | **3.747** | **1.06x** |
 
 The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
 cache deliberately bypasses prepared tables below n=4, so lookup overhead can
 make the singleton row marginally slower. Its wider-batch result depends on
 key population and locality; this small hot fixture is a reference, not a
-universal hit-rate claim.
+universal hit-rate claim. Warm timings are from `f0a1bbb`; the cold column uses
+the newer `45da721` matrix solely to show the current opportunity per hit.
 
 The warm path is also not unconditionally faster for every message size. The
 complete measured matrix is:
@@ -342,7 +347,9 @@ The comparison below uses one binary, the same Zen 5 host, and 1,232-byte
 messages. Values are medians of six two-second samples. Every candidate runs
 ordinary per-signature verification and returns one verdict per input; no
 aggregate batch equation is used. Voi's expanded-key row excludes expansion
-cost and is included as a warm-key reference.
+cost and is included as a warm-key reference. This comparison remains pinned
+to `f0a1bbb`; in particular, its Narya n=4 row predates the newer Zen 5 x8-hash
+tail dispatch.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -364,7 +371,7 @@ better**
 
 These are aggregate **signatures per second** over 1,232-byte messages, not
 individual request latency. Values are medians of six two-second samples at
-the exact benchmark commit above. Each row pins only distinct physical cores;
+`f0a1bbb`. Each row pins only distinct physical cores;
 SMT siblings are excluded.
 
 | physical cores | n=4 signatures/s | n=4 scaling | n=8 signatures/s | n=8 scaling |
