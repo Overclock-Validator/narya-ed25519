@@ -269,8 +269,8 @@ Narya's accelerated path is measured through the exported
 The release snapshot uses **cold Zen 5 measurements only** for its headline:
 an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
 governor, and `GOMAXPROCS=1`. The cold matrix was rerun for implementation
-commit `90384db0d1020879aa335c56bfa4f0b2d49ca8a8`; its evidence is under
-[`docs/results/zen5-packed-cached-add-fusion-2026-07-29/`](docs/results/zen5-packed-cached-add-fusion-2026-07-29/).
+commit `9f9df333ff04b696e9efeb91c7266946055d41c1`; its evidence is under
+[`docs/results/zen5-packed-double-first-fusion-2026-07-29/`](docs/results/zen5-packed-double-first-fusion-2026-07-29/).
 The warm, cross-library, and multicore reference tables remain pinned to exact
 commit `f0a1bbbc9561d4204965cd4668c69c6409acdf70` and say so below. Every timed
 Narya row reported 0 B/op, 0 allocs/op, and zero internal-fault fallbacks.
@@ -286,14 +286,14 @@ lower is better**
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 13.900 | 14.580 | 16.840 |
-| 2 | 13.970 | 14.710 | 16.820 |
-| 4 | 7.497 | 8.024 | 9.363 |
-| 8 | 3.930 | 4.189 | 4.895 |
-| 64 | **3.713** | **3.963** | **4.685** |
+| 1 | 13.330 | 14.370 | 16.300 |
+| 2 | 13.370 | 14.250 | 16.290 |
+| 4 | 7.500 | 8.025 | 9.338 |
+| 8 | 3.938 | 4.165 | 4.900 |
+| 64 | **3.704** | **3.949** | **4.682** |
 
 These are medians of ten two-second samples. At 1,232 bytes, the n=8 and
-n=64 rows correspond to approximately 238,700 and 252,300
+n=64 rows correspond to approximately 240,100 and 253,200
 signatures/second/core. Batch width matters because n=1 and n=2 use the packed
 tail path, n=4 fills one x4 curve group and uses x8 hashing on Zen 5, and n=8
 or larger can fill native x8 groups.
@@ -305,18 +305,18 @@ lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 14.580 | 14.910 | 0.98x |
-| 2 | 14.710 | 14.910 | 0.99x |
-| 4 | 8.024 | 4.141 | 1.94x |
-| 8 | 4.189 | 3.896 | 1.08x |
-| 64 | 3.963 | **3.747** | **1.06x** |
+| 1 | 14.370 | 14.910 | 0.96x |
+| 2 | 14.250 | 14.910 | 0.96x |
+| 4 | 8.025 | 4.141 | 1.94x |
+| 8 | 4.165 | 3.896 | 1.07x |
+| 64 | 3.949 | **3.747** | **1.05x** |
 
 The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
 cache deliberately bypasses prepared tables below n=4, so lookup overhead can
 make the singleton row marginally slower. Its wider-batch result depends on
 key population and locality; this small hot fixture is a reference, not a
 universal hit-rate claim. Warm timings are from `f0a1bbb`; the cold column uses
-the newer `90384db` matrix solely to show the current opportunity per hit.
+the newer `9f9df33` matrix solely to show the current opportunity per hit.
 
 The warm path is also not unconditionally faster for every message size. The
 complete measured matrix is:

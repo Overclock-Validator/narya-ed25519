@@ -1,0 +1,17 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42277879	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42488788	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42498075	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42476071	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42499885	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-reused-workspace         	42502208	        28.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	39129508	        30.68 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	39052855	        30.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	39032226	        30.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	39040178	        30.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	39087535	        30.75 ns/op	       0 B/op	       0 allocs/op
+BenchmarkExperimentalCoordinateParallelDoubleX4/chained/quad-packed-split-first-control      	38968161	        30.75 ns/op	       0 B/op	       0 allocs/op
+PASS

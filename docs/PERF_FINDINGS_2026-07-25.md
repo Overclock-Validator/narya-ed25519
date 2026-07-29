@@ -1218,6 +1218,44 @@ checksums are under
 signature-parallel groups do not call the fused leaf; their control result is
 used only to guard code-layout regressions.
 
+### 5.30 Packed doubling input/multiply fusion — retained
+
+The packed doubler still wrote `U=[X,Y,Z,X]` and `V=[X,Y,Z,Y]` to two
+five-vector temporaries, then immediately reloaded them into the normalized
+field multiply. Commit `9f9df33` fuses only that data-movement boundary. The
+same `VPERMQ` lane maps feed the same 25-product convolution, high-half
+combination, `2^255 = 19` fold, and carry schedule without a memory round trip.
+The reusable doubling workspace consequently shrinks from three packed field
+elements to one.
+
+The native exact-representation differential compares the fused output with
+the split assembly oracle over zero, maximum-u52, and 512 deterministic random
+inputs. It also verifies in-place input/output aliasing, stale-workspace
+independence, and zero allocations. The full native repository suite and
+`go vet ./...` remained green on Zen 5.
+
+The same-binary dependent doubling gate moved from 30.73 to 28.24 ns/op
+(-8.1%). An ordered exact-parent/candidate complete-verifier control measured:
+
+| message bytes | parent n=1 (us/signature) | fused n=1 (us/signature) | change |
+|---:|---:|---:|---:|
+| 200 | 13.975 | 13.460 | -3.7% |
+| 1,232 | 14.790 | 14.070 | -4.9% |
+| 4,096 | 16.800 | 16.360 | -2.6% |
+
+The 1,232-byte result was again the promotion gate. The change improves it;
+the 4,096-byte result is corroborating evidence rather than the reason for
+selection. ABBA controls at n=8/n=64 showed no repeatable code-layout
+regression on routes that do not call the fused packed leaf.
+
+The post-change public matrix is the current README matrix. Raw component,
+ordered A/B, and complete-matrix output are under
+`docs/results/zen5-packed-double-first-fusion-2026-07-29/`.
+
+**Regime tag:** cold packed x4 singleton and pair tails on Zen 5. This is a
+mechanical data-movement fusion, not a new point formula or acceptance
+predicate. Full x4 and x8 signature-parallel groups are unaffected.
+
 ---
 
 ## 6. Smaller observations
