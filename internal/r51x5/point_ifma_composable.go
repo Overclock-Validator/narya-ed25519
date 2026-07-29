@@ -280,10 +280,17 @@ type ifmaPointDoubleWorkspaceX8 struct {
 
 func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &q.X.limbs, &q.X.limbs)
-	ifmaMulRawX8(&stage2[1], &q.Y.limbs, &q.Y.limbs)
-	ifmaMulRawX8(&stage2[2], &q.Z.limbs, &q.Z.limbs)
-	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
+	// A/B/C/E are four independent exact raw products. This compound leaf
+	// expands the same multiply body as four standalone calls, but the
+	// 252-doubling scalar loop pays one transition and one VZEROUPPER per
+	// doubling instead of four.
+	ifmaFourRawProductsUncheckedX8(
+		&stage2[0],
+		&q.X.limbs, &q.X.limbs,
+		&q.Y.limbs, &q.Y.limbs,
+		&q.Z.limbs, &q.Z.limbs,
+		&q.X.limbs, &q.Y.limbs,
+	)
 	ifmaDoubleStage2X8(stage2)
 
 	// q is dead after the four formula intermediates are formed. Writing the
