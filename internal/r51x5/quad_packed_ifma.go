@@ -63,18 +63,18 @@ type quadDSMOperationsX4 struct {
 	hardware bool
 }
 
-// quadPointDoubleWorkspaceX4 keeps the five fully-overwritten packed
+// quadPointDoubleWorkspaceX4 keeps the three fully-overwritten packed
 // temporaries outside the dependent doubling loop. The hardware operation
 // writes every limb of every field before reading it; callers may therefore
 // reuse one workspace without clearing it between doublings.
 type quadPointDoubleWorkspaceX4 struct {
-	u, v, products, left, right IFMAElementX4
+	u, v, products IFMAElementX4
 }
 
 // quadPointAddCachedWorkspaceX4 is the cached-add counterpart of
 // quadPointDoubleWorkspaceX4. Every field is fully overwritten before use.
 type quadPointAddCachedWorkspaceX4 struct {
-	pointOperand, products, left, right IFMAElementX4
+	pointOperand, products IFMAElementX4
 }
 
 // quadNormalizeModelX4 keeps the coordinate-parallel model independent of
@@ -257,10 +257,11 @@ func quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point *quadPackedPointX
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
 		return err
 	}
-	ifmaQuadCachedAddFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
 	// point is no longer live after the first packed permutation, so this
-	// final multiplication may write directly through out when out == point.
-	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
+	// final linear layer and multiplication may write directly through out
+	// when out == point.
+	ifmaQuadCachedAddFinalMultiplyUncheckedX4(&out.coordinates.limbs, &workspace.products.limbs)
+	return nil
 }
 
 func quadPointAddCachedModelX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4) error {

@@ -390,6 +390,68 @@ func TestIFMAQuadDoubleFinalMultiplyX4ZeroAllocations(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadCachedAddFinalMultiplyX4MatchesSplit(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	inputs := make([]IFMAElementX4, 0, 514)
+	inputs = append(inputs, IFMAElementX4{})
+	var maximum IFMAElementX4
+	for limb := range maximum.limbs {
+		for lane := range maximum.limbs[limb] {
+			maximum.limbs[limb][lane] = ifmaComposableLimbLimit - 1
+		}
+	}
+	inputs = append(inputs, maximum)
+	rng := rand.New(rand.NewSource(0x51434144))
+	for sample := 0; sample < 512; sample++ {
+		var input IFMAElementX4
+		for limb := range input.limbs {
+			for lane := range input.limbs[limb] {
+				input.limbs[limb][lane] = rng.Uint64() & (ifmaComposableLimbLimit - 1)
+			}
+		}
+		inputs = append(inputs, input)
+	}
+
+	for index := range inputs {
+		input := inputs[index]
+		var left, right, want IFMAElementX4
+		ifmaQuadCachedAddFinalOperandsUncheckedX4(&left.limbs, &right.limbs, &input.limbs)
+		ifmaMulNormalizedUncheckedX4(&want.limbs, &left.limbs, &right.limbs)
+
+		var got IFMAElementX4
+		ifmaQuadCachedAddFinalMultiplyUncheckedX4(&got.limbs, &input.limbs)
+		if got != want {
+			t.Fatalf("input %d: fused cached-add final multiply differs from split native oracle", index)
+		}
+
+		aliased := input
+		ifmaQuadCachedAddFinalMultiplyUncheckedX4(&aliased.limbs, &aliased.limbs)
+		if aliased != want {
+			t.Fatalf("input %d: fused cached-add input/output alias differs from split native oracle", index)
+		}
+	}
+}
+
+func TestIFMAQuadCachedAddFinalMultiplyX4ZeroAllocations(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+	var input, output IFMAElementX4
+	for limb := range input.limbs {
+		for lane := range input.limbs[limb] {
+			input.limbs[limb][lane] = uint64(1 + limb*X4Lanes + lane)
+		}
+	}
+	if allocs := testing.AllocsPerRun(100, func() {
+		ifmaQuadCachedAddFinalMultiplyUncheckedX4(&output.limbs, &input.limbs)
+	}); allocs != 0 {
+		t.Fatalf("allocations=%v", allocs)
+	}
+}
+
 func TestExperimentalCoordinateParallelDoubleWorkspaceX4IgnoresPriorScratch(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return
@@ -414,8 +476,6 @@ func TestExperimentalCoordinateParallelDoubleWorkspaceX4IgnoresPriorScratch(t *t
 			poisonedWorkspace.u.limbs[limb][lane] = value
 			poisonedWorkspace.v.limbs[limb][lane] = ^value
 			poisonedWorkspace.products.limbs[limb][lane] = value ^ 0x1111
-			poisonedWorkspace.left.limbs[limb][lane] = value ^ 0x2222
-			poisonedWorkspace.right.limbs[limb][lane] = value ^ 0x3333
 		}
 	}
 

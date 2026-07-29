@@ -38,3 +38,9 @@ func ifmaQuadCachedAddFinalOperandsUncheckedX4(left, right, products *LimbsX4) {
 	*left = leftElement.limbs
 	*right = rightElement.limbs
 }
+
+func ifmaQuadCachedAddFinalMultiplyUncheckedX4(out, products *LimbsX4) {
+	var left, right LimbsX4
+	ifmaQuadCachedAddFinalOperandsUncheckedX4(&left, &right, products)
+	ifmaMulNormalizedUncheckedX4(out, &left, &right)
+}

@@ -337,8 +337,6 @@ func TestExperimentalCoordinateParallelCachedAddWorkspaceX4IgnoresPriorScratch(t
 			value := uint64(0x5a5a_0000_0000_0000 | uint64(limb<<8|lane))
 			poisonedWorkspace.pointOperand.limbs[limb][lane] = value
 			poisonedWorkspace.products.limbs[limb][lane] = ^value
-			poisonedWorkspace.left.limbs[limb][lane] = value ^ 0x1111
-			poisonedWorkspace.right.limbs[limb][lane] = value ^ 0x2222
 		}
 	}
 
@@ -388,6 +386,24 @@ var (
 	benchmarkQuadPackedCachedAddX4Sink quadPackedPointX4
 	benchmarkQuadLaneCachedAddX4Sink   IFMAPointX4
 )
+
+type quadPointAddCachedSplitWorkspaceX4 struct {
+	quadPointAddCachedWorkspaceX4
+	left, right IFMAElementX4
+}
+
+func quadPointAddCachedHardwareWorkspaceSplitX4(
+	out, point *quadPackedPointX4,
+	cached *quadPackedCachedPointX4,
+	workspace *quadPointAddCachedSplitWorkspaceX4,
+) error {
+	ifmaQuadCachedAddFirstOperandUncheckedX4(&workspace.pointOperand.limbs, &point.coordinates.limbs)
+	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
+		return err
+	}
+	ifmaQuadCachedAddFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
+	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
+}
 
 func BenchmarkExperimentalCoordinateParallelCachedAddX4(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {
@@ -442,6 +458,19 @@ func BenchmarkExperimentalCoordinateParallelCachedAddX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(state, state, cached, &workspace); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkQuadPackedCachedAddX4Sink = *state
+	})
+
+	b.Run("chained/quad-packed-cached-split-control", func(b *testing.B) {
+		state := new(quadPackedPointX4).setReduced(&accumulator)
+		var workspace quadPointAddCachedSplitWorkspaceX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := quadPointAddCachedHardwareWorkspaceSplitX4(state, state, cached, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}
