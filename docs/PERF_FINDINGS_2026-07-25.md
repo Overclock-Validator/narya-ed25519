@@ -1569,6 +1569,81 @@ This rule is intentionally stricter than source inspection alone because a
 recommendation can become stale through compiler changes, dispatch changes, or
 an optimization landing in only one of several SIMD orientations.
 
+### 5.41 Fourth raw square in x8 doubling — primitive win, loop negative
+
+The direct-XY doubling uses three dedicated raw squares and one raw multiply.
+The classical alternative derives `E=2XY` as `(X+Y)^2-X^2-Y^2`, replacing the
+multiply with a fourth square. A test-only candidate normalized `X+Y`, used the
+existing bit-identical raw-square leaf, and changed only Stage 2's E formula.
+The Stage-2 carry schedule and P2/P3 result types remained unchanged.
+
+On the pinned Ryzen 7 9700X, eight two-second primitive samples favored the
+four-square doubling: about 50.37 ns versus 50.98 ns for the current
+three-square/direct-XY schedule (-1.2%). The relevant complete projective
+radix-32 evaluator decisively reversed that result: about 19.64 us versus
+17.52 us (+12.1%). The normalized `X+Y` dependency is paid inside every
+dependent doubling and dominates the instruction-count saving.
+
+All-mask evaluator differentials, 4,096 random point differentials, in-place
+alias tests, and zero-allocation tests passed. The experiment remains unwired
+with those tests as a regime-tagged artifact; production keeps direct XY.
+
+**Regime tag:** native x8 projective-Niels cold A evaluation on Zen 5 after
+raw squaring and P2 intermediate doubling. Reopen only if a future typed point
+domain proves `X+Y < 2^52` without normalization at this exact boundary.
+
+### 5.42 Dual-stream SHA-512 — open design, not a drop-in optimization
+
+Zen 5 reports `sha_ni` but no SHA-512 instruction feature; `sha_ni` covers the
+older SHA extensions and does not replace the software SHA-512 kernel. The
+current rolling x8 compressor keeps eight state vectors in Z0--Z7, scratch in
+Z8--Z15, and the complete sixteen-word message ring in Z16--Z31. It therefore
+uses all 32 architectural ZMM registers.
+
+Interleaving two independent x8 chains could hide SHA-512's round latency, but
+it cannot be implemented by simply duplicating the current register schedule.
+One or both message rings must move to memory, and the resulting load/store
+traffic, register pressure, and much larger assembly proof surface must be
+measured against the existing 7--9% hashing share. This remains a potentially
+meaningful research candidate, not a safe mechanical change for the present
+release checkpoint.
+
+### 5.43 Packed hardware-dispatch specialization — negative
+
+The registered singleton verifier constructs an immutable hardware operation
+object, but the shared NAF evaluator still checks that bit and calls through a
+small wrapper for every doubling and cached addition. A source-identical
+hardware-only evaluator removed those branches and wrappers while retaining
+the model-backed evaluator as its differential oracle.
+
+Eight two-second Zen 5 samples measured the shared evaluator at about
+9.12 us and the hardware-only copy at about 9.20 us (+0.8%). Exact scalar,
+mixed-order point, noncanonical-scalar fail-closed, and zero-allocation tests
+all passed. The compiler and front end already handle the predictable branch
+well enough that duplicating the large loop worsens layout rather than saving
+time. Production retains the shared evaluator; the specialized function stays
+test-only as a current-regime negative.
+
+**Regime tag:** prepared packed-x4 width-5 A plus width-8 B NAF evaluator on
+Zen 5 after the packed product-leaf and multiplication-by-19 optimizations.
+
+### 5.44 Decoder multiply fallback split — smaller frame, no speedup
+
+The x8 decoder's multiply dispatcher had a 1,936-byte stack frame because its
+portable fallback declared reduced-lane temporaries in the same Go function.
+Moving that fallback to a noinline helper reduced the native dispatcher's frame
+to 40 bytes without changing any arithmetic or error path.
+
+Ten pinned two-second Ryzen 7 9700X samples nevertheless moved the complete
+`ExperimentalIFMADecodeX8` plus reduced-output import from about 3.296 us to
+3.305 us (+0.27%). The native exponentiation already sends its long square
+runs directly to the register-resident assembly leaf, so the large-looking Go
+frame is paid on too few residual calls to matter. The split was reverted.
+
+**Regime tag:** single-A native x8 decoder, unchecked validated u52 boundary,
+register-resident repeated-square kernel, Go 1.26.4. Reconsider only if the
+decoder's multiply call graph changes; frame size alone was not predictive.
+
 ---
 
 ## 6. Smaller observations

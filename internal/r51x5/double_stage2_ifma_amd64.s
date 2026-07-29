@@ -18,6 +18,22 @@
 	VMOVDQA64 T, C                                                \
 	VPADDQ E, E, E
 
+// Classical square-trick variant. The fourth raw product is S=(X+Y)^2.
+// A becomes H=1069p-A-B before the final instruction, so E=S+H is exactly
+// S-A-B modulo p and stays non-negative under the same Stage-2 bounds.
+#define DOUBLE_STAGE2_LINEAR_SQUARE_TRICK(A, B, C, E, P535, P1068, P1069, T) \
+	VMOVDQA64 A, T                                                               \
+	VPSUBQ A, P1069, A                                                           \
+	VPSUBQ B, A, A                                                               \
+	VPADDQ P535, B, B                                                            \
+	VPSUBQ T, B, B                                                               \
+	VPADDQ C, C, C                                                               \
+	VMOVDQA64 B, T                                                               \
+	VPADDQ P1068, T, T                                                           \
+	VPSUBQ C, T, T                                                               \
+	VMOVDQA64 T, C                                                               \
+	VPADDQ A, E, E
+
 // Carry one stage-specific wide value. Inputs are non-negative and below
 // 2137*2^51, so every carry is at most 2136. In particular 19*C4 is wholly in
 // the low 52-bit half consumed by VPMADD52LUQ. The result is a composable u52
@@ -132,6 +148,24 @@ TEXT ·ifmaDoubleStage2X8(SB), NOSPLIT, $0-8
 	DOUBLE_STAGE2_X8_BODY(workspace+0(FP))
 	VZEROUPPER
 	RET
+
+// func ifmaDoubleStage2SquareTrickX8(workspace *ifmaDoubleStage2WorkspaceX8)
+//
+// Test-only fourth-square counterpart. The load, carry, and store schedule is
+// deliberately shared with production; only E's final linear instruction
+// changes from 2*XY to (X+Y)^2-X^2-Y^2.
+TEXT ·ifmaDoubleStage2SquareTrickX8(SB), NOSPLIT, $0-8
+	DOUBLE_STAGE2_X8_BODY_WITH_LINEAR(workspace+0(FP), DOUBLE_STAGE2_LINEAR_SQUARE_TRICK)
+	VZEROUPPER
+	RET
+
+TEXT ·ifmaDoubleStage2SquareTrickPointFinalX8(SB), NOSPLIT, $0-16
+	DOUBLE_STAGE2_X8_BODY_WITH_LINEAR(workspace+8(FP), DOUBLE_STAGE2_LINEAR_SQUARE_TRICK)
+	JMP ·ifmaPointFinalProductsUncheckedX8(SB)
+
+TEXT ·ifmaDoubleStage2SquareTrickProjectiveFinalX8(SB), NOSPLIT, $0-16
+	DOUBLE_STAGE2_X8_BODY_WITH_LINEAR(workspace+8(FP), DOUBLE_STAGE2_LINEAR_SQUARE_TRICK)
+	JMP ·ifmaProjectiveFinalProductsUncheckedX8(SB)
 
 // func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8,
 //     workspace *ifmaDoubleStage2WorkspaceX8)

@@ -90,6 +90,45 @@ func ifmaDoubleStage2X8(workspace *ifmaDoubleStage2WorkspaceX8) {
 	}
 }
 
+func ifmaDoubleStage2SquareTrickX8(workspace *ifmaDoubleStage2WorkspaceX8) {
+	input := *workspace
+	var wide [4]IFMAProductX8
+
+	for limb := 0; limb < 5; limb++ {
+		p := uint64(1)<<LimbBits - 1
+		if limb == 0 {
+			p -= 18
+		}
+		for lane := 0; lane < X8Lanes; lane++ {
+			a := input[0][limb][lane]
+			b := input[1][limb][lane]
+			c := input[2][limb][lane]
+			s := input[3][limb][lane]
+
+			g := b + 535*p - a
+			h := 1069*p - a - b
+			wide[0][limb][lane] = s + h
+			wide[1][limb][lane] = g + 1068*p - 2*c
+			wide[2][limb][lane] = g
+			wide[3][limb][lane] = h
+		}
+	}
+
+	for coordinate := 0; coordinate < 4; coordinate++ {
+		for lane := 0; lane < X8Lanes; lane++ {
+			var carry [5]uint64
+			for limb := 0; limb < 5; limb++ {
+				carry[limb] = wide[coordinate][limb][lane] >> LimbBits
+				workspace[coordinate][limb][lane] = wide[coordinate][limb][lane] & limbMask
+			}
+			workspace[coordinate][0][lane] += 19 * carry[4]
+			for limb := 1; limb < 5; limb++ {
+				workspace[coordinate][limb][lane] += carry[limb-1]
+			}
+		}
+	}
+}
+
 func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
 	ifmaDoubleStage2X8(workspace)
 	ifmaPointFinalProductsUncheckedX8(out, &workspace[0])
@@ -97,5 +136,15 @@ func ifmaDoubleStage2PointFinalX8(out *IFMAPointX8, workspace *ifmaDoubleStage2W
 
 func ifmaDoubleStage2ProjectiveFinalX8(out *ifmaProjectivePointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
 	ifmaDoubleStage2X8(workspace)
+	ifmaProjectiveFinalProductsUncheckedX8(out, &workspace[0])
+}
+
+func ifmaDoubleStage2SquareTrickPointFinalX8(out *IFMAPointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
+	ifmaDoubleStage2SquareTrickX8(workspace)
+	ifmaPointFinalProductsUncheckedX8(out, &workspace[0])
+}
+
+func ifmaDoubleStage2SquareTrickProjectiveFinalX8(out *ifmaProjectivePointX8, workspace *ifmaDoubleStage2WorkspaceX8) {
+	ifmaDoubleStage2SquareTrickX8(workspace)
 	ifmaProjectiveFinalProductsUncheckedX8(out, &workspace[0])
 }

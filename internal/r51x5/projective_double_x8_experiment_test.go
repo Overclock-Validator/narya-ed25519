@@ -154,6 +154,36 @@ func TestIFMAProjectiveDoublingEvaluatorAllMasks(t *testing.T) {
 	}
 }
 
+func TestIFMAProjectiveFourSquareEvaluatorAllMasks(t *testing.T) {
+	requireNativeRawSquareX8(t)
+	_, variable, _, scalars := fixedBaseCombDSMFixtures(t)
+	var workspace ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+	if err := workspace.Prepare(&variable, 5); err != nil {
+		t.Fatal(err)
+	}
+	for active := 0; active < 256; active++ {
+		for _, negative := range []uint8{0, uint8(active), 0xa5, 0xff} {
+			var got, want IFMAPointX8
+			gotMask, gotErr := workspace.EvaluateProjectiveDoubleFourSquareExperiment(&got, &scalars, negative, uint8(active))
+			wantMask, wantErr := workspace.EvaluateProjectiveDoubleExperiment(&want, &scalars, negative, uint8(active))
+			if gotErr != nil || wantErr != nil {
+				t.Fatalf("active=%02x negative=%02x errors=%v/%v", active, negative, gotErr, wantErr)
+			}
+			if gotMask != wantMask || got.Reduced() != want.Reduced() {
+				t.Fatalf("active=%02x negative=%02x masks=%02x/%02x point mismatch", active, negative, gotMask, wantMask)
+			}
+		}
+	}
+	var out IFMAPointX8
+	if allocations := testing.AllocsPerRun(100, func() {
+		if _, err := workspace.EvaluateProjectiveDoubleFourSquareExperiment(&out, &scalars, 0xa5, 0xff); err != nil {
+			panic(err)
+		}
+	}); allocations != 0 {
+		t.Fatalf("four-square projective evaluator allocations=%v", allocations)
+	}
+}
+
 var benchmarkIFMAProjectivePointX8Sink ifmaProjectivePointX8
 
 func BenchmarkIFMAProjectiveFinalProductsX8(b *testing.B) {
@@ -193,6 +223,9 @@ func BenchmarkIFMAProjectiveDoublingEvaluatorX8(b *testing.B) {
 		}},
 		{name: "intermediate-p2", run: func(out *IFMAPointX8) (uint8, error) {
 			return workspace.EvaluateProjectiveDoubleExperiment(out, &scalars, 0xa5, 0xff)
+		}},
+		{name: "intermediate-p2-four-square", run: func(out *IFMAPointX8) (uint8, error) {
+			return workspace.EvaluateProjectiveDoubleFourSquareExperiment(out, &scalars, 0xa5, 0xff)
 		}},
 	} {
 		candidate := candidate

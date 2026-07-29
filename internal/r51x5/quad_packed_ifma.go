@@ -462,3 +462,47 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 	*out = acc
 	return true, nil
 }
+
+// evaluateQuadNAFVerifyHardwareX4 is the immutable-hardware specialization of
+// evaluateQuadNAFVerifyX4 used by the registered packed verifier. The generic
+// operation object remains the independent model seam; this form removes its
+// per-doubling/per-addition hardware branch and wrapper call after the caller
+// has already enforced the IFMA gate. Arithmetic, recoding, selection, and
+// signed-integer semantics are otherwise source-identical.
+func evaluateQuadNAFVerifyHardwareX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bTable *quadNAFTable8X4, s, k *[32]byte) (bool, error) {
+	var aNAF, bNAF [256]int8
+	valid := recodeQuadCanonicalNAFX4(&aNAF, k, 5)
+	valid = recodeQuadCanonicalNAFX4(&bNAF, s, 8) && valid
+	acc := quadPackedIdentityValueX4()
+	if !valid {
+		*out = acc
+		return false, nil
+	}
+
+	high := 255
+	for ; high >= 0 && aNAF[high] == 0 && bNAF[high] == 0; high-- {
+	}
+	var doubleWorkspace quadPointDoubleWorkspaceX4
+	var addWorkspace quadPointAddCachedWorkspaceX4
+	for bit := high; bit >= 0; bit-- {
+		if err := quadPointDoubleHardwareWorkspaceUncheckedX4(&acc, &acc, &doubleWorkspace); err != nil {
+			return false, err
+		}
+		if aNAF[bit] != 0 {
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, aTable.positive[:], -aNAF[bit])
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&acc, &acc, selected, &addWorkspace); err != nil {
+				return false, err
+			}
+		}
+		if bNAF[bit] != 0 {
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, bTable.positive[:], bNAF[bit])
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&acc, &acc, selected, &addWorkspace); err != nil {
+				return false, err
+			}
+		}
+	}
+	*out = acc
+	return true, nil
+}

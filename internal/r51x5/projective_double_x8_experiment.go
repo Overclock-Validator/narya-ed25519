@@ -46,6 +46,50 @@ func ifmaPointDoubleRawSquareP2ToP3ExperimentX8(
 	ifmaDoubleStage2PointFinalX8(out, stage2)
 }
 
+func ifmaPointDoubleFourSquareP3ToP2ExperimentX8(
+	out *ifmaProjectivePointX8,
+	q *IFMAPointX8,
+	workspace *ifmaPointDoubleWorkspaceX8,
+) {
+	stage2 := &workspace.stage2
+	var xPlusY IFMAElementX8
+	ifmaAddComposableUncheckedX8(&xPlusY, &q.X, &q.Y)
+	ifmaSquareRawExperimentX8(&stage2[0], &q.X.limbs)
+	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
+	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
+	ifmaSquareRawExperimentX8(&stage2[3], &xPlusY.limbs)
+	ifmaDoubleStage2SquareTrickProjectiveFinalX8(out, stage2)
+}
+
+func ifmaPointDoubleFourSquareP2ToP2ExperimentX8(
+	out, q *ifmaProjectivePointX8,
+	workspace *ifmaPointDoubleWorkspaceX8,
+) {
+	stage2 := &workspace.stage2
+	var xPlusY IFMAElementX8
+	ifmaAddComposableUncheckedX8(&xPlusY, &q.X, &q.Y)
+	ifmaSquareRawExperimentX8(&stage2[0], &q.X.limbs)
+	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
+	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
+	ifmaSquareRawExperimentX8(&stage2[3], &xPlusY.limbs)
+	ifmaDoubleStage2SquareTrickProjectiveFinalX8(out, stage2)
+}
+
+func ifmaPointDoubleFourSquareP2ToP3ExperimentX8(
+	out *IFMAPointX8,
+	q *ifmaProjectivePointX8,
+	workspace *ifmaPointDoubleWorkspaceX8,
+) {
+	stage2 := &workspace.stage2
+	var xPlusY IFMAElementX8
+	ifmaAddComposableUncheckedX8(&xPlusY, &q.X, &q.Y)
+	ifmaSquareRawExperimentX8(&stage2[0], &q.X.limbs)
+	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
+	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
+	ifmaSquareRawExperimentX8(&stage2[3], &xPlusY.limbs)
+	ifmaDoubleStage2SquareTrickPointFinalX8(out, stage2)
+}
+
 // EvaluateProjectiveDoubleExperiment preserves EvaluateRawSquareExperiment's
 // exact radix-32 recoding, selection, and addition schedule. Every group of
 // five doublings follows P3 -> P2 -> P2 -> P2 -> P2 -> P3, so the four
@@ -79,6 +123,51 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 				ifmaPointDoubleRawSquareP2ToP2ExperimentX8(&projective, &projective, &doubleWorkspace)
 			}
 			ifmaPointDoubleRawSquareP2ToP3ExperimentX8(&acc, &projective, &doubleWorkspace)
+		}
+		digit := workspace.digits.Round(round)
+		if digit.NonzeroMask&usable == 0 {
+			continue
+		}
+		var selected IFMAProjectiveNielsX8
+		selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &workspace.table, digit, usable)
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
+			return 0, err
+		}
+	}
+	*out = acc
+	return usable, nil
+}
+
+// EvaluateProjectiveDoubleFourSquareExperiment changes only the doubling
+// formula inside EvaluateProjectiveDoubleExperiment. Selection, recoding,
+// projective P2 cadence, addition, and per-lane verdict semantics are shared.
+func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8) EvaluateProjectiveDoubleFourSquareExperiment(
+	out *IFMAPointX8,
+	scalar *[X8Lanes][32]byte,
+	negativeMask, active uint8,
+) (uint8, error) {
+	if !workspace.prepared {
+		panic("r51x5: pre-signed projective Niels micro-AoS x8 workspace is not prepared")
+	}
+	if !ExperimentalIFMAAvailable() {
+		return 0, ErrIFMAUnavailable
+	}
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
+	acc := identityIFMAPointX8Value()
+	var projective ifmaProjectivePointX8
+	var doubleWorkspace ifmaPointDoubleWorkspaceX8
+	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	if usable == 0 {
+		*out = acc
+		return 0, nil
+	}
+	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
+		if round != workspace.digits.RoundCount()-1 {
+			ifmaPointDoubleFourSquareP3ToP2ExperimentX8(&projective, &acc, &doubleWorkspace)
+			for doubling := 1; doubling < 4; doubling++ {
+				ifmaPointDoubleFourSquareP2ToP2ExperimentX8(&projective, &projective, &doubleWorkspace)
+			}
+			ifmaPointDoubleFourSquareP2ToP3ExperimentX8(&acc, &projective, &doubleWorkspace)
 		}
 		digit := workspace.digits.Round(round)
 		if digit.NonzeroMask&usable == 0 {

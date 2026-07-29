@@ -82,6 +82,58 @@ func TestIFMAPointDoubleRawSquareStage2X8ZeroAllocations(t *testing.T) {
 	benchmarkComposablePointX8Sink = state
 }
 
+func TestIFMAPointDoubleFourSquareStage2X8Differential(t *testing.T) {
+	requireNativeRawSquareX8(t)
+	rng := rand.New(rand.NewSource(0x51_a8_45a4))
+	for round := 0; round < 4096; round++ {
+		input := randomSquareIFMAPointX8(rng)
+		var got, want IFMAPointX8
+		var gotWorkspace, wantWorkspace ifmaPointDoubleWorkspaceX8
+		if err := ifmaPointDoubleFourSquareStage2ExperimentX8(&got, &input, &gotWorkspace); err != nil {
+			t.Fatal(err)
+		}
+		if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&want, &input, &wantWorkspace); err != nil {
+			t.Fatal(err)
+		}
+		if got.Reduced() != want.Reduced() {
+			t.Fatalf("round=%d four-square/current point mismatch", round)
+		}
+	}
+}
+
+func TestIFMAPointDoubleFourSquareStage2X8Aliasing(t *testing.T) {
+	requireNativeRawSquareX8(t)
+	rng := rand.New(rand.NewSource(0x51_a8_45a1))
+	for round := 0; round < 1024; round++ {
+		got := randomSquareIFMAPointX8(rng)
+		want := got
+		var gotWorkspace, wantWorkspace ifmaPointDoubleWorkspaceX8
+		if err := ifmaPointDoubleFourSquareStage2ExperimentX8(&got, &got, &gotWorkspace); err != nil {
+			t.Fatal(err)
+		}
+		if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&want, &want, &wantWorkspace); err != nil {
+			t.Fatal(err)
+		}
+		if got.Reduced() != want.Reduced() {
+			t.Fatalf("round=%d in-place four-square point mismatch", round)
+		}
+	}
+}
+
+func TestIFMAPointDoubleFourSquareStage2X8ZeroAllocations(t *testing.T) {
+	requireNativeRawSquareX8(t)
+	state := randomSquareIFMAPointX8(rand.New(rand.NewSource(0x51_a8_45a0)))
+	var workspace ifmaPointDoubleWorkspaceX8
+	if allocs := testing.AllocsPerRun(1000, func() {
+		if err := ifmaPointDoubleFourSquareStage2ExperimentX8(&state, &state, &workspace); err != nil {
+			panic(err)
+		}
+	}); allocs != 0 {
+		t.Fatalf("four-square x8 doubling allocations=%v", allocs)
+	}
+	benchmarkComposablePointX8Sink = state
+}
+
 func BenchmarkIFMAPointDoubleRawSquareStage2X8(b *testing.B) {
 	if runtime.GOARCH != "amd64" || !ExperimentalIFMAAvailable() {
 		b.Skipf("AVX-512 IFMA unavailable on %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -110,6 +162,19 @@ func BenchmarkIFMAPointDoubleRawSquareStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&state, &state, &workspace); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkComposablePointX8Sink = state
+	})
+
+	b.Run("kernel=four-dedicated-raw-squares", func(b *testing.B) {
+		state := seed
+		var workspace ifmaPointDoubleWorkspaceX8
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := ifmaPointDoubleFourSquareStage2ExperimentX8(&state, &state, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}
