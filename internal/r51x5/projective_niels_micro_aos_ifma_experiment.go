@@ -47,7 +47,22 @@ type ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 struct {
 type ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8 struct {
 	table    ifmaProjectiveNielsPreSignedMicroAoSTableX8
 	digits   FixedRadixDigitsX8
+	scratch  ifmaProjectiveNielsPreSignedMicroAoSScratchX8
 	prepared bool
+}
+
+// ifmaProjectiveNielsPreSignedMicroAoSScratchX8 owns the transient point,
+// cached-point, and formula storage shared by Prepare and Evaluate. Keeping it
+// with the already pooled variable-base workspace prevents the registered x8
+// path from reserving 5.8--7.1 KiB stack frames on every group. Every field is
+// fully overwritten before it is read; Prepare and Evaluate are deliberately
+// non-concurrent on one workspace.
+type ifmaProjectiveNielsPreSignedMicroAoSScratchX8 struct {
+	point         IFMAPointX8
+	baseCached    IFMAProjectiveNielsX8
+	cached        IFMAProjectiveNielsX8
+	double        ifmaPointDoubleWorkspaceX8
+	projectiveAdd ifmaPointAddProjectiveNielsScratchX8
 }
 
 func storeIFMAProjectiveNielsMicroAoSEntryX8(
@@ -128,23 +143,23 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		return ErrIFMAUnavailable
 	}
 	workspace.prepared = false
-	var current IFMAPointX8
-	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	current := &workspace.scratch.point
+	baseCached := &workspace.scratch.baseCached
+	cached := &workspace.scratch.cached
+	addWorkspace := &workspace.scratch.projectiveAdd
 	current.SetReduced(base)
-	var baseCached IFMAProjectiveNielsX8
-	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
+	if err := ifmaProjectiveNielsFromPointX8(baseCached, current); err != nil {
 		return err
 	}
-	storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, 0, &baseCached)
+	storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, 0, baseCached)
 	for entry := 1; entry < 16; entry++ {
-		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&current, &current, &baseCached, &addWorkspace); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(current, current, baseCached, addWorkspace); err != nil {
 			return err
 		}
-		var cached IFMAProjectiveNielsX8
-		if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
+		if err := ifmaProjectiveNielsFromPointX8(cached, current); err != nil {
 			return err
 		}
-		storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, entry, &cached)
+		storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, entry, cached)
 	}
 	workspace.prepared = true
 	return nil
@@ -167,22 +182,23 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		return err
 	}
 	workspace.prepared = false
-	current := *base
-	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
-	var baseCached IFMAProjectiveNielsX8
-	if err := ifmaProjectiveNielsFromPointX8(&baseCached, &current); err != nil {
+	current := &workspace.scratch.point
+	baseCached := &workspace.scratch.baseCached
+	cached := &workspace.scratch.cached
+	addWorkspace := &workspace.scratch.projectiveAdd
+	*current = *base
+	if err := ifmaProjectiveNielsFromPointX8(baseCached, current); err != nil {
 		return err
 	}
-	storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, 0, &baseCached)
+	storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, 0, baseCached)
 	for entry := 1; entry < 16; entry++ {
-		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&current, &current, &baseCached, &addWorkspace); err != nil {
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(current, current, baseCached, addWorkspace); err != nil {
 			return err
 		}
-		var cached IFMAProjectiveNielsX8
-		if err := ifmaProjectiveNielsFromPointX8(&cached, &current); err != nil {
+		if err := ifmaProjectiveNielsFromPointX8(cached, current); err != nil {
 			return err
 		}
-		storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, entry, &cached)
+		storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&workspace.table, entry, cached)
 	}
 	workspace.prepared = true
 	return nil
@@ -241,17 +257,18 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		return 0, ErrIFMAUnavailable
 	}
 	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
-	acc := identityIFMAPointX8Value()
-	var doubleWorkspace ifmaPointDoubleWorkspaceX8
-	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	acc := &workspace.scratch.point
+	setIdentityIFMAPointX8(acc)
+	doubleWorkspace := &workspace.scratch.double
+	addWorkspace := &workspace.scratch.projectiveAdd
 	if usable == 0 {
-		*out = acc
+		*out = *acc
 		return 0, nil
 	}
 	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
 		if round != workspace.digits.RoundCount()-1 {
 			for doubling := 0; doubling < 5; doubling++ {
-				if err := ifmaPointDoubleComposableWorkspaceStaticX8(&acc, &acc, &doubleWorkspace); err != nil {
+				if err := ifmaPointDoubleComposableWorkspaceStaticX8(acc, acc, doubleWorkspace); err != nil {
 					return 0, err
 				}
 			}
@@ -260,13 +277,13 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		if digit.NonzeroMask&usable == 0 {
 			continue
 		}
-		var selected IFMAProjectiveNielsX8
-		selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &workspace.table, digit, usable)
-		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
+		selected := &workspace.scratch.baseCached
+		selectIFMAProjectiveNielsPreSignedMicroAoSX8(selected, &workspace.table, digit, usable)
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(acc, acc, selected, addWorkspace); err != nil {
 			return 0, err
 		}
 	}
-	*out = acc
+	*out = *acc
 	return usable, nil
 }
 
@@ -286,17 +303,18 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		return 0, ErrIFMAUnavailable
 	}
 	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
-	acc := identityIFMAPointX8Value()
-	var doubleWorkspace ifmaPointDoubleWorkspaceX8
-	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
+	acc := &workspace.scratch.point
+	setIdentityIFMAPointX8(acc)
+	doubleWorkspace := &workspace.scratch.double
+	addWorkspace := &workspace.scratch.projectiveAdd
 	if usable == 0 {
-		*out = acc
+		*out = *acc
 		return 0, nil
 	}
 	for round := workspace.digits.RoundCount() - 1; round >= 0; round-- {
 		if round != workspace.digits.RoundCount()-1 {
 			for doubling := 0; doubling < 5; doubling++ {
-				if err := ifmaPointDoubleRawSquareStage2ExperimentX8(&acc, &acc, &doubleWorkspace); err != nil {
+				if err := ifmaPointDoubleRawSquareStage2ExperimentX8(acc, acc, doubleWorkspace); err != nil {
 					return 0, err
 				}
 			}
@@ -305,13 +323,13 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 		if digit.NonzeroMask&usable == 0 {
 			continue
 		}
-		var selected IFMAProjectiveNielsX8
-		selectIFMAProjectiveNielsPreSignedMicroAoSX8(&selected, &workspace.table, digit, usable)
-		if err := ifmaPointAddProjectiveNielsWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
+		selected := &workspace.scratch.baseCached
+		selectIFMAProjectiveNielsPreSignedMicroAoSX8(selected, &workspace.table, digit, usable)
+		if err := ifmaPointAddProjectiveNielsWorkspaceX8(acc, acc, selected, addWorkspace); err != nil {
 			return 0, err
 		}
 	}
-	*out = acc
+	*out = *acc
 	return usable, nil
 }
 
