@@ -91,6 +91,26 @@ func TestAsymmetricFixedBRecodingReconstructsCanonicalEdges(t *testing.T) {
 	}
 }
 
+var benchmarkAsymmetricFixedBDigitsX4 asymmetricFixedBDigitsX4
+
+func BenchmarkAsymmetricFixedBRecodingX4(b *testing.B) {
+	rng := rand.New(rand.NewSource(0xa51bca1a))
+	var scalars [X4Lanes][32]byte
+	for lane := range scalars {
+		scalars[lane] = randomCanonicalFixedBaseScalar(b, rng)
+	}
+	for _, width := range []uint{6, 8, 9, 10} {
+		b.Run(fmt.Sprintf("radix=%d", 1<<width), func(b *testing.B) {
+			b.ReportAllocs()
+			var out asymmetricFixedBDigitsX4
+			for iteration := 0; iteration < b.N; iteration++ {
+				recodeAsymmetricFixedBScalarsX4(&out, &scalars, 0x0a, 0x0f, width)
+			}
+			benchmarkAsymmetricFixedBDigitsX4 = out
+		})
+	}
+}
+
 func TestAsymmetricFixedBDenseAffine3SelectorMatchesScalarAllMasksAndSigns(t *testing.T) {
 	if !microAoSSelectorExperimentCanCall() {
 		t.Skip("requires AVX-512 IFMA target on amd64")
