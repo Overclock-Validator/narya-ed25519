@@ -1256,6 +1256,29 @@ ordered A/B, and complete-matrix output are under
 mechanical data-movement fusion, not a new point formula or acceptance
 predicate. Full x4 and x8 signature-parallel groups are unaffected.
 
+### 5.31 Dedicated raw x8 squaring on Zen 5 — retained
+
+The dedicated raw-square schedule was already exact-representation tested and
+selected on AMD family 19h. Its family 1Ah exclusion was a stale performance
+verdict from before the surrounding x8 point kernel changed. Commit `daaa776`
+changes only the measured CPU policy: families 19h and 1Ah select the existing
+dedicated schedule, while unmeasured future families retain the reviewed
+general-multiply default.
+
+A same-binary dedicated/general/general/dedicated run on a pinned Ryzen 7
+9700X core measured 4.1660 to 4.1135 us/signature at n=8 (-1.26%) and 3.9445
+to 3.9010 at n=64 (-1.10%) for 1,232-byte messages. Each median contains
+twelve one-second samples and every sample reports zero allocations. Full
+native tests and vet, exact raw-square differentials, aliasing,
+poisoned-workspace, both predicate profiles, and registered policy activation
+remained green.
+
+Raw output and checksums are under
+`docs/results/zen5-raw-square-dispatch-2026-07-29/`.
+
+**Regime tag:** cold x8 signature-parallel batches on measured Zen 4 and Zen 5
+AMD families. The packed singleton/pair and x4-tail routes are unaffected.
+
 ---
 
 ## 6. Smaller observations

@@ -1,0 +1,72 @@
+ORDER path=dedicated-raw-square
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36637	     32810 ns/op	         4.101 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36486	     32857 ns/op	         4.107 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36318	     33050 ns/op	         4.131 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36508	     32870 ns/op	         4.109 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36476	     32880 ns/op	         4.110 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36482	     32893 ns/op	         4.112 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4810	    249549 ns/op	         3.899 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4807	    249625 ns/op	         3.900 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4808	    249634 ns/op	         3.901 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4808	    249583 ns/op	         3.900 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4808	    249614 ns/op	         3.900 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4792	    249641 ns/op	         3.901 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=general-square
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36188	     33183 ns/op	         4.148 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   35929	     33394 ns/op	         4.174 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36129	     33197 ns/op	         4.150 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36123	     33222 ns/op	         4.153 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36121	     33221 ns/op	         4.153 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36116	     33220 ns/op	         4.153 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4754	    252495 ns/op	         3.945 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4752	    252447 ns/op	         3.944 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4754	    252309 ns/op	         3.942 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4752	    252460 ns/op	         3.945 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4744	    252774 ns/op	         3.950 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4722	    254081 ns/op	         3.970 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=general-square
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36020	     33353 ns/op	         4.169 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   35970	     33402 ns/op	         4.175 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   35840	     33333 ns/op	         4.167 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   35721	     33580 ns/op	         4.197 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   36026	     33322 ns/op	         4.165 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=8/msg=1232         	   35846	     33485 ns/op	         4.186 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4761	    252351 ns/op	         3.943 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4754	    252310 ns/op	         3.942 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4752	    252399 ns/op	         3.944 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4755	    252288 ns/op	         3.942 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4718	    254306 ns/op	         3.974 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=general-square/n=64/msg=1232        	    4723	    254031 ns/op	         3.969 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ORDER path=dedicated-raw-square
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36466	     32937 ns/op	         4.117 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36454	     32912 ns/op	         4.114 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36457	     32914 ns/op	         4.114 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36465	     32903 ns/op	         4.113 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36459	     32927 ns/op	         4.116 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=8/msg=1232         	   36459	     32922 ns/op	         4.115 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4808	    249786 ns/op	         3.903 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4803	    249790 ns/op	         3.903 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4804	    249806 ns/op	         3.903 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4807	    249565 ns/op	         3.899 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4807	    249674 ns/op	         3.901 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkR51IFMARawSquareCompletePipeline/path=dedicated-raw-square/n=64/msg=1232        	    4801	    249670 ns/op	         3.901 µs/sig	       0 B/op	       0 allocs/op
+PASS
