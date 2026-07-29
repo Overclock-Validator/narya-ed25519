@@ -186,6 +186,24 @@ Raw outputs:
 - `narya-asymmetric-b-niels-x8-blocks-core.txt` — isolated x8 core A/B;
 - `narya-asymmetric-b-niels-x8-blocks-complete.txt` — complete x8 verifier A/B.
 
+## Retested candidate: x8 runtime sign handling
+
+The current cold x8 A table stores both public signs while it is built. The
+alternative stores one sign, halves that table's payload, and swaps Y+X/Y-X
+plus negates 2dT after every selected negative digit. Because the original
+verdict predated the current x8 Niels loop, commit `0331de0` re-ran the
+complete-path gate rather than trusting the stale result.
+
+| batch width | pre-signed, us/signature | runtime sign, us/signature | runtime change |
+|---:|---:|---:|---:|
+| 8 | 4.326 | 4.441 | +2.7% |
+| 64 | 4.119 | 4.268 | +3.6% |
+
+Both paths were allocation-free and produced identical per-lane verdicts in
+the focused differential. Pre-signing remains the correct cold x8 design: its
+extra table-store work is cheaper than 51 rounds of online lane-wise sign
+handling. Raw output is in `narya-x8-runtime-sign-complete.txt`.
+
 ## Commands
 
 Representative commands, with repository-relative placeholders:

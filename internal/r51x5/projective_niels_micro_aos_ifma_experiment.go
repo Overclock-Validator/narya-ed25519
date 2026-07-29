@@ -39,10 +39,11 @@ type ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 struct {
 
 // ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
 // owns the selected cold x8 A table with both public-scalar signs prepared.
-// Regime tag: Zen 5 native-x8, cold arbitrary A, radix 32. On the 2026-07-25
-// 9700X gate, pre-signing improved cold table-build+loop by about 7.2% despite
-// doubling this workspace from about 20.6 to 40.6 KiB. Automatic backend
-// selection still cannot reach r51.
+// Regime tag: Zen 5 native-x8, cold arbitrary A, radix 32. A current complete-
+// verifier gate at commit 0331de0 found this about 2.7% faster at n=8 and 3.6%
+// faster at n=64 than storing one sign and transforming selected digits
+// online, despite doubling this workspace from about 20.6 to 40.6 KiB.
+// Automatic backend selection still cannot reach r51.
 type ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8 struct {
 	table    ifmaProjectiveNielsPreSignedMicroAoSTableX8
 	digits   FixedRadixDigitsX8
