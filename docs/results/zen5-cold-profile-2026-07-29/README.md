@@ -342,6 +342,23 @@ production by this result; its isolated benchmark was flat to slightly worse,
 so it requires its own complete-verifier gate. Exact output is in
 `narya-double-stage2-tail.alternating.txt`.
 
+That separate gate overturned the isolated Niels microbenchmark. Commit
+`c995f4e` routes the projective-Niels raw products through the same ABI0 tail
+structure. Five alternating complete public-verifier pairs measured:
+
+| batch width | separate Stage 2, us/signature | tail-linked Stage 2, us/signature | change |
+|---:|---:|---:|---:|
+| 8 | 4.420 | 4.284 | -3.08% |
+| 64 | 4.191 | 4.063 | -3.05% |
+
+At an identical fixed 20,000 n=64 benchmark operations, retired instructions
+changed by only -0.09% while cycles fell 3.56%. This is a scheduling and code-
+shape improvement from removing the transition, not fewer field operations.
+It is also a useful warning against accepting isolated leaf timings as the
+verifier verdict. The full native repository suite passed at `c995f4e`; exact
+output and fixed-work counters are in
+`narya-niels-stage2-tail.alternating.txt`.
+
 ## Tested candidate: pooled x8 variable-base scratch
 
 The registered pre-signed variable-base workspace previously kept its transient
