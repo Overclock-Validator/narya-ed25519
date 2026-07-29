@@ -60,7 +60,32 @@ func TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8(t *testing.T) {
 	}
 }
 
-func prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(
+func storeIFMAProjectiveNielsPreSignedMicroAoSEntryScalarOracleX8(
+	table *ifmaProjectiveNielsPreSignedMicroAoSTableX8,
+	entry int,
+	point *IFMAProjectiveNielsX8,
+) {
+	var negativeT2D IFMAElementX8
+	ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
+	for lane := 0; lane < X8Lanes; lane++ {
+		for limb := range modulusLimbs {
+			table[lane][0][entry][limb] = [4]uint64{
+				point.YPlusX.limbs[limb][lane],
+				point.YMinusX.limbs[limb][lane],
+				point.Z.limbs[limb][lane],
+				point.T2D.limbs[limb][lane],
+			}
+			table[lane][1][entry][limb] = [4]uint64{
+				point.YMinusX.limbs[limb][lane],
+				point.YPlusX.limbs[limb][lane],
+				point.Z.limbs[limb][lane],
+				negativeT2D.limbs[limb][lane],
+			}
+		}
+	}
+}
+
+func prepareIFMAProjectiveNielsPreSignedMicroAoSScalarStoreX8(
 	workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8,
 	base *PointX8,
 ) error {
@@ -84,14 +109,7 @@ func prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(
 				return err
 			}
 		}
-		var negativeT2D IFMAElementX8
-		ifmaNegateComposableUncheckedX8(&negativeT2D, &cached.T2D)
-		ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(
-			&workspace.table,
-			uint64(entry),
-			&cached,
-			&negativeT2D,
-		)
+		storeIFMAProjectiveNielsPreSignedMicroAoSEntryScalarOracleX8(&workspace.table, entry, &cached)
 		if entry+1 < len(workspace.table[0][0]) {
 			if err := ifmaPointAddProjectiveNielsWorkspaceX8(
 				&current,
@@ -116,7 +134,7 @@ func TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8(t *testing.T) {
 	if err := current.Prepare(&variable, 5); err != nil {
 		t.Fatal(err)
 	}
-	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(&candidate, &variable); err != nil {
+	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSScalarStoreX8(&candidate, &variable); err != nil {
 		t.Fatal(err)
 	}
 	if candidate.table != current.table {
@@ -287,7 +305,7 @@ func BenchmarkIFMAProjectiveNielsPreSignedMicroAoSStoreX8(b *testing.B) {
 		var table ifmaProjectiveNielsPreSignedMicroAoSTableX8
 		b.ReportAllocs()
 		for i := range b.N {
-			storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(&table, i&15, &point)
+			storeIFMAProjectiveNielsPreSignedMicroAoSEntryScalarOracleX8(&table, i&15, &point)
 		}
 		benchmarkIFMAProjectiveNielsMicroAoSStoreX8Sink = table
 	})
@@ -320,8 +338,8 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 	if err := preSigned.Prepare(&variable, 5); err != nil {
 		b.Fatal(err)
 	}
-	var preSignedTranspose ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
-	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(&preSignedTranspose, &variable); err != nil {
+	var preSignedScalar ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
+	if err := prepareIFMAProjectiveNielsPreSignedMicroAoSScalarStoreX8(&preSignedScalar, &variable); err != nil {
 		b.Fatal(err)
 	}
 	for _, path := range []string{"prepared-loop", "cold-table+loop"} {
@@ -377,18 +395,18 @@ func BenchmarkIFMAProjectiveNielsMicroAoSX8(b *testing.B) {
 			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N*X8Lanes), "ns/signature")
 		})
 		if path == "cold-table+loop" {
-			b.Run("layout=presigned-micro-aos-transpose-store/"+path, func(b *testing.B) {
+			b.Run("layout=presigned-micro-aos-scalar-store/"+path, func(b *testing.B) {
 				var out IFMAPointX8
 				b.ReportAllocs()
-				b.ReportMetric(float64(unsafe.Sizeof(preSignedTranspose)), "workspace-B")
+				b.ReportMetric(float64(unsafe.Sizeof(preSignedScalar)), "workspace-B")
 				for range b.N {
-					if err := prepareIFMAProjectiveNielsPreSignedMicroAoSTransposeStoreX8(
-						&preSignedTranspose,
+					if err := prepareIFMAProjectiveNielsPreSignedMicroAoSScalarStoreX8(
+						&preSignedScalar,
 						&variable,
 					); err != nil {
 						b.Fatal(err)
 					}
-					if _, err := preSignedTranspose.Evaluate(&out, &scalars, 0xff, 0xff); err != nil {
+					if _, err := preSignedScalar.Evaluate(&out, &scalars, 0xff, 0xff); err != nil {
 						b.Fatal(err)
 					}
 				}

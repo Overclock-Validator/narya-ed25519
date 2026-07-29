@@ -72,24 +72,20 @@ func storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(
 	entry int,
 	point *IFMAProjectiveNielsX8,
 ) {
+	// Production reaches this helper only after the IFMA gate. Keep the
+	// negation on the same unchecked composable contract as the table-build
+	// point formulas, then transpose the x8 SoA coordinates directly into the
+	// eight per-key micro-AoS entries. The native leaf is data movement only;
+	// its scalar counterpart preserves identical semantics for non-amd64 and
+	// purego differential tests.
 	var negativeT2D IFMAElementX8
-	negativeT2D.Negate(&point.T2D)
-	for lane := 0; lane < X8Lanes; lane++ {
-		for limb := range modulusLimbs {
-			table[lane][0][entry][limb] = [4]uint64{
-				point.YPlusX.limbs[limb][lane],
-				point.YMinusX.limbs[limb][lane],
-				point.Z.limbs[limb][lane],
-				point.T2D.limbs[limb][lane],
-			}
-			table[lane][1][entry][limb] = [4]uint64{
-				point.YMinusX.limbs[limb][lane],
-				point.YPlusX.limbs[limb][lane],
-				point.Z.limbs[limb][lane],
-				negativeT2D.limbs[limb][lane],
-			}
-		}
-	}
+	ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
+	ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(
+		table,
+		uint64(entry),
+		point,
+		&negativeT2D,
+	)
 }
 
 func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Prepare(base *PointX8, radixBits uint) error {
