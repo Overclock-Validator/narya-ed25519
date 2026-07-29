@@ -1303,6 +1303,46 @@ messages. This does not reject a future single-leaf arithmetic fusion that
 also eliminates the five intermediate stores/reloads; it rejects only the
 control-flow continuation measured here.
 
+### 5.33 Merged fixed-base B10 on the current projective x8 chain — retained
+
+An older complete-verifier gate rejected merged B10 by about 1.1%. That result
+was correct for its checkpoint, but the candidate still used a
+complete-coordinate general-multiply doubler. It predated the registered Zen 5
+x8 loop's dedicated raw square and intermediate-P2 schedule.
+
+Commit `55f4362` applies the exact current five-doubling
+`P3 -> P2 -> P2 -> P2 -> P2 -> P3` chain to the retained merged evaluator. A
+width-10 generator digit is injected alongside every even radix-32 A digit.
+This evaluates both terms on one 250-doubling chain, needs at most 26 B
+additions, removes the separate radix-256 B evaluation, and removes the final
+full-point addition. B remains a process-shared constant; this is a cold-path
+change and retains no per-key state.
+
+Six two-second complete-verifier samples measured:
+
+| bytes | width | separate comb, us/signature | merged B10, us/signature | change |
+|---:|---:|---:|---:|---:|
+| 200 | 8 | 3.925 | 3.670 | -6.5% |
+| 200 | 64 | 3.704 | 3.450 | -6.9% |
+| 1,232 | 8 | 4.169 | 3.911 | -6.2% |
+| 1,232 | 64 | 3.974 | 3.695 | -7.0% |
+| 4,096 | 8 | 4.907 | 4.662 | -5.0% |
+| 4,096 | 64 | 4.720 | 4.448 | -5.8% |
+
+Registered dispatch selects this schedule only for complete x8 groups on AMD
+family 1Ah. Zen 4, unknown IFMA CPUs, and x4 tails retain the separate comb.
+The independent scalar-reconstruction test covers 2,257 inputs, every scalar
+bit boundary, `L-1`, non-canonical `L`, inactive lanes, and stale-output reuse.
+Both acceptance profiles, every invalid-lane position, zero allocations, full
+native tests, and vet remained green.
+
+Evidence is under
+`docs/results/zen5-asymmetric-b10-projective-2026-07-29/`.
+
+**Regime tag:** cold x8 signature-parallel groups on measured Zen 5. The
+earlier negative is not deleted; it documents why point-kernel changes require
+old algorithmic experiments to be remeasured rather than trusted forever.
+
 ---
 
 ## 6. Smaller observations

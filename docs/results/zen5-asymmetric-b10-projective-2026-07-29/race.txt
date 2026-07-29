@@ -1,0 +1,2 @@
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	286.482s
+ok  	github.com/Overclock-Validator/narya-ed25519/sha512mb	1.432s

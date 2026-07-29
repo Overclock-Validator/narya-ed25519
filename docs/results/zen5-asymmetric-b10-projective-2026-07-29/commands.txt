@@ -1,0 +1,33 @@
+Implementation commit:
+  55f43623f5af8813549a202fd9fd2b31908a5cff
+
+Environment:
+  git rev-parse HEAD
+  go version
+  uname -a
+  lscpu
+  grep -o 'avx512ifma\|sha_ni\|sha512' /proc/cpuinfo | sort -u
+
+Correctness and static checks:
+  go test ./... -count=1
+  go vet ./...
+  go test ./ed25519 ./internal/r51x5 \
+    -run='TestR51BackendDispatchDifferential|TestR51BackendBatchWidthSelection|TestR51IFMAAsymmetricFixedBNielsX8Differential|TestR51IFMAAsymmetricFixedBNielsX8ZeroAllocations|TestAsymmetricFixedB10RecodingX8Exact|TestAsymmetricFixedB10RecodingX8ClearsOnReuse|TestAsymmetricFixedBNielsX8Experiment' \
+    -v -count=1
+
+Race detector (test-only follow-up commit c4f068f):
+  go test -race ./ed25519 ./sha512mb -count=1
+
+Controlled complete-verifier A/B:
+  go test -c ./ed25519 -o /tmp/narya-internal.test
+  taskset -c 6 env GOMAXPROCS=1 /tmp/narya-internal.test \
+    -test.run='^$' \
+    -test.bench='^BenchmarkR51IFMAAsymmetricFixedBNielsX8Experiment$' \
+    -test.benchmem -test.benchtime=2s -test.count=6
+
+Registered exported-API matrix:
+  go test -tags r51_release_bench -c ./ed25519 -o /tmp/narya-public.test
+  taskset -c 6 env GOMAXPROCS=1 /tmp/narya-public.test \
+    -test.run='^$' \
+    -test.bench='^BenchmarkPublicR51VerifyBatchStrict$' \
+    -test.benchmem -test.benchtime=1s -test.count=4
