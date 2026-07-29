@@ -7,3 +7,4 @@ var preferWideIFMA = false
 var preferDecodedAIFMA = false
 var preferWarmX8IFMA = false
 var preferRawSquareIFMA = false
+var preferWideHashX4IFMA = false

@@ -35,8 +35,19 @@ func PreferWarmX8IFMA() bool { return preferWarmX8IFMA }
 // arithmetic schedule.
 func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
 
+// PreferWideHashX4IFMA reports whether a cold x4/tail group should retain x4
+// point arithmetic while hashing and reducing its challenges through the
+// native x8 kernels. Complete n=4 measurements select this composition on AMD
+// family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the x4 hash path until
+// measured independently.
+func PreferWideHashX4IFMA() bool { return preferWideHashX4IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
 	return ifma && family == 0x19
+}
+
+func wideHashX4ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
 }
 
 func x86FamilyFromVersion(version uint32) uint32 {

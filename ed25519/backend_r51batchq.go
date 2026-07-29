@@ -46,6 +46,19 @@ type r51IFMABatchQPipeline struct {
 	// measurement seam only; registered construction leaves it nil.
 	experimentalAsymmetricFixedB10X8 *r51x5.ExperimentalIFMAAsymmetricFixedB10TableX8
 
+	// experimentalPartialX8Tail evaluates a four-to-seven-signature cold tail
+	// in one partially active x8 group instead of one or two x4 groups. It is a
+	// Zen 5 occupancy experiment only; registered construction leaves it false
+	// until a complete public n=4 gate shows that native-wide execution repays
+	// the inactive lanes.
+	experimentalPartialX8Tail bool
+
+	// wideHashX4Tail keeps x4 point arithmetic for a cold tail but hashes and
+	// reduces its compacted challenges through the native x8 path. Native Zen 5
+	// measurements select this composition; other measured policies leave it
+	// false until the same complete message-size gate is run there.
+	wideHashX4Tail bool
+
 	// projectiveNielsX4 changes the four-lane cold A table from
 	// extended coordinates to projective Niels coordinates. It reuses the same
 	// micro-AoS footprint and the proven x4 Stage-2 leaf, but remains a
@@ -384,22 +397,37 @@ func (pipeline *r51IFMABatchQPipeline) evaluateColdWideChunk(
 			msgs,
 			sigs,
 			offset+relative,
+			r51x5.X8Lanes,
 			relative/r51x5.X4Lanes,
 		); err != nil {
 			return err
 		}
 	}
 	if tail := count - wideCount; tail != 0 {
-		if err := pipeline.evaluateTwoX4Group(
-			profile,
-			pubs,
-			msgs,
-			sigs,
-			offset+wideCount,
-			tail,
-			wideCount/r51x5.X4Lanes,
-		); err != nil {
-			return err
+		if pipeline.experimentalPartialX8Tail && tail >= r51x5.X4Lanes {
+			if err := pipeline.evaluateX8Group(
+				profile,
+				pubs,
+				msgs,
+				sigs,
+				offset+wideCount,
+				tail,
+				wideCount/r51x5.X4Lanes,
+			); err != nil {
+				return err
+			}
+		} else {
+			if err := pipeline.evaluateTwoX4Group(
+				profile,
+				pubs,
+				msgs,
+				sigs,
+				offset+wideCount,
+				tail,
+				wideCount/r51x5.X4Lanes,
+			); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -409,16 +437,19 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 	profile Profile,
 	pubs []*[32]byte,
 	msgs, sigs [][]byte,
-	offset, outputGroup int,
+	offset, count, outputGroup int,
 ) error {
 	if pipeline.wideCore == nil || pipeline.wideCore.kind != r51IFMAX8 || pipeline.wideCore.fixedBaseComb == nil || pipeline.wideCore.variableX8 == nil {
 		panic("ed25519: uninitialized forced r51 IFMA x8 comb workspace")
+	}
+	if count < 1 || count > r51x5.X8Lanes {
+		panic("ed25519: forced r51 IFMA x8 group count out of range")
 	}
 
 	var aBytes [r51x5.X8Lanes][32]byte
 	var s [r51x5.X8Lanes][32]byte
 	var candidates uint8
-	for lane := 0; lane < r51x5.X8Lanes; lane++ {
+	for lane := 0; lane < count; lane++ {
 		index := offset + lane
 		coefficient, valid := prepareR51Signature(profile, pubs[index], sigs[index])
 		if !valid {
@@ -450,7 +481,7 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 	}
 
 	var k [r51x5.X8Lanes][32]byte
-	live, err = reduceR51NativeChallengesX8(&k, pubs, msgs, sigs, offset, r51x5.X8Lanes, live, sha512mb.ExperimentalWidthX8)
+	live, err = reduceR51NativeChallengesX8(&k, pubs, msgs, sigs, offset, count, live, sha512mb.ExperimentalWidthX8)
 	if err != nil || live == 0 {
 		return err
 	}
@@ -562,7 +593,13 @@ func (pipeline *r51IFMABatchQPipeline) evaluateTwoX4Group(profile Profile, pubs 
 
 	var k [r51x5.X8Lanes][32]byte
 	var err error
-	live, err = reduceR51NativeChallengesX8(&k, pubs, msgs, sigs, offset, count, live, sha512mb.ExperimentalWidthX4)
+	hashWidth := sha512mb.ExperimentalWidthX4
+	// Fewer than four active lanes do not repay the x8 hash setup on Zen 5;
+	// retain the x4 path for those narrow tails.
+	if pipeline.wideHashX4Tail && count >= r51x5.X4Lanes {
+		hashWidth = sha512mb.ExperimentalWidthX8
+	}
+	live, err = reduceR51NativeChallengesX8(&k, pubs, msgs, sigs, offset, count, live, hashWidth)
 	if err != nil || live == 0 {
 		return err
 	}

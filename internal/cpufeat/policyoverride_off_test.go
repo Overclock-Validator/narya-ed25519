@@ -36,4 +36,7 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 			t.Errorf("%s = %v, want %v (family detection)", policy.name, policy.got, want)
 		}
 	}
+	if got, want := PreferWideHashX4IFMA(), wideHashX4ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferWideHashX4IFMA = %v, want %v (family detection)", got, want)
+	}
 }
