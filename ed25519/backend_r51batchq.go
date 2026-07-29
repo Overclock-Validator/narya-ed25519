@@ -145,6 +145,18 @@ func newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer r51IFMABatchQFinalize
 	return pipeline, nil
 }
 
+// newR51IFMABatchQX8RuntimeSignPipelineWithFinalizer remeasures the original
+// one-sign x8 A table against the current complete verifier. Registered
+// construction retains the pre-signed table until this gate says otherwise.
+func newR51IFMABatchQX8RuntimeSignPipelineWithFinalizer(finalizer r51IFMABatchQFinalizer) (*r51IFMABatchQPipeline, error) {
+	pipeline, err := newR51IFMABatchQX8CombPipelineWithFinalizer(finalizer)
+	if err != nil {
+		return nil, err
+	}
+	pipeline.wideCore.variableX8RuntimeSign = new(r51x5.ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8)
+	return pipeline, nil
+}
+
 // newR51IFMABatchQX8AsymmetricFixedB10PipelineWithFinalizer is the complete
 // verifier gate for merging B10 into the x8 A-term doubling chain. It retains
 // the ordinary x4 comb tail and is not used by registered construction.
@@ -443,7 +455,14 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 		return err
 	}
 
-	if pipeline.experimentalComposableDecodeX8 {
+	if pipeline.wideCore.variableX8RuntimeSign != nil {
+		if pipeline.experimentalComposableDecodeX8 {
+			panic("ed25519: runtime-sign x8 does not support the composable-decode experiment")
+		}
+		if err := pipeline.wideCore.variableX8RuntimeSign.Prepare(&A, pipeline.wideCore.radixBits); err != nil {
+			return err
+		}
+	} else if pipeline.experimentalComposableDecodeX8 {
 		if err := pipeline.wideCore.variableX8.PrepareComposable(&composableA, pipeline.wideCore.radixBits); err != nil {
 			return err
 		}
@@ -472,7 +491,12 @@ func (pipeline *r51IFMABatchQPipeline) evaluateX8Group(
 	} else {
 		var aTerm, bTerm r51x5.IFMAPointX8
 		var usableA uint8
-		if pipeline.experimentalRawSquareX8 {
+		if pipeline.wideCore.variableX8RuntimeSign != nil {
+			if pipeline.experimentalRawSquareX8 {
+				panic("ed25519: runtime-sign x8 does not support the raw-square experiment")
+			}
+			usableA, err = pipeline.wideCore.variableX8RuntimeSign.Evaluate(&aTerm, &k, live, live)
+		} else if pipeline.experimentalRawSquareX8 {
 			usableA, err = pipeline.wideCore.variableX8.EvaluateRawSquareExperiment(&aTerm, &k, live, live)
 		} else {
 			usableA, err = pipeline.wideCore.variableX8.Evaluate(&aTerm, &k, live, live)

@@ -60,7 +60,11 @@ type r51IFMAPipeline struct {
 	x8                r51IFMAFixedDSMWorkspaceX8
 	x4                [2]r51IFMAFixedDSMWorkspaceX4
 	variableX8        *r51x5.ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
-	variableX4        [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
+	// variableX8RuntimeSign is a complete-path measurement seam for the
+	// smaller x8 table that applies public scalar signs after selection. It is
+	// nil in registered workers.
+	variableX8RuntimeSign *r51x5.ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	variableX4            [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
 
 	// beforePrepareVariableX8 is an error-injection seam used only by the
 	// fail-closed group test. It deliberately takes no point argument: passing
