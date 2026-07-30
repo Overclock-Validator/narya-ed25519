@@ -322,6 +322,104 @@ TEXT ·ifmaPointLinearFourRawNielsStage2ExperimentX8(SB), NOSPLIT, $0-24
 
 	JMP ·ifmaNielsStage2X8(SB)
 
+// func ifmaCompletedProductsToLinearUncheckedX8(
+//     out *ifmaCompletedLinearPointX8, products *[4]IFMAProductX8)
+//
+// products contains exact folded raw [EF, GH, FG, EH]. The first two output
+// coordinates carry GH-EF and GH+EF directly, avoiding the materialized P3
+// path's separate carries of EF and GH followed by two more linear carries.
+// The 535*p subtraction bias and all four input/output bounds are pinned by
+// docs/formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md. In particular, the
+// largest pre-carry value remains below 2^64 and every final limb is u52.
+//
+// NORMALIZE_5 is reused mechanically here under that schedule-specific range
+// certificate. Its carry/fold instruction sequence is valid beyond the
+// helper's common u61 entry contract because the certificate separately
+// proves the carry-outs and the exact low-52-bit 19*c4 fold.
+TEXT ·ifmaCompletedProductsToLinearUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ products+8(FP), CX
+
+	// Y-X = carry(GH + 535*p - EF).
+	VMOVDQU64 320(CX), Z0
+	VMOVDQU64 384(CX), Z1
+	VMOVDQU64 448(CX), Z2
+	VMOVDQU64 512(CX), Z3
+	VMOVDQU64 576(CX), Z4
+	VPBROADCASTQ ·ifmaNielsStage2Bias535P0(SB), Z12
+	VPBROADCASTQ ·ifmaNielsStage2Bias535PN(SB), Z13
+	VPADDQ Z12, Z0, Z0
+	VPADDQ Z13, Z1, Z1
+	VPADDQ Z13, Z2, Z2
+	VPADDQ Z13, Z3, Z3
+	VPADDQ Z13, Z4, Z4
+	VPSUBQ   0(CX), Z0, Z0
+	VPSUBQ  64(CX), Z1, Z1
+	VPSUBQ 128(CX), Z2, Z2
+	VPSUBQ 192(CX), Z3, Z3
+	VPSUBQ 256(CX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+
+	// Y+X = carry(GH + EF).
+	VMOVDQU64 320(CX), Z0
+	VMOVDQU64 384(CX), Z1
+	VMOVDQU64 448(CX), Z2
+	VMOVDQU64 512(CX), Z3
+	VMOVDQU64 576(CX), Z4
+	VPADDQ   0(CX), Z0, Z0
+	VPADDQ  64(CX), Z1, Z1
+	VPADDQ 128(CX), Z2, Z2
+	VPADDQ 192(CX), Z3, Z3
+	VPADDQ 256(CX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0, 320(DI)
+	VMOVDQU64 Z1, 384(DI)
+	VMOVDQU64 Z2, 448(DI)
+	VMOVDQU64 Z3, 512(DI)
+	VMOVDQU64 Z4, 576(DI)
+
+	// Z = carry(FG).
+	VMOVDQU64 640(CX), Z0
+	VMOVDQU64 704(CX), Z1
+	VMOVDQU64 768(CX), Z2
+	VMOVDQU64 832(CX), Z3
+	VMOVDQU64 896(CX), Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0, 640(DI)
+	VMOVDQU64 Z1, 704(DI)
+	VMOVDQU64 Z2, 768(DI)
+	VMOVDQU64 Z3, 832(DI)
+	VMOVDQU64 Z4, 896(DI)
+
+	// T = carry(EH).
+	VMOVDQU64  960(CX), Z0
+	VMOVDQU64 1024(CX), Z1
+	VMOVDQU64 1088(CX), Z2
+	VMOVDQU64 1152(CX), Z3
+	VMOVDQU64 1216(CX), Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,  960(DI)
+	VMOVDQU64 Z1, 1024(DI)
+	VMOVDQU64 Z2, 1088(DI)
+	VMOVDQU64 Z3, 1152(DI)
+	VMOVDQU64 Z4, 1216(DI)
+
+	VZEROUPPER
+	RET
+
 // func ifmaThreeRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
 //     x0, y0, x1, y1, x2, y2, d *LimbsX8)
 //
