@@ -1,0 +1,27 @@
+commit bbc6c2194438090b0c48ac9bd95eab6b92602d6f
+go version go1.26.4 linux/amd64
+Model name:                              AMD Ryzen 7 9700X 8-Core Processor
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good amd_lbr_v2 nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpuid_fault cpb cat_l3 cdp_l3 hw_pstate ssbd mba perfmon_v2 ibrs ibpb stibp ibrs_enhanced vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk avx_vnni avx512_bf16 clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload vgif v_spec_ctrl vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid bus_lock_detect movdiri movdir64b overflow_recov succor smca fsrm avx512_vp2intersect flush_l1d amd_lbr_pmc_freeze
+go test ./... -count=1
+ok  	github.com/Overclock-Validator/narya-ed25519/cmd/sigverifytracebench	0.003s
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	40.572s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/cpufeat	0.001s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/edwards25519	0.031s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field	0.816s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/heea8l	34.212s
+?   	github.com/Overclock-Validator/narya-ed25519/internal/heea8l/cmd/sample	[no test files]
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/mithriltracev3	0.001s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r43x6	1.582s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	13.678s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/sigprep	0.954s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/tracebench	0.031s
+ok  	github.com/Overclock-Validator/narya-ed25519/scripts/unaffectedbench	0.001s [no tests to run]
+ok  	github.com/Overclock-Validator/narya-ed25519/sha512mb	0.071s
+go test -race ./ed25519 ./sha512mb -count=1
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	293.520s
+ok  	github.com/Overclock-Validator/narya-ed25519/sha512mb	1.435s
+go test -tags narya_test_amd_policy
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/cpufeat	0.001s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	13.672s
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	40.643s
+go vet ./...

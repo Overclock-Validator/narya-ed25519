@@ -26,9 +26,12 @@ per-signature verification with a randomized aggregate equation: every input
 still receives its own deterministic accept/reject result.
 
 On supported AMD64 processors, the forced `r51` backend runs independent
-signatures across AVX-512 IFMA lanes, with native x8 groups and x4 tails on
-measured AMD CPUs. Portable callers retain the pure-Go `generic` backend, and
-automatic backend selection remains conservative.
+signatures across AVX-512 IFMA lanes. Measured AMD CPUs use native x8 groups,
+x4 tails, and a coordinate-packed singleton. Zen 5 additionally places two
+complete verification equations in the independent low and high halves of one
+ZMM register for strict two-signature tails. Portable callers retain the
+pure-Go `generic` backend, and automatic backend selection remains
+conservative.
 
 > **Security status: experimental and unaudited.** Narya has extensive
 > differential, vector, fuzz, range, aliasing, and hardware tests, but it has
@@ -230,7 +233,7 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
 | `generic` | **default** | Pure Go over the vendored `edwards25519` internals, with per-key fixed-base comb tables for recurring signers. |
 | `stdlib` | available | Routes to `crypto/ed25519`. The rollback proof point. |
 | `ifma` | opt-in, in development | AVX-512 IFMA point arithmetic after Firedancer's `r43x6` representation. Requires AVX512F/VL/DQ/BW/IFMA/VBMI, detected at runtime via `x/sys/cpu`, never via `GOAMD64`, since `x86-64-v4` does not imply IFMA. |
-| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons and two-signature tails use paired A/R decode and a packed projective finalizer. Wider batches use a radix-32 A table, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 curve arithmetic for the tail. Zen 5 injects width-10 generator digits into A's x8 doubling chain; Zen 4, unknown IFMA CPUs, and x4 tails retain the process-shared radix-256 generator comb. Zen 5 hashes four-to-seven-item cold tails through the x8 SHA/reduction path; Zen 4 and unknown IFMA CPUs retain x4 hashing. The x8 doubler uses the symmetry-aware raw-square schedule on both measured families; Zen 5 additionally keeps intermediate doubling results in a three-coordinate P2 type and computes extended T only at addition boundaries. From 16 signatures, Zen 5 also widens literal-Q batch encoding to x8; other measured widths retain x4. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
+| `r51` | **registered, forced-only** | AMD lane-per-signature r51 backend. Strict singletons use paired A/R decode and a coordinate-packed projective finalizer. Zen 5 strict two-signature tails put one complete equation in each 256-bit half of a ZMM register; other measured CPUs call the packed singleton twice. Wider batches use a radix-32 A table, A-only decode, and cross-group batch encoding of Q. Measured AMD family 19h+ IFMA parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature groups and x4 curve arithmetic for the tail. Zen 5 injects width-10 generator digits into A's x8 doubling chain; Zen 4, unknown IFMA CPUs, and x4 tails retain the process-shared radix-256 generator comb. Zen 5 hashes four-to-seven-item cold tails through the x8 SHA/reduction path; Zen 4 and unknown IFMA CPUs retain x4 hashing. The x8 doubler uses the symmetry-aware raw-square schedule on both measured families; Zen 5 additionally keeps intermediate doubling results in a three-coordinate P2 type and computes extended T only at addition boundaries. From 16 signatures, Zen 5 also widens literal-Q batch encoding to x8; other measured widths retain x4. Its opt-in `Cache` first admits an exact-byte-bound decoded-A entry and promotes recurring valid strict keys to an immutable A6/r9 warm comb. Warm x4 groups are consumed in aligned pairs on the measured AMD set, except a final four-item tail, so a half-warm x8 group stays on the faster native-wide cold path. `StdlibCompat` singleton calls retain the generic literal-encoding path. This backend is never selected automatically. |
 
 Selection is deliberately non-degrading. `ifma` requires AVX512F/VL/DQ/BW,
 IFMA, and VBMI. `r51` requires that same IFMA feature set plus AVX2 for its
@@ -268,12 +271,15 @@ Narya's accelerated path is measured through the exported
 `SetBackend("r51")`, `VerifyBatchStrict`, and `Cache.VerifyBatchStrict` APIs.
 The release snapshot uses **cold Zen 5 measurements only** for its headline:
 an AMD Ryzen 7 9700X, Go 1.26.4, one pinned physical core, the performance
-governor, and `GOMAXPROCS=1`. Every table below was rerun from exact branch
-commit `3f7b6885876520f2434e0a89248e106ed144985a`; raw output, commands, host
+governor, and `GOMAXPROCS=1`. Every single-core table below was rerun from
+exact live-path implementation commit
+`bbc6c2194438090b0c48ac9bd95eab6b92602d6f`; raw output, commands, host
 details, and checksums are under
-[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
+[`docs/results/zen5-packed-pair-whole-window-2026-07-29/`](docs/results/zen5-packed-pair-whole-window-2026-07-29/).
 Every timed Narya row reported 0 B/op, 0 allocs/op, and zero internal-fault
-fallbacks. Displayed values are medians of six two-second samples.
+fallbacks. Displayed single-core values are medians of three two-second
+samples. The unchanged multicore table retains its separately identified
+six-sample checkpoint.
 
 **Units:** every numeric timing cell in the tables below is **microseconds per
 signature (`µs/signature`, lower is better)**. These are per-signature costs,
@@ -286,16 +292,18 @@ lower is better**
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 12.990 | 13.875 | 16.035 |
-| 2 | 13.020 | 13.830 | 15.940 |
-| 4 | 7.558 | 8.024 | 9.381 |
-| 8 | 3.653 | 3.904 | 4.632 |
-| 64 | **3.447** | **3.690** | **4.413** |
+| 1 | 13.040 | 13.590 | 15.780 |
+| 2 | 11.110 | 11.620 | 13.730 |
+| 4 | 7.408 | 7.872 | 9.223 |
+| 8 | 3.585 | 3.850 | 4.548 |
+| 64 | **3.373** | **3.623** | **4.330** |
 
-At 1,232 bytes, the n=8 and n=64 rows correspond to approximately 256,100 and
-271,000 signatures/second/core. Batch width matters because n=1 and n=2 use the packed
-tail path, n=4 fills one x4 curve group and uses x8 hashing on Zen 5, and n=8
-or larger can fill native x8 groups.
+At 1,232 bytes, the n=8 and n=64 rows correspond to approximately 259,700 and
+276,100 signatures/second/core. Batch width matters because n=1 uses the
+coordinate-packed x4 verifier, Zen 5 n=2 fills both independent 256-bit halves
+of a ZMM register, n=4 fills one x4 curve group and uses x8 hashing on Zen 5,
+and n=8 or larger can fill native x8 groups. Zen 4 retains two independently
+measured singleton calls for n=2.
 
 ### Warm-cache reference
 
@@ -304,11 +312,11 @@ lower is better**
 
 | batch size | cold µs/signature | warm µs/signature | warm speedup |
 | ---: | ---: | ---: | ---: |
-| 1 | 13.875 | 13.890 | 1.00x |
-| 2 | 13.830 | 13.950 | 0.99x |
-| 4 | 8.024 | **4.113** | **1.95x** |
-| 8 | 3.904 | 3.884 | 1.01x |
-| 64 | **3.690** | 3.737 | 0.99x |
+| 1 | 13.590 | 13.800 | 0.98x |
+| 2 | 11.620 | 11.960 | 0.97x |
+| 4 | 7.872 | **4.057** | **1.94x** |
+| 8 | 3.850 | 3.819 | 1.01x |
+| 64 | **3.623** | 3.655 | 0.99x |
 
 The cache fixture promotes 64 keys and occupies 1,243,136 table bytes. The
 cache deliberately bypasses prepared tables below n=4, so lookup overhead can
@@ -325,11 +333,11 @@ complete measured matrix is:
 
 | batch size | 200-byte message | 1,232-byte message | 4,096-byte message |
 | ---: | ---: | ---: | ---: |
-| 1 | 13.120 | 13.890 | 15.920 |
-| 2 | 13.080 | 13.950 | 15.930 |
-| 4 | 3.362 | 4.113 | 6.201 |
-| 8 | 3.122 | 3.884 | 5.976 |
-| 64 | **2.971** | **3.737** | **5.823** |
+| 1 | 12.940 | 13.800 | 15.760 |
+| 2 | 11.060 | 11.960 | 14.110 |
+| 4 | 3.307 | 4.057 | 6.105 |
+| 8 | 3.065 | 3.819 | 5.868 |
+| 64 | **2.906** | **3.655** | **5.730** |
 
 At 4,096 bytes, cold x8 is faster than the current warm x4-oriented path at
 n=8 and n=64. The two paths schedule hashing differently, and hashing is a
@@ -351,16 +359,16 @@ cost and is included as a warm-key reference.
 
 | implementation | n=1 µs/sig | n=2 µs/sig | n=4 µs/sig | n=8 µs/sig | n=64 µs/sig |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Narya r51, cold strict | 13.845 | 13.925 | 7.974 | 3.836 | 3.622 |
-| Go `crypto/ed25519` | 27.680 | 27.855 | 27.690 | 27.600 | 27.615 |
-| curve25519-voi, cold strict | 22.050 | 22.170 | 21.990 | 22.090 | 22.105 |
-| curve25519-voi, expanded key | 19.240 | 19.380 | 19.180 | 19.270 | 19.300 |
+| Narya r51, cold strict | 13.860 | 12.200 | 7.851 | 3.789 | 3.601 |
+| Go `crypto/ed25519` | 27.690 | 27.340 | 27.430 | 27.370 | 27.370 |
+| curve25519-voi, cold strict | 21.980 | 21.690 | 21.780 | 21.770 | 21.890 |
+| curve25519-voi, expanded key | 19.160 | 18.880 | 18.960 | 18.960 | 19.040 |
 
-Within that comparison binary, Narya is 2.00x faster than Go at n=1, 3.47x
-at n=4, 7.19x at n=8, and 7.63x at n=64. The comparison binary includes the
-opt-in Voi dependency and has a different link layout from the release binary,
-so use this table for library ratios and the cold table above for Narya's
-release latency.
+Within that comparison binary, Narya is 2.00x faster than Go at n=1, 2.24x at
+n=2, 3.49x at n=4, 7.22x at n=8, and 7.60x at n=64. The comparison binary
+includes the opt-in Voi dependency and has a different link layout from the
+release binary, so use this table for library ratios and the cold table above
+for Narya's release latency.
 
 ### Multicore scaling
 
@@ -382,8 +390,9 @@ SMT siblings are excluded.
 The eight-core rows correspond to aggregate throughput costs of 1.121
 and 0.549 microseconds per signature. Each worker still verifies complete,
 independent equations; this table measures concurrent callers, not aggregate
-cryptographic batch verification. Raw output is in
-[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
+cryptographic batch verification. Raw output is in the earlier, unchanged
+[`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/)
+multicore checkpoint; it was not inferred from the newer serial run.
 
 **Hardware scope: AMD only so far.** Every displayed timing above was captured
 on an AMD Ryzen 7 9700X (Zen 5); historical bundles in `docs/results/` also
@@ -399,8 +408,9 @@ measurement is outstanding work, not a completed check.
 Historical measurements and their exact environments remain in
 [`docs/results/`](docs/results/); they are intentionally not stacked into the
 current tables because code, CPU generation, and cache population materially
-change the result. Current cold, warm, cross-library, and multicore outputs are
-all in
+change the result. Current cold, warm, and cross-library outputs are in
+[`docs/results/zen5-packed-pair-whole-window-2026-07-29/`](docs/results/zen5-packed-pair-whole-window-2026-07-29/).
+The unchanged multicore output remains in
 [`docs/results/zen5-final-review-2026-07-29/`](docs/results/zen5-final-review-2026-07-29/).
 
 ### Cold and warm verification
@@ -506,16 +516,24 @@ backend selection remains `generic`.
 Alpha. The `generic` backend, the profile contract, and the per-key comb cache
 are functional and differential-tested. The `r51` throughput backend is
 registered for explicit selection on supported hardware but remains outside
-automatic dispatch. It uses native x8 groups plus x4 tails on measured AMD
-family 19h+ IFMA processors. Its opt-in two-tier Cache
+automatic dispatch. It uses native x8 groups, x4 tails, and packed strict
+singletons on measured AMD family 19h+ IFMA processors; Zen 5 also has the
+two-equation packed-ZMM n=2 path described above. Its opt-in two-tier Cache
 and width-aware A6/r9 warm promotion are implemented and hardware-tested; the
 traffic-specific admission and eviction policy remains integration work. The
-`ifma` reference backend and alternate arithmetic experiments remain under
-active development.
+`ifma` reference backend and alternate arithmetic experiments remain test-only
+evidence. Performance work is frozen at this checkpoint while the supported
+path receives safety review.
 
 The radix-51 backend's analytic range evidence, exact test coverage, and
 remaining machine-certificate boundary are summarized in
 [`docs/R51_ARITHMETIC_ASSURANCE.md`](docs/R51_ARITHMETIC_ASSURANCE.md).
+Proof-oriented artifacts are indexed separately in
+[`docs/formal/README.md`](docs/formal/README.md); each artifact states whether
+it is a Lean theorem, executable certificate, differential test, or native
+hardware gate and names the remaining refinement boundary.
+The exact supported/experimental boundary and pre-audit checklist are frozen in
+[`docs/SAFETY_FREEZE_2026-07-29.md`](docs/SAFETY_FREEZE_2026-07-29.md).
 
 ### Outstanding before automatic dispatch
 

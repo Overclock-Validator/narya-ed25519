@@ -10,6 +10,34 @@ tier, occupancy crossover, and HEEA screen on Zen 4 (Ryzen 7 PRO 8700GE).
 Architecture-specific conclusions are labeled rather than transferred between
 the two CPUs.
 
+## Final pre-audit checkpoint — 2026-07-29
+
+Performance work is frozen after the two results below. Earlier rows in this
+document are historical regime records, not current release numbers; the
+current exported-API tables are in the README and
+`docs/results/zen5-packed-pair-whole-window-2026-07-29/`.
+
+**Zen 5 strict n=2 packed pair — admitted.** Two independent coordinate-packed
+verification equations now occupy the low and high 256-bit halves of one ZMM
+register. No point, scalar, or verdict data crosses the half boundary. A direct
+seven-sample gate improved 1,232-byte verification from 13.47 to 11.70
+µs/signature (-13.1%); 200- and 4,096-byte messages improved 12.9% and 10.6%.
+The public release binary measures 11.62 µs/signature at n=2 and 1,232 bytes.
+Zen 4 retains two packed singleton calls because this exact composition has not
+won there. Route-level CCTV/Wycheproof, mixed-validity, fault-fallback,
+allocation, and per-half arithmetic differentials pin the new path.
+
+**Certified whole-window boundary — retained, not dispatched.** A bounded
+search over 40,960 arithmetic DAGs identified a completed-coordinate boundary
+that carries raw `GH-EF` and `GH+EF` directly. The exact range certificate
+proves the minimum 535p subtraction bias and u64/u52 bounds within the declared
+r51 grammar. Narya adapted it to the live five-doubling radix-32/B10 loop and
+measured 19.324 versus 19.221 µs/x8 group (-0.53%) over nine two-second Zen 5
+samples. The gain is recorded, but it is too small to justify expanding the
+supported assembly surface immediately before audit. The implementation,
+portable oracle, mutation gates, and certificate remain regime-tagged and
+unwired. See `docs/formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md`.
+
 ## Current cold-path convergence checkpoint
 
 The later `7layer/narya-convergence` work changed the cold Zen 5 baseline

@@ -1,0 +1,10 @@
+date: 2026-07-29
+kernel: Linux 7.0.0-28-generic x86_64
+toolchain: go version go1.26.4 linux/amd64
+vendor: AuthenticAMD
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+topology: 1 socket, 8 physical cores, 2 threads/core
+serial pinned CPU: 6
+governor: performance
+required features observed: avx2 avx512f avx512dq avx512ifma avx512vl avx512bw avx512vbmi sha_ni
+
