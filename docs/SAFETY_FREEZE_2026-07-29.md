@@ -100,4 +100,3 @@ Raw native evidence and commands are in
 Performance work is frozen at this checkpoint. Reopening an experiment should
 cite a regime change (CPU, SIMD width, point schedule, or profile) and must not
 replace these safety gates with a microbenchmark result.
-
