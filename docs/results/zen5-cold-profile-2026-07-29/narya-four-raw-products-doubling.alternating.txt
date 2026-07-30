@@ -1,0 +1,52 @@
+Zen 5 compound raw-product doubling gate
+=========================================
+
+CPU: AMD Ryzen 7 9700X
+Go: 1.26.4
+Governor: performance
+Affinity: taskset -c 6
+GOMAXPROCS: 1
+Message: 1,232 bytes
+Profile: DalekStrict
+Inputs: cold, distinct public keys; no retained per-key table
+Baseline: 13a6179 (compound raw leaf in Niels addition only)
+Candidate: 5c773f3 (same leaf also in x8 doubling)
+Build tag: r51_release_bench
+Allocations: zero in every sample
+Internal fault fallbacks: zero in every sample
+
+Native gates
+------------
+
+x8 point-doubling and raw-product differentials: PASS
+full repository native candidate suite: PASS
+
+Alternating exported public-API verifier pairs
+----------------------------------------------
+
+pair 1 baseline:  n=8 4.282 us/signature; n=64 4.081 us/signature
+pair 1 candidate: n=8 4.273 us/signature; n=64 4.053 us/signature
+
+pair 2 baseline:  n=8 4.306 us/signature; n=64 4.139 us/signature
+pair 2 candidate: n=8 4.278 us/signature; n=64 4.061 us/signature
+
+pair 3 baseline:  n=8 4.300 us/signature; n=64 4.086 us/signature
+pair 3 candidate: n=8 4.277 us/signature; n=64 4.070 us/signature
+
+pair 4 baseline:  n=8 4.299 us/signature; n=64 4.085 us/signature
+pair 4 candidate: n=8 4.277 us/signature; n=64 4.069 us/signature
+
+pair 5 baseline:  n=8 4.311 us/signature; n=64 4.095 us/signature
+pair 5 candidate: n=8 4.278 us/signature; n=64 4.061 us/signature
+
+Medians
+-------
+
+n=8:  4.300 -> 4.277 us/signature (-0.53%)
+n=64: 4.086 -> 4.061 us/signature (-0.61%)
+
+The doubling inputs X^2, Y^2, Z^2, and X*Y are independent and the raw
+workspace does not overlap the point. The compound leaf therefore retains the
+same input, output, aliasing, u52-source, and exact-u61-result contracts as the
+four standalone calls. The x4 path is unchanged; an x4 compound leaf remains
+an explicitly unmeasured regime candidate rather than an inferred speedup.

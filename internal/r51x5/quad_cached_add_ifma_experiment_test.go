@@ -186,6 +186,55 @@ func TestIFMAQuadCachedAddFirstOperandX4MatchesPortable(t *testing.T) {
 	}
 }
 
+func TestIFMAQuadCachedAddFirstOperandX4TableBuildRange(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		return
+	}
+
+	// Table preparation is a distinct source of inputs for the unchecked
+	// transform: after the first entry, points come from repeated additions
+	// rather than directly from SetReduced. Walk the longest in-tree packed
+	// NAF table (1A, 3A, ..., 127A) and pin every intermediate against the
+	// portable transform. This complements the full-u52 random envelope above
+	// with the exact correlations and loose representations production emits.
+	fixture := newQuadDSMFixtureX4(t)
+	ops := quadDSMOperationsX4{hardware: true}
+	current := new(quadPackedPointX4).setReduced(&fixture.a)
+
+	check := func(entry int, point *quadPackedPointX4) {
+		t.Helper()
+		if !isIFMAElementX4(&point.coordinates) {
+			t.Fatalf("entry %d: table-build point escaped u52", entry)
+		}
+		var want, got IFMAElementX4
+		quadCachedAddFirstOperandX4(&want, point)
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&got.limbs, &point.coordinates.limbs)
+		if got != want {
+			t.Fatalf("entry %d: native table-build transform differs from portable oracle", entry)
+		}
+	}
+
+	check(0, current)
+	twice := *current
+	var doubleWorkspace quadPointDoubleWorkspaceX4
+	if err := ops.doubleWorkspace(&twice, &twice, &doubleWorkspace); err != nil {
+		t.Fatal(err)
+	}
+	check(-1, &twice)
+	var twiceCached quadPackedCachedPointX4
+	if err := quadCachePackedPointX4(&twiceCached, &twice, ops); err != nil {
+		t.Fatal(err)
+	}
+
+	var addWorkspace quadPointAddCachedWorkspaceX4
+	for entry := 1; entry < 64; entry++ {
+		if err := ops.addCachedWorkspace(current, current, &twiceCached, &addWorkspace); err != nil {
+			t.Fatalf("entry %d: repeated add: %v", entry, err)
+		}
+		check(entry, current)
+	}
+}
+
 func TestIFMAQuadCachedAddFirstOperandX4ZeroAllocations(t *testing.T) {
 	if !ExperimentalIFMAAvailable() {
 		return
@@ -288,8 +337,6 @@ func TestExperimentalCoordinateParallelCachedAddWorkspaceX4IgnoresPriorScratch(t
 			value := uint64(0x5a5a_0000_0000_0000 | uint64(limb<<8|lane))
 			poisonedWorkspace.pointOperand.limbs[limb][lane] = value
 			poisonedWorkspace.products.limbs[limb][lane] = ^value
-			poisonedWorkspace.left.limbs[limb][lane] = value ^ 0x1111
-			poisonedWorkspace.right.limbs[limb][lane] = value ^ 0x2222
 		}
 	}
 
@@ -339,6 +386,24 @@ var (
 	benchmarkQuadPackedCachedAddX4Sink quadPackedPointX4
 	benchmarkQuadLaneCachedAddX4Sink   IFMAPointX4
 )
+
+type quadPointAddCachedSplitWorkspaceX4 struct {
+	quadPointAddCachedWorkspaceX4
+	left, right IFMAElementX4
+}
+
+func quadPointAddCachedHardwareWorkspaceSplitX4(
+	out, point *quadPackedPointX4,
+	cached *quadPackedCachedPointX4,
+	workspace *quadPointAddCachedSplitWorkspaceX4,
+) error {
+	ifmaQuadCachedAddFirstOperandUncheckedX4(&workspace.pointOperand.limbs, &point.coordinates.limbs)
+	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
+		return err
+	}
+	ifmaQuadCachedAddFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
+	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
+}
 
 func BenchmarkExperimentalCoordinateParallelCachedAddX4(b *testing.B) {
 	if !ExperimentalIFMAAvailable() {
@@ -393,6 +458,19 @@ func BenchmarkExperimentalCoordinateParallelCachedAddX4(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(state, state, cached, &workspace); err != nil {
+				b.Fatal(err)
+			}
+		}
+		benchmarkQuadPackedCachedAddX4Sink = *state
+	})
+
+	b.Run("chained/quad-packed-cached-split-control", func(b *testing.B) {
+		state := new(quadPackedPointX4).setReduced(&accumulator)
+		var workspace quadPointAddCachedSplitWorkspaceX4
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if err := quadPointAddCachedHardwareWorkspaceSplitX4(state, state, cached, &workspace); err != nil {
 				b.Fatal(err)
 			}
 		}

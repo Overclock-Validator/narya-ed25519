@@ -1,0 +1,62 @@
+Zen 5 x8 Niels raw-product to Stage-2 tail gate
+================================================
+
+CPU: AMD Ryzen 7 9700X
+Go: 1.26.4
+Governor: performance
+Affinity: taskset -c 6
+GOMAXPROCS: 1
+Message: 1,232 bytes
+Profile: DalekStrict
+Inputs: cold, distinct public keys; no retained per-key table
+Baseline: 22d3a68 (compound raw leaf returns, Go calls Niels Stage 2)
+Candidate: c995f4e (compound raw leaf tail-jumps into existing Stage 2)
+Build tag: r51_release_bench
+Allocations: zero in every sample
+Internal fault fallbacks: zero in every sample
+
+Native gates
+------------
+
+exact separate-leaf versus tail-linked Stage-2 representations: PASS
+input workspace immutability: PASS
+zero-allocation gate: PASS
+internal/r51x5 and ed25519 candidate suites: PASS
+full repository native candidate suite: PASS
+
+Alternating exported public-API verifier pairs
+----------------------------------------------
+
+pair 1 baseline:  n=8 4.435 us/signature; n=64 4.220 us/signature
+pair 1 candidate: n=8 4.266 us/signature; n=64 4.063 us/signature
+
+pair 2 baseline:  n=8 4.411 us/signature; n=64 4.191 us/signature
+pair 2 candidate: n=8 4.269 us/signature; n=64 4.061 us/signature
+
+pair 3 baseline:  n=8 4.418 us/signature; n=64 4.191 us/signature
+pair 3 candidate: n=8 4.287 us/signature; n=64 4.064 us/signature
+
+pair 4 baseline:  n=8 4.446 us/signature; n=64 4.206 us/signature
+pair 4 candidate: n=8 4.284 us/signature; n=64 4.067 us/signature
+
+pair 5 baseline:  n=8 4.420 us/signature; n=64 4.188 us/signature
+pair 5 candidate: n=8 4.284 us/signature; n=64 4.063 us/signature
+
+Medians
+-------
+
+n=8:  4.420 -> 4.284 us/signature (-3.08%)
+n=64: 4.191 -> 4.063 us/signature (-3.05%)
+
+Fixed-work hardware counters, n=64, 20,000 benchmark operations
+-----------------------------------------------------------------
+
+baseline:  29,056,234,691 cycles; 112,980,459,843 instructions
+candidate: 28,022,632,272 cycles; 112,883,062,184 instructions
+change:    -3.56% cycles; -0.09% instructions
+
+The effectively unchanged retired-instruction count confirms this is a
+scheduling/code-shape gain, not a hidden arithmetic change. The isolated
+raw-plus-Niels-Stage-2 microbenchmark was flat to slightly negative, so it was
+not used as evidence for retention; only the exported complete-verifier gate
+controls this verdict.

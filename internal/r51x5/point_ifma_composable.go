@@ -18,6 +18,17 @@ type IFMAPointX8 struct {
 	T IFMAElementX8
 }
 
+// ifmaProjectivePointX8 is an intentionally distinct P2 representation. It
+// carries exactly X/Y/Z and therefore cannot be passed to any addition leaf,
+// all of which require a complete extended point with T. Consecutive-doubling
+// experiments use it to make "T has not been computed" a type property rather
+// than a stale-coordinate flag on IFMAPointX8.
+type ifmaProjectivePointX8 struct {
+	X IFMAElementX8
+	Y IFMAElementX8
+	Z IFMAElementX8
+}
+
 // The composable point-add formulas only read 2d. Keep the lane broadcasts in
 // read-only package storage so the hot loop does not rebuild and re-import the
 // same reduced constant for every selected digit.
@@ -92,6 +103,27 @@ func splitIFMAElementX8(low, high *IFMAElementX4, source *IFMAElementX8) {
 		for lane := 0; lane < X4Lanes; lane++ {
 			low.limbs[limb][lane] = source.limbs[limb][lane]
 			high.limbs[limb][lane] = source.limbs[limb][lane+X4Lanes]
+		}
+	}
+}
+
+// SetX4Halves joins two four-lane composable points into the low and high
+// halves of p. It is the exact inverse layout operation of SplitX4: no field
+// arithmetic or normalization occurs, and every u52 limb is copied bit for
+// bit. The x8 batch encoder uses this boundary after an x4 evaluation path.
+func (p *IFMAPointX8) SetX4Halves(low, high *IFMAPointX4) *IFMAPointX8 {
+	joinIFMAElementX4(&p.X, &low.X, &high.X)
+	joinIFMAElementX4(&p.Y, &low.Y, &high.Y)
+	joinIFMAElementX4(&p.Z, &low.Z, &high.Z)
+	joinIFMAElementX4(&p.T, &low.T, &high.T)
+	return p
+}
+
+func joinIFMAElementX4(out *IFMAElementX8, low, high *IFMAElementX4) {
+	for limb := range out.limbs {
+		for lane := 0; lane < X4Lanes; lane++ {
+			out.limbs[limb][lane] = low.limbs[limb][lane]
+			out.limbs[limb][lane+X4Lanes] = high.limbs[limb][lane]
 		}
 	}
 }
@@ -280,25 +312,23 @@ type ifmaPointDoubleWorkspaceX8 struct {
 
 func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &q.X.limbs, &q.X.limbs)
-	ifmaMulRawX8(&stage2[1], &q.Y.limbs, &q.Y.limbs)
-	ifmaMulRawX8(&stage2[2], &q.Z.limbs, &q.Z.limbs)
-	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
-	ifmaDoubleStage2X8(stage2)
-
-	E := (*LimbsX8)(&stage2[0])
-	F := (*LimbsX8)(&stage2[1])
-	G := (*LimbsX8)(&stage2[2])
-	H := (*LimbsX8)(&stage2[3])
+	// A/B/C/E are four independent exact raw products. This compound leaf
+	// expands the same multiply body as four standalone calls, but the
+	// 252-doubling scalar loop pays one transition and one VZEROUPPER per
+	// doubling instead of four.
+	ifmaFourRawProductsDoubleStage2UncheckedX8(
+		stage2,
+		&q.X.limbs, &q.X.limbs,
+		&q.Y.limbs, &q.Y.limbs,
+		&q.Z.limbs, &q.Z.limbs,
+		&q.X.limbs, &q.Y.limbs,
+	)
 
 	// q is dead after the four formula intermediates are formed. Writing the
 	// result directly is therefore safe even when out==q, and avoids zeroing a
 	// temporary 1,280-byte point followed by a full point copy. The unchecked
 	// field kernels used here have no error path after the boundary gate.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }
 

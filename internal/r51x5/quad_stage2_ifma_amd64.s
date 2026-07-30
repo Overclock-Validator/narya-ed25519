@@ -76,6 +76,12 @@
 	VPADDQ HI, T0, T0                    \
 	VPADDQ T0, LO, LO
 
+// The combined high coefficients are below 2^56, so 19*HI fits in uint64.
+// This is the packed-x4 counterpart of the retained x8 fold experiment.
+#define QUAD_FOLD_INTO_MUL19(LO, HI, T0, FOLD19) \
+	VPMULLQ FOLD19, HI, T0                         \
+	VPADDQ T0, LO, LO
+
 // General u61 product carry. Unlike QUAD_DOUBLE_NORMALIZE_5, each carry can
 // be as large as 1023; 19*C4 still fits wholly in VPMADD52LUQ's low half.
 #define QUAD_PRODUCT_NORMALIZE_5(IN0, IN1, IN2, IN3, IN4, MASK, C0, C1, C2, C3, C4, FOLD19) \
@@ -319,15 +325,26 @@ TEXT ·ifmaQuadDoubleFinalMultiplyUncheckedX4(SB), NOSPLIT, $0-16
 	QUAD_COMBINE_HIGH(Y26, Y18)
 	VPSLLQ $1, Y27, Y27
 
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_double_final_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_double_final_fold_done
+quad_double_final_shift_fold:
 	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
 	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
 	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
 	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
 	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_double_final_fold_done:
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
-	VPBROADCASTQ ·ifmaFold19(SB), Y20
-	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y20)
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
 
 	VMOVDQU64 Y10,   0(DI)
 	VMOVDQU64 Y11,  32(DI)
@@ -384,6 +401,256 @@ TEXT ·ifmaQuadCachedAddFinalOperandsUncheckedX4(SB), NOSPLIT, $0-24
 	VPERMQ $0x6b, Y4, Y13
 	VMOVDQU64 Y12, 128(DI)
 	VMOVDQU64 Y13, 128(SI)
+	VZEROUPPER
+	RET
+
+// func ifmaQuadCachedAddFinalMultiplyUncheckedX4(out, products *LimbsX4)
+//
+// This is the cached-add analogue of ifmaQuadDoubleFinalMultiplyUncheckedX4.
+// The five normalized [A,B,C,D] product vectors are transformed to
+// [E,G,H,F], expanded into the two packed multiplication operands, and
+// consumed before any store. Keeping that boundary in registers removes ten
+// temporary vector stores and ten reloads from every packed NAF addition.
+TEXT ·ifmaQuadCachedAddFinalMultiplyUncheckedX4(SB), NOSPLIT, $0-16
+	// This leaf is executed for every nonzero packed NAF digit. Align its first
+	// instruction explicitly so unrelated x8 text padding cannot move it onto
+	// the second half of a cache line.
+	PCALIGN $64
+	MOVQ out+0(FP), DI
+	MOVQ products+8(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	VMOVDQU64 ·ifmaQuadLaneMask03(SB), Y5
+	VMOVDQU64 ·ifmaQuadLaneMask12(SB), Y6
+	VMOVDQU64 ·ifmaQuadCachedAddBias8P0(SB), Y7
+	VMOVDQU64 ·ifmaQuadCachedAddBias8PN(SB), Y8
+
+	QUAD_CACHED_ADD_LINEAR(Y0, Y7, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y1, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y2, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y3, Y8, Y5, Y6, Y9, Y10, Y11)
+	QUAD_CACHED_ADD_LINEAR(Y4, Y8, Y5, Y6, Y9, Y10, Y11)
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	VPBROADCASTQ ·ifmaFold19(SB), Y6
+	QUAD_DOUBLE_NORMALIZE_5(Y0, Y1, Y2, Y3, Y4, Y5, Y7, Y8, Y9, Y10, Y11, Y6)
+
+	// Expand each [E,G,H,F] limb into the two packed multiplication
+	// operands entirely in registers.
+	VPERMQ $0x6b, Y0, Y5
+	VPERMQ $0xc4, Y0, Y0
+	VPERMQ $0x6b, Y1, Y6
+	VPERMQ $0xc4, Y1, Y1
+	VPERMQ $0x6b, Y2, Y7
+	VPERMQ $0xc4, Y2, Y2
+	VPERMQ $0x6b, Y3, Y8
+	VPERMQ $0xc4, Y3, Y3
+	VPERMQ $0x6b, Y4, Y9
+	VPERMQ $0xc4, Y4, Y4
+
+	VPXORQ Y10, Y10, Y10
+	VPXORQ Y11, Y11, Y11
+	VPXORQ Y12, Y12, Y12
+	VPXORQ Y13, Y13, Y13
+	VPXORQ Y14, Y14, Y14
+	VPXORQ Y15, Y15, Y15
+	VPXORQ Y16, Y16, Y16
+	VPXORQ Y17, Y17, Y17
+	VPXORQ Y18, Y18, Y18
+	VPXORQ Y19, Y19, Y19
+	VPXORQ Y20, Y20, Y20
+	VPXORQ Y21, Y21, Y21
+	VPXORQ Y22, Y22, Y22
+	VPXORQ Y23, Y23, Y23
+	VPXORQ Y24, Y24, Y24
+	VPXORQ Y25, Y25, Y25
+	VPXORQ Y26, Y26, Y26
+	VPXORQ Y27, Y27, Y27
+
+	QUAD_MUL_PAIR(Y0, Y5, Y10, Y19)
+	QUAD_MUL_PAIR(Y0, Y6, Y11, Y20)
+	QUAD_MUL_PAIR(Y0, Y7, Y12, Y21)
+	QUAD_MUL_PAIR(Y0, Y8, Y13, Y22)
+	QUAD_MUL_PAIR(Y0, Y9, Y14, Y23)
+	QUAD_MUL_PAIR(Y1, Y5, Y11, Y20)
+	QUAD_MUL_PAIR(Y1, Y6, Y12, Y21)
+	QUAD_MUL_PAIR(Y1, Y7, Y13, Y22)
+	QUAD_MUL_PAIR(Y1, Y8, Y14, Y23)
+	QUAD_MUL_PAIR(Y1, Y9, Y15, Y24)
+	QUAD_MUL_PAIR(Y2, Y5, Y12, Y21)
+	QUAD_MUL_PAIR(Y2, Y6, Y13, Y22)
+	QUAD_MUL_PAIR(Y2, Y7, Y14, Y23)
+	QUAD_MUL_PAIR(Y2, Y8, Y15, Y24)
+	QUAD_MUL_PAIR(Y2, Y9, Y16, Y25)
+	QUAD_MUL_PAIR(Y3, Y5, Y13, Y22)
+	QUAD_MUL_PAIR(Y3, Y6, Y14, Y23)
+	QUAD_MUL_PAIR(Y3, Y7, Y15, Y24)
+	QUAD_MUL_PAIR(Y3, Y8, Y16, Y25)
+	QUAD_MUL_PAIR(Y3, Y9, Y17, Y26)
+	QUAD_MUL_PAIR(Y4, Y5, Y14, Y23)
+	QUAD_MUL_PAIR(Y4, Y6, Y15, Y24)
+	QUAD_MUL_PAIR(Y4, Y7, Y16, Y25)
+	QUAD_MUL_PAIR(Y4, Y8, Y17, Y26)
+	QUAD_MUL_PAIR(Y4, Y9, Y18, Y27)
+
+	QUAD_COMBINE_HIGH(Y19, Y11)
+	QUAD_COMBINE_HIGH(Y20, Y12)
+	QUAD_COMBINE_HIGH(Y21, Y13)
+	QUAD_COMBINE_HIGH(Y22, Y14)
+	QUAD_COMBINE_HIGH(Y23, Y15)
+	QUAD_COMBINE_HIGH(Y24, Y16)
+	QUAD_COMBINE_HIGH(Y25, Y17)
+	QUAD_COMBINE_HIGH(Y26, Y18)
+	VPSLLQ $1, Y27, Y27
+
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_cached_add_final_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_cached_add_final_fold_done
+quad_cached_add_final_shift_fold:
+	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
+	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
+	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
+	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
+	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_cached_add_final_fold_done:
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
+
+	VMOVDQU64 Y10,   0(DI)
+	VMOVDQU64 Y11,  32(DI)
+	VMOVDQU64 Y12,  64(DI)
+	VMOVDQU64 Y13,  96(DI)
+	VMOVDQU64 Y14, 128(DI)
+	VZEROUPPER
+	RET
+
+// func ifmaQuadDoubleFirstMultiplyUncheckedX4(out, q *LimbsX4)
+//
+// The split doubling path first writes U=[X,Y,Z,X] and V=[X,Y,Z,Y] to two
+// temporary five-limb values, then immediately reloads them into the generic
+// multiply. This leaf performs the same permutations in registers and feeds
+// the character-identical 25-product schedule directly. Besides removing ten
+// stores and ten reloads, keeping one source-level leaf makes the intended
+// boundary explicit for audit: only data movement is fused; the convolution,
+// high-half combination, 2^255=19 fold, and carry schedule are unchanged.
+TEXT ·ifmaQuadDoubleFirstMultiplyUncheckedX4(SB), NOSPLIT, $0-16
+	PCALIGN $64
+	MOVQ out+0(FP), DI
+	MOVQ q+8(FP), CX
+
+	VMOVDQU64   0(CX), Y0
+	VMOVDQU64  32(CX), Y1
+	VMOVDQU64  64(CX), Y2
+	VMOVDQU64  96(CX), Y3
+	VMOVDQU64 128(CX), Y4
+
+	// Produce V before overwriting each source with U. VPERMQ $0x34 maps
+	// [X,Y,T,Z] to [X,Y,Z,X]; $0x74 maps it to [X,Y,Z,Y].
+	VPERMQ $0x74, Y0, Y5
+	VPERMQ $0x34, Y0, Y0
+	VPERMQ $0x74, Y1, Y6
+	VPERMQ $0x34, Y1, Y1
+	VPERMQ $0x74, Y2, Y7
+	VPERMQ $0x34, Y2, Y2
+	VPERMQ $0x74, Y3, Y8
+	VPERMQ $0x34, Y3, Y3
+	VPERMQ $0x74, Y4, Y9
+	VPERMQ $0x34, Y4, Y4
+
+	VPXORQ Y10, Y10, Y10
+	VPXORQ Y11, Y11, Y11
+	VPXORQ Y12, Y12, Y12
+	VPXORQ Y13, Y13, Y13
+	VPXORQ Y14, Y14, Y14
+	VPXORQ Y15, Y15, Y15
+	VPXORQ Y16, Y16, Y16
+	VPXORQ Y17, Y17, Y17
+	VPXORQ Y18, Y18, Y18
+	VPXORQ Y19, Y19, Y19
+	VPXORQ Y20, Y20, Y20
+	VPXORQ Y21, Y21, Y21
+	VPXORQ Y22, Y22, Y22
+	VPXORQ Y23, Y23, Y23
+	VPXORQ Y24, Y24, Y24
+	VPXORQ Y25, Y25, Y25
+	VPXORQ Y26, Y26, Y26
+	VPXORQ Y27, Y27, Y27
+
+	QUAD_MUL_PAIR(Y0, Y5, Y10, Y19)
+	QUAD_MUL_PAIR(Y0, Y6, Y11, Y20)
+	QUAD_MUL_PAIR(Y0, Y7, Y12, Y21)
+	QUAD_MUL_PAIR(Y0, Y8, Y13, Y22)
+	QUAD_MUL_PAIR(Y0, Y9, Y14, Y23)
+	QUAD_MUL_PAIR(Y1, Y5, Y11, Y20)
+	QUAD_MUL_PAIR(Y1, Y6, Y12, Y21)
+	QUAD_MUL_PAIR(Y1, Y7, Y13, Y22)
+	QUAD_MUL_PAIR(Y1, Y8, Y14, Y23)
+	QUAD_MUL_PAIR(Y1, Y9, Y15, Y24)
+	QUAD_MUL_PAIR(Y2, Y5, Y12, Y21)
+	QUAD_MUL_PAIR(Y2, Y6, Y13, Y22)
+	QUAD_MUL_PAIR(Y2, Y7, Y14, Y23)
+	QUAD_MUL_PAIR(Y2, Y8, Y15, Y24)
+	QUAD_MUL_PAIR(Y2, Y9, Y16, Y25)
+	QUAD_MUL_PAIR(Y3, Y5, Y13, Y22)
+	QUAD_MUL_PAIR(Y3, Y6, Y14, Y23)
+	QUAD_MUL_PAIR(Y3, Y7, Y15, Y24)
+	QUAD_MUL_PAIR(Y3, Y8, Y16, Y25)
+	QUAD_MUL_PAIR(Y3, Y9, Y17, Y26)
+	QUAD_MUL_PAIR(Y4, Y5, Y14, Y23)
+	QUAD_MUL_PAIR(Y4, Y6, Y15, Y24)
+	QUAD_MUL_PAIR(Y4, Y7, Y16, Y25)
+	QUAD_MUL_PAIR(Y4, Y8, Y17, Y26)
+	QUAD_MUL_PAIR(Y4, Y9, Y18, Y27)
+
+	QUAD_COMBINE_HIGH(Y19, Y11)
+	QUAD_COMBINE_HIGH(Y20, Y12)
+	QUAD_COMBINE_HIGH(Y21, Y13)
+	QUAD_COMBINE_HIGH(Y22, Y14)
+	QUAD_COMBINE_HIGH(Y23, Y15)
+	QUAD_COMBINE_HIGH(Y24, Y16)
+	QUAD_COMBINE_HIGH(Y25, Y17)
+	QUAD_COMBINE_HIGH(Y26, Y18)
+	VPSLLQ $1, Y27, Y27
+
+	CMPB ·preferPackedMul19X4(SB), $0
+	JE   quad_double_first_shift_fold
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+	QUAD_FOLD_INTO_MUL19(Y10, Y15, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y11, Y16, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y12, Y17, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y13, Y18, Y28, Y30)
+	QUAD_FOLD_INTO_MUL19(Y14, Y27, Y28, Y30)
+	JMP quad_double_first_fold_done
+quad_double_first_shift_fold:
+	QUAD_FOLD_INTO(Y10, Y15, Y28, Y29)
+	QUAD_FOLD_INTO(Y11, Y16, Y28, Y29)
+	QUAD_FOLD_INTO(Y12, Y17, Y28, Y29)
+	QUAD_FOLD_INTO(Y13, Y18, Y28, Y29)
+	QUAD_FOLD_INTO(Y14, Y27, Y28, Y29)
+	VPBROADCASTQ ·ifmaFold19(SB), Y30
+quad_double_first_fold_done:
+
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Y5
+	QUAD_PRODUCT_NORMALIZE_5(Y10, Y11, Y12, Y13, Y14, Y5, Y15, Y16, Y17, Y18, Y19, Y30)
+
+	VMOVDQU64 Y10,   0(DI)
+	VMOVDQU64 Y11,  32(DI)
+	VMOVDQU64 Y12,  64(DI)
+	VMOVDQU64 Y13,  96(DI)
+	VMOVDQU64 Y14, 128(DI)
 	VZEROUPPER
 	RET
 

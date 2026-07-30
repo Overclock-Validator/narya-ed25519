@@ -10,6 +10,34 @@ tier, occupancy crossover, and HEEA screen on Zen 4 (Ryzen 7 PRO 8700GE).
 Architecture-specific conclusions are labeled rather than transferred between
 the two CPUs.
 
+## Final pre-audit checkpoint — 2026-07-29
+
+Performance work is frozen after the two results below. Earlier rows in this
+document are historical regime records, not current release numbers; the
+current exported-API tables are in the README and
+`docs/results/zen5-packed-pair-whole-window-2026-07-29/`.
+
+**Zen 5 strict n=2 packed pair — admitted.** Two independent coordinate-packed
+verification equations now occupy the low and high 256-bit halves of one ZMM
+register. No point, scalar, or verdict data crosses the half boundary. A direct
+seven-sample gate improved 1,232-byte verification from 13.47 to 11.70
+µs/signature (-13.1%); 200- and 4,096-byte messages improved 12.9% and 10.6%.
+The public release binary measures 11.62 µs/signature at n=2 and 1,232 bytes.
+Zen 4 retains two packed singleton calls because this exact composition has not
+won there. Route-level CCTV/Wycheproof, mixed-validity, fault-fallback,
+allocation, and per-half arithmetic differentials pin the new path.
+
+**Certified whole-window boundary — retained, not dispatched.** A bounded
+search over 40,960 arithmetic DAGs identified a completed-coordinate boundary
+that carries raw `GH-EF` and `GH+EF` directly. The exact range certificate
+proves the minimum 535p subtraction bias and u64/u52 bounds within the declared
+r51 grammar. Narya adapted it to the live five-doubling radix-32/B10 loop and
+measured 19.324 versus 19.221 µs/x8 group (-0.53%) over nine two-second Zen 5
+samples. The gain is recorded, but it is too small to justify expanding the
+supported assembly surface immediately before audit. The implementation,
+portable oracle, mutation gates, and certificate remain regime-tagged and
+unwired. See `docs/formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md`.
+
 ## Current cold-path convergence checkpoint
 
 The later `7layer/narya-convergence` work changed the cold Zen 5 baseline
@@ -1003,6 +1031,647 @@ Raw output is under
 groups already used projective Niels, while prepared warm tables follow a
 different comb schedule.
 
+### 5.24 x8 point-linear/Niels compound leaf — retained negative
+
+The registered x8 projective-Niels addition computes point-side `Y-X` and
+`Y+X` through two normalized element leaves, then enters the fused four-raw-
+product/Niels-Stage-2 leaf. A narrower compound experiment moved those two
+linear operations into the latter leaf. It used the first two Stage-2 slots as
+temporary carried-u52 storage, overwrote them alias-safely with raw A/B
+products, formed C/D, and tail-entered the unchanged Stage-2 symbol. Shared
+assembly macros make its add/sub and raw-multiply schedules source-identical
+to the standalone leaves.
+
+The native differential covers zero, maximum-u52, and 10,000 deterministic
+random arbitrary-u52 point/cached inputs in exact redundant representation,
+checks input immutability, and records zero allocations. On a pinned Ryzen 7
+9700X core the isolated boundary improved from about 37.8 to 32.2 ns (-15%).
+That leaf result did **not** survive the complete verifier. A back-to-back
+six-sample public 1,232-byte gate measured these medians:
+
+| width | separate linear leaves (us/sig) | compound leaf (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.247 | 4.310 | +1.5% |
+| 64 | 4.031 | 4.096 | +1.6% |
+
+Both binaries contained the experimental assembly symbol, so this was not a
+simple code-placement comparison against a binary lacking the candidate. The
+remaining difference is the hot-loop call/scratch schedule; the exact cause
+of the inversion has not been established. The production helper therefore
+retains the separate linear leaves. The compound leaf and its direct tests
+remain named as an experiment so a later microarchitecture or scheduling
+change can remeasure it instead of rebuilding it or assuming its isolated win
+transfers end to end.
+
+**Regime tag:** Zen 5, cold complete x8 groups, Go 1.26.4. This result says
+nothing about the x4 projective-Niels path, whose retained result is recorded
+above, or about a future selector-to-first-product fusion that avoids a
+different memory boundary.
+
+### 5.25 Full-x8 radix-32 scalar recoding specialization — retained
+
+A fresh cold profile at `dc6fb0e` separated the packed singleton and full-x8
+regimes. At n=1, the packed-x4 final multiply, general multiply, and repeated
+square leaves accounted for 31.73%, 24.42%, and 10.68% flat respectively. At
+n=8/n=64, `RecodeCanonicalScalarsX8` alone accounted for 2.94%/3.30% even
+though the registered variable-base path always supplies the same public
+shape: eight active reduced challenges, radix 32, and a negative sign in every
+lane.
+
+Commit `b1c1ccc` adds a private specialization for that exact shape. It still
+checks all eight scalar encodings for canonicality and re-enters the generic
+recoder on any failure. The all-valid loop uses a constant five-bit width,
+applies the negative sign unconditionally, omits per-digit active-lane tests,
+and directly assigns each round's magnitudes and masks. Partial groups,
+different sign masks, and every other caller retain the generic implementation.
+
+Direct differentials cover 10,000 deterministic full-lane cases, periodic
+noncanonical scalars, another 10,000 randomized active/sign-mask dispatch
+cases, poisoned output reuse, and zero allocations. On a pinned Ryzen 7 9700X
+core the six-sample direct median changed from 909.9 to 467.8 ns per eight
+scalars (-48.6%). Ten two-second public 1,232-byte samples gave:
+
+| width | generic recoder (us/sig) | specialized recoder (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.239 | 4.188 | -1.2% |
+| 64 | 4.031 | 3.970 | -1.5% |
+
+Post-change profiles place the new helper at 1.52% for n=8 and 1.55% for
+n=64. Separate n=1/n=2/n=4 binaries stayed within 0.4% in either direction;
+those paths do not call the specialization. Every public row reported zero
+allocations and zero internal-fault fallbacks, and the complete native suite
+passed. Raw A/B and flat-profile text is under
+`docs/results/zen5-cold-profile-recode-2026-07-29/`.
+
+**Regime tag:** the retained optimization is deliberately narrow: cold full
+x8 variable-base evaluation with negated radix-32 digits. It does not change
+the packed singleton, x4 tail, fixed-base comb recoder, warm-table recoder, or
+acceptance predicate.
+
+### 5.26 Full-x8 radix-256 fixed-base recoding specialization — retained
+
+The process-shared generator comb has another public full-x8 shape that the
+generic recoder need not rediscover on every group: eight active canonical
+scalars, radix 256, and 32 byte-aligned rounds. Commit `f0a1bbb` adds a private
+specialization for only that case. Canonicality is still checked in every
+lane; any failure re-enters the generic recoder, preserving its exact
+per-lane fail-closed output. Partial groups and the radix-16/radix-32 shapes
+remain generic.
+
+The all-valid loop reads one scalar byte per digit, replaces the balanced
+power-of-two divide/multiply with shifts, and assigns all used rounds
+directly. A 10,000-case exact differential includes periodic noncanonical
+scalars and poisoned output reuse. Both the direct recoder and complete
+public verifier report zero allocations.
+
+On the pinned Ryzen 7 9700X core, nine two-second direct samples changed from
+342.1 to 238.1 ns per eight scalars (-30.4% by median). Because that leaf is
+small, complete gains are deliberately reported as sub-percent. Ten
+three-second forward-order public samples at 1,232 bytes measured:
+
+| width | generic recoder (us/sig) | specialized recoder (us/sig) | change |
+|---:|---:|---:|---:|
+| 8 | 4.176 | 4.165 | -0.28% (p=0.041) |
+| 64 | 3.975 | 3.952 | -0.59% (p=0.021) |
+
+A second ten-sample run reversed binary order. It reproduced n=8 at -0.33%
+(p=0.013); n=64 remained directionally -0.33% but was not significant in the
+shorter run (p=0.133). The optimization is retained because it removes about
+104 ns of deterministic work per complete x8 group, is exact by differential,
+and has no allocation or predicate cost. The n=64 end-to-end magnitude should
+therefore be read as roughly 0.3-0.6%, not as a larger headline result.
+
+**Regime tag:** Zen 5, full x8 fixed-base radix-256 comb evaluation, Go 1.26.4.
+This does not claim a gain for n=1/n=2/n=4, x4 tails, alternate comb widths,
+or any warm per-key table. Re-measure on a different fixed-base shape or
+microarchitecture rather than generalizing the result.
+
+### 5.27 Zen 5 x4-curve / x8-hash cold tails — retained
+
+A four-signature tail has two independent width choices: the curve arithmetic
+and the segmented SHA-512 plus digest reduction. Sending the entire tail
+through a half-active x8 curve group conflates them. The retained composition
+keeps the faster full x4 curve group while hashing its four compacted
+challenges with the native x8 kernel.
+
+In a pinned same-binary ten-sample comparison, n=4 improved by 2.46% at 200
+bytes, 7.99% at 1,232 bytes, and 18.41% at 4,096 bytes. N=2 was statistically
+flat at 1,232 and 4,096 bytes, so production requires at least four active
+lanes. Every row allocated zero bytes. The 1,232-byte result was a hard gate:
+the larger-message gain was not accepted at its expense.
+
+A separate three-way gate showed why the split matters. Four-active-lane x8
+curve arithmetic measured 7.736/8.204/9.582 us/signature at 200/1,232/4,096
+bytes. The retained x4-curve/x8-hash composition measured
+7.524/8.046/9.401 and therefore dominated it at every size. The half-active x8
+seam remains test-only evidence rather than production dispatch.
+
+Commit `45da721` selects the composition only on AMD family 1Ah (Zen 5).
+Family 19h (Zen 4) and unknown IFMA CPUs retain x4 hashing until the complete
+gate is repeated there. Both public profiles, mixed invalid lanes, partial
+tails, zero allocations, the full repository suite, and `go vet ./...` passed
+on native Zen 5 hardware. Evidence is under
+`docs/results/zen5-x4-wide-hash-tail-2026-07-29/`.
+
+**Regime tag:** cold x4 tails with four through seven active signatures on
+Zen 5. Complete x8 groups already hash at x8 width; n=1/n=2 retain their prior
+path. This is independent of warm-key state.
+
+### 5.28 Ordinary two-chain ZMM singleton loop — retained negative
+
+The component result in section 5.17 showed that two independent packed point
+doublings can occupy the low and high halves of one ZMM register for nearly
+the cost of one YMM chain. That did not establish that the ordinary
+double-scalar multiplication benefits: it also needs two table selections,
+two cached-add inputs, and a final term combination.
+
+The complete prepared-loop experiment was therefore run on a pinned Ryzen 7
+9700X core. Ten two-second samples measured the existing shared-accumulator x4
+loop at about 10.23 us and the ordinary two-chain ZMM loop at about 10.77 us,
+or 5.2% slower. Both paths were zero-allocation and the two-chain result was
+differentially checked against the existing strict integer-scalar equation.
+
+The recommendation was rechecked after the later packed-x4 fusion and cold
+x8 work rather than extrapolated from that older checkpoint. At exact code
+commit `54d6430`, eight two-second samples put the shared x4 loop at
+9.535--9.559 us and the two-chain ZMM loop at about 10.77 us: now roughly 13%
+slower. The ZMM doubling component is still efficient; identity-half cached
+adds, selections, and final term combination are the surviving cost. This
+current-tree rerun strengthens rather than reopens the negative verdict.
+
+This closes the ordinary two-chain loop on the measured Zen 5 regime. The
+component kernel remains useful evidence rather than dead code: a future
+scalar transformation may expose two chains while also removing enough rounds
+to pay for the extra selection and final combination. Such a transform must be
+benchmarked as a complete verifier and cannot inherit the component result as
+a claimed speedup.
+
+**Regime tag:** Zen 5, prepared ordinary singleton DSM, width-5 variable-base
+NAF and width-8 generator NAF. This is not a verdict on a future exact HEEA or
+other half-length two-chain transform.
+
+### 5.29 Packed cached-add final-stage fusion — retained
+
+The packed singleton cached addition still materialized two normalized
+five-vector operands and immediately reloaded them for the final field
+multiplication. Commit `4dc12a6` adds a fused leaf that keeps the cached-add
+linear layer, carry/fold, operand expansion, and normalized multiplication in
+registers until the output store. It removes ten temporary vector stores and
+ten reloads per nonzero NAF digit. The now-unused final-operand fields were
+also removed from the reusable packed workspaces.
+
+The native differential compares the fused result byte-for-byte in redundant
+u52 representation with the split assembly oracle for zero, maximum-u52, and
+512 deterministic random product vectors. It separately checks in-place
+aliasing and zero allocations. Table-build inputs, complete mixed-order point
+tests, the full native repository suite, and `go vet ./...` remained green.
+
+On a pinned Ryzen 7 9700X core, a same-binary ten-sample leaf comparison moved
+from 33.78 to 31.75 ns (-6.0%). The exported cold n=1 verifier changed at every
+message size without allocations or fault fallbacks:
+
+| message bytes | parent (us/signature) | fused (us/signature) | change |
+|---:|---:|---:|---:|
+| 200 | 14.20 | 13.98 | -1.51% |
+| 1,232 | 15.05 | 14.85 | -1.33% |
+| 4,096 | 17.03 | 16.79 | -1.41% |
+
+Adding text for a packed-only kernel initially moved the dominant x8 multiply
+between cache-line halves, making otherwise-unaffected n=8/n=64 comparisons
+appear 0.2--0.5% slower. Commit `90384db` explicitly aligns both the x8 field
+multiply and the new packed cached-add leaf to 64-byte boundaries. An ABBA-
+ordered parent/candidate control then showed both binaries following the same
+host-frequency drift at n=8/n=64 rather than a candidate-specific regression.
+The alignment is part of the retained implementation, not a benchmark-only
+build condition.
+
+The 1,232-byte row was the hard promotion gate. The 4,096-byte gain was not
+accepted at its expense. Raw output, the ABBA control, exact commands, and
+checksums are under
+`docs/results/zen5-packed-cached-add-fusion-2026-07-29/`.
+
+**Regime tag:** cold packed x4 singleton and pair tails on Zen 5. Full x4/x8
+signature-parallel groups do not call the fused leaf; their control result is
+used only to guard code-layout regressions.
+
+### 5.30 Packed doubling input/multiply fusion — retained
+
+The packed doubler still wrote `U=[X,Y,Z,X]` and `V=[X,Y,Z,Y]` to two
+five-vector temporaries, then immediately reloaded them into the normalized
+field multiply. Commit `9f9df33` fuses only that data-movement boundary. The
+same `VPERMQ` lane maps feed the same 25-product convolution, high-half
+combination, `2^255 = 19` fold, and carry schedule without a memory round trip.
+The reusable doubling workspace consequently shrinks from three packed field
+elements to one.
+
+The native exact-representation differential compares the fused output with
+the split assembly oracle over zero, maximum-u52, and 512 deterministic random
+inputs. It also verifies in-place input/output aliasing, stale-workspace
+independence, and zero allocations. The full native repository suite and
+`go vet ./...` remained green on Zen 5.
+
+The same-binary dependent doubling gate moved from 30.73 to 28.24 ns/op
+(-8.1%). An ordered exact-parent/candidate complete-verifier control measured:
+
+| message bytes | parent n=1 (us/signature) | fused n=1 (us/signature) | change |
+|---:|---:|---:|---:|
+| 200 | 13.975 | 13.460 | -3.7% |
+| 1,232 | 14.790 | 14.070 | -4.9% |
+| 4,096 | 16.800 | 16.360 | -2.6% |
+
+The 1,232-byte result was again the promotion gate. The change improves it;
+the 4,096-byte result is corroborating evidence rather than the reason for
+selection. ABBA controls at n=8/n=64 showed no repeatable code-layout
+regression on routes that do not call the fused packed leaf.
+
+The post-change public matrix is the current README matrix. Raw component,
+ordered A/B, and complete-matrix output are under
+`docs/results/zen5-packed-double-first-fusion-2026-07-29/`.
+
+**Regime tag:** cold packed x4 singleton and pair tails on Zen 5. This is a
+mechanical data-movement fusion, not a new point formula or acceptance
+predicate. Full x4 and x8 signature-parallel groups are unaffected.
+
+### 5.31 Dedicated raw x8 squaring on Zen 5 — retained
+
+The dedicated raw-square schedule was already exact-representation tested and
+selected on AMD family 19h. Its family 1Ah exclusion was a stale performance
+verdict from before the surrounding x8 point kernel changed. Commit `daaa776`
+changes only the measured CPU policy: families 19h and 1Ah select the existing
+dedicated schedule, while unmeasured future families retain the reviewed
+general-multiply default.
+
+A same-binary dedicated/general/general/dedicated run on a pinned Ryzen 7
+9700X core measured 4.1660 to 4.1135 us/signature at n=8 (-1.26%) and 3.9445
+to 3.9010 at n=64 (-1.10%) for 1,232-byte messages. Each median contains
+twelve one-second samples and every sample reports zero allocations. Full
+native tests and vet, exact raw-square differentials, aliasing,
+poisoned-workspace, both predicate profiles, and registered policy activation
+remained green.
+
+Raw output and checksums are under
+`docs/results/zen5-raw-square-dispatch-2026-07-29/`.
+
+**Regime tag:** cold x8 signature-parallel batches on measured Zen 4 and Zen 5
+AMD families. The packed singleton/pair and x4-tail routes are unaffected.
+
+### 5.32 Packed doubling leaf continuation — retained negative
+
+The packed singleton doubler now consists of two native leaves: a fused input
+permutation plus normalized multiplication, followed by a fused linear layer
+plus final multiplication. A continuation candidate kept the exact five-vector
+intermediate product store, but tail-entered the second leaf to remove one
+return/call and the intervening `VZEROUPPER`. Both leaves expanded the same
+first-multiply source body, so no arithmetic instruction differed.
+
+Eight alternating two-second public-verifier phases at 1,232 bytes measured a
+14.175 us/signature baseline median and 14.185 us/signature candidate median
+at n=1. The sample distributions overlapped completely. This boundary is
+therefore already hidden by the much larger packed arithmetic schedule; unlike
+the x8 Stage-2 continuation, removing it produces no complete-verifier gain.
+The prototype was removed rather than retaining extra native ABI surface.
+
+Raw per-phase values and the exact candidate shape are recorded under
+`docs/results/zen5-packed-double-tail-negative-2026-07-29/`.
+
+**Regime tag:** cold packed-x4 singleton verification on Zen 5, 1,232-byte
+messages. This does not reject a future single-leaf arithmetic fusion that
+also eliminates the five intermediate stores/reloads; it rejects only the
+control-flow continuation measured here.
+
+### 5.33 Merged fixed-base B10 on the current projective x8 chain — retained
+
+An older complete-verifier gate rejected merged B10 by about 1.1%. That result
+was correct for its checkpoint, but the candidate still used a
+complete-coordinate general-multiply doubler. It predated the registered Zen 5
+x8 loop's dedicated raw square and intermediate-P2 schedule.
+
+Commit `55f4362` applies the exact current five-doubling
+`P3 -> P2 -> P2 -> P2 -> P2 -> P3` chain to the retained merged evaluator. A
+width-10 generator digit is injected alongside every even radix-32 A digit.
+This evaluates both terms on one 250-doubling chain, needs at most 26 B
+additions, removes the separate radix-256 B evaluation, and removes the final
+full-point addition. B remains a process-shared constant; this is a cold-path
+change and retains no per-key state.
+
+Six two-second complete-verifier samples measured:
+
+| bytes | width | separate comb, us/signature | merged B10, us/signature | change |
+|---:|---:|---:|---:|---:|
+| 200 | 8 | 3.925 | 3.670 | -6.5% |
+| 200 | 64 | 3.704 | 3.450 | -6.9% |
+| 1,232 | 8 | 4.169 | 3.911 | -6.2% |
+| 1,232 | 64 | 3.974 | 3.695 | -7.0% |
+| 4,096 | 8 | 4.907 | 4.662 | -5.0% |
+| 4,096 | 64 | 4.720 | 4.448 | -5.8% |
+
+Registered dispatch selects this schedule only for complete x8 groups on AMD
+family 1Ah. Zen 4, unknown IFMA CPUs, and x4 tails retain the separate comb.
+The independent scalar-reconstruction test covers 2,257 inputs, every scalar
+bit boundary, `L-1`, non-canonical `L`, inactive lanes, and stale-output reuse.
+Both acceptance profiles, every invalid-lane position, zero allocations, full
+native tests, and vet remained green.
+
+Evidence is under
+`docs/results/zen5-asymmetric-b10-projective-2026-07-29/`.
+
+**Regime tag:** cold x8 signature-parallel groups on measured Zen 5. The
+earlier negative is not deleted; it documents why point-kernel changes require
+old algorithmic experiments to be remeasured rather than trusted forever.
+
+### 5.34 Selector-to-first-product fusion — retained negative
+
+A fresh profile after merged B10 still attributed about 3.2% of n=8/n=64
+time to the variable-base micro-AoS selector. The registered selector is newer
+than the original fusion proposal: it already chooses a pre-signed entry and
+transposes all four Niels coordinates together. It performs no online sign
+swap or conditional negation.
+
+Two native candidates checked the remaining store/reload boundary. The naive
+form transposed each coordinate independently and was immediately rejected
+because it repeated the complete shuffle network four times. The corrected
+form transposed all coordinates once, retained cached Y-X in ZMM registers,
+and used the existing product workspace only for Y+X, 2dT, and Z. It reused
+the exact raw-multiply instruction body and tail-entered the existing Niels
+Stage-2 leaf. An exact native differential covered all 256 active masks times
+all 256 public sign masks, distinct magnitudes spanning 1 through 16, input
+immutability, and zero allocations.
+
+On a pinned Ryzen 7 9700X core, five one-second samples measured:
+
+| implementation | median ns/add | range ns/add | change |
+|---|---:|---:|---:|
+| separate pre-signed selector + current add | 69.88 | 69.67--69.92 | baseline |
+| single-pass selector/first-products fusion | 86.30 | 86.26--86.34 | +23.5% |
+
+The insert/shuffle and live-register pressure cost more than the five cached
+coordinate stores and reloads removed. Because the candidate already loses at
+the exact leaf boundary, it was not promoted to a complete-verifier A/B and
+the added assembly was removed.
+
+**Regime tag:** cold pre-signed micro-AoS x8 A tables on Zen 5 after merged
+B10. This closes only fusion for the present four-coordinate transpose layout;
+it does not reject a future table layout that emits multiply-ready limb vectors
+without an in-loop transpose.
+
+### 5.35 Merged-B10 specialized radix-32 recoder — retained
+
+The ordinary pre-signed x8 A evaluator already dispatched full active,
+all-negated radix-32 groups to `recodeCanonicalNegatedRadix32FullX8`. Merged
+B10 was added later and called the generic `RecodeCanonicalScalarsX8` directly,
+silently bypassing that specialization for every complete x8 group. The
+division-to-shift rewrite and round-major layout from the older recoder work
+were therefore already present; the live defect was one stale call site in the
+new evaluator.
+
+Commit `db0a239` routes merged B10 through the existing dispatch helper. All
+partial masks and any non-canonical lane still fall back to the generic
+recoder, preserving its exact fail-closed digits. The existing 10,000-case
+specialized/generic and dispatch/generic differentials cover random canonical
+and non-canonical scalars, masks, signs, and stale-output reuse.
+
+Prebuilt baseline/candidate binaries in ABBA order measured 1,232-byte cold
+verification at 3.994 to 3.946 us/signature for n=8 (-1.2%) and 3.767 to 3.712
+for n=64 (-1.5%). Compact ABBA checks at 200 and 4,096 bytes showed the same
+roughly 0.05-us absolute saving. The exact `1023e7e` public matrix, rerun in
+short isolated phases after rejecting a twofold host-contention artifact, is
+the current README table. Every row remained zero-allocation with zero native
+fault fallbacks; full native tests and vet passed.
+
+Evidence is under
+`docs/results/zen5-specialized-recoder-2026-07-29/`.
+
+**Regime tag:** cold complete x8 groups on Zen 5 using merged B10. Singleton,
+pair, x4 tail, Zen 4 separate-comb, and warm-cache routes are unchanged.
+
+### 5.36 Current-tree audit of the older recoder recommendations
+
+The later recoder review was based on an older checkpoint, so each item was
+re-checked against `a3188cf` before changing code:
+
+- balanced carry division and radix multiplication were already shifts in the
+  cold `RecodeCanonicalScalarsX8`, fixed-base comb, and asymmetric B10 paths;
+- the full radix-32 and radix-256 specializations already assign magnitude and
+  sign/nonzero masks directly rather than calling `setRadixRoundDigitX8`;
+- B10 already loads each scalar into a guarded five-word window and uses the
+  three-byte-safe width-10 extractor;
+- the two-byte `fixedScalarBits` helper is explicitly constrained to widths
+  whose `shift+width` is at most 16;
+- the remaining allocating/IDIV-based `RecodeRegularRadix` route is not called
+  by the registered cold x8 verifier.
+
+The one current defect was the merged-B10 call-site bypass recorded in 5.35.
+The proposed bounded-clear rewrite was not treated as proven by the older
+`clear(slice)` result: a counted assignment loop is a distinct code shape. It
+was measured separately and closed in 5.38. The existing poisoned-output
+differentials compare the complete digit structure, so unused rounds still
+have to be cleared deterministically.
+
+**Regime tag:** source and call-graph audit at `a3188cf`. This section records
+which historical recommendations are already present or non-hot; it is not a
+performance result for an unmeasured rewrite.
+
+### 5.37 Native x8 scalar challenge reduction — retained
+
+After the recoder bypass was fixed, current Zen 5 profiles still assigned
+roughly 2--3% of full-width cold verification to reducing eight 64-byte SHA-512
+digests modulo the Ed25519 scalar order. Production performed the same signed
+radix-`2^21` ref10 schedule eight times in Go.
+
+Commit `54d6430` uses one structure-of-arrays AVX-512DQ leaf on measured AMD
+family 1Ah. All 24 signed coefficients remain in ZMM registers through the 14
+folds, 23 centered carries, and 23 ordinary carries. The byte parser and packer
+remain in Go and publish through a local result, preserving inactive-zero and
+output-atomicity behavior. Zen 4, unknown IFMA CPUs, pure-Go builds, and other
+architectures retain the lane-serial reducer until measured independently.
+
+This schedule is a source-level translation of the project-owned standalone
+Narya reducer at `571f224057b11faa1f0fd968d6d282d515a4a7bf`. A new Go test
+pins all 60 macro calls by exact register/radix position plus the seven
+constant broadcasts. The standalone 389-intermediate range certificate and
+Lean canonical-tail theorem therefore apply to the algebraic transcript, but
+not automatically to the Go ABI or emitted object bytes; the production tree
+keeps its original reducer callable as a separate oracle.
+
+Native gates include 2,048 exact differentials cycling all 256 active masks,
+carry-heavy and random digests, input immutability, zero allocations, the
+existing `SetUniformBytes` differential, x8-versus-two-x4 comparison, ordinary
+and SDE-policy-tagged dispatch tests, and the complete native repository suite.
+
+On the pinned Ryzen 7 9700X, six one-second direct samples moved the eight-
+scalar group from about 535 ns to about 225 ns (-58%). Exact-parent public
+ABBA runs show a 0.025--0.046 us/signature absolute saving at n=8/n=64 across
+200-, 1,232-, and 4,096-byte messages, about 0.6--1.2% end to end. At the
+1,232-byte promotion size both n=8 and n=64 improve by about 0.85%.
+The exact-commit release matrix at 1,232 bytes is 3.899 us/signature for n=8
+and 3.683 for n=64. Every public sample remained zero-allocation with zero
+internal-fault fallbacks.
+
+Evidence is under
+`docs/results/zen5-native-scalar-reduce-x8-2026-07-29/`.
+
+**Regime tag:** cold full-width and four-active-lane hash groups on Zen 5,
+Go 1.26.4. The assembly is directly testable on any supported IFMA CPU, but
+performance dispatch remains Zen-5-only until other microarchitectures pass a
+complete gate.
+
+### 5.38 Counted bounded-tail clearing — negative
+
+The old bounded-clearing experiment used `clear(out.rounds[:rounds])`, which
+the compiler lowered to `runtime.memclrNoHeapPointers`. The follow-up tested
+the materially different counted-assignment shape suggested in review. For
+the two full-lane specializations, every used record is overwritten in full,
+so the safe candidate cleared only the unused tail: rounds 51--63 for the
+radix-32 variable scalar and rounds 32--63 for the radix-256 base scalar.
+Invalid inputs still re-entered the generic full-clear path. Existing
+10,000-case poisoned-output differentials passed unchanged.
+
+On the pinned Ryzen 7 9700X, six alternating one-second samples put the
+radix-256 recoder near 225 ns before and 229 ns after, about 2% slower. The
+radix-32 recoder was approximately flat to slightly faster, but the complete
+1,232-byte verifier consistently regressed: roughly 3.891 to 3.905
+us/signature at n=8 and 3.673 to 3.689 at n=64 (+0.3--0.5%). The candidate was
+removed.
+
+**Regime tag:** current specialized cold x8 radix-32 A plus radix-256 B
+recoders on Zen 5 at `804e66b`. This closes both `clear(slice)` and counted
+tail-assignment forms for the present output layout; it does not reject a
+future recoder whose type contains only the live rounds.
+
+### 5.39 Packed-x4 high-coefficient fold on Zen 5 — retained
+
+A current-tree profile of the cold singleton and pair paths found that three
+packed-x4 product leaves still folded each high coefficient with a three-add
+shift sequence for multiplication by 19. The registered x8 path had already
+retained a `VPMULLQ` fold after its own hardware A/B, so the old general advice
+to prefer shifts in dense IFMA streams could not be applied mechanically.
+
+The packed coefficients entering this fold are below 2^56, making `19 * high`
+an exact unsigned 64-bit product. A candidate therefore replaced four vector
+instructions per limb with `VPMULLQ` plus `VPADDQ`. The choice is immutable at
+package initialization and enabled only for AMD family 1Ah (Zen 5); Zen 4 and
+unknown IFMA CPUs keep the previously measured shift/add sequence.
+
+Direct leaf differentials covered zero, maximum-u52 operands, 512 random exact
+redundant representations, aliasing, mixed-order point chains, and the existing
+zero-allocation gates. Six alternating one-second Zen 5 samples measured:
+
+| packed operation | shift/add | `VPMULLQ` | change |
+| --- | ---: | ---: | ---: |
+| cached addition | about 31.86 ns | about 31.31 ns | -1.7% |
+| doubling | about 28.20 ns | about 27.00 ns | -4.3% |
+
+At the complete public API, alternating measurements improved 1,232-byte cold
+verification by about 2.8% at n=1 and 2.4% at n=2. The 200-byte and 4,096-byte
+cases also improved, by roughly 2--3%, so the change does not trade the primary
+1,232-byte workload for a longer-message-only win. Wider groups are unaffected
+because they use the x8 field layer.
+
+The exact retained commit measured 13.90 and 13.86 us/signature at n=1 and
+n=2 for 1,232-byte messages. Its unaffected controls were 7.983, 3.913, and
+3.712 us/signature at n=4, n=8, and n=64.
+
+**Regime tag:** registered packed-x4 cold path on a Ryzen 7 9700X, Go 1.26.4,
+exact code commit `985a3b8`. Raw A/B, complete-matrix, environment, and
+validation output are under
+`docs/results/zen5-packed-x4-mul19-2026-07-29/`.
+
+### 5.40 Revalidation rule for historical recommendations
+
+Performance recommendations from older commits are treated as hypotheses, not
+as current-tree facts. Before implementation, each recommendation is checked
+against the registered dispatch path, the generated assembly, and a fresh
+native benchmark on the target CPU. This pass produced three different
+outcomes that are useful to retain:
+
+- balanced-recoder division and direct digit stores were already removed from
+  the registered cold path;
+- counted bounded-tail clearing remained semantically valid but regressed the
+  complete verifier and was removed;
+- the ordinary two-chain ZMM loop became about 13% slower than the current
+  shared packed-x4 loop, invalidating its older priority ranking;
+- packed-x4 multiplication-by-19 was still live and improved every tested
+  message size, so it was retained behind a Zen-5-specific policy.
+
+This rule is intentionally stricter than source inspection alone because a
+recommendation can become stale through compiler changes, dispatch changes, or
+an optimization landing in only one of several SIMD orientations.
+
+### 5.41 Fourth raw square in x8 doubling — primitive win, loop negative
+
+The direct-XY doubling uses three dedicated raw squares and one raw multiply.
+The classical alternative derives `E=2XY` as `(X+Y)^2-X^2-Y^2`, replacing the
+multiply with a fourth square. A test-only candidate normalized `X+Y`, used the
+existing bit-identical raw-square leaf, and changed only Stage 2's E formula.
+The Stage-2 carry schedule and P2/P3 result types remained unchanged.
+
+On the pinned Ryzen 7 9700X, eight two-second primitive samples favored the
+four-square doubling: about 50.37 ns versus 50.98 ns for the current
+three-square/direct-XY schedule (-1.2%). The relevant complete projective
+radix-32 evaluator decisively reversed that result: about 19.64 us versus
+17.52 us (+12.1%). The normalized `X+Y` dependency is paid inside every
+dependent doubling and dominates the instruction-count saving.
+
+All-mask evaluator differentials, 4,096 random point differentials, in-place
+alias tests, and zero-allocation tests passed. The experiment remains unwired
+with those tests as a regime-tagged artifact; production keeps direct XY.
+
+**Regime tag:** native x8 projective-Niels cold A evaluation on Zen 5 after
+raw squaring and P2 intermediate doubling. Reopen only if a future typed point
+domain proves `X+Y < 2^52` without normalization at this exact boundary.
+
+### 5.42 Dual-stream SHA-512 — open design, not a drop-in optimization
+
+Zen 5 reports `sha_ni` but no SHA-512 instruction feature; `sha_ni` covers the
+older SHA extensions and does not replace the software SHA-512 kernel. The
+current rolling x8 compressor keeps eight state vectors in Z0--Z7, scratch in
+Z8--Z15, and the complete sixteen-word message ring in Z16--Z31. It therefore
+uses all 32 architectural ZMM registers.
+
+Interleaving two independent x8 chains could hide SHA-512's round latency, but
+it cannot be implemented by simply duplicating the current register schedule.
+One or both message rings must move to memory, and the resulting load/store
+traffic, register pressure, and much larger assembly proof surface must be
+measured against the existing 7--9% hashing share. This remains a potentially
+meaningful research candidate, not a safe mechanical change for the present
+release checkpoint.
+
+### 5.43 Packed hardware-dispatch specialization — negative
+
+The registered singleton verifier constructs an immutable hardware operation
+object, but the shared NAF evaluator still checks that bit and calls through a
+small wrapper for every doubling and cached addition. A source-identical
+hardware-only evaluator removed those branches and wrappers while retaining
+the model-backed evaluator as its differential oracle.
+
+Eight two-second Zen 5 samples measured the shared evaluator at about
+9.12 us and the hardware-only copy at about 9.20 us (+0.8%). Exact scalar,
+mixed-order point, noncanonical-scalar fail-closed, and zero-allocation tests
+all passed. The compiler and front end already handle the predictable branch
+well enough that duplicating the large loop worsens layout rather than saving
+time. Production retains the shared evaluator; the specialized function stays
+test-only as a current-regime negative.
+
+**Regime tag:** prepared packed-x4 width-5 A plus width-8 B NAF evaluator on
+Zen 5 after the packed product-leaf and multiplication-by-19 optimizations.
+
+### 5.44 Decoder multiply fallback split — smaller frame, no speedup
+
+The x8 decoder's multiply dispatcher had a 1,936-byte stack frame because its
+portable fallback declared reduced-lane temporaries in the same Go function.
+Moving that fallback to a noinline helper reduced the native dispatcher's frame
+to 40 bytes without changing any arithmetic or error path.
+
+Ten pinned two-second Ryzen 7 9700X samples nevertheless moved the complete
+`ExperimentalIFMADecodeX8` plus reduced-output import from about 3.296 us to
+3.305 us (+0.27%). The native exponentiation already sends its long square
+runs directly to the register-resident assembly leaf, so the large-looking Go
+frame is paid on too few residual calls to matter. The split was reverted.
+
+**Regime tag:** single-A native x8 decoder, unchecked validated u52 boundary,
+register-resident repeated-square kernel, Go 1.26.4. Reconsider only if the
+decoder's multiply call graph changes; frame size alone was not predictive.
+
 ---
 
 ## 6. Smaller observations
@@ -1012,11 +1681,9 @@ different comb schedule.
 - **Multicore scaling is 93-98%**, far above the usual 80-85%. Zero allocations
   means no GC pressure, and warm tables are shared read-only. Six cores reach
   ~1.25M sig/s warm and ~509k cold at max transaction size.
-- **Hashing matters more as point arithmetic gets faster.** Going 200 -> 1232
-  bytes costs the cold path +6% but the warm path +21%, because SHA-512 is a
-  larger fraction of a 4.5 us verify than of a 12 us one. So multi-buffer SHA-512
-  is worth *more* after the warm path lands, not less — and it is the only win
-  that is independent of cache hit rate, since every signature hashes regardless.
+- **Hash width is independently dispatchable from curve width.** Zen 5 n=4
+  keeps x4 curve arithmetic but uses x8 SHA-512, gaining about 8% at 1,232
+  bytes. This is a cold-path result and does not depend on cache hit rate.
 - **narya's strict path is faster than stdlib** (25.79 vs 26.48 us) while doing
   strictly more work, on both Zen 5 and arm64. That is the honest shipping claim.
 

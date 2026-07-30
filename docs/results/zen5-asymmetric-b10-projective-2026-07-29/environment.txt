@@ -1,0 +1,12 @@
+55f43623f5af8813549a202fd9fd2b31908a5cff
+go version go1.26.4 linux/amd64
+Linux ryzen-9700x-64gb-fra 7.0.0-28-generic #28-Ubuntu SMP PREEMPT_DYNAMIC Sun Jun 21 01:01:36 UTC 2026 x86_64 GNU/Linux
+Model name:                              AMD Ryzen 7 9700X 8-Core Processor
+CPU family:                              26
+Model:                                   68
+Stepping:                                0
+L1d cache:                               384 KiB (8 instances)
+L2 cache:                                8 MiB (8 instances)
+L3 cache:                                32 MiB (1 instance)
+avx512ifma
+sha_ni

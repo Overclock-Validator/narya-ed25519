@@ -1,0 +1,52 @@
+PHASE before
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=8         	   58594	     30840 ns/op	  51.88 MB/s	         0 internal-fault-fallbacks	    259405 signatures/s	         3.855 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=64        	    7755	    232234 ns/op	  55.12 MB/s	         0 internal-fault-fallbacks	    275584 signatures/s	         3.629 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8        	   54698	     32945 ns/op	 299.16 MB/s	         0 internal-fault-fallbacks	    242826 signatures/s	         4.118 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64       	    7243	    248500 ns/op	 317.30 MB/s	         0 internal-fault-fallbacks	    257545 signatures/s	         3.883 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=8        	   46263	     38790 ns/op	 844.76 MB/s	         0 internal-fault-fallbacks	    206241 signatures/s	         4.849 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=64       	    6110	    294609 ns/op	 889.80 MB/s	         0 internal-fault-fallbacks	    217237 signatures/s	         4.603 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	11.962s
+PHASE after
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=8         	   60020	     30006 ns/op	  53.32 MB/s	         0 internal-fault-fallbacks	    266617 signatures/s	         3.751 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=64        	    7959	    226230 ns/op	  56.58 MB/s	         0 internal-fault-fallbacks	    282898 signatures/s	         3.535 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8        	   56131	     32047 ns/op	 307.55 MB/s	         0 internal-fault-fallbacks	    249632 signatures/s	         4.006 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64       	    7432	    241856 ns/op	 326.01 MB/s	         0 internal-fault-fallbacks	    264621 signatures/s	         3.779 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=8        	   47278	     38039 ns/op	 861.43 MB/s	         0 internal-fault-fallbacks	    210310 signatures/s	         4.755 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=64       	    6183	    290083 ns/op	 903.69 MB/s	         0 internal-fault-fallbacks	    220626 signatures/s	         4.533 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	11.921s
+PHASE after
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=8         	   60021	     30023 ns/op	  53.29 MB/s	         0 internal-fault-fallbacks	    266462 signatures/s	         3.753 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=64        	    7974	    226049 ns/op	  56.62 MB/s	         0 internal-fault-fallbacks	    283124 signatures/s	         3.532 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8        	   56160	     32049 ns/op	 307.53 MB/s	         0 internal-fault-fallbacks	    249615 signatures/s	         4.006 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64       	    7442	    241855 ns/op	 326.01 MB/s	         0 internal-fault-fallbacks	    264622 signatures/s	         3.779 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=8        	   47428	     37903 ns/op	 864.52 MB/s	         0 internal-fault-fallbacks	    211064 signatures/s	         4.738 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=64       	    6229	    289005 ns/op	 907.06 MB/s	         0 internal-fault-fallbacks	    221450 signatures/s	         4.516 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	11.932s
+PHASE before
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=8         	   58330	     30905 ns/op	  51.77 MB/s	         0 internal-fault-fallbacks	    258854 signatures/s	         3.863 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=200/n=64        	    7748	    232561 ns/op	  55.04 MB/s	         0 internal-fault-fallbacks	    275196 signatures/s	         3.634 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8        	   54703	     32967 ns/op	 298.96 MB/s	         0 internal-fault-fallbacks	    242665 signatures/s	         4.121 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64       	    7228	    249019 ns/op	 316.63 MB/s	         0 internal-fault-fallbacks	    257008 signatures/s	         3.891 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=8        	   46363	     38821 ns/op	 844.08 MB/s	         0 internal-fault-fallbacks	    206073 signatures/s	         4.853 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=4096/n=64       	    6084	    295625 ns/op	 886.75 MB/s	         0 internal-fault-fallbacks	    216491 signatures/s	         4.619 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	11.965s

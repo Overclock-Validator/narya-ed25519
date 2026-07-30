@@ -102,6 +102,24 @@ func TestFixedScalarRecodingRejectsNonCanonicalAndMasksInactive(t *testing.T) {
 	}
 }
 
+func TestFixedScalarRecodingClearsEveryUsedRoundOnReuse(t *testing.T) {
+	var out FixedRadixDigitsX8
+	for index := range out.rounds {
+		out.rounds[index].Magnitude = [X8Lanes]uint8{1, 1, 1, 1, 1, 1, 1, 1}
+		out.rounds[index].NonzeroMask = 0xff
+		out.rounds[index].NegativeMask = 0xff
+	}
+	var scalars [X8Lanes][32]byte
+	if valid := RecodeCanonicalScalarsX8(&out, &scalars, 0, 0, 5); valid != 0 {
+		t.Fatalf("inactive recode valid=%02x", valid)
+	}
+	for round := 0; round < out.RoundCount(); round++ {
+		if out.rounds[round] != (RadixRoundX8{}) {
+			t.Fatalf("round %d retained stale digits", round)
+		}
+	}
+}
+
 func TestFixedScalarRoundAccessAndRadixValidation(t *testing.T) {
 	var scalars [X4Lanes][32]byte
 	var got FixedRadixDigitsX4
@@ -140,6 +158,70 @@ func TestFixedScalarRoundAccessAndRadixValidation(t *testing.T) {
 
 var benchmarkFixedDigitsX8 FixedRadixDigitsX8
 
+func TestFixedScalarRecodingRadix32FullNegatedMatchesGeneric(t *testing.T) {
+	rng := rand.New(rand.NewSource(0x51_32_f011))
+	for iteration := 0; iteration < 10_000; iteration++ {
+		var scalars [X8Lanes][32]byte
+		for lane := range scalars {
+			for {
+				_, _ = rng.Read(scalars[lane][:])
+				scalars[lane][31] &= 0x1f
+				if canonicalScalarBytes(&scalars[lane]) {
+					break
+				}
+			}
+		}
+		if iteration%127 == 0 {
+			scalars[iteration%X8Lanes] = scalarOrderBytes
+		}
+		var want, got FixedRadixDigitsX8
+		want.rounds[63].NonzeroMask = 0xff
+		got.rounds[63].NonzeroMask = 0xff
+		wantValid := RecodeCanonicalScalarsX8(&want, &scalars, 0xff, 0xff, 5)
+		gotValid := recodeCanonicalNegatedRadix32FullX8(&got, &scalars)
+		if gotValid != wantValid || got != want {
+			t.Fatalf("iteration %d: specialized recoding differs from generic", iteration)
+		}
+	}
+}
+
+func TestFixedScalarRecodingRadix32DispatchMatchesGeneric(t *testing.T) {
+	rng := rand.New(rand.NewSource(0x51_32_d15a))
+	for iteration := 0; iteration < 10_000; iteration++ {
+		var scalars [X8Lanes][32]byte
+		for lane := range scalars {
+			_, _ = rng.Read(scalars[lane][:])
+			scalars[lane][31] &= 0x1f
+		}
+		active := uint8(rng.Uint32())
+		negative := uint8(rng.Uint32())
+		if iteration%8 == 0 {
+			active, negative = 0xff, 0xff
+		}
+		var want, got FixedRadixDigitsX8
+		wantValid := RecodeCanonicalScalarsX8(&want, &scalars, negative, active, 5)
+		gotValid := recodeCanonicalScalarsRadix32X8(&got, &scalars, negative, active)
+		if gotValid != wantValid || got != want {
+			t.Fatalf("iteration %d: radix-32 dispatch differs from generic", iteration)
+		}
+	}
+}
+
+func TestFixedScalarRecodingRadix32FullNegatedZeroAllocations(t *testing.T) {
+	var scalars [X8Lanes][32]byte
+	for lane := range scalars {
+		scalars[lane][0] = byte(lane + 1)
+		scalars[lane][31] = 0x0f
+	}
+	var out FixedRadixDigitsX8
+	allocations := testing.AllocsPerRun(1_000, func() {
+		recodeCanonicalNegatedRadix32FullX8(&out, &scalars)
+	})
+	if allocations != 0 {
+		t.Fatalf("allocations = %v, want 0", allocations)
+	}
+}
+
 func BenchmarkFixedScalarRecodingX8(b *testing.B) {
 	var scalars [X8Lanes][32]byte
 	for lane := range scalars {
@@ -157,4 +239,20 @@ func BenchmarkFixedScalarRecodingX8(b *testing.B) {
 			benchmarkFixedDigitsX8 = out
 		})
 	}
+	b.Run("radix32-full-negated/generic", func(b *testing.B) {
+		b.ReportAllocs()
+		var out FixedRadixDigitsX8
+		for i := 0; i < b.N; i++ {
+			RecodeCanonicalScalarsX8(&out, &scalars, 0xff, 0xff, 5)
+		}
+		benchmarkFixedDigitsX8 = out
+	})
+	b.Run("radix32-full-negated/specialized", func(b *testing.B) {
+		b.ReportAllocs()
+		var out FixedRadixDigitsX8
+		for i := 0; i < b.N; i++ {
+			recodeCanonicalNegatedRadix32FullX8(&out, &scalars)
+		}
+		benchmarkFixedDigitsX8 = out
+	})
 }

@@ -92,6 +92,9 @@ func TestR51WarmPrecomputeShapeAndStrictDifferential(t *testing.T) {
 }
 
 func TestR51WarmPrecomputedGroupZeroAllocations(t *testing.T) {
+	if raceDetectorEnabled {
+		t.Skip("race instrumentation allocates around the measured call")
+	}
 	backend := requireR51Backend(t)
 	for _, count := range []int{4, 8, 64} {
 		fixture := makeBatchFixture(t, count, 1232)
@@ -173,6 +176,9 @@ func TestR51WarmDispatchPreservesNativeWidth(t *testing.T) {
 }
 
 func TestR51CachePromotesOnlyValidStrictHits(t *testing.T) {
+	if raceDetectorEnabled {
+		t.Skip("race instrumentation allocates around the measured call")
+	}
 	backend := requireR51Backend(t)
 	fixture := makeBatchFixture(t, r51x5.X4Lanes, 1232)
 	cache := &Cache{MaxTableBytes: r51x5.X4Lanes * r51WarmTableBytes}

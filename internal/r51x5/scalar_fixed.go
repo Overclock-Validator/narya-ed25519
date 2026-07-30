@@ -125,6 +125,71 @@ func RecodeCanonicalScalarsX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byt
 	return valid
 }
 
+// recodeCanonicalNegatedRadix32FullX8 specializes the registered cold x8
+// variable-base regime: eight active scalars, radix 32, and a negative sign on
+// every lane. All eight inputs are still checked for canonicality. Any failure
+// re-enters the generic recoder, preserving its exact per-lane fail-closed
+// output. The all-valid loop assigns every field in each used round directly,
+// removing dynamic-radix, active-lane, and sign branches from the hot path.
+func recodeCanonicalNegatedRadix32FullX8(out *FixedRadixDigitsX8, scalars *[X8Lanes][32]byte) uint8 {
+	for lane := 0; lane < X8Lanes; lane++ {
+		if !canonicalScalarBytes(&scalars[lane]) {
+			return RecodeCanonicalScalarsX8(out, scalars, 0xff, 0xff, 5)
+		}
+	}
+
+	*out = FixedRadixDigitsX8{}
+	out.count = 51
+	out.radixBits = 5
+	var carries [X8Lanes]int16
+	for round := 0; round < 51; round++ {
+		bit := round * 5
+		byteIndex := bit >> 3
+		shift := uint(bit & 7)
+		record := &out.rounds[round]
+		var nonzeroMask, negativeMask uint8
+		for lane := 0; lane < X8Lanes; lane++ {
+			word := uint16(scalars[lane][byteIndex])
+			if byteIndex < 31 {
+				word |= uint16(scalars[lane][byteIndex+1]) << 8
+			}
+			digit := int16((word>>shift)&31) + carries[lane]
+			carries[lane] = (digit + 16) >> 5
+			digit -= carries[lane] << 5
+			digit = -digit
+			laneMask := uint8(1 << lane)
+			if digit < 0 {
+				record.Magnitude[lane] = uint8(-digit)
+				negativeMask |= laneMask
+			} else {
+				record.Magnitude[lane] = uint8(digit)
+			}
+			if digit != 0 {
+				nonzeroMask |= laneMask
+			}
+		}
+		record.NonzeroMask = nonzeroMask
+		record.NegativeMask = negativeMask
+	}
+	for lane := 0; lane < X8Lanes; lane++ {
+		if carries[lane] != 0 {
+			panic("r51x5: canonical x8 scalar exceeded fixed recoding width")
+		}
+	}
+	return 0xff
+}
+
+func recodeCanonicalScalarsRadix32X8(
+	out *FixedRadixDigitsX8,
+	scalars *[X8Lanes][32]byte,
+	negativeMask, active uint8,
+) uint8 {
+	if active == 0xff && negativeMask == 0xff {
+		return recodeCanonicalNegatedRadix32FullX8(out, scalars)
+	}
+	return RecodeCanonicalScalarsX8(out, scalars, negativeMask, active, 5)
+}
+
 func fixedScalarRoundCount(radixBits uint) int {
 	switch radixBits {
 	case 4:

@@ -1,0 +1,69 @@
+File: ed25519.test
+Build ID: de0644c080acb056320eab4e9335f39831cf315f
+Type: cpu
+Time: 2026-07-29 13:55:09 UTC
+Duration: 10s, Total samples = 9.99s (99.94%)
+Showing nodes accounting for 9.52s, 95.30% of 9.99s total
+Dropped 59 nodes (cum <= 0.05s)
+Showing top 60 nodes out of 80
+      flat  flat%   sum%        cum   cum%
+     1.29s 12.91% 12.91%      1.29s 12.91%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveFinalProductsUncheckedX8
+     1.16s 11.61% 24.52%      1.16s 11.61%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointFinalProductsUncheckedX8
+     1.09s 10.91% 35.44%      1.09s 10.91%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaSquareRawExperimentX8
+     0.69s  6.91% 42.34%      0.69s  6.91%  nativeCompressX8RollingRounds
+     0.57s  5.71% 48.05%      0.57s  5.71%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaDoubleStage2X8
+     0.55s  5.51% 53.55%      0.55s  5.51%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaRepeatedSquareNormalizedX8
+     0.48s  4.80% 58.36%      0.48s  4.80%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaRepeatedSquareNormalizedX4
+     0.42s  4.20% 62.56%      0.42s  4.20%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMulRawX8
+     0.35s  3.50% 66.07%      0.35s  3.50%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaFourRawProductsNielsStage2UncheckedX8
+     0.32s  3.20% 69.27%      0.32s  3.20%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaNielsStage2X8
+     0.19s  1.90% 71.17%      0.19s  1.90%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsMicroAoSTransposeX8
+     0.17s  1.70% 72.87%      2.39s 23.92%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointDoubleRawSquareP2ToP2ExperimentX8
+     0.16s  1.60% 74.47%      0.20s  2.00%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceAccumulators
+     0.13s  1.30% 75.78%      0.13s  1.30%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeCanonicalNegatedRadix32FullX8
+     0.11s  1.10% 76.88%      5.66s 56.66%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8).EvaluateProjectiveDoubleExperiment
+     0.11s  1.10% 77.98%      1.15s 11.51%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointAddProjectiveNielsWorkspaceX8
+     0.11s  1.10% 79.08%      0.74s  7.41%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointDoubleRawSquareP3ToP2ExperimentX8
+     0.11s  1.10% 80.18%      0.11s  1.10%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaThreeRawProductsNielsStage2UncheckedX8
+     0.10s  1.00% 81.18%      0.10s  1.00%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaAffine3MicroAoSTransposeSelectExperimentX8
+     0.10s  1.00% 82.18%      0.29s  2.90%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.selectIFMAProjectiveNielsPreSignedMicroAoSX8
+     0.09s   0.9% 83.08%      0.21s  2.10%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*IFMAElementX8).Reduced
+     0.09s   0.9% 83.98%      0.97s  9.71%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ExperimentalIFMAFixedBaseCombScalarMultX8
+     0.09s   0.9% 84.88%      0.09s   0.9%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMulNormalizedUncheckedX8
+     0.09s   0.9% 85.79%      0.09s   0.9%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8
+     0.09s   0.9% 86.69%      0.09s   0.9%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.isIFMAElementX8 (inline)
+     0.07s   0.7% 87.39%      0.07s   0.7%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaSubtractNormalizedUncheckedX8
+     0.07s   0.7% 88.09%      0.07s   0.7%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.recodeFixedBaseRadix256FullX8
+     0.07s   0.7% 88.79%      0.17s  1.70%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.selectFixedBaseIFMACachedUncheckedX8
+     0.06s   0.6% 89.39%         1s 10.01%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaPointDoubleRawSquareP2ToP3ExperimentX8
+     0.06s   0.6% 89.99%      0.06s   0.6%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.isIFMAElementX4 (inline)
+     0.06s   0.6% 90.59%      0.06s   0.6%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.splitIFMAElementX8 (inline)
+     0.05s   0.5% 91.09%      0.12s  1.20%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.(*IFMAElementX4).Reduced
+     0.05s   0.5% 91.59%      0.05s   0.5%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.carryScalarRadix21 (inline)
+     0.05s   0.5% 92.09%      0.05s   0.5%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaAddNormalizedUncheckedX8
+     0.04s   0.4% 92.49%      0.15s  1.50%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.encodeAffineIFMAX4
+     0.03s   0.3% 92.79%      9.09s 90.99%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).evaluateX8Group
+     0.03s   0.3% 93.09%      1.02s 10.21%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeIFMAX8
+     0.02s   0.2% 93.29%      0.86s  8.61%  github.com/Overclock-Validator/narya-ed25519/ed25519.reduceR51NativeChallengesX8
+     0.02s   0.2% 93.49%      0.54s  5.41%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.addFixedBaseIFMACachedWorkspaceX8
+     0.02s   0.2% 93.69%      0.07s   0.7%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.checkIFMAComposablePointsX8
+     0.02s   0.2% 93.89%      0.92s  9.21%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.decodeOneIFMAX8
+     0.02s   0.2% 94.09%      0.11s  1.10%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaMultiplyComposableUncheckedX8 (inline)
+     0.02s   0.2% 94.29%      0.12s  1.20%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.reduceUniformScalar
+     0.02s   0.2% 94.49%      0.50s  5.01%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.repeatedSquareMultiplyIFMAX4
+     0.02s   0.2% 94.69%      0.71s  7.11%  github.com/Overclock-Validator/narya-ed25519/sha512mb.sum512NativeFixed3X8
+     0.01s   0.1% 94.79%      9.95s 99.60%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).verifyBatchWithDecodedAMode
+     0.01s   0.1% 94.89%      9.94s 99.50%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).verifyChunk
+     0.01s   0.1% 94.99%      0.13s  1.30%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ExperimentalReduceUniformScalarsX8
+     0.01s   0.1% 95.10%      0.63s  6.31%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.batchInvertPointZX4
+     0.01s   0.1% 95.20%      0.08s   0.8%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.ifmaProjectiveNielsFromPointX8
+     0.01s   0.1% 95.30%      0.51s  5.11%  github.com/Overclock-Validator/narya-ed25519/internal/r51x5.invertIFMAX4
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51Backend).verifyBatchRaw
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51Backend).verifyBatchRawErr (inline)
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51Backend).verifyBatchRawPrecomputedErr
+         0     0% 95.30%      9.95s 99.60%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).VerifyBatch (inline)
+         0     0% 95.30%      9.09s 90.99%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).evaluateColdWideChunk
+         0     0% 95.30%      0.06s   0.6%  github.com/Overclock-Validator/narya-ed25519/ed25519.(*r51IFMABatchQPipeline).storeWideFinalizerPoint
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519.VerifyBatchStrict
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519.verifyBatch
+         0     0% 95.30%      9.96s 99.70%  github.com/Overclock-Validator/narya-ed25519/ed25519_test.BenchmarkPublicR51VerifyBatchStrict.func1

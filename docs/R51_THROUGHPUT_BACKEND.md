@@ -8,7 +8,9 @@ It is deliberately separate from `internal/r43x6`:
 > `r51` uses a packed paired-A/R singleton plus a radix-32 A table, the shared
 > radix-256 B comb, and batch-Q finalization. Measured AMD family 19h+ IFMA
 > parts, including Zen 4 and Zen 5, use x8/ZMM for complete eight-signature
-> groups and x4 for the tail; unknown IFMA CPUs retain the x4 default. Its
+> groups and x4 curve arithmetic for the tail. Zen 5 hashes four-to-seven-item
+> tails with the x8 SHA/reduction path; Zen 4 and unknown IFMA CPUs retain x4
+> hashing. Its
 > opt-in Cache admits decoded A and promotes recurring
 > valid strict keys to A6/r9 warm combs on both CPUs. HEEA remains a slower
 > research oracle rather than a dispatch candidate.
@@ -371,14 +373,15 @@ measured about 8.2 us/signature at n=64 versus about 12.2 us for two-x4 before
 the later convergence work. Public-wrapper measurements stayed within 2% of
 the private core and allocated zero.
 
-The width rule is deliberately a step: on measured AMD family 19h+ IFMA parts,
-every complete eight-lane group uses x8 and the remainder uses x4. A half-full
-x8 group pays roughly 96% of full-group cost, so masked arithmetic cannot make
-it occupancy-elastic. Leading-zero shortening, vector-wide sparse-digit
-skipping, and an x4-by-two hybrid do not beat the existing x4 tail on the
-measured cost bound. Cross-call lane refill can reduce how often a tail exists,
-but belongs to a latency-aware caller/integration queue rather than this
-cryptographic backend.
+The curve-width rule is deliberately a step: on measured AMD family 19h+ IFMA
+parts, every complete eight-lane group uses x8 and the remainder uses x4. Hash
+width is selected separately. On family 1Ah, four-to-seven-item x4 curve tails
+use x8 SHA-512 and reduction; smaller tails retain x4 hashing. A half-full x8
+curve group is not selected: the split x4-curve/x8-hash composition was faster
+at 200, 1,232, and 4,096 bytes. Family 19h and unknown IFMA CPUs retain x4
+hashing until independently measured. Cross-call lane refill can reduce how
+often a tail exists, but belongs to a latency-aware caller/integration queue
+rather than this cryptographic backend.
 
 Single-core results are followed by
 `BenchmarkR51IFMAPipelineParallel`, which runs all twelve complete

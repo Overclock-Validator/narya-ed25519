@@ -11,6 +11,61 @@ const nativeIFMAKernelsBuilt = true
 //go:noescape
 func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 
+// ifmaFourRawProductsUncheckedX8 computes four independent exact folded-u61
+// products into four consecutive output slots. Every input must satisfy the
+// same u52 contract as ifmaMulRawX8, and output may not overlap an input. The
+// native leaf is representation-identical to four ifmaMulRawX8 calls while
+// sharing one Go/assembly transition and one VZEROUPPER.
+//
+//go:noescape
+func ifmaFourRawProductsUncheckedX8(
+	out *[4]IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
+// The Stage-2 continuations compute the same four products as
+// ifmaFourRawProductsUncheckedX8 and then tail-enter the existing double or
+// Niels linear/carry leaf. Their output pointer must refer to the corresponding
+// four-slot workspace. Input, output, range, and non-overlap contracts are the
+// conjunction of the raw-product and named Stage-2 contracts.
+//
+//go:noescape
+func ifmaFourRawProductsDoubleStage2UncheckedX8(
+	out *ifmaDoubleStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
+//go:noescape
+func ifmaFourRawProductsNielsStage2UncheckedX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+)
+
+// ifmaPointLinearFourRawNielsStage2ExperimentX8 computes normalized point-side
+// Y-X/Y+X, the four projective-Niels raw products, and the existing Niels
+// Stage-2 transition in one native leaf. It is retained only as a measured
+// regime experiment: the leaf is faster in isolation but regresses the full
+// Zen 5 verifier. No production path calls it. out points to a four-slot Niels
+// workspace and must not overlap point or cached. Inputs remain unchanged.
+//
+//go:noescape
+func ifmaPointLinearFourRawNielsStage2ExperimentX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	point *IFMAPointX8,
+	cached *IFMAProjectiveNielsX8,
+)
+
+// ifmaThreeRawProductsNielsStage2UncheckedX8 is the affine-cached
+// specialization. It writes three exact raw products plus one copied u52 D
+// coordinate, then tail-enters the existing Niels Stage-2 leaf. out must point
+// to a four-slot Niels workspace and may not overlap any input.
+//
+//go:noescape
+func ifmaThreeRawProductsNielsStage2UncheckedX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, d *LimbsX8,
+)
+
 // ifmaMulRawX4 is the AVX-512VL/YMM analogue of ifmaMulRawX8.
 //
 //go:noescape
@@ -24,14 +79,21 @@ func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //go:noescape
 func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8)
 
-// ifmaPointFinalProductsExperimentUncheckedX8 computes the four independent Edwards
+// ifmaPointFinalProductsUncheckedX8 computes the four independent Edwards
 // output products from four consecutive carried-u52 operands in E,F,G,H
 // order. The output must not overlap the operand workspace. The native leaf is
 // representation-identical to four ifmaMulNormalizedUncheckedX8 calls while
 // sharing one Go/assembly transition and one VZEROUPPER.
 //
 //go:noescape
-func ifmaPointFinalProductsExperimentUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+
+// ifmaProjectiveFinalProductsUncheckedX8 is the P2-only counterpart. It
+// computes X=E*F, Y=G*H and Z=F*G but deliberately has no storage for T=E*H.
+// Its input, output and non-overlap contracts match the complete leaf above.
+//
+//go:noescape
+func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8, operands *IFMAProductX8)
 
 // ifmaMulNormalizedMul19ExperimentX8 replaces each shift/add multiplication
 // by 19 in the x8 pre-carry fold with one AVX-512DQ VPMULLQ. It is kept

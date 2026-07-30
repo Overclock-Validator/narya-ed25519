@@ -1,0 +1,228 @@
+{
+  "symbolic": {
+    "direct_xy_identity": true,
+    "fused_stage1_identity": true,
+    "fused_ready_p2_output_identity": true,
+    "output_polynomial_term_counts": [
+      8,
+      8,
+      2
+    ],
+    "maximum_output_total_degree": 6
+  },
+  "range": {
+    "radix": 2251799813685248,
+    "ifma_split": 4503599627370496,
+    "raw_product_upper_exclusive": [
+      1202461100507921976,
+      959266720629915282,
+      716072340751908588,
+      472877960873901894,
+      229683580995895200
+    ],
+    "difference_bias_multiples_of_p": 535,
+    "raw_y_minus_x_lower": [
+      2251799813675540,
+      245446179691691864,
+      488640559569698558,
+      731834939447705252,
+      975029319325711946
+    ],
+    "raw_y_minus_x_upper_exclusive": [
+      2407174000829519491,
+      2163979620951522427,
+      1920785241073515733,
+      1677590861195509039,
+      1434396481317502345
+    ],
+    "raw_y_plus_x_upper_exclusive": [
+      2404922201015843951,
+      1918533441259830563,
+      1432144681503817175,
+      945755921747803787,
+      459367161991790399
+    ],
+    "carried_y_minus_x_upper_exclusive": [
+      2251799813697332,
+      2251799813686316,
+      2251799813686208,
+      2251799813686100,
+      2251799813685992
+    ],
+    "carried_y_plus_x_upper_exclusive": [
+      2251799813689105,
+      2251799813686315,
+      2251799813686099,
+      2251799813685883,
+      2251799813685667
+    ],
+    "carried_t_upper_exclusive": [
+      2251799813687167,
+      2251799813685781,
+      2251799813685673,
+      2251799813685565,
+      2251799813685457
+    ],
+    "all_uint64_safe": true,
+    "all_carried_outputs_u52": true,
+    "raw_z_preserves_exact_product_provenance": true
+  },
+  "differential": {
+    "valid_point_schedule_checks": 960,
+    "exact_materialized_vs_fused_checks": 960,
+    "arbitrary_field_boundary_checks": 2000,
+    "arbitrary_field_two_add_chain_checks": 2000,
+    "zero_one_two_add_valid_point_checks": 2880,
+    "schedules_per_case": 64,
+    "point_cases": 15,
+    "included_identity_and_small_torsion": true
+  },
+  "closed_form": {
+    "fused_closed_form_schedules_checked": 2048,
+    "contextual_t_theorem_cases_checked": 80,
+    "generalized_zero_to_three_add_dags_checked": 64
+  },
+  "mutations": {
+    "bias_534_rejected": true,
+    "y_minus_x_sign_mutation_rejected": true,
+    "raw_z_extra_double_mutation_rejected": true,
+    "needed_t_omission_mutation_rejected": true
+  },
+  "generalized_round_metrics": [
+    {
+      "variant": "contextual-P2-fused",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 0,
+      "squarings": 18,
+      "multiplications": 24,
+      "carries": 42,
+      "carry_depth": 12,
+      "t_products": 0
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 0,
+      "squarings": 18,
+      "multiplications": 30,
+      "carries": 48,
+      "carry_depth": 12,
+      "t_products": 6
+    },
+    {
+      "variant": "contextual-P2-fused",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 0,
+      "squarings": 18,
+      "multiplications": 24,
+      "carries": 42,
+      "carry_depth": 12,
+      "t_products": 0
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 0,
+      "squarings": 18,
+      "multiplications": 30,
+      "carries": 48,
+      "carry_depth": 12,
+      "t_products": 6
+    },
+    {
+      "variant": "contextual-P2-fused",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 1,
+      "squarings": 18,
+      "multiplications": 31,
+      "carries": 49,
+      "carry_depth": 14,
+      "t_products": 1
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 1,
+      "squarings": 18,
+      "multiplications": 37,
+      "carries": 58,
+      "carry_depth": 15,
+      "t_products": 7
+    },
+    {
+      "variant": "contextual-P2-fused",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 1,
+      "squarings": 18,
+      "multiplications": 32,
+      "carries": 50,
+      "carry_depth": 14,
+      "t_products": 1
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 1,
+      "squarings": 18,
+      "multiplications": 38,
+      "carries": 58,
+      "carry_depth": 15,
+      "t_products": 7
+    },
+    {
+      "variant": "contextual-P2-fused",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 2,
+      "squarings": 18,
+      "multiplications": 38,
+      "carries": 56,
+      "carry_depth": 16,
+      "t_products": 2
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "affine",
+      "doublings": 6,
+      "additions": 2,
+      "squarings": 18,
+      "multiplications": 44,
+      "carries": 68,
+      "carry_depth": 18,
+      "t_products": 8
+    },
+    {
+      "variant": "contextual-P2-fused",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 2,
+      "squarings": 18,
+      "multiplications": 40,
+      "carries": 58,
+      "carry_depth": 16,
+      "t_products": 2
+    },
+    {
+      "variant": "full-P3-materialized",
+      "table": "projective",
+      "doublings": 6,
+      "additions": 2,
+      "squarings": 18,
+      "multiplications": 46,
+      "carries": 68,
+      "carry_depth": 18,
+      "t_products": 8
+    }
+  ],
+  "enumerated_dags": 40960,
+  "affine_p2_pareto_points": 7,
+  "projective_p2_pareto_points": 7
+}

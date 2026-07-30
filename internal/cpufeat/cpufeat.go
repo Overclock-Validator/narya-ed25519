@@ -29,14 +29,91 @@ func PreferWarmX8IFMA() bool { return preferWarmX8IFMA }
 
 // PreferRawSquareIFMA reports whether the x8 cold verifier should use the
 // symmetry-aware raw-square doubling schedule. Complete-verifier measurements
-// select it only on AMD family 19h (Zen 4); native-width family 1Ah (Zen 5)
-// remains faster with the general-multiply schedule. This is deliberately a
-// separate policy bit so a future width decision cannot silently change the
-// arithmetic schedule.
+// select it on AMD families 19h (Zen 4) and 1Ah (Zen 5). This is deliberately
+// a separate policy bit so a future width decision cannot silently change the
+// arithmetic schedule, and unmeasured future families retain the reviewed
+// general-multiply default.
 func PreferRawSquareIFMA() bool { return preferRawSquareIFMA }
 
+// PreferWideHashX4IFMA reports whether a cold x4/tail group should retain x4
+// point arithmetic while hashing and reducing its challenges through the
+// native x8 kernels. Complete n=4 measurements select this composition on AMD
+// family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the x4 hash path until
+// measured independently.
+func PreferWideHashX4IFMA() bool { return preferWideHashX4IFMA }
+
+// PreferBatchEncodeX8IFMA reports whether literal-Q finalization should batch
+// its projective-to-affine conversion across eight signatures. Complete-path
+// measurements select the x8 encoder from 16 signatures onward on AMD family
+// 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the independently reviewed
+// x4 encoder until measured on those parts.
+func PreferBatchEncodeX8IFMA() bool { return preferBatchEncodeX8IFMA }
+
+// PreferProjectiveDoubleX8IFMA reports whether radix-32 x8 variable-base
+// multiplication should omit the extended T coordinate on the first four
+// outputs of each five-doubling run. Complete cold-verifier measurements select
+// the distinct-P2 schedule on AMD family 1Ah (Zen 5) only.
+func PreferProjectiveDoubleX8IFMA() bool { return preferProjectiveDoubleX8IFMA }
+
+// PreferAsymmetricFixedB10X8IFMA reports whether the cold x8 verifier should
+// inject width-10 generator digits into the variable-base doubling chain
+// instead of evaluating a separate radix-256 generator comb. Complete
+// 200/1,232/4,096-byte measurements select the merged schedule on AMD family
+// 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the separate comb until the
+// current projective schedule is measured there independently.
+func PreferAsymmetricFixedB10X8IFMA() bool { return preferAsymmetricFixedB10X8IFMA }
+
+// PreferNativeScalarReduceX8IFMA reports whether eight 512-bit Ed25519
+// challenges should use the structure-of-arrays AVX-512DQ reducer instead of
+// eight lane-serial Go reductions. Complete cold-verifier measurements select
+// it on AMD family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain the portable
+// reducer until the complete gate is repeated there.
+func PreferNativeScalarReduceX8IFMA() bool { return preferNativeScalarReduceX8IFMA }
+
+// PreferPackedMul19X4IFMA reports whether coordinate-parallel packed x4
+// products should fold their high coefficients with AVX-512DQ VPMULLQ rather
+// than shifts and adds. Complete 200/1,232/4,096-byte singleton and pair
+// measurements select VPMULLQ on AMD family 1Ah (Zen 5). Zen 4 and unknown
+// IFMA CPUs retain the prior shift/add schedule until measured independently.
+func PreferPackedMul19X4IFMA() bool { return preferPackedMul19X4IFMA }
+
+// PreferPackedPairX8IFMA reports whether a two-signature strict tail should
+// place one complete coordinate-parallel verification equation in each
+// 256-bit half of a ZMM register. Complete 200/1,232/4,096-byte measurements
+// select it on AMD family 1Ah (Zen 5). Zen 4 and unknown IFMA CPUs retain two
+// independently measured packed-x4 singleton calls.
+func PreferPackedPairX8IFMA() bool { return preferPackedPairX8IFMA }
+
 func rawSquareForAMDVersion(ifma bool, family uint32) bool {
-	return ifma && family == 0x19
+	return ifma && (family == 0x19 || family == 0x1a)
+}
+
+func wideHashX4ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func batchEncodeX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func projectiveDoubleX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func asymmetricFixedB10X8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func nativeScalarReduceX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func packedMul19X4ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
+}
+
+func packedPairX8ForAMDVersion(ifma bool, family uint32) bool {
+	return ifma && family == 0x1a
 }
 
 func x86FamilyFromVersion(version uint32) uint32 {

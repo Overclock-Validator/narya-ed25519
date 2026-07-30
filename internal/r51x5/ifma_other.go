@@ -8,6 +8,42 @@ func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8) {
 	panic("r51x5: unreachable x8 IFMA call on non-amd64")
 }
 
+func ifmaFourRawProductsUncheckedX8(
+	out *[4]IFMAProductX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 four-product IFMA call on non-amd64")
+}
+
+func ifmaFourRawProductsDoubleStage2UncheckedX8(
+	out *ifmaDoubleStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 four-product double-Stage-2 IFMA call on non-amd64")
+}
+
+func ifmaFourRawProductsNielsStage2UncheckedX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 four-product Niels-Stage-2 IFMA call on non-amd64")
+}
+
+func ifmaPointLinearFourRawNielsStage2ExperimentX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	point *IFMAPointX8,
+	cached *IFMAProjectiveNielsX8,
+) {
+	panic("r51x5: unreachable x8 point-linear Niels-Stage-2 IFMA call on non-amd64")
+}
+
+func ifmaThreeRawProductsNielsStage2UncheckedX8(
+	out *ifmaNielsStage2WorkspaceX8,
+	x0, y0, x1, y1, x2, y2, d *LimbsX8,
+) {
+	panic("r51x5: unreachable x8 three-product Niels-Stage-2 IFMA call on non-amd64")
+}
+
 func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4) {
 	panic("r51x5: unreachable x4 IFMA call on non-amd64")
 }
@@ -16,8 +52,12 @@ func ifmaMulNormalizedUncheckedX8(out, x, y *LimbsX8) {
 	panic("r51x5: unreachable x8 fused IFMA call on non-amd64")
 }
 
-func ifmaPointFinalProductsExperimentUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8) {
+func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8) {
 	panic("r51x5: unreachable x8 final-product IFMA call on non-amd64")
+}
+
+func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8, operands *IFMAProductX8) {
+	panic("r51x5: unreachable x8 projective final-product IFMA call on non-amd64")
 }
 
 func ifmaMulNormalizedMul19ExperimentX8(out, x, y *LimbsX8) {

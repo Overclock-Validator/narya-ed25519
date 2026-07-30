@@ -1,0 +1,18 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1323055	       908.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1320400	       909.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1319485	       909.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1318428	       910.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1318216	       910.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/generic         	 1318257	       910.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2659140	       468.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2546437	       470.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2538994	       472.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2554440	       466.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2571608	       466.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFixedScalarRecodingX8/radix32-full-negated/specialized     	 2577055	       466.2 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	22.783s

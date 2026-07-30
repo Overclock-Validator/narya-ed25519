@@ -1,0 +1,24 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113504	     21192 ns/op	      2649 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113182	     21185 ns/op	      2648 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113264	     21192 ns/op	      2649 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113421	     21194 ns/op	      2649 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113270	     21189 ns/op	      2649 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/prepared-loop         	  113239	     21202 ns/op	      2650 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104662	     22937 ns/op	      2867 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104628	     22934 ns/op	      2867 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104653	     22939 ns/op	      2867 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104665	     22937 ns/op	      2867 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104570	     22937 ns/op	      2867 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos/cold-table+loop       	  104708	     22940 ns/op	      2868 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101636	     23643 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101545	     23640 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101612	     23643 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101563	     23638 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101664	     23640 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveNielsMicroAoSX8/layout=presigned-micro-aos-scalar-store/cold-table+loop         	  101550	     23638 ns/op	      2955 ns/signature	     41608 workspace-B	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	47.333s

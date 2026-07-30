@@ -36,4 +36,25 @@ func TestGatedPoliciesFollowDetectionByDefault(t *testing.T) {
 			t.Errorf("%s = %v, want %v (family detection)", policy.name, policy.got, want)
 		}
 	}
+	if got, want := PreferWideHashX4IFMA(), wideHashX4ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferWideHashX4IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferBatchEncodeX8IFMA(), batchEncodeX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferBatchEncodeX8IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferProjectiveDoubleX8IFMA(), projectiveDoubleX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferProjectiveDoubleX8IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferAsymmetricFixedB10X8IFMA(), asymmetricFixedB10X8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferAsymmetricFixedB10X8IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferNativeScalarReduceX8IFMA(), nativeScalarReduceX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferNativeScalarReduceX8IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferPackedMul19X4IFMA(), packedMul19X4ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferPackedMul19X4IFMA = %v, want %v (family detection)", got, want)
+	}
+	if got, want := PreferPackedPairX8IFMA(), packedPairX8ForAMDVersion(IFMA(), amdFamily); got != want {
+		t.Errorf("PreferPackedPairX8IFMA = %v, want %v (family detection)", got, want)
+	}
 }

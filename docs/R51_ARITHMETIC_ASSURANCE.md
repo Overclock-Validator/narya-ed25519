@@ -129,6 +129,22 @@ Edwards formulas may use different signs or intermediate names; a certificate
 must bind itself to the actual implementation rather than substitute a
 reference DAG.
 
+## Completed-coordinate whole-window certificate
+
+The test-only whole-window boundary stops the final doubling at carried
+`(E,F,G,H)`, forms exact raw `[EF,GH,FG,EH]`, and carries `GH-EF` and `GH+EF`
+directly. Its separate executable certificate proves the minimum `535*p`
+subtraction bias, unsigned `uint64` safety, u52 outputs, and exact-product
+provenance within the declared r51 grammar. The portable oracle, native leaf,
+maximum-bound vector, mutations, and complete-loop verdict are documented in
+[`formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md`](formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md).
+
+That candidate remains unwired after a 0.53% prepared-loop gain. Its evidence
+is still useful: it is a concrete example of a schedule-specific bound wider
+than the common u61 contract and therefore of why native leaves must cite the
+exact range proof they rely on. It does not close the source-to-machine
+refinement gap below.
+
 ## Canonicalization boundary
 
 Five radix-51 limbs cover `[0, 2^255)`, while the canonical field interval is

@@ -1,0 +1,93 @@
+ok  	github.com/Overclock-Validator/narya-ed25519/cmd/sigverifytracebench	0.003s
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	41.361s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/cpufeat	0.001s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/edwards25519	0.035s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/edwards25519/field	1.017s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/heea8l	34.777s
+?   	github.com/Overclock-Validator/narya-ed25519/internal/heea8l/cmd/sample	[no test files]
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/mithriltracev3	0.001s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r43x6	1.772s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	13.897s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/sigprep	1.022s
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/tracebench	0.043s
+ok  	github.com/Overclock-Validator/narya-ed25519/scripts/unaffectedbench	0.001s [no tests to run]
+ok  	github.com/Overclock-Validator/narya-ed25519/sha512mb	0.078s
+=== RUN   TestR51IFMAAsymmetricFixedBNielsX8Differential
+--- PASS: TestR51IFMAAsymmetricFixedBNielsX8Differential (0.04s)
+=== RUN   TestR51IFMAAsymmetricFixedBNielsX8ZeroAllocations
+--- PASS: TestR51IFMAAsymmetricFixedBNielsX8ZeroAllocations (0.00s)
+=== RUN   TestR51BackendBatchWidthSelection
+    backend_r51_test.go:87: prefer-wide=true raw-square=true projective-double-x8=true asymmetric-fixed-b10-x8=true wide-hash-x4=true batch-encode-x8=true x4-niels=true pipeline=two-x4/radix=32/fixed=comb256/wide=x8/batch-Q
+--- PASS: TestR51BackendBatchWidthSelection (0.00s)
+=== RUN   TestR51BackendDispatchDifferential
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=0
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=1
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=2
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=3
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=4
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=5
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=7
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=8
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=9
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=15
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=16
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=17
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=32
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=64
+=== RUN   TestR51BackendDispatchDifferential/profile=0/n=65
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=0
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=1
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=2
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=3
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=4
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=5
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=7
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=8
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=9
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=15
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=16
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=17
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=32
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=64
+=== RUN   TestR51BackendDispatchDifferential/profile=1/n=65
+--- PASS: TestR51BackendDispatchDifferential (0.70s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=0 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=1 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=2 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=3 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=4 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=5 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=7 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=8 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=9 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=15 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=16 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=17 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=32 (0.04s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=64 (0.14s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=0/n=65 (0.15s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=0 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=1 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=2 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=3 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=4 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=5 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=7 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=8 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=9 (0.00s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=15 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=16 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=17 (0.01s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=32 (0.03s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=64 (0.13s)
+    --- PASS: TestR51BackendDispatchDifferential/profile=1/n=65 (0.13s)
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	0.749s
+=== RUN   TestAsymmetricFixedB10RecodingX8Exact
+--- PASS: TestAsymmetricFixedB10RecodingX8Exact (0.01s)
+=== RUN   TestAsymmetricFixedB10RecodingX8ClearsOnReuse
+--- PASS: TestAsymmetricFixedB10RecodingX8ClearsOnReuse (0.00s)
+=== RUN   TestAsymmetricFixedBNielsX8Experiment
+--- PASS: TestAsymmetricFixedBNielsX8Experiment (0.04s)
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	0.052s

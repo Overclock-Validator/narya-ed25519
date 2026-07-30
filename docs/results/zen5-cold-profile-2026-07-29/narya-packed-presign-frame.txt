@@ -1,0 +1,21 @@
+Native amd64 code-generation comparison for the rejected pre-signed packed
+NAF candidate. Generated on Go 1.26.4 with `go test -c ./internal/r51x5`, then
+inspected using `go tool objdump`.
+
+1972c5b, runtime negation:
+  (*ExperimentalPackedStrictVerifierX4).Verify
+  SUBQ $0xb98, SP
+  frame = 2,968 bytes
+  quadNAFTable5X4 = 8 * 160 = 1,280 bytes
+  quadNAFTable8X4 = 64 * 160 = 10,240 bytes, process-shared
+
+e29aa08, both signs stored:
+  (*ExperimentalPackedStrictVerifierX4).Verify
+  SUBQ $0x1098, SP
+  frame = 4,248 bytes
+  quadNAFTable5X4 = 2 * 8 * 160 = 2,560 bytes
+  quadNAFTable8X4 = 2 * 64 * 160 = 20,480 bytes, process-shared
+
+Delta:
+  singleton verifier frame: +1,280 bytes
+  process-shared generator table: +10,240 bytes

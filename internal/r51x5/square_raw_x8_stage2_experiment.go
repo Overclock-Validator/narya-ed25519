@@ -15,15 +15,26 @@ func ifmaPointDoubleRawSquareStage2ExperimentX8(out, q *IFMAPointX8, workspace *
 	ifmaMulRawX8(&stage2[3], &q.X.limbs, &q.Y.limbs)
 	ifmaDoubleStage2X8(stage2)
 
-	e := (*LimbsX8)(&stage2[0])
-	f := (*LimbsX8)(&stage2[1])
-	g := (*LimbsX8)(&stage2[2])
-	h := (*LimbsX8)(&stage2[3])
-
 	// Stage 1 consumed q completely, so writing through out is alias-safe.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, e, f)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, g, h)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, e, h)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, f, g)
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
+	return nil
+}
+
+// ifmaPointDoubleFourSquareStage2ExperimentX8 prices the classical
+// (X+Y)^2-X^2-Y^2 formula in the current raw-square regime. X+Y is normalized
+// before entering IFMA, so this experiment assumes no tighter undocumented
+// point-coordinate bound. It is intentionally unwired until the primitive and
+// complete-verifier gates show that the extra normalization pays for itself.
+func ifmaPointDoubleFourSquareStage2ExperimentX8(out, q *IFMAPointX8, workspace *ifmaPointDoubleWorkspaceX8) error {
+	stage2 := &workspace.stage2
+	var xPlusY IFMAElementX8
+	ifmaAddComposableUncheckedX8(&xPlusY, &q.X, &q.Y)
+	ifmaSquareRawExperimentX8(&stage2[0], &q.X.limbs)
+	ifmaSquareRawExperimentX8(&stage2[1], &q.Y.limbs)
+	ifmaSquareRawExperimentX8(&stage2[2], &q.Z.limbs)
+	ifmaSquareRawExperimentX8(&stage2[3], &xPlusY.limbs)
+	ifmaDoubleStage2SquareTrickX8(stage2)
+
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }

@@ -1,0 +1,59 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   39158	     30727 ns/op	         7.682 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   38992	     30779 ns/op	         7.695 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   38980	     30791 ns/op	         7.698 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   38970	     30810 ns/op	         7.702 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   38940	     30825 ns/op	         7.706 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=200         	   38934	     30828 ns/op	         7.707 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39915	     30070 ns/op	         7.517 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39908	     30076 ns/op	         7.519 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39897	     30099 ns/op	         7.525 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39872	     30096 ns/op	         7.524 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39868	     30177 ns/op	         7.544 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=200         	   39750	     30195 ns/op	         7.549 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   39002	     30777 ns/op	         7.694 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   38979	     30839 ns/op	         7.710 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   38779	     30936 ns/op	         7.734 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   38787	     30950 ns/op	         7.738 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   38569	     31103 ns/op	         7.776 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=200           	   38474	     31191 ns/op	         7.798 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34248	     35007 ns/op	         8.752 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34280	     35006 ns/op	         8.751 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34267	     35010 ns/op	         8.753 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34261	     35019 ns/op	         8.755 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34257	     35018 ns/op	         8.754 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=1232                  	   34281	     34979 ns/op	         8.745 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37294	     32187 ns/op	         8.047 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37269	     32195 ns/op	         8.049 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37288	     32170 ns/op	         8.042 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37305	     32176 ns/op	         8.044 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37299	     32171 ns/op	         8.043 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=1232        	   37267	     32197 ns/op	         8.049 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36568	     32823 ns/op	         8.206 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36559	     32813 ns/op	         8.203 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36573	     32816 ns/op	         8.204 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36579	     32794 ns/op	         8.199 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36589	     32797 ns/op	         8.199 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=1232          	   36571	     32819 ns/op	         8.205 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26056	     46026 ns/op	        11.51 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26056	     46038 ns/op	        11.51 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26073	     46020 ns/op	        11.51 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26065	     46040 ns/op	        11.51 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26067	     46024 ns/op	        11.51 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4/n=4/msg=4096                  	   26077	     46016 ns/op	        11.50 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31928	     37588 ns/op	         9.397 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31920	     37599 ns/op	         9.400 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31910	     37589 ns/op	         9.397 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31916	     37610 ns/op	         9.402 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31906	     37630 ns/op	         9.407 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=x4-wide-hash/n=4/msg=4096        	   31896	     37610 ns/op	         9.402 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31262	     38394 ns/op	         9.599 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31360	     38254 ns/op	         9.564 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31190	     38469 ns/op	         9.617 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31376	     38257 ns/op	         9.564 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31184	     38474 ns/op	         9.618 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAPartialX8TailCompletePipeline/path=partial-x8/n=4/msg=4096          	   31384	     38244 ns/op	         9.561 us/signature	       0 B/op	       0 allocs/op
+PASS

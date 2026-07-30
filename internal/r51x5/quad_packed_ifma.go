@@ -63,18 +63,18 @@ type quadDSMOperationsX4 struct {
 	hardware bool
 }
 
-// quadPointDoubleWorkspaceX4 keeps the five fully-overwritten packed
-// temporaries outside the dependent doubling loop. The hardware operation
-// writes every limb of every field before reading it; callers may therefore
-// reuse one workspace without clearing it between doublings.
+// quadPointDoubleWorkspaceX4 keeps the fully-overwritten packed product
+// outside the dependent doubling loop. The hardware operation writes every
+// limb before reading it; callers may therefore reuse one workspace without
+// clearing it between doublings.
 type quadPointDoubleWorkspaceX4 struct {
-	u, v, products, left, right IFMAElementX4
+	products IFMAElementX4
 }
 
 // quadPointAddCachedWorkspaceX4 is the cached-add counterpart of
 // quadPointDoubleWorkspaceX4. Every field is fully overwritten before use.
 type quadPointAddCachedWorkspaceX4 struct {
-	pointOperand, products, left, right IFMAElementX4
+	pointOperand, products IFMAElementX4
 }
 
 // quadNormalizeModelX4 keeps the coordinate-parallel model independent of
@@ -173,10 +173,7 @@ func quadPointDoubleHardwareUncheckedX4(out, q *quadPackedPointX4) error {
 }
 
 func quadPointDoubleHardwareWorkspaceUncheckedX4(out, q *quadPackedPointX4, workspace *quadPointDoubleWorkspaceX4) error {
-	ifmaQuadDoubleFirstOperandsUncheckedX4(&workspace.u.limbs, &workspace.v.limbs, &q.coordinates.limbs)
-	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.u, &workspace.v); err != nil {
-		return err
-	}
+	ifmaQuadDoubleFirstMultiplyUncheckedX4(&workspace.products.limbs, &q.coordinates.limbs)
 	// q is no longer live after the first packed permutation, so this final
 	// linear layer and multiply may write directly through out even when
 	// out == q.
@@ -257,10 +254,11 @@ func quadPointAddCachedHardwareWorkspaceUncheckedX4(out, point *quadPackedPointX
 	if err := ifmaMultiplyComposableUncheckedX4(&workspace.products, &workspace.pointOperand, &cached.coordinates); err != nil {
 		return err
 	}
-	ifmaQuadCachedAddFinalOperandsUncheckedX4(&workspace.left.limbs, &workspace.right.limbs, &workspace.products.limbs)
 	// point is no longer live after the first packed permutation, so this
-	// final multiplication may write directly through out when out == point.
-	return ifmaMultiplyComposableUncheckedX4(&out.coordinates, &workspace.left, &workspace.right)
+	// final linear layer and multiplication may write directly through out
+	// when out == point.
+	ifmaQuadCachedAddFinalMultiplyUncheckedX4(&out.coordinates.limbs, &workspace.products.limbs)
+	return nil
 }
 
 func quadPointAddCachedModelX4(out, point *quadPackedPointX4, cached *quadPackedCachedPointX4) error {
@@ -292,7 +290,15 @@ var quadCachedScaleX4 = func() IFMAElementX4 {
 
 func quadCachePackedPointX4(out *quadPackedCachedPointX4, point *quadPackedPointX4, ops quadDSMOperationsX4) error {
 	var coordinates IFMAElementX4
-	quadCachedAddFirstOperandX4(&coordinates, point)
+	if ops.hardware {
+		// Keep the model oracle independent of native normalization without
+		// making production table construction pay for the portable carry/fold.
+		// This is the same packed first-operand transform used by the hardware
+		// cached-add path, and it is exact for in-place table preparation too.
+		ifmaQuadCachedAddFirstOperandUncheckedX4(&coordinates.limbs, &point.coordinates.limbs)
+	} else {
+		quadCachedAddFirstOperandX4(&coordinates, point)
+	}
 	return ops.multiply(&out.coordinates, &coordinates, &quadCachedScaleX4)
 }
 
@@ -449,6 +455,50 @@ func evaluateQuadNAFVerifyX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bT
 			var negative quadPackedCachedPointX4
 			selected := selectQuadNAFEntryX4(&negative, bTable.positive[:], bNAF[bit])
 			if err := ops.addCachedWorkspace(&acc, &acc, selected, &addWorkspace); err != nil {
+				return false, err
+			}
+		}
+	}
+	*out = acc
+	return true, nil
+}
+
+// evaluateQuadNAFVerifyHardwareX4 is the immutable-hardware specialization of
+// evaluateQuadNAFVerifyX4 used by the registered packed verifier. The generic
+// operation object remains the independent model seam; this form removes its
+// per-doubling/per-addition hardware branch and wrapper call after the caller
+// has already enforced the IFMA gate. Arithmetic, recoding, selection, and
+// signed-integer semantics are otherwise source-identical.
+func evaluateQuadNAFVerifyHardwareX4(out *quadPackedPointX4, aTable *quadNAFTable5X4, bTable *quadNAFTable8X4, s, k *[32]byte) (bool, error) {
+	var aNAF, bNAF [256]int8
+	valid := recodeQuadCanonicalNAFX4(&aNAF, k, 5)
+	valid = recodeQuadCanonicalNAFX4(&bNAF, s, 8) && valid
+	acc := quadPackedIdentityValueX4()
+	if !valid {
+		*out = acc
+		return false, nil
+	}
+
+	high := 255
+	for ; high >= 0 && aNAF[high] == 0 && bNAF[high] == 0; high-- {
+	}
+	var doubleWorkspace quadPointDoubleWorkspaceX4
+	var addWorkspace quadPointAddCachedWorkspaceX4
+	for bit := high; bit >= 0; bit-- {
+		if err := quadPointDoubleHardwareWorkspaceUncheckedX4(&acc, &acc, &doubleWorkspace); err != nil {
+			return false, err
+		}
+		if aNAF[bit] != 0 {
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, aTable.positive[:], -aNAF[bit])
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&acc, &acc, selected, &addWorkspace); err != nil {
+				return false, err
+			}
+		}
+		if bNAF[bit] != 0 {
+			var negative quadPackedCachedPointX4
+			selected := selectQuadNAFEntryX4(&negative, bTable.positive[:], bNAF[bit])
+			if err := quadPointAddCachedHardwareWorkspaceUncheckedX4(&acc, &acc, selected, &addWorkspace); err != nil {
 				return false, err
 			}
 		}

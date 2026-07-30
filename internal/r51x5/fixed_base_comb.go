@@ -270,7 +270,12 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 		return 0, ErrIFMAUnavailable
 	}
 	var digits fixedBaseDigitsX8
-	usable := recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
+	var usable uint8
+	if active == 0xff && table.radixBits == 8 {
+		usable = recodeFixedBaseRadix256FullX8(&digits, scalars)
+	} else {
+		usable = recodeFixedBaseScalarsX8(&digits, scalars, active, uint(table.radixBits))
+	}
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace fixedBaseIFMAAddScratchX8
@@ -285,7 +290,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX8
-		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -301,7 +306,7 @@ func ExperimentalIFMAFixedBaseCombScalarMultX8(out *IFMAPointX8, table *Experime
 			continue
 		}
 		var selected fixedBaseIFMACachedX8
-		selectFixedBaseIFMACachedX8(&selected, table, position, &digits.rounds[round], usable)
+		selectFixedBaseIFMACachedUncheckedX8(&selected, table, position, &digits.rounds[round], usable)
 		if err := addFixedBaseIFMACachedWorkspaceX8(&acc, &acc, &selected, &addWorkspace); err != nil {
 			return 0, err
 		}
@@ -395,6 +400,52 @@ func recodeFixedBaseScalarsX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte
 		}
 	}
 	return valid
+}
+
+// recodeFixedBaseRadix256FullX8 specializes the process-shared generator comb
+// regime used by complete cold x8 groups. All scalar encodings remain checked;
+// a noncanonical input re-enters the generic recoder so its per-lane
+// fail-closed output is preserved exactly. The all-valid path has byte-aligned
+// radix-256 digits and assigns every used round directly, avoiding dynamic
+// shape and active-lane work in the inner loop.
+func recodeFixedBaseRadix256FullX8(out *fixedBaseDigitsX8, scalars *[X8Lanes][32]byte) uint8 {
+	for lane := 0; lane < X8Lanes; lane++ {
+		if !canonicalScalarBytes(&scalars[lane]) {
+			return recodeFixedBaseScalarsX8(out, scalars, 0xff, 8)
+		}
+	}
+
+	*out = fixedBaseDigitsX8{}
+	out.count = 32
+	out.radixBits = 8
+	var carries [X8Lanes]int16
+	for round := 0; round < 32; round++ {
+		record := &out.rounds[round]
+		var nonzeroMask, negativeMask uint8
+		for lane := 0; lane < X8Lanes; lane++ {
+			digit := int16(scalars[lane][round]) + carries[lane]
+			carries[lane] = (digit + 128) >> 8
+			digit -= carries[lane] << 8
+			laneMask := uint8(1 << lane)
+			if digit < 0 {
+				record.Magnitude[lane] = uint8(-digit)
+				negativeMask |= laneMask
+			} else {
+				record.Magnitude[lane] = uint8(digit)
+			}
+			if digit != 0 {
+				nonzeroMask |= laneMask
+			}
+		}
+		record.NonzeroMask = nonzeroMask
+		record.NegativeMask = negativeMask
+	}
+	for lane := 0; lane < X8Lanes; lane++ {
+		if carries[lane] != 0 {
+			panic("r51x5: canonical x8 scalar exceeded fixed-base recoding width")
+		}
+	}
+	return 0xff
 }
 
 func recodeFixedBaseLaneX4(out *fixedBaseDigitsX4, lane int, scalar *[32]byte) {
@@ -571,6 +622,60 @@ func selectFixedBaseIFMACachedX8(out *fixedBaseIFMACachedX8, table *Experimental
 			p6 = source
 		case 7:
 			p7 = source
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
+}
+
+// selectFixedBaseIFMACachedUncheckedX4 is a retained measurement counterpart
+// of the checked selector above. round must come from
+// recodeFixedBaseScalarsX4 for table.radixBits. The straight-line selector is
+// faster in isolation, but a Zen 5 complete n=4 gate at 7b22c5b regressed by
+// about 0.2%, so the registered x4 route deliberately remains checked.
+func selectFixedBaseIFMACachedUncheckedX4(out *fixedBaseIFMACachedX4, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX4, active uint8) {
+	lookupMask := round.NonzeroMask & active & 0x0f
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3 := p0, p0, p0
+	base := position * int(table.entries)
+	if lookupMask == 0x0f {
+		p0 = &table.signedPoints[base+int(round.Magnitude[0])-1][(round.NegativeMask>>0)&1]
+		p1 = &table.signedPoints[base+int(round.Magnitude[1])-1][(round.NegativeMask>>1)&1]
+		p2 = &table.signedPoints[base+int(round.Magnitude[2])-1][(round.NegativeMask>>2)&1]
+		p3 = &table.signedPoints[base+int(round.Magnitude[3])-1][(round.NegativeMask>>3)&1]
+	} else {
+		pointers := [X4Lanes]**ifmaAffine3MicroAoSEntryExperiment{&p0, &p1, &p2, &p3}
+		for lane := 0; lane < X4Lanes; lane++ {
+			if lookupMask&(1<<lane) != 0 {
+				*pointers[lane] = &table.signedPoints[base+int(round.Magnitude[lane])-1][(round.NegativeMask>>lane)&1]
+			}
+		}
+	}
+	ifmaAffine3MicroAoSTransposeSelectExperimentX4(out, p0, p1, p2, p3)
+}
+
+// selectFixedBaseIFMACachedUncheckedX8 is the native-wide analogue. The
+// overwhelmingly common all-nonzero case is deliberately straight-line;
+// zero digits and tail masks retain an identity-filled fallback.
+func selectFixedBaseIFMACachedUncheckedX8(out *fixedBaseIFMACachedX8, table *ExperimentalFixedBaseCombTable, position int, round *RadixRoundX8, active uint8) {
+	lookupMask := round.NonzeroMask & active
+	p0 := &ifmaAffine3MicroAoSIdentityEntryExperiment
+	p1, p2, p3, p4, p5, p6, p7 := p0, p0, p0, p0, p0, p0, p0
+	base := position * int(table.entries)
+	if lookupMask == 0xff {
+		p0 = &table.signedPoints[base+int(round.Magnitude[0])-1][(round.NegativeMask>>0)&1]
+		p1 = &table.signedPoints[base+int(round.Magnitude[1])-1][(round.NegativeMask>>1)&1]
+		p2 = &table.signedPoints[base+int(round.Magnitude[2])-1][(round.NegativeMask>>2)&1]
+		p3 = &table.signedPoints[base+int(round.Magnitude[3])-1][(round.NegativeMask>>3)&1]
+		p4 = &table.signedPoints[base+int(round.Magnitude[4])-1][(round.NegativeMask>>4)&1]
+		p5 = &table.signedPoints[base+int(round.Magnitude[5])-1][(round.NegativeMask>>5)&1]
+		p6 = &table.signedPoints[base+int(round.Magnitude[6])-1][(round.NegativeMask>>6)&1]
+		p7 = &table.signedPoints[base+int(round.Magnitude[7])-1][(round.NegativeMask>>7)&1]
+	} else {
+		pointers := [X8Lanes]**ifmaAffine3MicroAoSEntryExperiment{&p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7}
+		for lane := 0; lane < X8Lanes; lane++ {
+			if lookupMask&(1<<lane) != 0 {
+				*pointers[lane] = &table.signedPoints[base+int(round.Magnitude[lane])-1][(round.NegativeMask>>lane)&1]
+			}
 		}
 	}
 	ifmaAffine3MicroAoSTransposeSelectExperimentX8(out, p0, p1, p2, p3, p4, p5, p6, p7)
@@ -784,23 +889,17 @@ func addFixedBaseIFMACachedWorkspaceX8(
 	ifmaAddComposableUncheckedX8(&workspace.yPlusX, &point.Y, &point.X)
 
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &workspace.yMinusX.limbs, &cached.YMinusX.limbs)
-	ifmaMulRawX8(&stage2[1], &workspace.yPlusX.limbs, &cached.YPlusX.limbs)
-	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
-	stage2[3] = IFMAProductX8(point.Z.limbs)
-	ifmaNielsStage2X8(stage2)
-
-	E := (*LimbsX8)(&stage2[0])
-	F := (*LimbsX8)(&stage2[1])
-	G := (*LimbsX8)(&stage2[2])
-	H := (*LimbsX8)(&stage2[3])
+	ifmaThreeRawProductsNielsStage2UncheckedX8(
+		stage2,
+		&workspace.yMinusX.limbs, &cached.YMinusX.limbs,
+		&workspace.yPlusX.limbs, &cached.YPlusX.limbs,
+		&point.T.limbs, &cached.T2D.limbs,
+		&point.Z.limbs,
+	)
 
 	// point and cached are dead after A/B/C and Z have been captured. Direct
 	// output is therefore safe for out==point and avoids a 1,280-byte result
 	// temporary and copy.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }

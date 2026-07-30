@@ -1,0 +1,7 @@
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test ./... -count=1
+/usr/local/go/bin/go vet ./...
+/usr/local/go/bin/go test -tags r51_release_bench -c -o /tmp/narya-1023e7e.test ./ed25519
+taskset -c 6 /tmp/narya-1023e7e.test -test.run '^$' -test.bench '^BenchmarkPublicR51VerifyBatchStrict$/msg=200/n=(1|2|4|8|64)$' -test.benchmem -test.benchtime=1s -test.count=3
+taskset -c 6 /tmp/narya-1023e7e.test -test.run '^$' -test.bench '^BenchmarkPublicR51VerifyBatchStrict$/msg=1232/n=(1|2|4|8|64)$' -test.benchmem -test.benchtime=1s -test.count=3
+taskset -c 6 /tmp/narya-1023e7e.test -test.run '^$' -test.bench '^BenchmarkPublicR51VerifyBatchStrict$/msg=4096/n=(1|2|4|8|64)$' -test.benchmem -test.benchtime=1s -test.count=3
+

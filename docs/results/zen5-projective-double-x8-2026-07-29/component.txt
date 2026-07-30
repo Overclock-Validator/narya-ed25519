@@ -1,0 +1,30 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	54124518	        22.27 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	53828198	        22.31 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	53719802	        22.33 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	53726816	        22.34 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	53690977	        22.33 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/complete-p3         	53704435	        22.35 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71463758	        16.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71497288	        16.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71441038	        16.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71443599	        16.81 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71439890	        16.81 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveFinalProductsX8/projective-p2       	71340914	        16.81 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   62794	     19108 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   63003	     19075 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   62748	     19106 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   62958	     19114 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   62907	     19098 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/complete-p3     	   62815	     19128 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   63978	     18778 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   64125	     18771 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   63980	     18761 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   63846	     18751 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   63964	     18780 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIFMAProjectiveDoublingEvaluatorX8/intermediate-p2 	   63885	     18748 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/internal/r51x5	31.355s

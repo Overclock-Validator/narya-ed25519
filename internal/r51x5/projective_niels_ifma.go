@@ -70,23 +70,21 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	ifmaAddComposableUncheckedX8(yPlusX, &point.Y, &point.X)
 
 	stage2 := &workspace.stage2
-	ifmaMulRawX8(&stage2[0], &yMinusX.limbs, &cached.YMinusX.limbs)
-	ifmaMulRawX8(&stage2[1], &yPlusX.limbs, &cached.YPlusX.limbs)
-	ifmaMulRawX8(&stage2[2], &point.T.limbs, &cached.T2D.limbs)
-	ifmaMulRawX8(&stage2[3], &point.Z.limbs, &cached.Z.limbs)
-	ifmaNielsStage2X8(stage2)
-
-	E := (*LimbsX8)(&stage2[0])
-	F := (*LimbsX8)(&stage2[1])
-	G := (*LimbsX8)(&stage2[2])
-	H := (*LimbsX8)(&stage2[3])
+	// A/B/C/D are four independent exact raw products. Compute them through
+	// one assembly leaf so the hot Niels loop pays one Go/assembly transition
+	// and one VZEROUPPER, while expanding the same source-level multiply body
+	// as four standalone ifmaMulRawX8 calls.
+	ifmaFourRawProductsNielsStage2UncheckedX8(
+		stage2,
+		&yMinusX.limbs, &cached.YMinusX.limbs,
+		&yPlusX.limbs, &cached.YPlusX.limbs,
+		&point.T.limbs, &cached.T2D.limbs,
+		&point.Z.limbs, &cached.Z.limbs,
+	)
 
 	// point and cached are both dead after A/B/C/D have been formed, so
 	// direct output remains safe for exact out==point aliasing.
-	ifmaMulNormalizedUncheckedX8(&out.X.limbs, E, F)
-	ifmaMulNormalizedUncheckedX8(&out.Y.limbs, G, H)
-	ifmaMulNormalizedUncheckedX8(&out.T.limbs, E, H)
-	ifmaMulNormalizedUncheckedX8(&out.Z.limbs, F, G)
+	ifmaPointFinalProductsUncheckedX8(out, &stage2[0])
 	return nil
 }
 

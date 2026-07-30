@@ -1,8 +1,11 @@
 # Experimental multi-buffer SHA-512
 
-Narya contains forced, hardware-gated x4 and x8 SHA-512 prototypes. They do
-not change `sha512mb.Lanes`, `sha512mb.Sum512Batch`, backend selection, or any
-production verification path.
+Narya contains hardware-gated x4 and x8 SHA-512 kernels behind experimental
+package entry points. They do not change `sha512mb.Lanes` or
+`sha512mb.Sum512Batch`. The explicitly selected `r51` verifier uses them after
+its own hardware gate: complete groups use x8, ordinary tails use x4, and AMD
+family 1Ah uses x8 hashing for four-to-seven-item cold x4 curve tails. Automatic
+backend selection remains `generic`.
 
 The experimental entry point is:
 

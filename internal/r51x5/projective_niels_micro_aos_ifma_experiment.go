@@ -39,10 +39,11 @@ type ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8 struct {
 
 // ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
 // owns the selected cold x8 A table with both public-scalar signs prepared.
-// Regime tag: Zen 5 native-x8, cold arbitrary A, radix 32. On the 2026-07-25
-// 9700X gate, pre-signing improved cold table-build+loop by about 7.2% despite
-// doubling this workspace from about 20.6 to 40.6 KiB. Automatic backend
-// selection still cannot reach r51.
+// Regime tag: Zen 5 native-x8, cold arbitrary A, radix 32. A current complete-
+// verifier gate at commit 0331de0 found this about 2.7% faster at n=8 and 3.6%
+// faster at n=64 than storing one sign and transforming selected digits
+// online, despite doubling this workspace from about 20.6 to 40.6 KiB.
+// Automatic backend selection still cannot reach r51.
 type ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8 struct {
 	table    ifmaProjectiveNielsPreSignedMicroAoSTableX8
 	digits   FixedRadixDigitsX8
@@ -71,24 +72,20 @@ func storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(
 	entry int,
 	point *IFMAProjectiveNielsX8,
 ) {
+	// Production reaches this helper only after the IFMA gate. Keep the
+	// negation on the same unchecked composable contract as the table-build
+	// point formulas, then transpose the x8 SoA coordinates directly into the
+	// eight per-key micro-AoS entries. The native leaf is data movement only;
+	// its scalar counterpart preserves identical semantics for non-amd64 and
+	// purego differential tests.
 	var negativeT2D IFMAElementX8
-	negativeT2D.Negate(&point.T2D)
-	for lane := 0; lane < X8Lanes; lane++ {
-		for limb := range modulusLimbs {
-			table[lane][0][entry][limb] = [4]uint64{
-				point.YPlusX.limbs[limb][lane],
-				point.YMinusX.limbs[limb][lane],
-				point.Z.limbs[limb][lane],
-				point.T2D.limbs[limb][lane],
-			}
-			table[lane][1][entry][limb] = [4]uint64{
-				point.YMinusX.limbs[limb][lane],
-				point.YPlusX.limbs[limb][lane],
-				point.Z.limbs[limb][lane],
-				negativeT2D.limbs[limb][lane],
-			}
-		}
-	}
+	ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
+	ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(
+		table,
+		uint64(entry),
+		point,
+		&negativeT2D,
+	)
 }
 
 func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8) Prepare(base *PointX8, radixBits uint) error {
@@ -202,7 +199,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8)
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
@@ -243,7 +240,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8
@@ -288,7 +285,7 @@ func (workspace *ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWor
 	if !ExperimentalIFMAAvailable() {
 		return 0, ErrIFMAUnavailable
 	}
-	usable := RecodeCanonicalScalarsX8(&workspace.digits, scalar, negativeMask, active, 5)
+	usable := recodeCanonicalScalarsRadix32X8(&workspace.digits, scalar, negativeMask, active)
 	acc := identityIFMAPointX8Value()
 	var doubleWorkspace ifmaPointDoubleWorkspaceX8
 	var addWorkspace ifmaPointAddProjectiveNielsScratchX8

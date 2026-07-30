@@ -1,0 +1,46 @@
+tested commit: cf30bca1f43e80ec590f6b99abf1a5b3f09ddf4a
+date: 2026-07-29
+host class: AMD Ryzen 7 9700X (Zen 5), Linux amd64
+toolchain: Go 1.26.4
+
+PASS: go test ./... -count=1
+  ed25519: 41.254s
+  internal/r51x5: 14.098s
+  internal/heea8l: 34.654s
+  all remaining packages passed
+
+PASS: go vet ./...
+
+PASS: go test -tags narya_test_amd_policy ./internal/cpufeat ./internal/r51x5 ./ed25519 -count=1
+  internal/cpufeat: 0.001s
+  internal/r51x5: 13.944s
+  ed25519: 40.766s
+
+PASS: go test -race ./ed25519 ./sha512mb -count=1
+  ed25519: 289.369s
+  sha512mb: 1.454s
+
+PASS: targeted native packed-pair/public-route gates
+  TestR51BackendRawStrictPairCorpora/cctv
+  TestR51BackendRawStrictPairCorpora/wycheproof
+  TestR51BackendInternalFaultFallsBackToGeneric
+  TestR51BackendDispatchDifferential (both profiles; n=0,1,2,3,4,5,7,8,9,15,16,17,32,64,65)
+  TestExperimentalPackedStrictVerifierPairX8MatchesSingletons
+  TestExperimentalPackedStrictVerifierPairX8ZeroAllocations
+
+PASS: targeted native whole-window gates
+  TestIFMAWholeWindowFiveDoublesExactRepresentation
+  TestAsymmetricFixedB10WholeWindowX8Experiment
+  TestAsymmetricFixedB10WholeWindowX8ZeroAllocations
+
+PASS: local portable gates on the same source tree
+  go test ./... -count=1
+  go vet ./...
+  go test -tags purego ./... -count=1
+  git diff --check
+
+PASS: deterministic whole-window regeneration
+  generated range certificate equals checked-in JSON byte for byte
+  generated verification record equals checked-in JSON byte for byte
+  enumerated DAG configurations: 40,960
+

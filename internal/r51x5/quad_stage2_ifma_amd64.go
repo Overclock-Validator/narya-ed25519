@@ -2,6 +2,13 @@
 
 package r51x5
 
+import "github.com/Overclock-Validator/narya-ed25519/internal/cpufeat"
+
+// preferPackedMul19X4 is immutable after package initialization. The assembly
+// leaves read it once per product to retain the reviewed shift/add schedule on
+// unmeasured IFMA CPUs without duplicating three large arithmetic kernels.
+var preferPackedMul19X4 = cpufeat.PreferPackedMul19X4IFMA()
+
 // ifmaQuadDoubleFirstOperandsUncheckedX4 permutes packed [X,Y,T,Z] lanes into
 // U=[X,Y,Z,X] and V=[X,Y,Z,Y] for the first doubling multiplication. u and v
 // must be distinct; q may alias either output because every input vector is
@@ -9,6 +16,17 @@ package r51x5
 //
 //go:noescape
 func ifmaQuadDoubleFirstOperandsUncheckedX4(u, v, q *LimbsX4)
+
+// ifmaQuadDoubleFirstMultiplyUncheckedX4 fuses the packed doubling input
+// permutations with the normalized field multiplication that consumes them.
+// For each radix-2^51 limb, q contains [X,Y,T,Z]; the fused leaf constructs
+// [X,Y,Z,X] and [X,Y,Z,Y] in registers and returns the exact normalized
+// [X^2,Y^2,Z^2,XY] representation produced by the split helpers. q must be
+// u52. out may alias q because all five q vectors are consumed before the
+// first output store. The caller owns the IFMA gate.
+//
+//go:noescape
+func ifmaQuadDoubleFirstMultiplyUncheckedX4(out, q *LimbsX4)
 
 // ifmaQuadCachedAddFirstOperandUncheckedX4 transforms packed [X,Y,T,Z] lanes
 // into the normalized [Y-X,Y+X,T,Z] operand for cached addition. q must be u52.
@@ -61,3 +79,13 @@ func ifmaQuadDoubleFinalMultiplyUncheckedX4(out, products *LimbsX4)
 //
 //go:noescape
 func ifmaQuadCachedAddFinalOperandsUncheckedX4(left, right, products *LimbsX4)
+
+// ifmaQuadCachedAddFinalMultiplyUncheckedX4 fuses
+// ifmaQuadCachedAddFinalOperandsUncheckedX4 with the normalized packed field
+// multiplication that immediately consumes those two operands. products must
+// satisfy the same u52 [A,B,C,D] contract as the split helper. out may alias
+// products because all five product vectors are consumed before the first
+// output store. The caller owns the IFMA gate.
+//
+//go:noescape
+func ifmaQuadCachedAddFinalMultiplyUncheckedX4(out, products *LimbsX4)

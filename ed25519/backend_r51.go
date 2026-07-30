@@ -17,10 +17,12 @@ import (
 //
 // Zen 4 and Zen 5 use x8 groups when at least eight signatures are available
 // and retain x4 for the tail. Strict
-// one- and two-item tails use the lower-latency packed singleton implementation,
-// while a strict three-item tail uses one partial x4 group. StdlibCompat retains
-// the native partial-group path for two and three items because the packed
-// verifier intentionally implements only DalekStrict.
+// one-item tails use the lower-latency packed singleton implementation. On
+// Zen 5, a strict two-item tail places one complete packed verification in each
+// half of a ZMM register; other measured CPUs retain two singleton calls. A
+// strict three-item tail uses one partial x4 group. StdlibCompat retains the
+// native partial-group path for two and three items because the packed verifier
+// intentionally implements only DalekStrict.
 type r51Backend struct {
 	activateOnce  sync.Once
 	activateErr   error
@@ -148,6 +150,12 @@ func (*r51Backend) newBatchWorker() *r51BatchWorker {
 		pipeline, err = newR51IFMABatchQX8CombPipelineWithFinalizer(r51IFMABatchQFinalizerLiteral)
 		if err == nil {
 			pipeline.experimentalRawSquareX8 = cpufeat.PreferRawSquareIFMA()
+			pipeline.experimentalProjectiveDoubleX8 = cpufeat.PreferProjectiveDoubleX8IFMA()
+			if cpufeat.PreferAsymmetricFixedB10X8IFMA() {
+				pipeline.asymmetricFixedB10X8 = sharedR51AsymmetricFixedB10X8()
+			}
+			pipeline.wideHashX4Tail = cpufeat.PreferWideHashX4IFMA()
+			pipeline.experimentalBatchEncodeX8 = cpufeat.PreferBatchEncodeX8IFMA()
 			pipeline.projectiveNielsX4 = true
 		}
 	} else {
@@ -236,6 +244,33 @@ func (b *r51Backend) verifyOne(profile Profile, pub *[32]byte, message, sig []by
 		b.singlePool.Put(worker)
 	}
 	return ok, err
+}
+
+func (b *r51Backend) verifyStrictPair(
+	pubs []*[32]byte,
+	msgs, sigs [][]byte,
+	ok []bool,
+) error {
+	if len(pubs) != 2 || len(msgs) != 2 || len(sigs) != 2 || len(ok) != 2 {
+		panic("ed25519: invalid packed strict pair width")
+	}
+	worker := b.singlePool.Get().(*r51SingleWorker)
+	if worker.err != nil {
+		return fmt.Errorf("ed25519: construct packed r51 pair worker: %w", worker.err)
+	}
+	if worker.verifier == nil {
+		return fmt.Errorf("ed25519: construct packed r51 pair worker: nil verifier")
+	}
+	pubPair := [2]*[32]byte{pubs[0], pubs[1]}
+	messagePair := [2][]byte{msgs[0], msgs[1]}
+	signaturePair := [2][]byte{sigs[0], sigs[1]}
+	var verdicts [2]bool
+	err := worker.verifier.VerifyPair(pubPair, messagePair, signaturePair, &verdicts)
+	if err == nil {
+		b.singlePool.Put(worker)
+		ok[0], ok[1] = verdicts[0], verdicts[1]
+	}
+	return err
 }
 
 func (b *r51Backend) verifyBatchRaw(profile Profile, pubs []*[32]byte, msgs, sigs [][]byte, ok []bool) bool {
@@ -355,12 +390,18 @@ func (b *r51Backend) verifyBatchRawPrecomputedErr(profile Profile, pubs []*[32]b
 		ok[full] = verdict
 	case 2:
 		if strictPackedPair {
-			for index := full; index < full+tail; index++ {
-				verdict, err := b.verifyOne(profile, pubs[index], msgs[index], sigs[index])
-				if err != nil {
+			if cpufeat.PreferPackedPairX8IFMA() {
+				if err := b.verifyStrictPair(pubs[full:], msgs[full:], sigs[full:], ok[full:]); err != nil {
 					return false, err
 				}
-				ok[index] = verdict
+			} else {
+				for index := full; index < full+tail; index++ {
+					verdict, err := b.verifyOne(profile, pubs[index], msgs[index], sigs[index])
+					if err != nil {
+						return false, err
+					}
+					ok[index] = verdict
+				}
 			}
 			break
 		}

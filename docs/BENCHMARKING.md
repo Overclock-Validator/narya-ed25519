@@ -306,6 +306,13 @@ acceptance predicate is equivalent to Narya's. Point math is constant across
 sizes while hashing grows, so the spread between a 64-byte and a 1232-byte
 row is the hashing fraction. Bench `sha512mb` directly to isolate it.
 
+Cold-path tuning additionally runs the public API at 200 / 1232 / 4096 bytes.
+The 1232-byte row is a hard non-regression gate: a candidate that improves the
+4096-byte diagnostic but slows 1232-byte verification is recorded as a
+regime-specific experiment and is not selected by production dispatch. A
+large-message result may supplement the primary row; it may not buy its gain
+by trading the primary row away.
+
 ## Reading the batch sweeps
 
 `BenchmarkVerifyBatch` retains the headline `impl=.../n=.../msg=...`

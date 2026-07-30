@@ -60,7 +60,11 @@ type r51IFMAPipeline struct {
 	x8                r51IFMAFixedDSMWorkspaceX8
 	x4                [2]r51IFMAFixedDSMWorkspaceX4
 	variableX8        *r51x5.ExperimentalIFMAProjectiveNielsPreSignedMicroAoSVariableBaseWorkspaceX8
-	variableX4        [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
+	// variableX8RuntimeSign is a complete-path measurement seam for the
+	// smaller x8 table that applies public scalar signs after selection. It is
+	// nil in registered workers.
+	variableX8RuntimeSign *r51x5.ExperimentalIFMAProjectiveNielsMicroAoSVariableBaseWorkspaceX8
+	variableX4            [2]*r51x5.ExperimentalIFMAVariableBaseWorkspaceX4
 
 	// beforePrepareVariableX8 is an error-injection seam used only by the
 	// fail-closed group test. It deliberately takes no point argument: passing
@@ -167,6 +171,11 @@ func (workspace *r51IFMAFixedDSMWorkspaceX8) Evaluate(out *r51x5.IFMAPointX8, sc
 var r51SharedCombTables [3]struct {
 	once  sync.Once
 	table *r51x5.ExperimentalFixedBaseCombTable
+}
+
+var r51SharedAsymmetricFixedB10X8 struct {
+	once  sync.Once
+	table *r51x5.IFMAAsymmetricFixedB10TableX8
 }
 
 func r51IFMAPipelineAvailable(kind r51IFMAPipelineKind) bool {
@@ -332,6 +341,18 @@ func sharedR51FixedBaseComb(radixBits uint) *r51x5.ExperimentalFixedBaseCombTabl
 		entry.table = r51x5.BuildExperimentalFixedBaseCombTable(&generator, radixBits)
 	})
 	return entry.table
+}
+
+func sharedR51AsymmetricFixedB10X8() *r51x5.IFMAAsymmetricFixedB10TableX8 {
+	r51SharedAsymmetricFixedB10X8.once.Do(func() {
+		generatorEncoding := edwards25519.NewGeneratorPoint().Bytes()
+		var generator r51x5.Point
+		if _, err := generator.SetBytes(generatorEncoding); err != nil {
+			panic(fmt.Sprintf("ed25519: r51 generator decode: %v", err))
+		}
+		r51SharedAsymmetricFixedB10X8.table = r51x5.BuildIFMAAsymmetricFixedB10TableX8(&generator)
+	})
+	return r51SharedAsymmetricFixedB10X8.table
 }
 
 func (pipeline *r51IFMAPipeline) fixedBaseLabel() string {

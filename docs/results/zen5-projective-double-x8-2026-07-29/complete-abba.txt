@@ -1,0 +1,124 @@
+ORDER path=intermediate-p2
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   37264	     32289 ns/op	         4.036 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   37119	     32379 ns/op	         4.047 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   37032	     32414 ns/op	         4.052 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36895	     32533 ns/op	         4.067 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   37094	     32359 ns/op	         4.045 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   37072	     32502 ns/op	         4.063 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4880	    245979 ns/op	         3.843 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4876	    246532 ns/op	         3.852 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4848	    247416 ns/op	         3.866 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4858	    247431 ns/op	         3.866 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4846	    247407 ns/op	         3.866 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4846	    247483 ns/op	         3.867 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31233	     38400 ns/op	         4.800 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31236	     38409 ns/op	         4.801 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31238	     38530 ns/op	         4.816 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31110	     38585 ns/op	         4.823 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31093	     38587 ns/op	         4.823 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31088	     38584 ns/op	         4.823 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4082	    294225 ns/op	         4.597 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4081	    293977 ns/op	         4.593 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4078	    294052 ns/op	         4.595 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4081	    293951 ns/op	         4.593 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4080	    293906 ns/op	         4.592 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4080	    293650 ns/op	         4.588 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	33.493s
+ORDER path=complete-p3
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36570	     32823 ns/op	         4.103 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36343	     33025 ns/op	         4.128 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36532	     32845 ns/op	         4.106 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36322	     33037 ns/op	         4.130 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36552	     32845 ns/op	         4.106 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36520	     32860 ns/op	         4.107 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4802	    250021 ns/op	         3.907 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4803	    249942 ns/op	         3.905 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4789	    250406 ns/op	         3.913 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4800	    249964 ns/op	         3.906 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4800	    249995 ns/op	         3.906 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4795	    250190 ns/op	         3.909 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30841	     38902 ns/op	         4.863 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30888	     38854 ns/op	         4.857 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30865	     38885 ns/op	         4.861 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30885	     38853 ns/op	         4.857 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30846	     38894 ns/op	         4.862 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30872	     38855 ns/op	         4.857 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4030	    297617 ns/op	         4.650 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4027	    297877 ns/op	         4.654 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4028	    297869 ns/op	         4.654 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4028	    297840 ns/op	         4.654 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4026	    297928 ns/op	         4.655 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4024	    298009 ns/op	         4.656 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	33.538s
+ORDER path=complete-p3
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36440	     32956 ns/op	         4.119 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36403	     32957 ns/op	         4.120 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36406	     32965 ns/op	         4.121 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36406	     32965 ns/op	         4.121 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36387	     32981 ns/op	         4.123 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=1232         	   36366	     32974 ns/op	         4.122 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4809	    249770 ns/op	         3.903 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4802	    249886 ns/op	         3.904 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4800	    249934 ns/op	         3.905 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4800	    250007 ns/op	         3.906 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4801	    250022 ns/op	         3.907 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=1232        	    4800	    249973 ns/op	         3.906 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30832	     38905 ns/op	         4.863 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30754	     39001 ns/op	         4.875 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30771	     39004 ns/op	         4.875 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30760	     38933 ns/op	         4.867 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30766	     38906 ns/op	         4.863 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=8/msg=4096         	   30850	     39008 ns/op	         4.876 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4017	    298369 ns/op	         4.662 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4020	    298264 ns/op	         4.660 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4022	    298282 ns/op	         4.661 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4020	    298214 ns/op	         4.660 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4023	    298260 ns/op	         4.660 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=complete-p3/n=64/msg=4096        	    4022	    298243 ns/op	         4.660 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	33.544s
+ORDER path=intermediate-p2
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36949	     32470 ns/op	         4.059 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36928	     32487 ns/op	         4.061 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36945	     32495 ns/op	         4.062 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36892	     32510 ns/op	         4.064 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36878	     32512 ns/op	         4.064 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=1232         	   36914	     32494 ns/op	         4.062 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4868	    246276 ns/op	         3.848 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4872	    246167 ns/op	         3.846 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4863	    246270 ns/op	         3.848 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4872	    246260 ns/op	         3.848 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4870	    246194 ns/op	         3.847 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=1232        	    4867	    246198 ns/op	         3.847 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31254	     38394 ns/op	         4.799 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31281	     38361 ns/op	         4.795 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31273	     38364 ns/op	         4.795 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31296	     38354 ns/op	         4.794 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31299	     38370 ns/op	         4.796 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=8/msg=4096         	   31279	     38355 ns/op	         4.794 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4076	    294080 ns/op	         4.595 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4069	    294322 ns/op	         4.599 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4078	    293916 ns/op	         4.592 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4086	    293782 ns/op	         4.590 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4083	    293753 ns/op	         4.590 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAProjectiveDoubleX8CompletePipeline/path=intermediate-p2/n=64/msg=4096        	    4071	    294554 ns/op	         4.602 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	33.465s

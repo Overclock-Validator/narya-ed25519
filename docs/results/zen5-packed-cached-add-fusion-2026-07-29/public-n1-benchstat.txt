@@ -1,0 +1,58 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                   sec/op                                   │                       sec/op                         vs base              │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                   14.19µ ± 0%                                           13.98µ ± 0%  -1.50% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                  15.05µ ± 0%                                           14.85µ ± 0%  -1.30% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                  17.03µ ± 0%                                           16.79µ ± 0%  -1.41% (p=0.002 n=6)
+geomean                                                                                                  15.38µ                                                15.17µ       -1.40%
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                    B/s                                     │                         B/s                          vs base              │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                  13.44Mi ± 0%                                          13.64Mi ± 0%  +1.53% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                 78.07Mi ± 0%                                          79.10Mi ± 0%  +1.31% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                 229.3Mi ± 0%                                          232.6Mi ± 0%  +1.43% (p=0.002 n=6)
+geomean                                                                                                 62.20Mi                                               63.08Mi       +1.42%
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                          internal-fault-fallbacks                          │             internal-fault-fallbacks               vs base                │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                  0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+geomean                                                                                                            ²                                                      +0.00%               ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                signatures/s                                │                    signatures/s                      vs base              │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                   70.45k ± 0%                                           71.52k ± 0%  +1.52% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                  66.45k ± 0%                                           67.32k ± 0%  +1.31% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                  58.71k ± 0%                                           59.55k ± 0%  +1.43% (p=0.002 n=6)
+geomean                                                                                                  65.02k                                                65.94k       +1.42%
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                us/signature                                │                    us/signature                      vs base              │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                    14.20 ± 0%                                            13.98 ± 0%  -1.51% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                   15.05 ± 0%                                            14.85 ± 0%  -1.33% (p=0.002 n=6)
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                   17.03 ± 0%                                            16.79 ± 0%  -1.41% (p=0.002 n=6)
+geomean                                                                                                   15.38                                                 15.16       -1.42%
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                    B/op                                    │                       B/op                         vs base                │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                  0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+geomean                                                                                                            ²                                                      +0.00%               ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean
+
+                                        │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-before.txt │ docs/results/zen5-packed-cached-add-fusion-2026-07-29/public-n1-after.txt │
+                                        │                                 allocs/op                                  │                     allocs/op                      vs base                │
+PublicR51VerifyBatchStrict/msg=200/n=1                                                                  0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=1232/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+PublicR51VerifyBatchStrict/msg=4096/n=1                                                                 0.000 ± 0%                                            0.000 ± 0%       ~ (p=1.000 n=6) ¹
+geomean                                                                                                            ²                                                      +0.00%               ²
+¹ all samples are equal
+² summaries must be >0 to compute geomean

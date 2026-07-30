@@ -1,0 +1,11 @@
+commit 985a3b8807918b00f35daba289067513b34423d9
+go version go1.26.4 linux/amd64
+Linux 7.0.0-28-generic x86_64 GNU/Linux
+Architecture:                            x86_64
+CPU(s):                                  16
+Model name:                              AMD Ryzen 7 9700X 8-Core Processor
+CPU family:                              26
+Model:                                   68
+Thread(s) per core:                      2
+Core(s) per socket:                      8
+governor performance

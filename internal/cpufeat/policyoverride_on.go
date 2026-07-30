@@ -5,14 +5,19 @@ package cpufeat
 // forceAMDPolicy makes the microarchitecture-gated dispatch policies report
 // true on any IFMA-capable machine, instead of only on the measured AMD parts.
 //
-// Why this exists. PreferWideIFMA, PreferDecodedAIFMA, PreferWarmX8IFMA and
-// PreferRawSquareIFMA all require an AuthenticAMD vendor string and a family
-// check. Intel SDE, which is how continuous integration executes the AVX-512
-// kernels at all, emulates Intel parts. Every one of those policies therefore
-// reports false under emulation, so the x8/ZMM groups, the decoded-A cache
-// tier, warm x4 pairing and the raw-square schedule have no automated coverage
-// anywhere: they run only on contributors' own hardware. A regression in the
-// library's headline path merges green.
+// Why this exists. PreferWideIFMA, PreferDecodedAIFMA, PreferWarmX8IFMA,
+// PreferRawSquareIFMA, PreferWideHashX4IFMA, PreferBatchEncodeX8IFMA,
+// PreferProjectiveDoubleX8IFMA, PreferAsymmetricFixedB10X8IFMA,
+// PreferNativeScalarReduceX8IFMA, PreferPackedMul19X4IFMA and
+// PreferPackedPairX8IFMA all require an AuthenticAMD vendor string and a
+// family check. Intel SDE, which is how CI
+// executes the AVX-512 kernels at all, emulates Intel parts.
+// Every one of those policies therefore reports false under emulation, so the
+// x8/ZMM groups, decoded-A cache tier, warm x4 pairing, raw-square schedule,
+// wide-hash x4 tail, x8 finalizer, projective-doubling schedule, B10 comb,
+// native scalar reducer, packed-x4 VPMULLQ fold and packed-pair tail have no
+// automated coverage anywhere: they run only on contributors' own hardware.
+// A regression in the library's headline path merges green.
 //
 // Why a build tag rather than an environment variable or a settable var. This
 // changes which arithmetic a consensus-critical verifier executes. A tag is

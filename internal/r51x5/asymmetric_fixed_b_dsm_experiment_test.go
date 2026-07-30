@@ -111,6 +111,24 @@ func BenchmarkAsymmetricFixedBRecodingX4(b *testing.B) {
 	}
 }
 
+func TestAsymmetricFixedBRecodingClearsUsedRoundsOnReuse(t *testing.T) {
+	var out asymmetricFixedBDigitsX4
+	for index := range out.rounds {
+		out.rounds[index].Magnitude = [X4Lanes]uint16{1, 1, 1, 1}
+		out.rounds[index].NonzeroMask = 0x0f
+		out.rounds[index].NegativeMask = 0x0f
+	}
+	var scalars [X4Lanes][32]byte
+	if valid := recodeAsymmetricFixedBScalarsX4(&out, &scalars, 0, 0, 10); valid != 0 {
+		t.Fatalf("inactive recode valid=%02x", valid)
+	}
+	for round := 0; round < int(out.count); round++ {
+		if out.rounds[round] != (asymmetricFixedBRoundX4{}) {
+			t.Fatalf("round %d retained stale digits", round)
+		}
+	}
+}
+
 func TestAsymmetricFixedBDenseAffine3SelectorMatchesScalarAllMasksAndSigns(t *testing.T) {
 	if !microAoSSelectorExperimentCanCall() {
 		t.Skip("requires AVX-512 IFMA target on amd64")

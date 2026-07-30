@@ -35,6 +35,11 @@ func TestIFMAPointX8SplitX4BitIdentity(t *testing.T) {
 			}
 		}
 	}
+	var joined IFMAPointX8
+	joined.SetX4Halves(&split[0], &split[1])
+	if joined != source {
+		t.Fatal("joining split x4 halves did not recover the bit-identical x8 point")
+	}
 }
 
 func TestIFMAComposableAnalyticBounds(t *testing.T) {

@@ -1,0 +1,26 @@
+# Build the exact benchmark binary from commit 54d6430.
+git worktree add --detach /tmp/narya-reducer-final 54d6430
+cd /tmp/narya-reducer-final
+go test -c -tags r51_release_bench -o /tmp/narya-reducer-final.test ./ed25519
+
+# Authoritative cold matrix.
+taskset -c 6 env GOMAXPROCS=1 /tmp/narya-reducer-final.test \
+  -test.run '^$' \
+  -test.bench '^BenchmarkPublicR51VerifyBatchStrict$' \
+  -test.benchtime=1s -test.count=3
+
+# Direct portable/native reducer comparison.
+taskset -c 6 env GOMAXPROCS=1 go test ./internal/r51x5 \
+  -run '^$' \
+  -bench='BenchmarkExperimentalUniformScalarReduction/(x8-scalar|x8-dispatch|x8-ifma-candidate)/full' \
+  -benchmem -benchtime=1s -count=6
+
+# Native correctness and static gates.
+taskset -c 6 env GOMAXPROCS=1 go test \
+  ./internal/r51x5 ./ed25519 ./sha512mb -count=1
+taskset -c 6 env GOMAXPROCS=1 go test -tags narya_test_amd_policy \
+  ./internal/cpufeat ./internal/r51x5 \
+  -run 'Test(AMDPolicy|ExperimentalUniformScalarReduction|ScalarReduceIFMAX8SourceTranscript)' \
+  -count=1
+go vet ./...
+git diff --check

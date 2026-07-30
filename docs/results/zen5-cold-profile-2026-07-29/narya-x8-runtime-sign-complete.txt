@@ -1,0 +1,46 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  104342	     34557 ns/op	         4.320 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  104173	     34583 ns/op	         4.323 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  104060	     34591 ns/op	         4.324 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  104046	     34594 ns/op	         4.324 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  104032	     34602 ns/op	         4.325 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  103996	     34610 ns/op	         4.326 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  103995	     34620 ns/op	         4.328 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  103920	     34625 ns/op	         4.328 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  103950	     34632 ns/op	         4.329 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=8/msg=1232         	  103947	     34628 ns/op	         4.329 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101312	     35527 ns/op	         4.441 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101360	     35519 ns/op	         4.440 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101301	     35520 ns/op	         4.440 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101334	     35524 ns/op	         4.441 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101364	     35514 ns/op	         4.439 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101342	     35515 ns/op	         4.439 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101334	     35542 ns/op	         4.443 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101287	     35538 ns/op	         4.442 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101247	     35549 ns/op	         4.444 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=8/msg=1232       	  101296	     35534 ns/op	         4.442 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13660	    263530 ns/op	         4.118 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13658	    263554 ns/op	         4.118 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13658	    263582 ns/op	         4.118 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13656	    263706 ns/op	         4.120 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13654	    263619 ns/op	         4.119 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13656	    263714 ns/op	         4.121 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13652	    263861 ns/op	         4.123 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13652	    263638 ns/op	         4.119 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13656	    263647 ns/op	         4.119 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=pre-signed/n=64/msg=1232        	   13654	    263599 ns/op	         4.119 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13184	    273163 ns/op	         4.268 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13182	    273118 ns/op	         4.267 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13185	    273112 ns/op	         4.267 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13180	    273110 ns/op	         4.267 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13183	    273164 ns/op	         4.268 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13183	    273037 ns/op	         4.266 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13182	    273136 ns/op	         4.268 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13177	    273148 ns/op	         4.268 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13174	    273156 ns/op	         4.268 us/signature	       0 B/op	       0 allocs/op
+BenchmarkR51IFMAX8RuntimeSignExperiment/implementation=runtime-sign/n=64/msg=1232      	   13177	    273094 ns/op	         4.267 us/signature	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	205.352s

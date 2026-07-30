@@ -1,0 +1,24 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/internal/r51x5
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124922	19293 ns/op	2412 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124154	19338 ns/op	2417 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124053	19349 ns/op	2419 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124077	19334 ns/op	2417 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124202	19326 ns/op	2416 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124224	19324 ns/op	2415 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124094	19310 ns/op	2414 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124350	19310 ns/op	2414 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/materialized-boundary         	124316	19309 ns/op	2414 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124899	19220 ns/op	2402 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124879	19225 ns/op	2403 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124748	19231 ns/op	2404 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124795	19228 ns/op	2404 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124779	19221 ns/op	2403 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124890	19216 ns/op	2402 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124946	19214 ns/op	2402 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124869	19214 ns/op	2402 ns/signature	0 B/op	0 allocs/op
+BenchmarkAsymmetricFixedB10WholeWindowX8Experiment/whole-window                  	124750	19237 ns/op	2405 ns/signature	0 B/op	0 allocs/op
+PASS
+

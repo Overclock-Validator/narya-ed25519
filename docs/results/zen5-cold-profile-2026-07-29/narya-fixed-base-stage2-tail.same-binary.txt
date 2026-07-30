@@ -1,0 +1,55 @@
+Zen 5 x8 fixed-base affine/Niels Stage-2 tail gate
+==================================================
+
+CPU: AMD Ryzen 7 9700X
+Go: 1.26.4
+Governor: performance
+Affinity: taskset -c 6
+GOMAXPROCS: 1
+Comb: radix 256, eight active lanes
+Candidate implementation: b2f40c8
+Same-binary diagnostic: 98df2bc
+Allocations: zero in every authoritative sample
+
+Native gates
+------------
+
+three raw products + copied D + Niels Stage 2 exact differential: PASS
+10,000 zero/maximum-u52/random input sets: PASS
+input workspace immutability: PASS
+fixed-base full-comb differential, 512 scalar/mask fixtures: PASS
+full repository native suite: PASS
+
+Isolated three-product affine/Niels operation
+------------------------------------------------
+
+separate ns/op:
+28.28 28.38 28.28 28.40 28.29 28.40 28.57 29.37
+
+tail ns/op:
+23.31 23.31 23.32 23.31 23.31 23.30 23.31 23.30
+
+Allocation-free same-binary complete fixed-base comb
+----------------------------------------------------
+
+separate ns/op:
+3210 3213 3214 3210 3211 3210 3211 3211 3211 3212
+
+tail ns/op:
+3072 3071 3070 3070 3072 3072 3072 3073 3074 3073
+
+medians: 3211 -> 3072 ns/group (-4.33%)
+
+Rejected measurement
+--------------------
+
+A cross-commit public-verifier A/B reported an approximately 9% difference.
+That exceeds the entire measured fixed-base-add share and is physically
+incompatible with the scope of this change. It is rejected as a binary text-
+layout/code-shape artifact and is not used for retention or documentation.
+The same-binary gate above holds all unrelated text and execution paths fixed.
+
+The retained leaf expands the same raw-product source macro, copies point Z
+bit-for-bit into the Stage-2 D slot, and tail-enters the existing independently
+tested ifmaNielsStage2X8 symbol. It changes no field equation, range bound,
+carry placement, output representation, or verification predicate.

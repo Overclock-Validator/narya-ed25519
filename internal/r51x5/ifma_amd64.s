@@ -26,6 +26,12 @@
 	VPADDQ LO, T0, T0                     \
 	VMOVDQU64 T0, OFF(DI)
 
+// Keep the raw x8 multiply in one source-level body. Both the public
+// single-product leaf and compound point-operation leaves expand it, which
+// makes their exact-representation equivalence mechanical rather than a
+// promise that two copied schedules continue to match after later edits.
+#include "ifma_raw_x8_body.h"
+
 // Fold HI into LO in registers using 2^255 = 19 (mod p). T0 and T1 may not
 // alias LO or HI. This is the register-resident counterpart of FOLD_STORE.
 #define FOLD_INTO(LO, HI, T0, T1) \
@@ -67,6 +73,59 @@
 	VPADDQ C2, IN3, IN3                                                    \
 	VPADDQ C3, IN4, IN4                                                    \
 	VPMADD52LUQ C4, FOLD19, IN0
+
+// Add or subtract the u52 values addressed by CX and BX, normalize the
+// redundant result, and store it through DI. These bodies are shared by the
+// standalone element leaves and the compound projective-Niels leaf below.
+// Keeping one source-level schedule makes the compound leaf's point-side
+// Y-X/Y+X representations mechanically identical to the separately tested
+// element operations.
+#define ADD_NORMALIZED_X8_BODY \
+	VMOVDQU64   0(CX), Z0 \
+	VMOVDQU64  64(CX), Z1 \
+	VMOVDQU64 128(CX), Z2 \
+	VMOVDQU64 192(CX), Z3 \
+	VMOVDQU64 256(CX), Z4 \
+	VPADDQ   0(BX), Z0, Z0 \
+	VPADDQ  64(BX), Z1, Z1 \
+	VPADDQ 128(BX), Z2, Z2 \
+	VPADDQ 192(BX), Z3, Z3 \
+	VPADDQ 256(BX), Z4, Z4 \
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5 \
+	VPBROADCASTQ ·ifmaFold19(SB), Z11 \
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11) \
+	VMOVDQU64 Z0,   0(DI) \
+	VMOVDQU64 Z1,  64(DI) \
+	VMOVDQU64 Z2, 128(DI) \
+	VMOVDQU64 Z3, 192(DI) \
+	VMOVDQU64 Z4, 256(DI)
+
+#define SUBTRACT_NORMALIZED_X8_BODY \
+	VMOVDQU64   0(CX), Z0 \
+	VMOVDQU64  64(CX), Z1 \
+	VMOVDQU64 128(CX), Z2 \
+	VMOVDQU64 192(CX), Z3 \
+	VMOVDQU64 256(CX), Z4 \
+	VPBROADCASTQ ·ifmaSubBias0(SB), Z9 \
+	VPBROADCASTQ ·ifmaSubBiasN(SB), Z10 \
+	VPADDQ Z9, Z0, Z0 \
+	VPADDQ Z10, Z1, Z1 \
+	VPADDQ Z10, Z2, Z2 \
+	VPADDQ Z10, Z3, Z3 \
+	VPADDQ Z10, Z4, Z4 \
+	VPSUBQ   0(BX), Z0, Z0 \
+	VPSUBQ  64(BX), Z1, Z1 \
+	VPSUBQ 128(BX), Z2, Z2 \
+	VPSUBQ 192(BX), Z3, Z3 \
+	VPSUBQ 256(BX), Z4, Z4 \
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5 \
+	VPBROADCASTQ ·ifmaFold19(SB), Z11 \
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11) \
+	VMOVDQU64 Z0,   0(DI) \
+	VMOVDQU64 Z1,  64(DI) \
+	VMOVDQU64 Z2, 128(DI) \
+	VMOVDQU64 Z3, 192(DI) \
+	VMOVDQU64 Z4, 256(DI)
 
 // Multiply the u52 values addressed by CX and BX and store one normalized
 // u52 result through DI. The four-point-final-product leaf below expands this
@@ -162,83 +221,223 @@ TEXT ·ifmaMulRawX8(SB), NOSPLIT, $0-24
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
 
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VMOVDQU64   0(BX), Z5
-	VMOVDQU64  64(BX), Z6
-	VMOVDQU64 128(BX), Z7
-	VMOVDQU64 192(BX), Z8
-	VMOVDQU64 256(BX), Z9
-
-	// Z10..Z18 hold low halves for degrees 0..8. Z19..Z27 hold
-	// high halves for degrees 1..9.
-	CLEAR(Z10)
-	CLEAR(Z11)
-	CLEAR(Z12)
-	CLEAR(Z13)
-	CLEAR(Z14)
-	CLEAR(Z15)
-	CLEAR(Z16)
-	CLEAR(Z17)
-	CLEAR(Z18)
-	CLEAR(Z19)
-	CLEAR(Z20)
-	CLEAR(Z21)
-	CLEAR(Z22)
-	CLEAR(Z23)
-	CLEAR(Z24)
-	CLEAR(Z25)
-	CLEAR(Z26)
-	CLEAR(Z27)
-
-	MUL_PAIR(Z0, Z5, Z10, Z19)
-	MUL_PAIR(Z0, Z6, Z11, Z20)
-	MUL_PAIR(Z0, Z7, Z12, Z21)
-	MUL_PAIR(Z0, Z8, Z13, Z22)
-	MUL_PAIR(Z0, Z9, Z14, Z23)
-	MUL_PAIR(Z1, Z5, Z11, Z20)
-	MUL_PAIR(Z1, Z6, Z12, Z21)
-	MUL_PAIR(Z1, Z7, Z13, Z22)
-	MUL_PAIR(Z1, Z8, Z14, Z23)
-	MUL_PAIR(Z1, Z9, Z15, Z24)
-	MUL_PAIR(Z2, Z5, Z12, Z21)
-	MUL_PAIR(Z2, Z6, Z13, Z22)
-	MUL_PAIR(Z2, Z7, Z14, Z23)
-	MUL_PAIR(Z2, Z8, Z15, Z24)
-	MUL_PAIR(Z2, Z9, Z16, Z25)
-	MUL_PAIR(Z3, Z5, Z13, Z22)
-	MUL_PAIR(Z3, Z6, Z14, Z23)
-	MUL_PAIR(Z3, Z7, Z15, Z24)
-	MUL_PAIR(Z3, Z8, Z16, Z25)
-	MUL_PAIR(Z3, Z9, Z17, Z26)
-	MUL_PAIR(Z4, Z5, Z14, Z23)
-	MUL_PAIR(Z4, Z6, Z15, Z24)
-	MUL_PAIR(Z4, Z7, Z16, Z25)
-	MUL_PAIR(Z4, Z8, Z17, Z26)
-	MUL_PAIR(Z4, Z9, Z18, Z27)
-
-	COMBINE_HIGH(Z19, Z11)
-	COMBINE_HIGH(Z20, Z12)
-	COMBINE_HIGH(Z21, Z13)
-	COMBINE_HIGH(Z22, Z14)
-	COMBINE_HIGH(Z23, Z15)
-	COMBINE_HIGH(Z24, Z16)
-	COMBINE_HIGH(Z25, Z17)
-	COMBINE_HIGH(Z26, Z18)
-	VPSLLQ $1, Z27, Z27
-
-	// Fold degrees 5..9 with 2^255 = 19 (mod p).
-	FOLD_STORE(Z10, Z15, Z28, Z29,   0)
-	FOLD_STORE(Z11, Z16, Z28, Z29,  64)
-	FOLD_STORE(Z12, Z17, Z28, Z29, 128)
-	FOLD_STORE(Z13, Z18, Z28, Z29, 192)
-	FOLD_STORE(Z14, Z27, Z28, Z29, 256)
+	MUL_RAW_X8_BODY
 
 	VZEROUPPER
 	RET
+
+// func ifmaFourRawProductsUncheckedX8(out *[4]IFMAProductX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+//
+// out points to four consecutive IFMAProductX8 values. Each input pair is an
+// independent u52 multiplication and each result is the exact folded-u61
+// representation produced by ifmaMulRawX8. The leaf deliberately does not
+// accept overlapping output/input storage: point formulas own a separate raw
+// workspace, and retaining that simple contract lets all four bodies stream
+// their stores without preservation logic.
+//
+// The optimization is solely structural. Four expansions of the same
+// MUL_RAW_X8_BODY share one Go/assembly transition and one VZEROUPPER. This is
+// especially useful for Niels additions, whose four A/B/C/D products are
+// independent and immediately consumed by the existing linear stage.
+TEXT ·ifmaFourRawProductsUncheckedX8(SB), NOSPLIT, $0-72
+	FOUR_RAW_PRODUCTS_X8_BODY
+
+	VZEROUPPER
+	RET
+
+// The following two leaves execute the identical four raw products above and
+// tail-jump into the existing independently tested Stage-2 transitions. Their
+// first ABI0 argument is the same workspace pointer that Stage 2 expects, so
+// the jump changes neither its stack layout nor its range/provenance contract.
+// Stage 2 performs the sole VZEROUPPER and returns directly to the Go caller.
+// This retains the profiler-visible Stage-2 symbol and avoids a monolithic
+// point kernel while removing the intervening return/call boundary.
+
+// func ifmaFourRawProductsDoubleStage2UncheckedX8(out *ifmaDoubleStage2WorkspaceX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+TEXT ·ifmaFourRawProductsDoubleStage2UncheckedX8(SB), NOSPLIT, $0-72
+	FOUR_RAW_PRODUCTS_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
+	JMP ·ifmaDoubleStage2X8(SB)
+
+// func ifmaFourRawProductsNielsStage2UncheckedX8(out *ifmaNielsStage2WorkspaceX8,
+//     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
+TEXT ·ifmaFourRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-72
+	FOUR_RAW_PRODUCTS_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
+	JMP ·ifmaNielsStage2X8(SB)
+
+// func ifmaPointLinearFourRawNielsStage2ExperimentX8(out *ifmaNielsStage2WorkspaceX8,
+//     point *IFMAPointX8, cached *IFMAProjectiveNielsX8)
+//
+// Fuse only the point-side linear terms and the already-proven four-product
+// continuation. Slot A temporarily holds normalized Y-X and slot B holds
+// normalized Y+X. MUL_RAW_X8_BODY loads every input limb before its first
+// store, so overwriting each temporary with its raw product is alias-safe.
+// C and D then consume T/2dT and Z/Z directly. The tail jump preserves the
+// independently tested Niels Stage-2 boundary and leaves the final-product
+// leaf separate and profiler-visible.
+//
+// IFMAPointX8 layout: X=0, Y=320, Z=640, T=960.
+// IFMAProjectiveNielsX8 layout: Y+X=0, Y-X=320, Z=640, 2dT=960.
+TEXT ·ifmaPointLinearFourRawNielsStage2ExperimentX8(SB), NOSPLIT, $0-24
+	MOVQ out+0(FP), AX
+	MOVQ point+8(FP), R12
+	MOVQ cached+16(FP), DX
+
+	// A temporary = point.Y - point.X.
+	MOVQ AX, DI
+	LEAQ 320(R12), CX
+	MOVQ R12, BX
+	SUBTRACT_NORMALIZED_X8_BODY
+
+	// B temporary = point.Y + point.X.
+	LEAQ 320(AX), DI
+	LEAQ 320(R12), CX
+	MOVQ R12, BX
+	ADD_NORMALIZED_X8_BODY
+
+	// A = (Y-X)*(cached.Y-X), overwriting the fully loaded A temporary.
+	MOVQ AX, DI
+	MOVQ AX, CX
+	LEAQ 320(DX), BX
+	MUL_RAW_X8_BODY
+
+	// B = (Y+X)*(cached.Y+X), likewise overwriting its temporary.
+	LEAQ 320(AX), DI
+	LEAQ 320(AX), CX
+	MOVQ DX, BX
+	MUL_RAW_X8_BODY
+
+	// C = point.T*cached.2dT.
+	LEAQ 640(AX), DI
+	LEAQ 960(R12), CX
+	LEAQ 960(DX), BX
+	MUL_RAW_X8_BODY
+
+	// D = point.Z*cached.Z.
+	LEAQ 960(AX), DI
+	LEAQ 640(R12), CX
+	LEAQ 640(DX), BX
+	MUL_RAW_X8_BODY
+
+	// ABI0 tail-call invariant: arg0 is still the workspace pointer loaded from
+	// out+0(FP), exactly where the $0-8 Stage-2 leaf reads workspace+0(FP).
+	JMP ·ifmaNielsStage2X8(SB)
+
+// func ifmaCompletedProductsToLinearUncheckedX8(
+//     out *ifmaCompletedLinearPointX8, products *[4]IFMAProductX8)
+//
+// products contains exact folded raw [EF, GH, FG, EH]. The first two output
+// coordinates carry GH-EF and GH+EF directly, avoiding the materialized P3
+// path's separate carries of EF and GH followed by two more linear carries.
+// The 535*p subtraction bias and all four input/output bounds are pinned by
+// docs/formal/EDWARDS_WHOLE_WINDOW_RANGE_CERTIFICATE.md. In particular, the
+// largest pre-carry value remains below 2^64 and every final limb is u52.
+//
+// NORMALIZE_5 is reused mechanically here under that schedule-specific range
+// certificate. Its carry/fold instruction sequence is valid beyond the
+// helper's common u61 entry contract because the certificate separately
+// proves the carry-outs and the exact low-52-bit 19*c4 fold.
+TEXT ·ifmaCompletedProductsToLinearUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), DI
+	MOVQ products+8(FP), CX
+
+	// Y-X = carry(GH + 535*p - EF).
+	VMOVDQU64 320(CX), Z0
+	VMOVDQU64 384(CX), Z1
+	VMOVDQU64 448(CX), Z2
+	VMOVDQU64 512(CX), Z3
+	VMOVDQU64 576(CX), Z4
+	VPBROADCASTQ ·ifmaNielsStage2Bias535P0(SB), Z12
+	VPBROADCASTQ ·ifmaNielsStage2Bias535PN(SB), Z13
+	VPADDQ Z12, Z0, Z0
+	VPADDQ Z13, Z1, Z1
+	VPADDQ Z13, Z2, Z2
+	VPADDQ Z13, Z3, Z3
+	VPADDQ Z13, Z4, Z4
+	VPSUBQ   0(CX), Z0, Z0
+	VPSUBQ  64(CX), Z1, Z1
+	VPSUBQ 128(CX), Z2, Z2
+	VPSUBQ 192(CX), Z3, Z3
+	VPSUBQ 256(CX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,   0(DI)
+	VMOVDQU64 Z1,  64(DI)
+	VMOVDQU64 Z2, 128(DI)
+	VMOVDQU64 Z3, 192(DI)
+	VMOVDQU64 Z4, 256(DI)
+
+	// Y+X = carry(GH + EF).
+	VMOVDQU64 320(CX), Z0
+	VMOVDQU64 384(CX), Z1
+	VMOVDQU64 448(CX), Z2
+	VMOVDQU64 512(CX), Z3
+	VMOVDQU64 576(CX), Z4
+	VPADDQ   0(CX), Z0, Z0
+	VPADDQ  64(CX), Z1, Z1
+	VPADDQ 128(CX), Z2, Z2
+	VPADDQ 192(CX), Z3, Z3
+	VPADDQ 256(CX), Z4, Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0, 320(DI)
+	VMOVDQU64 Z1, 384(DI)
+	VMOVDQU64 Z2, 448(DI)
+	VMOVDQU64 Z3, 512(DI)
+	VMOVDQU64 Z4, 576(DI)
+
+	// Z = carry(FG).
+	VMOVDQU64 640(CX), Z0
+	VMOVDQU64 704(CX), Z1
+	VMOVDQU64 768(CX), Z2
+	VMOVDQU64 832(CX), Z3
+	VMOVDQU64 896(CX), Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0, 640(DI)
+	VMOVDQU64 Z1, 704(DI)
+	VMOVDQU64 Z2, 768(DI)
+	VMOVDQU64 Z3, 832(DI)
+	VMOVDQU64 Z4, 896(DI)
+
+	// T = carry(EH).
+	VMOVDQU64  960(CX), Z0
+	VMOVDQU64 1024(CX), Z1
+	VMOVDQU64 1088(CX), Z2
+	VMOVDQU64 1152(CX), Z3
+	VMOVDQU64 1216(CX), Z4
+	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
+	VPBROADCASTQ ·ifmaFold19(SB), Z11
+	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
+	VMOVDQU64 Z0,  960(DI)
+	VMOVDQU64 Z1, 1024(DI)
+	VMOVDQU64 Z2, 1088(DI)
+	VMOVDQU64 Z3, 1152(DI)
+	VMOVDQU64 Z4, 1216(DI)
+
+	VZEROUPPER
+	RET
+
+// func ifmaThreeRawProductsNielsStage2UncheckedX8(out *ifmaNielsStage2WorkspaceX8,
+//     x0, y0, x1, y1, x2, y2, d *LimbsX8)
+//
+// Affine-cached specialization: A/B/C are exact raw products while D is the
+// carried-u52 point Z coordinate. Niels Stage 2 explicitly permits this
+// tighter fourth-slot contract. The copy and tail jump replace three raw
+// returns, a Go-level 320-byte assignment, and a separate Stage-2 transition.
+TEXT ·ifmaThreeRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-64
+	THREE_RAW_PRODUCTS_AND_D_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
+	JMP ·ifmaNielsStage2X8(SB)
 
 // func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)
 //
@@ -331,6 +530,11 @@ TEXT ·ifmaMulRawX4(SB), NOSPLIT, $0-24
 // The exact folded u61 product never touches memory. All ten input vectors are
 // loaded before any output store, so out may alias x or y.
 TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
+	// Keep the dominant full-x8 IFMA leaf on a cache-line boundary. Without
+	// an explicit entry alignment, unrelated packed-x4 text changes moved the
+	// first instruction between the two 32-byte halves of a line and produced
+	// a repeatable sub-percent complete-verifier delta on Zen 5.
+	PCALIGN $64
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
@@ -422,7 +626,7 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
-// func ifmaPointFinalProductsExperimentUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
+// func ifmaPointFinalProductsUncheckedX8(out *IFMAPointX8, operands *IFMAProductX8)
 //
 // operands points to four consecutive carried-u52 slots in E,F,G,H order.
 // The leaf computes (E*F, G*H, F*G, E*H) into out.X/Y/Z/T. The current point
@@ -431,10 +635,11 @@ TEXT ·ifmaMulNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 // ifmaMulNormalizedUncheckedX8; the only optimization is sharing the call
 // boundary and final VZEROUPPER across four independent products.
 //
-// Regime tag: on a Ryzen 7 PRO 8700GE the leaf reduced the isolated four-
-// product boundary by less than 1% and complete verification by less than
-// 0.5%. It remains an exact test/benchmark candidate, not a production path.
-TEXT ·ifmaPointFinalProductsExperimentUncheckedX8(SB), NOSPLIT, $0-16
+// Regime tag: the isolated leaf was nearly neutral on Zen 4 and about 1.2%
+// faster on Zen 5. Its production value comes mainly from collapsing three
+// assembly transitions and VZEROUPPER instructions per point operation; the
+// complete native-x8 verifier gate, not the isolated leaf, controls dispatch.
+TEXT ·ifmaPointFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
 	MOVQ out+0(FP), AX
 	MOVQ operands+8(FP), DX
 
@@ -453,6 +658,44 @@ TEXT ·ifmaPointFinalProductsExperimentUncheckedX8(SB), NOSPLIT, $0-16
 	// T = E*H.
 	LEAQ 960(AX), DI
 	MOVQ DX, CX
+	LEAQ 960(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Z = F*G.
+	LEAQ 640(AX), DI
+	LEAQ 320(DX), CX
+	LEAQ 640(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	VZEROUPPER
+	RET
+
+// func ifmaProjectiveFinalProductsUncheckedX8(out *ifmaProjectivePointX8,
+//     operands *IFMAProductX8)
+//
+// This is the deliberately incomplete P2 boundary used only between
+// consecutive point doublings. operands has the same carried-u52 E,F,G,H
+// layout as ifmaPointFinalProductsUncheckedX8, but out physically contains
+// only X/Y/Z. Omitting T=E*H therefore cannot leave a stale extended
+// coordinate that a later addition might consume. A separate P2-to-P3 leaf
+// computes all four products before every addition boundary.
+//
+// The three remaining products are byte-for-byte the same
+// MUL_NORMALIZED_X8_BODY invocations and store offsets as the complete leaf:
+// X=E*F at 0, Y=G*H at 320, Z=F*G at 640. Input and output must not overlap.
+TEXT ·ifmaProjectiveFinalProductsUncheckedX8(SB), NOSPLIT, $0-16
+	MOVQ out+0(FP), AX
+	MOVQ operands+8(FP), DX
+
+	// X = E*F.
+	MOVQ AX, DI
+	MOVQ DX, CX
+	LEAQ 320(DX), BX
+	MUL_NORMALIZED_X8_BODY
+
+	// Y = G*H.
+	LEAQ 320(AX), DI
+	LEAQ 640(DX), CX
 	LEAQ 960(DX), BX
 	MUL_NORMALIZED_X8_BODY
 
@@ -708,25 +951,7 @@ TEXT ·ifmaAddNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
-
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VPADDQ   0(BX), Z0, Z0
-	VPADDQ  64(BX), Z1, Z1
-	VPADDQ 128(BX), Z2, Z2
-	VPADDQ 192(BX), Z3, Z3
-	VPADDQ 256(BX), Z4, Z4
-	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
-	VPBROADCASTQ ·ifmaFold19(SB), Z11
-	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
-	VMOVDQU64 Z0,   0(DI)
-	VMOVDQU64 Z1,  64(DI)
-	VMOVDQU64 Z2, 128(DI)
-	VMOVDQU64 Z3, 192(DI)
-	VMOVDQU64 Z4, 256(DI)
+	ADD_NORMALIZED_X8_BODY
 	VZEROUPPER
 	RET
 
@@ -735,32 +960,7 @@ TEXT ·ifmaSubtractNormalizedUncheckedX8(SB), NOSPLIT, $0-24
 	MOVQ out+0(FP), DI
 	MOVQ x+8(FP), CX
 	MOVQ y+16(FP), BX
-
-	VMOVDQU64   0(CX), Z0
-	VMOVDQU64  64(CX), Z1
-	VMOVDQU64 128(CX), Z2
-	VMOVDQU64 192(CX), Z3
-	VMOVDQU64 256(CX), Z4
-	VPBROADCASTQ ·ifmaSubBias0(SB), Z9
-	VPBROADCASTQ ·ifmaSubBiasN(SB), Z10
-	VPADDQ Z9, Z0, Z0
-	VPADDQ Z10, Z1, Z1
-	VPADDQ Z10, Z2, Z2
-	VPADDQ Z10, Z3, Z3
-	VPADDQ Z10, Z4, Z4
-	VPSUBQ   0(BX), Z0, Z0
-	VPSUBQ  64(BX), Z1, Z1
-	VPSUBQ 128(BX), Z2, Z2
-	VPSUBQ 192(BX), Z3, Z3
-	VPSUBQ 256(BX), Z4, Z4
-	VPBROADCASTQ ·ifmaLimbMask51(SB), Z5
-	VPBROADCASTQ ·ifmaFold19(SB), Z11
-	NORMALIZE_5(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z8, Z9, Z10, Z11)
-	VMOVDQU64 Z0,   0(DI)
-	VMOVDQU64 Z1,  64(DI)
-	VMOVDQU64 Z2, 128(DI)
-	VMOVDQU64 Z3, 192(DI)
-	VMOVDQU64 Z4, 256(DI)
+	SUBTRACT_NORMALIZED_X8_BODY
 	VZEROUPPER
 	RET
 

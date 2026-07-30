@@ -1,0 +1,6 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64         	   25748	    277851 ns/op	 283.78 MB/s	         0 internal-fault-fallbacks	    230339 signatures/s	         4.341 us/signature	       0 B/op	       0 allocs/op
+PASS

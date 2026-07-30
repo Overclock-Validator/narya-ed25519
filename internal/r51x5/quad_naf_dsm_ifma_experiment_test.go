@@ -83,6 +83,19 @@ func TestExperimentalCoordinateParallelNAFVerifyX4(t *testing.T) {
 			if gotPoint.Bytes() != modelEncoding {
 				t.Fatalf("case %d hardware/model mismatch", index)
 			}
+
+			var specialized quadPackedPointX4
+			valid, err = evaluateQuadNAFVerifyHardwareX4(
+				&specialized, &hardwareA, &hardwareB,
+				&scalarPairs[index][0], &scalarPairs[index][1],
+			)
+			if err != nil || !valid {
+				t.Fatalf("case %d specialized=(%v,%v)", index, valid, err)
+			}
+			specializedPoint := specialized.reduced()
+			if specializedPoint.Bytes() != gotPoint.Bytes() {
+				t.Fatalf("case %d specialized/hardware mismatch", index)
+			}
 		}
 	}
 
@@ -93,6 +106,14 @@ func TestExperimentalCoordinateParallelNAFVerifyX4(t *testing.T) {
 	}
 	if out != quadPackedIdentityValueX4() {
 		t.Fatal("noncanonical scalar did not fail closed to identity")
+	}
+	if hardware {
+		if valid, err := evaluateQuadNAFVerifyHardwareX4(&out, &hardwareA, &hardwareB, &invalid, &scalarPairs[0][1]); err != nil || valid {
+			t.Fatalf("specialized noncanonical s=(%v,%v), want (false,nil)", valid, err)
+		}
+		if out != quadPackedIdentityValueX4() {
+			t.Fatal("specialized noncanonical scalar did not fail closed to identity")
+		}
 	}
 }
 
@@ -132,6 +153,15 @@ func TestExperimentalCoordinateParallelNAFVerifyX4ZeroAllocations(t *testing.T) 
 		}
 	}); allocs != 0 {
 		t.Fatalf("prepared allocations=%v want 0", allocs)
+	}
+	if allocs := testing.AllocsPerRun(20, func() {
+		if valid, err := evaluateQuadNAFVerifyHardwareX4(&out, &aTable, &bTable, &s, &k); err != nil {
+			panic(err)
+		} else if !valid {
+			panic("r51x5: canonical specialized NAF scalar rejected")
+		}
+	}); allocs != 0 {
+		t.Fatalf("specialized prepared allocations=%v want 0", allocs)
 	}
 	if allocs := testing.AllocsPerRun(20, func() {
 		if err := buildQuadNAFTable5X4(&aTable, &fixture.a, ops); err != nil {
@@ -181,6 +211,22 @@ func BenchmarkExperimentalCoordinateParallelNAFVerifyX4(b *testing.B) {
 				b.Fatal(err)
 			} else if !valid {
 				b.Fatal("canonical NAF scalar rejected")
+			}
+		}
+		benchmarkQuadNAFPointSink = out
+	})
+
+	b.Run("stage=prepared/path=quad-naf-hardware-specialized/a-width=5/b-width=8", func(b *testing.B) {
+		var out quadPackedPointX4
+		b.ReportAllocs()
+		b.ReportMetric(float64(unsafe.Sizeof(aTable)), "A-table-B")
+		b.ReportMetric(float64(unsafe.Sizeof(bTable)), "B-table-B")
+		b.ResetTimer()
+		for iteration := 0; iteration < b.N; iteration++ {
+			if valid, err := evaluateQuadNAFVerifyHardwareX4(&out, &aTable, &bTable, &s, &k); err != nil {
+				b.Fatal(err)
+			} else if !valid {
+				b.Fatal("canonical specialized NAF scalar rejected")
 			}
 		}
 		benchmarkQuadNAFPointSink = out

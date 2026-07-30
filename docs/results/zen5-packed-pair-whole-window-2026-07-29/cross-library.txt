@@ -1,0 +1,66 @@
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=1/msg=1232         	  173215	     13853 ns/op	     72186 sig/s	        13.85 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=1/msg=1232         	  173191	     13858 ns/op	     72163 sig/s	        13.86 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=1/msg=1232         	  173241	     13856 ns/op	     72171 sig/s	        13.86 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=1/msg=1232             	   86595	     27693 ns/op	     36110 sig/s	        27.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=1/msg=1232             	   86686	     27679 ns/op	     36128 sig/s	        27.68 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=1/msg=1232             	   86727	     27693 ns/op	     36110 sig/s	        27.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=1/msg=1232     	  109122	     21977 ns/op	     45502 sig/s	        21.98 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=1/msg=1232     	  109204	     21979 ns/op	     45497 sig/s	        21.98 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=1/msg=1232     	  109219	     21978 ns/op	     45501 sig/s	        21.98 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=1/msg=1232 	  125280	     19154 ns/op	     52208 sig/s	        19.15 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=1/msg=1232 	  125252	     19161 ns/op	     52190 sig/s	        19.16 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=1/msg=1232 	  125218	     19159 ns/op	     52194 sig/s	        19.16 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=2/msg=1232         	   98257	     24372 ns/op	     82062 sig/s	        12.19 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=2/msg=1232         	   98360	     24402 ns/op	     81959 sig/s	        12.20 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=2/msg=1232         	   98407	     24401 ns/op	     81965 sig/s	        12.20 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=2/msg=1232             	   43912	     54632 ns/op	     36609 sig/s	        27.32 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=2/msg=1232             	   43892	     54672 ns/op	     36582 sig/s	        27.34 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=2/msg=1232             	   43894	     54702 ns/op	     36562 sig/s	        27.35 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=2/msg=1232     	   55285	     43388 ns/op	     46096 sig/s	        21.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=2/msg=1232     	   55299	     43387 ns/op	     46097 sig/s	        21.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=2/msg=1232     	   55326	     43386 ns/op	     46098 sig/s	        21.69 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=2/msg=1232 	   63567	     37761 ns/op	     52965 sig/s	        18.88 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=2/msg=1232 	   63541	     37764 ns/op	     52961 sig/s	        18.88 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=2/msg=1232 	   63560	     37749 ns/op	     52981 sig/s	        18.87 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=4/msg=1232         	   76442	     31406 ns/op	    127364 sig/s	         7.852 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=4/msg=1232         	   76386	     31395 ns/op	    127409 sig/s	         7.849 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=4/msg=1232         	   76399	     31404 ns/op	    127371 sig/s	         7.851 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=4/msg=1232             	   21885	    109401 ns/op	     36563 sig/s	        27.35 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=4/msg=1232             	   21894	    109714 ns/op	     36458 sig/s	        27.43 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=4/msg=1232             	   21876	    109735 ns/op	     36451 sig/s	        27.43 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=4/msg=1232     	   27537	     87126 ns/op	     45910 sig/s	        21.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=4/msg=1232     	   27552	     87133 ns/op	     45907 sig/s	        21.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=4/msg=1232     	   27543	     87137 ns/op	     45905 sig/s	        21.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=4/msg=1232 	   31634	     75831 ns/op	     52749 sig/s	        18.96 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=4/msg=1232 	   31645	     75849 ns/op	     52736 sig/s	        18.96 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=4/msg=1232 	   31634	     75845 ns/op	     52739 sig/s	        18.96 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=8/msg=1232         	   79202	     30303 ns/op	    263999 sig/s	         3.788 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=8/msg=1232         	   79119	     30349 ns/op	    263597 sig/s	         3.794 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=8/msg=1232         	   79095	     30316 ns/op	    263891 sig/s	         3.789 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=8/msg=1232             	   10000	    219009 ns/op	     36528 sig/s	        27.38 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=8/msg=1232             	   10000	    218929 ns/op	     36542 sig/s	        27.37 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=8/msg=1232             	   10000	    219067 ns/op	     36518 sig/s	        27.38 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=8/msg=1232     	   13789	    174147 ns/op	     45938 sig/s	        21.77 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=8/msg=1232     	   13788	    174222 ns/op	     45918 sig/s	        21.78 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=8/msg=1232     	   13791	    174043 ns/op	     45966 sig/s	        21.76 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=8/msg=1232 	   15834	    151585 ns/op	     52776 sig/s	        18.95 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=8/msg=1232 	   15846	    151702 ns/op	     52735 sig/s	        18.96 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=8/msg=1232 	   15822	    151778 ns/op	     52709 sig/s	        18.97 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=64/msg=1232        	   10000	    229954 ns/op	    278316 sig/s	         3.593 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=64/msg=1232        	   10000	    230524 ns/op	    277628 sig/s	         3.602 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=narya-r51-dispatch/n=64/msg=1232        	   10000	    230462 ns/op	    277703 sig/s	         3.601 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=64/msg=1232            	    1368	   1751409 ns/op	     36542 sig/s	        27.37 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=64/msg=1232            	    1370	   1751198 ns/op	     36546 sig/s	        27.36 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=go-stdlib-loop/n=64/msg=1232            	    1369	   1751363 ns/op	     36543 sig/s	        27.37 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=64/msg=1232    	    1711	   1400852 ns/op	     45686 sig/s	        21.89 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=64/msg=1232    	    1713	   1400308 ns/op	     45704 sig/s	        21.88 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-cold-loop/n=64/msg=1232    	    1712	   1406932 ns/op	     45489 sig/s	        21.98 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=64/msg=1232         	    1969	   1218371 ns/op	     52529 sig/s	        19.04 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=64/msg=1232         	    1968	   1218283 ns/op	     52533 sig/s	        19.04 µs/sig	       0 B/op	       0 allocs/op
+BenchmarkEd25519CrossLibrary/mode=independent/impl=oasis-strict-expanded-loop/n=64/msg=1232         	    1969	   1218168 ns/op	     52538 sig/s	        19.03 µs/sig	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Overclock-Validator/narya-ed25519/ed25519	172.020s

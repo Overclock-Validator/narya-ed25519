@@ -27,7 +27,8 @@ Two packages:
 - **`sha512mb`** — multi-buffer SHA-512. Digests are bit-identical to
   `crypto/sha512`. The public `Lanes`/`Sum512Batch` API remains scalar and
   portable; hardware-gated AVX2 x4 and AVX-512F x8 entry points are present.
-  The explicitly forced r51 verifier consumes the x4 entry point internally.
+  The explicitly forced r51 verifier consumes the native width selected for
+  each measured CPU and tail shape internally.
 
 ## Acceptance semantics (the load-bearing part)
 
@@ -76,11 +77,12 @@ verdicts.
     performance does not displace the selected r51 path. Automatic selection
     deliberately remains `generic`.
   - `r51` — a registered, forced-only five-limb lane-per-signature AMD
-    backend. It uses a packed singleton, x4 batch-Q groups on Zen 4, and native
-    x8 groups plus x4 tails on Zen 5. Its optional Cache promotes four recurring
-    strict keys together to immutable warm A6/r9 tables while preserving the
-    native SIMD width. Automatic selection remains generic. Alternate-radix
-    configurations remain benchmark candidates. See
+    backend. It uses a coordinate-packed singleton, a two-equation packed-ZMM
+    strict pair on Zen 5, native x8 full groups on both measured AMD families,
+    and x4 tails. Its optional Cache promotes four recurring strict keys
+    together to immutable warm A6/r9 tables while preserving the native SIMD
+    width. Automatic selection remains generic. Alternate schedules remain
+    regime-tagged benchmark candidates. See
     `docs/R51_THROUGHPUT_BACKEND.md`.
   - `stdlib` — routes to `crypto/ed25519`; the rollback proof point.
 - No cgo anywhere. The current AVX-512 primitives are Go assembly, gated on
@@ -94,13 +96,13 @@ verdicts.
 |---|---|
 | `generic` backend + comb cache | done |
 | Profiles + `VerifyStrict` + small-order rejection | done |
-| `VerifyBatch` pipeline (per-signature verdicts) | done; forced r51 uses native x4 hashing |
+| `VerifyBatch` pipeline (per-signature verdicts) | done; forced r51 uses native x4/x8 hashing by measured width policy |
 | Differential test corpus (RFC 8032, CCTV 914, Wycheproof 133, Firedancer regressions, fuzz) | done |
 | `sha512mb` AVX2 x4 / AVX-512F x8 kernels | hardware-tested; x4 consumed by forced r51, public hash dispatch remains scalar |
 | forced-only `ifma` r43x6 reference backend | implemented and hardware-tested; not automatic |
-| registered r51 cold backend | done for explicit Zen 4/Zen 5 selection; packed singleton plus width-specific batch-Q dispatcher |
+| registered r51 cold backend | done for explicit Zen 4/Zen 5 selection; packed singleton, Zen 5 packed pair, x4 tails, and x8 full groups |
 | exact modulo-8L HEEA selector/QSM | research-only; ordinary r51 remains selected |
-| r51 x8 plus radix-32/comb256 cold schedule | promoted inside forced `r51`; CPUID selects x8 on measured AMD family 19h+ IFMA parts, with x4 retained for tails and unknown CPUs |
+| r51 x8 plus radix-32/asymmetric-B10 cold schedule | promoted on Zen 5; measured AMD family 19h+ parts use x8 full groups, while Zen 4 and unknown CPUs retain their independently measured generator schedule |
 | r51 variable-base tables | small cold table rebuilt per verification; opt-in Cache admits exact-byte-bound decoded A and promotes valid strict hits to a 19,424-byte A6/r9 warm entry on Zen 4 and Zen 5 |
 | Exact Mithril trace cache timing | strict schema-v3 serialized generic-cache diagnostic implemented; representative artifact and backend-native r51/end-to-end gates pending |
 
@@ -125,12 +127,11 @@ profile's predicate returns. Enforced by:
 - Fuzz targets (three-way: stdlib vs generic vs cached vs batch; sha512mb
   vs `crypto/sha512`).
 
-The registered r51 dispatcher's core is measured at all batch widths. PR 1's
-external-package release benchmark forces it through `SetBackend("r51")` and
-calls only exported `VerifyBatchStrict`; the public result must be no more than
-2% slower than the core. On the Ryzen 7 PRO 8700GE it uses packed verification
-at n=1/2 and x4 groups plus exact tails for wider batches. Future r43, x8,
-warm-cache, and HEEA changes must beat the final registered public-dispatch
+The registered r51 dispatcher is measured through the exported API at n=1, 2,
+4, 8, and 64 and at 200-, 1,232-, and 4,096-byte messages. On Zen 5, n=1 is
+coordinate-packed, strict n=2 uses one independent equation per ZMM half, n=4
+uses x4 curve arithmetic, and complete groups use x8. Zen 4 retains two packed
+singleton calls at n=2. Any future change must beat the current public-dispatch
 baseline rather than an older private-pipeline denominator.
 
 `scripts/zen4-evaluate.py RESULT_DIR --decision-output decision-v1.json`
@@ -155,6 +156,9 @@ release decision, never that decision itself.
 - The independent canonical-R gate, original-byte challenge hash, and both
   projective cross-products in the packed singleton; the batch-Q path must
   remain equivalent to literal `Encode(Q) == original Rbytes`.
+- The packed strict pair's half isolation and lane mapping: low ZMM half is
+  input zero, high half is input one, decoded R comes from lanes 1 and 3, and a
+  failed lane cannot change the adjacent verdict or result index.
 - Every IFMA input/range and alias contract, including atomic output on native
   errors and the generic recomputation plus `InternalFaultFallbacks` signal.
 - Synchronous CPU activation: forced r51 requires the complete IFMA feature

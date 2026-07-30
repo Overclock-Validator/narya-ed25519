@@ -1,0 +1,26 @@
+# Public cold and 64-promoted-key matrices at live-path commit bbc6c21.
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test \
+  -tags r51_release_bench -run '^$' \
+  -bench '^BenchmarkPublicR51(VerifyBatchStrict|CacheVerifyBatchStrict)$' \
+  -benchmem -benchtime=2s -count=3 ./ed25519
+
+# Independent-equation comparison at live-path commit bbc6c21.
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test \
+  -modfile=go.oasis.mod -tags oasis_compare -run '^$' \
+  -bench '^BenchmarkEd25519CrossLibrary$/^mode=independent$/^impl=(narya-r51-dispatch|go-stdlib-loop|oasis-strict-cold-loop|oasis-strict-expanded-loop)$/^n=(1|2|4|8|64)$/^msg=1232$' \
+  -benchmem -benchtime=2s -count=3 ./ed25519
+
+# Whole-window candidate at safety-test commit 72d7fc1; live arithmetic is
+# unchanged from candidate implementation commit 5d8a3e4.
+taskset -c 6 env GOMAXPROCS=1 /usr/local/go/bin/go test \
+  -run '^$' -bench '^BenchmarkAsymmetricFixedB10WholeWindowX8Experiment$' \
+  -benchmem -benchtime=2s -count=9 ./internal/r51x5
+
+# Final targeted native safety gates.
+/usr/local/go/bin/go test ./ed25519 \
+  -run '^(TestR51BackendRawStrictPairCorpora|TestR51BackendInternalFaultFallsBackToGeneric|TestR51BackendDispatchDifferential)$' \
+  -count=1 -v
+/usr/local/go/bin/go test ./internal/r51x5 \
+  -run '^(TestExperimentalPackedStrictVerifierPairX8|TestIFMAWholeWindow|TestAsymmetricFixedB10WholeWindow)' \
+  -count=1 -v
+

@@ -1,0 +1,55 @@
+Zen 5 x8 doubling raw-product to Stage-2 tail gate
+==================================================
+
+CPU: AMD Ryzen 7 9700X
+Go: 1.26.4
+Governor: performance
+Affinity: taskset -c 6
+GOMAXPROCS: 1
+Message: 1,232 bytes
+Profile: DalekStrict
+Inputs: cold, distinct public keys; no retained per-key table
+Baseline: 5c773f3 (compound raw leaf returns, Go calls double Stage 2)
+Candidate: 22d3a68 (compound raw leaf tail-jumps into existing Stage 2)
+Build tag: r51_release_bench
+Allocations: zero in every sample
+Internal fault fallbacks: zero in every sample
+
+Native gates
+------------
+
+exact separate-leaf versus tail-linked Stage-2 representations: PASS
+input workspace immutability: PASS
+zero-allocation gate: PASS
+internal/r51x5 and ed25519 candidate suites: PASS
+full repository native candidate suite: PASS
+
+Alternating exported public-API verifier pairs
+----------------------------------------------
+
+pair 1 baseline:  n=8 4.321 us/signature; n=64 4.121 us/signature
+pair 1 candidate: n=8 4.280 us/signature; n=64 4.068 us/signature
+
+pair 2 baseline:  n=8 4.333 us/signature; n=64 4.120 us/signature
+pair 2 candidate: n=8 4.283 us/signature; n=64 4.073 us/signature
+
+pair 3 baseline:  n=8 4.345 us/signature; n=64 4.121 us/signature
+pair 3 candidate: n=8 4.267 us/signature; n=64 4.068 us/signature
+
+pair 4 baseline:  n=8 4.328 us/signature; n=64 4.119 us/signature
+pair 4 candidate: n=8 4.298 us/signature; n=64 4.067 us/signature
+
+pair 5 baseline:  n=8 4.350 us/signature; n=64 4.122 us/signature
+pair 5 candidate: n=8 4.336 us/signature; n=64 4.066 us/signature
+
+Medians
+-------
+
+n=8:  4.333 -> 4.283 us/signature (-1.15%)
+n=64: 4.121 -> 4.068 us/signature (-1.29%)
+
+The final n=8 candidate sample entered a slower timing regime, but still beat
+its paired baseline. All five n=64 pairs stayed coherent and favored the
+candidate. The assembly tail jump reuses the existing independently tested
+ifmaDoubleStage2X8 symbol and identical ABI0 first argument; it changes no
+Stage-2 instruction, range bound, workspace mapping, or final representation.

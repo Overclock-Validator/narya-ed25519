@@ -1,0 +1,11 @@
+commit: 3f7b6885876520f2434e0a89248e106ed144985a
+date: 2026-07-29
+kernel: Linux 7.0.0-28-generic x86_64
+toolchain: go version go1.26.4 linux/amd64
+vendor: AuthenticAMD
+cpu: AMD Ryzen 7 9700X 8-Core Processor
+topology: 1 socket, 8 physical cores, 2 threads/core
+online CPUs: 0-15
+serial pinned CPU: 6
+governor: performance
+required feature observed: avx512ifma

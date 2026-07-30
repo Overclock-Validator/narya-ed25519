@@ -1,0 +1,80 @@
+baseline 1
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	   99036	     36499 ns/op	 270.03 MB/s	         0 internal-fault-fallbacks	    219181 signatures/s	         4.562 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   12958	    277892 ns/op	 283.74 MB/s	         0 internal-fault-fallbacks	    230305 signatures/s	         4.342 us/signature	       0 B/op	       0 allocs/op
+PASS
+candidate 1
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  103634	     34756 ns/op	 283.58 MB/s	         0 internal-fault-fallbacks	    230175 signatures/s	         4.345 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   13592	    264740 ns/op	 297.83 MB/s	         0 internal-fault-fallbacks	    241746 signatures/s	         4.137 us/signature	       0 B/op	       0 allocs/op
+PASS
+baseline 2
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	   98654	     36526 ns/op	 269.83 MB/s	         0 internal-fault-fallbacks	    219020 signatures/s	         4.566 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   12951	    277896 ns/op	 283.73 MB/s	         0 internal-fault-fallbacks	    230302 signatures/s	         4.342 us/signature	       0 B/op	       0 allocs/op
+PASS
+candidate 2
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  103626	     34764 ns/op	 283.51 MB/s	         0 internal-fault-fallbacks	    230122 signatures/s	         4.346 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   13621	    264256 ns/op	 298.38 MB/s	         0 internal-fault-fallbacks	    242189 signatures/s	         4.129 us/signature	       0 B/op	       0 allocs/op
+PASS
+baseline 3
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	   98710	     36517 ns/op	 269.90 MB/s	         0 internal-fault-fallbacks	    219077 signatures/s	         4.565 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   12939	    278247 ns/op	 283.37 MB/s	         0 internal-fault-fallbacks	    230011 signatures/s	         4.348 us/signature	       0 B/op	       0 allocs/op
+PASS
+candidate 3
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  103428	     34792 ns/op	 283.28 MB/s	         0 internal-fault-fallbacks	    229937 signatures/s	         4.349 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   13598	    264658 ns/op	 297.92 MB/s	         0 internal-fault-fallbacks	    241822 signatures/s	         4.135 us/signature	       0 B/op	       0 allocs/op
+PASS
+baseline 4
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	   98445	     36613 ns/op	 269.19 MB/s	         0 internal-fault-fallbacks	    218499 signatures/s	         4.577 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   12945	    277999 ns/op	 283.63 MB/s	         0 internal-fault-fallbacks	    230217 signatures/s	         4.344 us/signature	       0 B/op	       0 allocs/op
+PASS
+candidate 4
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  103518	     34719 ns/op	 283.88 MB/s	         0 internal-fault-fallbacks	    230423 signatures/s	         4.340 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   13628	    264179 ns/op	 298.46 MB/s	         0 internal-fault-fallbacks	    242260 signatures/s	         4.128 us/signature	       0 B/op	       0 allocs/op
+PASS
+baseline 5
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	   98520	     36555 ns/op	 269.62 MB/s	         0 internal-fault-fallbacks	    218848 signatures/s	         4.569 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   12926	    278584 ns/op	 283.03 MB/s	         0 internal-fault-fallbacks	    229733 signatures/s	         4.353 us/signature	       0 B/op	       0 allocs/op
+PASS
+candidate 5
+goos: linux
+goarch: amd64
+pkg: github.com/Overclock-Validator/narya-ed25519/ed25519
+cpu: AMD Ryzen 7 9700X 8-Core Processor             
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=8         	  103663	     34770 ns/op	 283.47 MB/s	         0 internal-fault-fallbacks	    230086 signatures/s	         4.346 us/signature	       0 B/op	       0 allocs/op
+BenchmarkPublicR51VerifyBatchStrict/msg=1232/n=64        	   13594	    264798 ns/op	 297.77 MB/s	         0 internal-fault-fallbacks	    241694 signatures/s	         4.137 us/signature	       0 B/op	       0 allocs/op
+PASS
