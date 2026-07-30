@@ -292,13 +292,18 @@ func TestR51BackendInternalFaultFallsBackToGeneric(t *testing.T) {
 	if !b.verifyStrictRaw(&single.pub, single.msg, single.sig) {
 		t.Fatal("raw strict singleton native fault did not fall back to generic verification")
 	}
+	pair := makeBatchFixture(t, 2, 200)
+	pairVerdicts := make([]bool, len(pair.pubs))
+	if !b.verifyBatchRaw(DalekStrict, pair.pubs, pair.msgs, pair.sigs, pairVerdicts) {
+		t.Fatalf("packed-pair native fault did not fall back: %v", pairVerdicts)
+	}
 	batch := makeBatchFixture(t, 4, 200)
 	verdicts := make([]bool, len(batch.pubs))
 	if !b.verifyBatchRaw(DalekStrict, batch.pubs, batch.msgs, batch.sigs, verdicts) {
 		t.Fatalf("batch native fault did not fall back: %v", verdicts)
 	}
-	if got := b.backendStats().InternalFaultFallbacks; got != 3 {
-		t.Fatalf("fault fallback count=%d, want 3", got)
+	if got := b.backendStats().InternalFaultFallbacks; got != 4 {
+		t.Fatalf("fault fallback count=%d, want 4", got)
 	}
 }
 
@@ -344,6 +349,51 @@ func TestR51BackendRawStrictSingletonCorpora(t *testing.T) {
 				want := referenceVerifyProfile(DalekStrict, &vector.pub, vector.msg, vector.sig)
 				if got != want {
 					t.Fatalf("%s: raw strict=%v want=%v", vector.name, got, want)
+				}
+			}
+		})
+	}
+}
+
+// TestR51BackendRawStrictPairCorpora pins the exact public n=2 route that is
+// selected on Zen 5 (and by the SDE AMD-policy coverage build). The packed
+// implementation places one complete verification equation in each 256-bit
+// half of a ZMM register, so this test is deliberately per-lane: a rejected
+// vector must not change the adjacent vector's verdict or its result index.
+func TestR51BackendRawStrictPairCorpora(t *testing.T) {
+	if !cpufeat.PreferPackedPairX8IFMA() {
+		t.Skip("packed strict pair policy is disabled on this CPU")
+	}
+	b := requireR51Backend(t)
+	for _, corpus := range []struct {
+		name    string
+		vectors []r51ReferenceVector
+	}{
+		{name: "cctv", vectors: r51CCTVVectors(t)},
+		{name: "wycheproof", vectors: r51WycheproofVectors(t)},
+	} {
+		t.Run(corpus.name, func(t *testing.T) {
+			for first := 0; first < len(corpus.vectors); first += 2 {
+				second := first + 1
+				if second == len(corpus.vectors) {
+					second = first
+				}
+				pair := [2]*r51ReferenceVector{&corpus.vectors[first], &corpus.vectors[second]}
+				pubs := []*[32]byte{&pair[0].pub, &pair[1].pub}
+				msgs := [][]byte{pair[0].msg, pair[1].msg}
+				sigs := [][]byte{pair[0].sig, pair[1].sig}
+				got := make([]bool, 2)
+				gotAll := b.verifyBatchRaw(DalekStrict, pubs, msgs, sigs, got)
+				wantAll := true
+				for lane := range got {
+					want := referenceVerifyProfile(DalekStrict, pubs[lane], msgs[lane], sigs[lane])
+					wantAll = wantAll && want
+					if got[lane] != want {
+						t.Fatalf("pair=%d lane=%d %s: packed=%v want=%v", first/2, lane, pair[lane].name, got[lane], want)
+					}
+				}
+				if gotAll != wantAll {
+					t.Fatalf("pair=%d aggregate=%v want=%v", first/2, gotAll, wantAll)
 				}
 			}
 		})
