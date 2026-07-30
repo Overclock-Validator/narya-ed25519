@@ -448,6 +448,10 @@ func TestExperimentalIFMAFixedBaseCombZeroAllocations(t *testing.T) {
 }
 
 func TestFixedBaseIFMACachedUncheckedSelectorsMatchChecked(t *testing.T) {
+	if !ExperimentalIFMAAvailable() {
+		t.Skip("requires AVX-512 IFMA/VBMI")
+	}
+
 	rng := rand.New(rand.NewSource(0xb4515e1f))
 	base, _ := fixedBaseGenerator(t)
 	var scalars8 [X8Lanes][32]byte

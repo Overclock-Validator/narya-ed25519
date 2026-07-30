@@ -90,7 +90,7 @@ jobs:
       - name: Require and test r51x5 IFMA kernels under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestExperimentalIFMABatchEncodeX8MatchesModelAndAllocatesZero|TestExperimentalUniformScalarReductionIFMAX8MatchesScalar|TestFixedBaseIFMACachedUncheckedSelectorsMatchChecked|TestIFMAFourRawProductsX8MatchesFourCalls|TestIFMAFourRawProductsStage2X8MatchesSeparateLeaves|TestIFMAThreeRawProductsNielsStage2X8MatchesSeparateLeaves|TestIFMAProjectiveFinalProductsX8MatchesCompleteLeaf|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
       - name: Require and test native SHA-512 kernels under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
@@ -100,7 +100,7 @@ jobs:
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestR51BackendInternalFaultFallsBackToGeneric|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+            -test.run '^(TestR51BackendInternalFaultFallsBackToGeneric|TestR51BackendRawStrictPairCorpora|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
 
       # Everything above runs the x4 paths only. The x8/ZMM groups, the
       # decoded-A cache tier, warm x4 pairing and the raw-square schedule are
