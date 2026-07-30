@@ -51,6 +51,5 @@ vet run at the live-path benchmark commit. The later targeted native run at
 - whole-window maximum-bound, exact-representation, active-mask, randomized,
   and zero-allocation gates.
 
-The broader final suite is rerun after documentation-only changes and recorded
-separately before the audit handoff SHA.
-
+`final-validation.txt` records the complete exact-SHA native, race, vet,
+AMD-policy, portable, and certificate-regeneration gates at the safety freeze.
