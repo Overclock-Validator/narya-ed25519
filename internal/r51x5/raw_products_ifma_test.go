@@ -34,7 +34,7 @@ func TestIFMAFourRawProductsX8MatchesFourCalls(t *testing.T) {
 		fourRawProductsFourCallsX8(&want, &inputs)
 		var got [4]IFMAProductX8
 		ifmaFourRawProductsUncheckedX8(
-			&got[0],
+			&got,
 			&inputs[0], &inputs[1],
 			&inputs[2], &inputs[3],
 			&inputs[4], &inputs[5],
@@ -59,7 +59,7 @@ func TestIFMAFourRawProductsX8ZeroAllocations(t *testing.T) {
 	var out [4]IFMAProductX8
 	allocations := testing.AllocsPerRun(1_000, func() {
 		ifmaFourRawProductsUncheckedX8(
-			&out[0],
+			&out,
 			&inputs[0], &inputs[1],
 			&inputs[2], &inputs[3],
 			&inputs[4], &inputs[5],
@@ -94,7 +94,7 @@ func BenchmarkIFMAFourRawProductsX8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaFourRawProductsUncheckedX8(
-				&out[0],
+				&out,
 				&inputs[0], &inputs[1],
 				&inputs[2], &inputs[3],
 				&inputs[4], &inputs[5],

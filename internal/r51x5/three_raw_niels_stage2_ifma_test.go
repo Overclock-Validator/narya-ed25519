@@ -39,7 +39,7 @@ func TestIFMAThreeRawProductsNielsStage2X8MatchesSeparateLeaves(t *testing.T) {
 
 		var got ifmaNielsStage2WorkspaceX8
 		ifmaThreeRawProductsNielsStage2UncheckedX8(
-			&got[0],
+			&got,
 			&inputs[0], &inputs[1],
 			&inputs[2], &inputs[3],
 			&inputs[4], &inputs[5],
@@ -62,7 +62,7 @@ func TestIFMAThreeRawProductsNielsStage2X8ZeroAllocations(t *testing.T) {
 	var out ifmaNielsStage2WorkspaceX8
 	allocations := testing.AllocsPerRun(1_000, func() {
 		ifmaThreeRawProductsNielsStage2UncheckedX8(
-			&out[0],
+			&out,
 			&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 			&inputs[4], &inputs[5], &inputs[6],
 		)
@@ -98,7 +98,7 @@ func BenchmarkIFMAThreeRawProductsNielsStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaThreeRawProductsNielsStage2UncheckedX8(
-				&out[0],
+				&out,
 				&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 				&inputs[4], &inputs[5], &inputs[6],
 			)

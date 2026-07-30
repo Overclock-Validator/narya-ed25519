@@ -317,7 +317,7 @@ func ifmaPointDoubleComposableWorkspaceStaticX8(out, q *IFMAPointX8, workspace *
 	// 252-doubling scalar loop pays one transition and one VZEROUPPER per
 	// doubling instead of four.
 	ifmaFourRawProductsDoubleStage2UncheckedX8(
-		&stage2[0],
+		stage2,
 		&q.X.limbs, &q.X.limbs,
 		&q.Y.limbs, &q.Y.limbs,
 		&q.Z.limbs, &q.Z.limbs,

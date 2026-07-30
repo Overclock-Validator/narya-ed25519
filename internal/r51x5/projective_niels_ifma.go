@@ -75,7 +75,7 @@ func ifmaPointAddProjectiveNielsWorkspaceX8(
 	// and one VZEROUPPER, while expanding the same source-level multiply body
 	// as four standalone ifmaMulRawX8 calls.
 	ifmaFourRawProductsNielsStage2UncheckedX8(
-		&stage2[0],
+		stage2,
 		&yMinusX.limbs, &cached.YMinusX.limbs,
 		&yPlusX.limbs, &cached.YPlusX.limbs,
 		&point.T.limbs, &cached.T2D.limbs,

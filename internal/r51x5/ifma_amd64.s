@@ -226,7 +226,7 @@ TEXT ·ifmaMulRawX8(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
-// func ifmaFourRawProductsUncheckedX8(out *IFMAProductX8,
+// func ifmaFourRawProductsUncheckedX8(out *[4]IFMAProductX8,
 //     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
 //
 // out points to four consecutive IFMAProductX8 values. Each input pair is an
@@ -254,19 +254,23 @@ TEXT ·ifmaFourRawProductsUncheckedX8(SB), NOSPLIT, $0-72
 // This retains the profiler-visible Stage-2 symbol and avoids a monolithic
 // point kernel while removing the intervening return/call boundary.
 
-// func ifmaFourRawProductsDoubleStage2UncheckedX8(out *IFMAProductX8,
+// func ifmaFourRawProductsDoubleStage2UncheckedX8(out *ifmaDoubleStage2WorkspaceX8,
 //     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
 TEXT ·ifmaFourRawProductsDoubleStage2UncheckedX8(SB), NOSPLIT, $0-72
 	FOUR_RAW_PRODUCTS_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
 	JMP ·ifmaDoubleStage2X8(SB)
 
-// func ifmaFourRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
+// func ifmaFourRawProductsNielsStage2UncheckedX8(out *ifmaNielsStage2WorkspaceX8,
 //     x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8)
 TEXT ·ifmaFourRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-72
 	FOUR_RAW_PRODUCTS_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
 	JMP ·ifmaNielsStage2X8(SB)
 
-// func ifmaPointLinearFourRawNielsStage2ExperimentX8(out *IFMAProductX8,
+// func ifmaPointLinearFourRawNielsStage2ExperimentX8(out *ifmaNielsStage2WorkspaceX8,
 //     point *IFMAPointX8, cached *IFMAProjectiveNielsX8)
 //
 // Fuse only the point-side linear terms and the already-proven four-product
@@ -320,6 +324,8 @@ TEXT ·ifmaPointLinearFourRawNielsStage2ExperimentX8(SB), NOSPLIT, $0-24
 	LEAQ 640(DX), BX
 	MUL_RAW_X8_BODY
 
+	// ABI0 tail-call invariant: arg0 is still the workspace pointer loaded from
+	// out+0(FP), exactly where the $0-8 Stage-2 leaf reads workspace+0(FP).
 	JMP ·ifmaNielsStage2X8(SB)
 
 // func ifmaCompletedProductsToLinearUncheckedX8(
@@ -420,7 +426,7 @@ TEXT ·ifmaCompletedProductsToLinearUncheckedX8(SB), NOSPLIT, $0-16
 	VZEROUPPER
 	RET
 
-// func ifmaThreeRawProductsNielsStage2UncheckedX8(out *IFMAProductX8,
+// func ifmaThreeRawProductsNielsStage2UncheckedX8(out *ifmaNielsStage2WorkspaceX8,
 //     x0, y0, x1, y1, x2, y2, d *LimbsX8)
 //
 // Affine-cached specialization: A/B/C are exact raw products while D is the
@@ -429,6 +435,8 @@ TEXT ·ifmaCompletedProductsToLinearUncheckedX8(SB), NOSPLIT, $0-16
 // returns, a Go-level 320-byte assignment, and a separate Stage-2 transition.
 TEXT ·ifmaThreeRawProductsNielsStage2UncheckedX8(SB), NOSPLIT, $0-64
 	THREE_RAW_PRODUCTS_AND_D_X8_BODY
+	// ABI0 tail-call invariant: arg0 is the same workspace pointer expected at
+	// workspace+0(FP) by the $0-8 Stage-2 leaf.
 	JMP ·ifmaNielsStage2X8(SB)
 
 // func ifmaMulRawX4(out *IFMAProductX4, x, y *LimbsX4)

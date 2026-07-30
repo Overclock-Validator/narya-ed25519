@@ -15,7 +15,7 @@ func separatePointLinearNielsStage2X8(
 	ifmaSubtractComposableUncheckedX8(&yMinusX, &point.Y, &point.X)
 	ifmaAddComposableUncheckedX8(&yPlusX, &point.Y, &point.X)
 	ifmaFourRawProductsNielsStage2UncheckedX8(
-		&out[0],
+		out,
 		&yMinusX.limbs, &cached.YMinusX.limbs,
 		&yPlusX.limbs, &cached.YPlusX.limbs,
 		&point.T.limbs, &cached.T2D.limbs,
@@ -47,7 +47,7 @@ func TestIFMAPointLinearFourRawNielsStage2X8MatchesSeparateLeaves(t *testing.T) 
 		pointBefore, cachedBefore := point, cached
 		var want, got ifmaNielsStage2WorkspaceX8
 		separatePointLinearNielsStage2X8(&want, &point, &cached)
-		ifmaPointLinearFourRawNielsStage2ExperimentX8(&got[0], &point, &cached)
+		ifmaPointLinearFourRawNielsStage2ExperimentX8(&got, &point, &cached)
 		if got != want {
 			t.Fatalf("%s: compound point-linear Niels Stage 2 differs from separate exact leaves", name)
 		}
@@ -94,7 +94,7 @@ func TestIFMAPointLinearFourRawNielsStage2X8ZeroAllocations(t *testing.T) {
 	}
 	var out ifmaNielsStage2WorkspaceX8
 	allocations := testing.AllocsPerRun(1_000, func() {
-		ifmaPointLinearFourRawNielsStage2ExperimentX8(&out[0], &point, &cached)
+		ifmaPointLinearFourRawNielsStage2ExperimentX8(&out, &point, &cached)
 	})
 	if allocations != 0 {
 		t.Fatalf("allocations = %v, want 0", allocations)
@@ -119,7 +119,7 @@ func TestIFMAFourRawProductsStage2X8MatchesSeparateLeaves(t *testing.T) {
 	ifmaDoubleStage2X8(&wantDouble)
 	var gotDouble ifmaDoubleStage2WorkspaceX8
 	ifmaFourRawProductsDoubleStage2UncheckedX8(
-		&gotDouble[0],
+		&gotDouble,
 		&inputs[0], &inputs[1],
 		&inputs[2], &inputs[3],
 		&inputs[4], &inputs[5],
@@ -133,7 +133,7 @@ func TestIFMAFourRawProductsStage2X8MatchesSeparateLeaves(t *testing.T) {
 	ifmaNielsStage2X8(&wantNiels)
 	var gotNiels ifmaNielsStage2WorkspaceX8
 	ifmaFourRawProductsNielsStage2UncheckedX8(
-		&gotNiels[0],
+		&gotNiels,
 		&inputs[0], &inputs[1],
 		&inputs[2], &inputs[3],
 		&inputs[4], &inputs[5],
@@ -157,12 +157,12 @@ func TestIFMAFourRawProductsStage2X8ZeroAllocations(t *testing.T) {
 	var niels ifmaNielsStage2WorkspaceX8
 	allocations := testing.AllocsPerRun(1_000, func() {
 		ifmaFourRawProductsDoubleStage2UncheckedX8(
-			&double[0],
+			&double,
 			&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 			&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 		)
 		ifmaFourRawProductsNielsStage2UncheckedX8(
-			&niels[0],
+			&niels,
 			&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 			&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 		)
@@ -203,7 +203,7 @@ func BenchmarkIFMAPointLinearFourRawNielsStage2X8(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			ifmaPointLinearFourRawNielsStage2ExperimentX8(&out[0], &point, &cached)
+			ifmaPointLinearFourRawNielsStage2ExperimentX8(&out, &point, &cached)
 		}
 		benchmarkFourRawStage2NielsSinkX8 = out
 	})
@@ -221,7 +221,7 @@ func BenchmarkIFMAFourRawProductsStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaFourRawProductsUncheckedX8(
-				&workspace[0],
+				(*[4]IFMAProductX8)(&workspace),
 				&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 				&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 			)
@@ -235,7 +235,7 @@ func BenchmarkIFMAFourRawProductsStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaFourRawProductsDoubleStage2UncheckedX8(
-				&workspace[0],
+				&workspace,
 				&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 				&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 			)
@@ -248,7 +248,7 @@ func BenchmarkIFMAFourRawProductsStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaFourRawProductsUncheckedX8(
-				&workspace[0],
+				(*[4]IFMAProductX8)(&workspace),
 				&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 				&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 			)
@@ -262,7 +262,7 @@ func BenchmarkIFMAFourRawProductsStage2X8(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			ifmaFourRawProductsNielsStage2UncheckedX8(
-				&workspace[0],
+				&workspace,
 				&inputs[0], &inputs[1], &inputs[2], &inputs[3],
 				&inputs[4], &inputs[5], &inputs[6], &inputs[7],
 			)

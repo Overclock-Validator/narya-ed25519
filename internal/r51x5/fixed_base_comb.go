@@ -890,7 +890,7 @@ func addFixedBaseIFMACachedWorkspaceX8(
 
 	stage2 := &workspace.stage2
 	ifmaThreeRawProductsNielsStage2UncheckedX8(
-		&stage2[0],
+		stage2,
 		&workspace.yMinusX.limbs, &cached.YMinusX.limbs,
 		&workspace.yPlusX.limbs, &cached.YPlusX.limbs,
 		&point.T.limbs, &cached.T2D.limbs,

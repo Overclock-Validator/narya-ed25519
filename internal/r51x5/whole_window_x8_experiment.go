@@ -97,7 +97,7 @@ func ifmaCompletedToLinearExperimentX8(
 	g := (*LimbsX8)(&completed[2])
 	h := (*LimbsX8)(&completed[3])
 	ifmaFourRawProductsUncheckedX8(
-		&products[0],
+		products,
 		e, f,
 		g, h,
 		f, g,
@@ -122,7 +122,7 @@ func ifmaCompletedAddProjectiveNielsExperimentX8(
 	ifmaCompletedToLinearExperimentX8(&scratch.linear, completed, &scratch.products)
 	stage2 := (*ifmaNielsStage2WorkspaceX8)(out)
 	ifmaFourRawProductsNielsStage2UncheckedX8(
-		&stage2[0],
+		stage2,
 		&scratch.linear.YMinusX.limbs, &cached.YMinusX.limbs,
 		&scratch.linear.YPlusX.limbs, &cached.YPlusX.limbs,
 		&scratch.linear.T.limbs, &cached.T2D.limbs,
@@ -138,7 +138,7 @@ func ifmaCompletedAddAffineNielsExperimentX8(
 	ifmaCompletedToLinearExperimentX8(&scratch.linear, completed, &scratch.products)
 	stage2 := (*ifmaNielsStage2WorkspaceX8)(out)
 	ifmaThreeRawProductsNielsStage2UncheckedX8(
-		&stage2[0],
+		stage2,
 		&scratch.linear.YMinusX.limbs, &cached.YMinusX.limbs,
 		&scratch.linear.YPlusX.limbs, &cached.YPlusX.limbs,
 		&scratch.linear.T.limbs, &cached.T2D.limbs,

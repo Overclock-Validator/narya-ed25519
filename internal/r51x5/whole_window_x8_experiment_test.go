@@ -53,7 +53,7 @@ func TestIFMACompletedProductsToLinearX8Differential(t *testing.T) {
 		}
 		var products [4]IFMAProductX8
 		ifmaFourRawProductsUncheckedX8(
-			&products[0],
+			&products,
 			&operands[0], &operands[1],
 			&operands[2], &operands[3],
 			&operands[4], &operands[5],

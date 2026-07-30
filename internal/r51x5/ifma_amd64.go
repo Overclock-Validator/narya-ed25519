@@ -19,7 +19,7 @@ func ifmaMulRawX8(out *IFMAProductX8, x, y *LimbsX8)
 //
 //go:noescape
 func ifmaFourRawProductsUncheckedX8(
-	out *IFMAProductX8,
+	out *[4]IFMAProductX8,
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
@@ -31,13 +31,13 @@ func ifmaFourRawProductsUncheckedX8(
 //
 //go:noescape
 func ifmaFourRawProductsDoubleStage2UncheckedX8(
-	out *IFMAProductX8,
+	out *ifmaDoubleStage2WorkspaceX8,
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
 //go:noescape
 func ifmaFourRawProductsNielsStage2UncheckedX8(
-	out *IFMAProductX8,
+	out *ifmaNielsStage2WorkspaceX8,
 	x0, y0, x1, y1, x2, y2, x3, y3 *LimbsX8,
 )
 
@@ -50,7 +50,7 @@ func ifmaFourRawProductsNielsStage2UncheckedX8(
 //
 //go:noescape
 func ifmaPointLinearFourRawNielsStage2ExperimentX8(
-	out *IFMAProductX8,
+	out *ifmaNielsStage2WorkspaceX8,
 	point *IFMAPointX8,
 	cached *IFMAProjectiveNielsX8,
 )
@@ -62,7 +62,7 @@ func ifmaPointLinearFourRawNielsStage2ExperimentX8(
 //
 //go:noescape
 func ifmaThreeRawProductsNielsStage2UncheckedX8(
-	out *IFMAProductX8,
+	out *ifmaNielsStage2WorkspaceX8,
 	x0, y0, x1, y1, x2, y2, d *LimbsX8,
 )
 

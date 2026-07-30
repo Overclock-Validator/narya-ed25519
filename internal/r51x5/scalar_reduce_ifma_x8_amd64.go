@@ -15,7 +15,9 @@ var (
 	scalarReduceRound21 uint64 = 1 << 20
 )
 
-// scalarReduceRadix21IFMAX8 mutates the 24 signed radix-2^21 rows in place.
+// scalarReduceRadix21IFMAX8 reads all 24 signed radix-2^21 rows and writes the
+// canonical reduced scalar into rows 0 through 11. Rows 12 through 23 retain
+// their parsed input values and are not part of the output contract.
 //
 // The instruction schedule is a Go-assembly translation of the project-owned
 // standalone Narya assembly schedule at commit
