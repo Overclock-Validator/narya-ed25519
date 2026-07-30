@@ -31,7 +31,12 @@ disabled.
   records the symbolic, differential, closed-form, and mutation results.
 - [`../../tools/formal/edwards_whole_window_search.py`](../../tools/formal/edwards_whole_window_search.py)
   deterministically regenerates those artifacts.
+- [`source/README.md`](source/README.md) archives the supplied initial report
+  and implementation plan verbatim, with hashes and an explicit warning that
+  their six-doubling assumptions predate the live five-doubling mapping.
+
+Together these links account for all five supplied artifacts: the search
+program, two generated JSON records, initial result, and implementation plan.
 
 The broader radix-51 assurance map, including the remaining source-to-machine
 refinement gap, is in [`../R51_ARITHMETIC_ASSURANCE.md`](../R51_ARITHMETIC_ASSURANCE.md).
-

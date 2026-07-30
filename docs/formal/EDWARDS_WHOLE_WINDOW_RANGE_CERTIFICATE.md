@@ -27,8 +27,11 @@ artifact remains subject to the proof boundary stated here.
 | initial report | `874e72a3c81bbe9c34d3fdc0c641114a975e0cfa1dc6eeeec65168c15c0f7d47` |
 | implementation plan | `cb1cf5429acfddbaba91437c22f197b23ea564e467036c36cbcc70603c5935d9` |
 
-The checked-in source and JSON outputs are linked from
-[`README.md`](README.md). The checked-in source contains one semantics-neutral
+The checked-in search and JSON outputs are linked from
+[`README.md`](README.md). Verbatim copies of the initial report and
+implementation plan are preserved under [`source/`](source/README.md); this
+document, rather than the historical plan, records the current implementation
+decision. The checked-in search contains one semantics-neutral
 compatibility edit (`int.bit_count()` to `bin(x).count("1")`) so it also runs
 under Python 3.9; the hash above identifies the original supplied source.
 Regenerate with:
