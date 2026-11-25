@@ -23,7 +23,7 @@
 	VPXOR  Y11, Y10, Y10;                      \
 	VPADDQ H, Y8, Y8;                          \
 	VPADDQ Y10, Y8, Y8;                        \
-	VPBROADCASTQ K(BP), Y15;                   \
+	VPBROADCASTQ K(R12), Y15;                  \
 	VPADDQ Y15, Y8, Y8;                        \
 	VPADDQ W(BX), Y8, Y8;                      \
 	VPSRLQ $28, A, Y9;                         \
@@ -55,7 +55,7 @@
 	VPTERNLOGQ $0xca, G, F, Z10;                 \
 	VPADDQ H, Z8, Z8;                           \
 	VPADDQ Z10, Z8, Z8;                         \
-	VPBROADCASTQ K(BP), Z15;                    \
+	VPBROADCASTQ K(R12), Z15;                   \
 	VPADDQ Z15, Z8, Z8;                         \
 	VPADDQ W(BX), Z8, Z8;                       \
 	VPRORQ $28, A, Z9;                          \
@@ -135,7 +135,7 @@ expand_schedule:
 	VMOVDQU 192(DI), Y6
 	VMOVDQU 224(DI), Y7
 	LEAQ 0(SP), BX
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 
 	ROUND(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7,    0,   0)
 	ROUND(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6,   32,   8)
@@ -293,7 +293,7 @@ expand_schedule_x8:
 	VMOVDQU64 384(DI), Z6
 	VMOVDQU64 448(DI), Z7
 	LEAQ 0(SP), BX
-	MOVQ $·nativeRoundConstants(SB), BP
+	MOVQ $·nativeRoundConstants(SB), R12
 
 	ROUND8(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7,    0,   0)
 	ROUND8(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6,   64,   8)

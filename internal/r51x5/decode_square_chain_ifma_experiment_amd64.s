@@ -47,8 +47,9 @@ TEXT ·ifmaRepeatedSquareNormalizedX4(SB), NOSPLIT, $0-24
 	VMOVDQU64  64(CX), Y2
 	VMOVDQU64  96(CX), Y3
 	VMOVDQU64 128(CX), Y4
+	// JLE, not JE: a negative count must not run 2^64 + count squarings.
 	TESTQ AX, AX
-	JE chain_square_x4_store
+	JLE chain_square_x4_store
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Y24
 	VPBROADCASTQ ·ifmaFold19(SB), Y25
@@ -156,8 +157,9 @@ TEXT ·ifmaRepeatedSquareNormalizedX8(SB), NOSPLIT, $0-24
 	VMOVDQU64 128(CX), Z2
 	VMOVDQU64 192(CX), Z3
 	VMOVDQU64 256(CX), Z4
+	// JLE, not JE: a negative count must not run 2^64 + count squarings.
 	TESTQ AX, AX
-	JE chain_square_store
+	JLE chain_square_store
 
 	VPBROADCASTQ ·ifmaLimbMask51(SB), Z24
 	VPBROADCASTQ ·ifmaFold19(SB), Z25
