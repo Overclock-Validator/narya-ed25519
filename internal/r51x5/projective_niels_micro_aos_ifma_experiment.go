@@ -78,6 +78,12 @@ func storeIFMAProjectiveNielsPreSignedMicroAoSEntryX8(
 	// eight per-key micro-AoS entries. The native leaf is data movement only;
 	// its scalar counterpart preserves identical semantics for non-amd64 and
 	// purego differential tests.
+	//
+	// The assembly store indexes the table by entry with no bounds check, so
+	// check here: an out-of-range entry would write past the table.
+	if uint(entry) >= uint(len(table[0][0])) {
+		panic("r51x5: projective Niels micro-AoS table entry out of range")
+	}
 	var negativeT2D IFMAElementX8
 	ifmaNegateComposableUncheckedX8(&negativeT2D, &point.T2D)
 	ifmaProjectiveNielsPreSignedMicroAoSStoreTransposeX8(

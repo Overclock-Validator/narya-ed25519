@@ -36,6 +36,17 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       - run: go test -run TestDifferential -count=5 ./ed25519
+  race:
+    # The batch and cache paths share state across goroutines. Hosted
+    # runners have no IFMA, so this covers the portable paths; the r51
+    # paths need a native IFMA host.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: stable
+      - run: go test -race ./...
   purego:
     # Prove the no-assembly fallbacks compile and pass everywhere.
     runs-on: ubuntu-latest
@@ -64,7 +75,9 @@ jobs:
     # against the SHA-256 published on the official download page:
     # https://www.intel.com/content/www/us/en/download/684897/intel-software-development-emulator.html
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Raised for the adversarial-corpus passes; run-sde-test.sh still bounds
+    # each emulated process with its own wall-clock limit.
+    timeout-minutes: 90
     env:
       SDE_ARCHIVE: sde-external-10.8.0-2026-03-15-lin.tar.xz
       SDE_SHA256: 50b320cd226acef7a491f5b321fc1be3c3c7984f9e27a456e64894b5b0979dd3
@@ -90,17 +103,25 @@ jobs:
       - name: Require and test r51x5 IFMA kernels under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/r51x5.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestExperimentalIFMABatchEncodeX8MatchesModelAndAllocatesZero|TestExperimentalUniformScalarReductionIFMAX8MatchesScalar|TestFixedBaseIFMACachedUncheckedSelectorsMatchChecked|TestIFMAFourRawProductsX8MatchesFourCalls|TestIFMAFourRawProductsStage2X8MatchesSeparateLeaves|TestIFMAThreeRawProductsNielsStage2X8MatchesSeparateLeaves|TestIFMAProjectiveFinalProductsX8MatchesCompleteLeaf|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8)$'
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeHardwareEveryMaskMatchesReference|TestIFMADecode2HardwareMatchesReference|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAComposableHardware|TestExperimentalIFMAFixedDSMHardware|TestExperimentalIFMABatchEncodeX4MatchesModelAndAllocatesZero|TestExperimentalIFMABatchEncodeX8MatchesModelAndAllocatesZero|TestExperimentalUniformScalarReductionIFMAX8MatchesScalar|TestFixedBaseIFMACachedUncheckedSelectorsMatchChecked|TestIFMAFourRawProductsX8MatchesFourCalls|TestIFMAFourRawProductsStage2X8MatchesSeparateLeaves|TestIFMAThreeRawProductsNielsStage2X8MatchesSeparateLeaves|TestIFMAProjectiveFinalProductsX8MatchesCompleteLeaf|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8|TestAsymmetricFixedBNielsX8Experiment|TestIFMAAffine3MicroAoSTransposeMaskedLoadDoesNotOverread)$'
       - name: Require and test native SHA-512 kernels under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/sha512mb.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDENativeSHARequired|TestNativeX4Differential|TestNativeX8Differential|TestExperimentalSum512Batch3Differential)$'
+            -test.run '^(TestSDENativeSHARequired|TestNativeX4Differential|TestNativeX8Differential|TestExperimentalSum512Batch3Differential|TestNativeCompressX8RollingDifferential|TestNativeTransposeCompressX8RollingDifferential|TestNativeCompressVerifierFirstX8RollingDifferential)$'
       - name: Test forced public r51 verification under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^TestSDEForcedR51PublicPath$'
           bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestR51BackendInternalFaultFallsBackToGeneric|TestR51BackendRawStrictPairCorpora|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+            -test.run '^(TestR51BackendInternalFaultFallsBackToGeneric|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane)$'
+      - name: Run adversarial corpora and fuzz seeds on the r51 paths under SDE
+        # CCTV, Wycheproof and Firedancer regressions, mixed-order keys, and
+        # the live-backend fuzzer's seed corpus at widths 1 to 65.
+        env:
+          SDE_TEST_TIMEOUT: 12m
+        run: |
+          bash ./scripts/run-sde-test.sh /tmp/ed25519.test -test.v -test.count=1 -test.timeout=30m \
+            -test.run '^(TestR51BackendRawStrictSingletonCorpora|TestR51IFMABatchQPipelineFiredancerFuzzRegressions|TestR51IFMABatchQDecodedACorpora|TestR51IFMAPipelineCCTVAndWycheproof|TestR51IFMAPipelineExactSignedMixedOrderEveryLane|FuzzR51BackendDifferential)$'
 
       # Everything above runs the x4 paths only. The x8/ZMM groups, the
       # decoded-A cache tier, warm x4 pairing and the raw-square schedule are
@@ -125,6 +146,12 @@ jobs:
       - name: Test x8, decoded-A and warm pairing under SDE
         run: |
           bash ./scripts/run-sde-test.sh /tmp/r51x5.wide.test -test.v -test.count=1 -test.timeout=20m \
-            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAFixedDSMHardware|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8|TestExperimentalPackedStrictVerifierPairX8MatchesSingletons|TestExperimentalPackedStrictVerifierPairX8ZeroAllocations)$'
+            -test.run '^(TestSDEIFMARequired|TestExperimentalIFMAMultiplyX8X4|TestExperimentalIFMAPointOperations|TestIFMADecodeComposableHardwareEveryMaskX8|TestIFMADecodeComposablePrepareDifferentialX8|TestExperimentalIFMAFixedDSMHardware|TestIFMASquareRawExperimentX8.*|TestIFMAPointDoubleRawSquareStage2X8.*|TestIFMAProjectiveNielsPreSignedMicroAoSStoreTransposeX8|TestIFMAProjectiveNielsPreSignedMicroAoSTransposePrepareX8|TestExperimentalPackedStrictVerifierPairX8MatchesSingletons|TestExperimentalPackedStrictVerifierPairX8ZeroAllocations|TestAsymmetricFixedBNielsX8Experiment)$'
           bash ./scripts/run-sde-test.sh /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=20m \
             -test.run '^(TestSDEForcedR51PublicPath|TestR51BackendInternalFaultFallsBackToGeneric|TestR51BackendDecodedACacheDifferential|TestR51WarmPrecomputedBatchDifferential|TestR51WarmDispatchPreservesNativeWidth|TestR51WarmGroupSurvivesMalformedSignatureAtEveryLane|TestRawBackendPathsApplyTheProfilePrePass|TestRawBatchPathRejectsOnlyThePrePassFailures)$'
+      - name: Run adversarial corpora and fuzz seeds on the x8, pair and decoded-A routes under SDE
+        env:
+          SDE_TEST_TIMEOUT: 12m
+        run: |
+          bash ./scripts/run-sde-test.sh /tmp/ed25519.wide.test -test.v -test.count=1 -test.timeout=30m \
+            -test.run '^(TestR51BackendRawStrictPairCorpora|TestR51BackendRawStrictSingletonCorpora|TestR51IFMABatchQPipelineFiredancerFuzzRegressions|TestR51IFMABatchQDecodedACorpora|TestR51IFMAPipelineCCTVAndWycheproof|TestR51IFMAPipelineExactSignedMixedOrderEveryLane|FuzzR51BackendDifferential)$'
