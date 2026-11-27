@@ -221,6 +221,9 @@ lengths differ. `Precompute` returns a non-nil error when `pub` does not decode.
   process, latched on first use. Resolution order: the name passed to
   `SetBackend`, then `OVERCLOCK_ED25519_BACKEND`, then the default.
 - **`sha512mb`** is multi-buffer SHA-512.
+- **`keccakmb`** is multi-buffer Keccak: legacy Keccak-256, SHA3-256, SHAKE128
+  and SHAKE256. Nothing in the verifier calls it yet; see
+  [`docs/KECCAK_MULTIBUFFER.md`](docs/KECCAK_MULTIBUFFER.md).
 - **`cmd/sigverifytracebench`** is offline exact-input schema-v3 replay for a
   measured stdlib/generic/generic-cache diagnostic. It never promotes the
   generic table result to the pending r51 production cache gate.

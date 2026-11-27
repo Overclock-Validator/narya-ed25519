@@ -42,6 +42,10 @@ bench-batch:
 bench-hash:
 	$(GO) test -run '^$$' -bench BenchmarkHash -benchtime $(BENCHTIME) ./sha512mb
 
+.PHONY: bench-keccak
+bench-keccak:
+	$(GO) test -run '^$$' -bench . -benchtime $(BENCHTIME) -count $(COUNT) ./keccakmb
+
 .PHONY: bench-r51
 bench-r51:
 	$(GO) test -run '^$$' -bench . -benchmem -benchtime $(BENCHTIME) -count $(COUNT) ./internal/r51x5
