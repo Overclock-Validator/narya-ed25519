@@ -87,7 +87,7 @@ func ExperimentalSumBatch(v Variant, out [][]byte, msgs [][][]byte) bool {
 	for first := 0; first < len(msgs); first += Lanes {
 		last := min(first+Lanes, len(msgs))
 		var x SpongeX8
-		x.absorbNative(v, msgs[first:last])
+		x.absorbAuto(v, msgs[first:last])
 		x.squeezeInto(out[first:last])
 	}
 	return true
@@ -103,8 +103,17 @@ type SpongeX8 struct {
 	v       Variant
 	lanes   int
 	fresh   bool // the next squeezed block needs no permutation
-	native  bool // squeeze through the AVX-512 kernel
-	permute func(*StateX8)
+	native  bool // permute and squeeze through the AVX-512 kernels
+}
+
+// permuteState permutes x.s with direct calls only, so the state does not
+// escape to the heap through a function value.
+func (x *SpongeX8) permuteState() {
+	if x.native {
+		permuteX8Native(&x.s)
+	} else {
+		permuteX8Generic(&x.s)
+	}
 }
 
 // ExperimentalNewSpongeX8 absorbs up to eight messages, each the
@@ -115,7 +124,7 @@ func ExperimentalNewSpongeX8(x *SpongeX8, v Variant, msgs [][][]byte) bool {
 	if !nativeX8Available() {
 		return false
 	}
-	x.absorbNative(v, msgs)
+	x.absorbAuto(v, msgs)
 	return true
 }
 
@@ -123,7 +132,7 @@ func ExperimentalNewSpongeX8(x *SpongeX8, v Variant, msgs [][][]byte) bool {
 // permutation. It never dispatches.
 func NewSpongeX8Generic(x *SpongeX8, v Variant, msgs [][][]byte) {
 	v.check()
-	x.absorb(v, msgs, permuteX8Generic)
+	x.absorb(v, msgs, false)
 }
 
 // Lanes reports how many messages x absorbed.
@@ -142,7 +151,7 @@ func (x *SpongeX8) SqueezeBlock(out *[Lanes][200]byte) {
 		return
 	}
 	if !x.fresh {
-		x.permute(&x.s)
+		x.permuteState()
 	}
 	x.fresh = false
 	for j := 0; j < x.lanes; j++ {
@@ -152,11 +161,11 @@ func (x *SpongeX8) SqueezeBlock(out *[Lanes][200]byte) {
 	}
 }
 
-func (x *SpongeX8) absorb(v Variant, msgs [][][]byte, permute func(*StateX8)) {
+func (x *SpongeX8) absorb(v Variant, msgs [][][]byte, native bool) {
 	if len(msgs) > Lanes {
 		panic("keccakmb: more than eight messages in one SpongeX8")
 	}
-	*x = SpongeX8{v: v, lanes: len(msgs), fresh: true, permute: permute}
+	*x = SpongeX8{v: v, lanes: len(msgs), fresh: true, native: native}
 	var lanes [Lanes]laneReader
 	maxBlocks := 0
 	for j := range msgs {
@@ -179,7 +188,7 @@ func (x *SpongeX8) absorb(v Variant, msgs [][][]byte, permute func(*StateX8)) {
 				x.s[w][j] ^= binary.LittleEndian.Uint64(block[8*w:])
 			}
 		}
-		permute(&x.s)
+		x.permuteState()
 		for j := 0; j < x.lanes; j++ {
 			if b+1 == lanes[j].blocks && lanes[j].blocks != maxBlocks {
 				for i := 0; i < 25; i++ {
@@ -280,6 +289,30 @@ func (l *laneReader) directBlocks(rate int) int {
 	return min((len(l.parts[l.part])-l.offset)/rate, l.blocks-1-l.taken)
 }
 
+// absorbAuto absorbs with the native kernels. When every message is a
+// single padded block, which must be staged anyway, the Go XOR loop plus the
+// permutation kernel measured faster on Zen 4 (about 610 ns against 700 ns
+// for eight 64-byte messages) than staging and gathering, so that case
+// skips absorbNative entirely.
+func (x *SpongeX8) absorbAuto(v Variant, msgs [][][]byte) {
+	single := true
+	for _, parts := range msgs {
+		total := 0
+		for _, p := range parts {
+			total += len(p)
+		}
+		if total >= v.rate {
+			single = false
+			break
+		}
+	}
+	if single {
+		x.absorb(v, msgs, true)
+		return
+	}
+	x.absorbNative(v, msgs)
+}
+
 // zeroBlock is absorbed by lanes that are absent or already finished, whose
 // states are discarded or restored afterwards.
 var zeroBlock [200]byte
@@ -293,7 +326,7 @@ func (x *SpongeX8) absorbNative(v Variant, msgs [][][]byte) {
 	if len(msgs) > Lanes {
 		panic("keccakmb: more than eight messages in one SpongeX8")
 	}
-	*x = SpongeX8{v: v, lanes: len(msgs), fresh: true, native: true, permute: permuteX8Native}
+	*x = SpongeX8{v: v, lanes: len(msgs), fresh: true, native: true}
 	words := v.rate / 8
 	if words != 17 && words != 21 {
 		panic("keccakmb: native absorb supports rates 136 and 168")
@@ -303,15 +336,6 @@ func (x *SpongeX8) absorbNative(v Variant, msgs [][][]byte) {
 	for j := range msgs {
 		lanes[j] = newLane(msgs[j], v.rate)
 		maxBlocks = max(maxBlocks, lanes[j].blocks)
-	}
-	if maxBlocks == 1 {
-		// Every message is one padded block, which must be staged anyway.
-		// On Zen 4 the Go XOR loop plus the permutation kernel measured
-		// faster here (about 610 ns against 700 ns for eight 64-byte
-		// messages) than staging and gathering.
-		x.absorb(v, msgs, permuteX8Native)
-		x.native = true
-		return
 	}
 	var (
 		saved   [Lanes][25]uint64

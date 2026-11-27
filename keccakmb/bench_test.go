@@ -78,7 +78,7 @@ func BenchmarkHash(b *testing.B) {
 			b.SetBytes(int64(Lanes * tc.msg))
 			var x SpongeX8
 			for b.Loop() {
-				x.absorb(tc.v, msgs, permuteX8Native)
+				x.absorb(tc.v, msgs, true)
 				x.squeezeInto(out)
 			}
 		})
@@ -87,6 +87,7 @@ func BenchmarkHash(b *testing.B) {
 				b.Skip("AVX-512 kernel unavailable")
 			}
 			b.SetBytes(int64(Lanes * tc.msg))
+			b.ReportAllocs()
 			for b.Loop() {
 				ExperimentalSumBatch(tc.v, out, msgs)
 			}
