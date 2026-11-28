@@ -5,7 +5,8 @@ package keccakmb
 import "golang.org/x/sys/cpu"
 
 // The kernel uses only AVX-512F instructions on ZMM registers: VPTERNLOGQ,
-// VPROLQ, VPXORQ, VMOVDQU64, VMOVDQA64 and VPBROADCASTQ.
+// VPROLQ, VPXORQ, VMOVDQU64, VMOVDQA64, VPBROADCASTQ, VPADDQ, VPGATHERQQ,
+// VPSCATTERQQ, KXNORW and KMOVW.
 func nativeX8Available() bool { return cpu.X86.HasAVX512F }
 
 // permuteX8Native applies Keccak-f[1600] to the eight instances of s.
@@ -21,7 +22,8 @@ func permuteX8Native(s *StateX8)
 func absorbX8Native(s *StateX8, ptrs *[Lanes]*byte, strides *[Lanes]uint64, words, blocks int)
 
 // squeezeX8Native permutes s first when permute is nonzero, then writes the
-// first words 64-bit words of each lane j to out[j]. words must be 17 or 21.
+// first words 64-bit words of each lane j with bit j set in mask to out[j].
+// Other lanes of out are not written. words must be 17 or 21.
 //
 //go:noescape
-func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute int)
+func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute, mask int)

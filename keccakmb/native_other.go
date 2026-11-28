@@ -12,6 +12,6 @@ func absorbX8Native(s *StateX8, ptrs *[Lanes]*byte, strides *[Lanes]uint64, word
 	panic("keccakmb: AVX-512 x8 absorb unavailable")
 }
 
-func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute int) {
+func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute, mask int) {
 	panic("keccakmb: AVX-512 x8 squeeze unavailable")
 }

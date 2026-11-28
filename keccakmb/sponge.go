@@ -3,6 +3,8 @@ package keccakmb
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
+	"math/bits"
 )
 
 // Variant selects a Keccak sponge: its rate in bytes and its domain
@@ -37,6 +39,8 @@ func (v Variant) check() {
 
 // Sum writes the first len(out) output bytes of v over
 // parts[0] || parts[1] || ... to out, using the scalar reference sponge.
+// out may share storage with the parts: every input byte is read before out
+// is written.
 func Sum(v Variant, out []byte, parts ...[]byte) {
 	v.check()
 	var a [25]uint64
@@ -64,6 +68,11 @@ func Sum(v Variant, out []byte, parts ...[]byte) {
 // SumBatch computes v for every message, where message i is the
 // concatenation of msgs[i] and out[i] receives the first len(out[i]) output
 // bytes. It is the portable scalar loop and never dispatches.
+//
+// out[i] may share storage with msgs[i] (in-place hashing), but must not
+// overlap any msgs[k] with k != i. Batch entry points read and write lanes in
+// different orders, so cross-lane overlap would make the result depend on
+// the path taken; it is not supported, and its result is unspecified.
 func SumBatch(v Variant, out [][]byte, msgs [][][]byte) {
 	if len(out) != len(msgs) {
 		panic("keccakmb: out/msgs length mismatch")
@@ -74,8 +83,9 @@ func SumBatch(v Variant, out [][]byte, msgs [][][]byte) {
 }
 
 // ExperimentalSumBatch is SumBatch through the AVX-512 eight-lane
-// permutation. Messages are hashed in independent groups of eight. It
-// returns false, leaving out untouched, when the kernel is unavailable.
+// permutation, with the same overlap rule. Messages are hashed in
+// independent groups of eight. It returns false, leaving out untouched, when
+// the kernel is unavailable.
 func ExperimentalSumBatch(v Variant, out [][]byte, msgs [][][]byte) bool {
 	if len(out) != len(msgs) {
 		panic("keccakmb: out/msgs length mismatch")
@@ -99,11 +109,11 @@ func ExperimentalSumBatch(v Variant, out [][]byte, msgs [][][]byte) bool {
 // matches Falcon hash-to-point, where the caller rejection-samples each
 // lane's stream and keeps squeezing while any lane needs more coefficients.
 type SpongeX8 struct {
-	s       StateX8
-	v       Variant
-	lanes   int
-	fresh   bool // the next squeezed block needs no permutation
-	native  bool // permute and squeeze through the AVX-512 kernels
+	s      StateX8
+	v      Variant
+	lanes  int
+	fresh  bool // the next squeezed block needs no permutation
+	native bool // permute and squeeze through the AVX-512 kernels
 }
 
 // permuteState permutes x.s with direct calls only, so the state does not
@@ -139,7 +149,8 @@ func NewSpongeX8Generic(x *SpongeX8, v Variant, msgs [][][]byte) {
 func (x *SpongeX8) Lanes() int { return x.lanes }
 
 // SqueezeBlock writes the next v.Rate() output bytes of every lane to
-// out[j][:v.Rate()] for j < x.Lanes().
+// out[j][:v.Rate()] for j < x.Lanes(). It does not write out[j] for
+// j >= x.Lanes(), nor out[j][v.Rate():].
 func (x *SpongeX8) SqueezeBlock(out *[Lanes][200]byte) {
 	if x.native {
 		permute := 1
@@ -147,7 +158,7 @@ func (x *SpongeX8) SqueezeBlock(out *[Lanes][200]byte) {
 			permute = 0
 		}
 		x.fresh = false
-		squeezeX8Native(&x.s, out, x.v.rate/8, permute)
+		squeezeX8Native(&x.s, out, x.v.rate/8, permute, 1<<x.lanes-1)
 		return
 	}
 	if !x.fresh {
@@ -246,14 +257,36 @@ type laneReader struct {
 }
 
 func newLane(parts [][]byte, rate int) laneReader {
-	total := 0
+	return laneReader{parts: parts, blocks: blockCount(parts, rate)}
+}
+
+// messageLen returns the total length of parts, panicking rather than
+// wrapping if it does not fit in a uint64. Parts may alias one buffer, so on
+// 32-bit Go the total can exceed the int range without a matching
+// allocation; summing into an int there could wrap negative and skip
+// absorption entirely.
+func messageLen(parts [][]byte) uint64 {
+	var total, carry uint64
 	for _, p := range parts {
-		total += len(p)
+		total, carry = bits.Add64(total, uint64(len(p)), 0)
+		if carry != 0 {
+			panic("keccakmb: message too long")
+		}
 	}
-	// pad10*1 always adds at least one byte (the domain byte and the final
-	// 0x80 share a byte when one byte of the block is left), so a message
-	// always takes total/rate + 1 blocks.
-	return laneReader{parts: parts, blocks: total/rate + 1}
+	return total
+}
+
+// blockCount returns the number of rate-sized blocks a message occupies
+// after padding. pad10*1 always adds at least one byte (the domain byte and
+// the final 0x80 share a byte when one byte of the block is left), so a
+// message takes total/rate + 1 blocks. It panics if that count does not fit
+// in an int, rather than letting it wrap.
+func blockCount(parts [][]byte, rate int) int {
+	blocks := messageLen(parts)/uint64(rate) + 1
+	if blocks > math.MaxInt {
+		panic("keccakmb: message too long")
+	}
+	return int(blocks)
 }
 
 func (l *laneReader) next(block []byte, last bool, ds byte) {
@@ -297,11 +330,7 @@ func (l *laneReader) directBlocks(rate int) int {
 func (x *SpongeX8) absorbAuto(v Variant, msgs [][][]byte) {
 	single := true
 	for _, parts := range msgs {
-		total := 0
-		for _, p := range parts {
-			total += len(p)
-		}
-		if total >= v.rate {
+		if messageLen(parts) >= uint64(v.rate) {
 			single = false
 			break
 		}

@@ -63,10 +63,12 @@ w('''// Eight Keccak-f[1600] instances, one per 64-bit lane of a ZMM register.
 	VPTERNLOGQ $0xd2, Z25, r4, r3;   \\
 	VPTERNLOGQ $0xd2, Z26, Z25, r4
 
-// SCATTER_WORD stores word w of every lane to its output block. Z31 holds
-// the lane offsets 0, 200, ..., 1400 into the [Lanes][200]byte buffer at BX.
+// SCATTER_WORD stores word w of every active lane to its output block. Z31
+// holds the lane offsets 0, 200, ..., 1400 into the [Lanes][200]byte buffer
+// at BX, and K2 holds the active-lane mask. A scatter clears its mask, so K1
+// is reloaded from K2 each time; inactive lanes are never written.
 #define SCATTER_WORD(off, z) \\
-	KXNORW      K1, K1, K1; \\
+	KMOVW       K2, K1; \\
 	VPSCATTERQQ z, K1, off(BX)(Z31*1)
 
 // GATHER_XOR XORs word w of every lane's block into state register z. Z31
@@ -127,21 +129,23 @@ perm('absorbround')
 w('\tDECQ R8\n\tJNZ  block\n\n')
 store(); w('\tVZEROUPPER\n\tRET\n')
 w('''
-// func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute int)
+// func squeezeX8Native(s *StateX8, out *[Lanes][200]byte, words, permute, mask int)
 //
 // If permute is nonzero, permute s and store it. Then write the first words
-// 64-bit words of every lane to out[j]. words is 17 or 21.
-TEXT ·squeezeX8Native(SB), NOSPLIT, $0-32
+// 64-bit words of every lane j whose bit is set in mask to out[j], leaving
+// the other lanes of out untouched. words is 17 or 21.
+TEXT ·squeezeX8Native(SB), NOSPLIT, $0-40
 	MOVQ s+0(FP), AX
 	MOVQ out+8(FP), BX
 	MOVQ words+16(FP), DI
 	MOVQ permute+24(FP), R8
+	MOVQ mask+32(FP), R10
 ''')
 load()
 w('\tTESTQ R8, R8\n\tJZ    extract\n')
 perm('squeezeround')
 store()
-w('\nextract:\n\tVMOVDQU64 ·laneOffsets(SB), Z31\n')
+w('\nextract:\n\tVMOVDQU64 ·laneOffsets(SB), Z31\n\tKMOVW     R10, K2\n')
 for i in range(17): w(f'\tSCATTER_WORD({8*i}, Z{i})\n')
 w('\tCMPQ DI, $17\n\tJEQ  squeezed\n')
 for i in range(17,21): w(f'\tSCATTER_WORD({8*i}, Z{i})\n')
