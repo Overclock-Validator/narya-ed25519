@@ -97,32 +97,44 @@ only the words they need.
 ## Performance
 
 Ryzen 7 PRO 8700GE (Zen 4), Go 1.27.2, one pinned core, five 1-second runs per
-row; the spread across runs was under 5% for every row. Each operation
-processes eight messages; divide by eight for the time per hash.
+row on an otherwise idle machine; the spread across runs was under 4% for
+every row. Each operation processes eight messages; divide by eight for the
+time per hash.
 
-| Work per operation | `crypto/sha3` | permutation kernel, Go absorb and squeeze | all kernels |
+| Work per operation | `crypto/sha3` | permutation kernel, Go absorb and squeeze | `ExperimentalSumBatch` |
 | --- | ---: | ---: | ---: |
-| SHA3-256, 64-byte messages | 2,100 ns | 615 ns | see below |
-| SHA3-256, 1,232-byte messages | 17,200 ns | 4,880 ns | 3,880 ns (4.4x) |
-| SHAKE256, 104 bytes in, 1,088 out (Falcon-size) | 13,630 ns | 4,330 ns | 3,590 ns (3.8x) |
-| SHAKE256, 1,272 bytes in, 1,088 out | 28,790 ns | 8,580 ns | 6,790 ns (4.2x) |
+| SHA3-256, 64-byte messages | 2,095 ns | 619 ns | 645 ns (3.2x) |
+| SHA3-256, 1,232-byte messages | 17,260 ns | 4,995 ns | 3,795 ns (4.5x) |
+| SHAKE256, 104 bytes in, 1,088 out (Falcon-size) | 13,590 ns | 3,480 to 3,600 ns | 3,500 to 3,630 ns (3.8x) |
+| SHAKE256, 1,272 bytes in, 1,088 out | 28,800 ns | 7,840 ns | 6,656 ns (4.3x) |
 | 8 bare permutations | 18,630 ns (portable reference) | 321 ns | |
 
-For 64-byte messages the gather absorb measured about 700 ns, slower than the
-Go loop, so a batch whose messages are all one block now takes the middle
-column's path. That routing has not been benchmarked on its own yet.
+The middle column runs the same permutation kernel with the Go absorb and
+squeeze loops, so it isolates what the other kernels add:
+
+- The gather absorb saves about 1.2 us per eight 1,232-byte messages (24%).
+- The scatter squeeze shows no measurable gain over the Go loop at Falcon's
+  output size; the two SHAKE256 104-byte columns are within noise.
+- Batches whose messages are all single blocks take the Go loop, because the
+  gather absorb measured slower there (about 700 ns). Through
+  `ExperimentalSumBatch` that case still costs about 4% more than calling the
+  loop directly (645 against 619 ns), which is the batch entry point's own
+  overhead.
+
+An earlier version stored the permutation as a function value in
+`SpongeX8`, which made every batch call heap-allocate its sponge; the
+numbers above are after that fix.
 
 Legacy Keccak-256 against `golang.org/x/crypto/sha3`, hashing the same eight
-messages one at a time with a reused hasher as geth does (measured before the
-single-block routing and the gather register rotation):
+messages one at a time with a reused hasher as geth does:
 
 | Message | `x/crypto` | `keccakmb` x8 | Speedup |
 | --- | ---: | ---: | ---: |
-| 32 bytes (storage-slot key) | 1,928 ns | 702 ns | 2.7x |
-| 64 bytes | 1,940 ns | 705 ns | 2.8x |
-| 136 bytes (two blocks) | 3,754 ns | 1,090 ns | 3.4x |
-| 532 bytes (full trie branch node) | 7,556 ns | 1,830 ns | 4.1x |
-| 1,232 bytes | 18,737 ns | 3,952 ns | 4.7x |
+| 32 bytes (storage-slot key) | 1,928 ns | 640 ns | 3.0x |
+| 64 bytes | 1,939 ns | 639 ns | 3.0x |
+| 136 bytes (two blocks) | 3,755 ns | 976 ns | 3.8x |
+| 532 bytes (full trie branch node) | 7,557 ns | 1,707 ns | 4.4x |
+| 1,232 bytes | 18,731 ns | 3,793 ns | 4.9x |
 
 The kernel costs about 40 ns per permutation against roughly 215 ns for
 `crypto/sha3`. Not measured yet: an AVX2 x4 kernel for machines without
